@@ -278,7 +278,11 @@ class TTable:
     void paint();
     void resize();
     void focus(bool);
+
     void mouseLDown(int x,int y, unsigned modifier);
+    void mouseMove(int x,int y, unsigned modifier);
+    void mouseLUp(int x,int y, unsigned modifier);
+
     void keyDown(TKey key, char *string, unsigned modifier);
     void keyUp(TKey key, char *string, unsigned modifier);
     
@@ -286,6 +290,7 @@ class TTable:
     int getCursorY() const { return cy; }
     
     TSignal sigCursor;
+    TSignal sigDoubleClick;
     
     //! 'true': expand the last column to match the table's width
     bool stretchLastColumn;

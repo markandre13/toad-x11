@@ -722,7 +722,7 @@ TTable::focus(bool)
 }
 
 void
-TTable::mouseLDown(int mx, int my, unsigned)
+TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
   setFocus();
 
@@ -774,7 +774,21 @@ TTable::mouseLDown(int mx, int my, unsigned)
   }
   selection->toggleSelection(perRow?0:x, perCol?0:y);
   DBM(cout << "click on item " << x << ", " << y << endl;)
-  sigCursor();
+
+  if (modifier & MK_DOUBLE)
+    sigDoubleClick();
+  else  
+    sigCursor();
+}
+
+void
+TTable::mouseMove(int mx, int my, unsigned)
+{
+}
+
+void
+TTable::mouseLUp(int mx, int my, unsigned)
+{
 }
 
 /**
