@@ -253,9 +253,9 @@ TFont::getTextWidth(const char *str, int len) const
     if (str[len-1]==' ') {
       XGlyphInfo gi2;
       XftTextExtentsUtf8(x11display, xftfont, (const XftChar8*)"  ", 2, &gi2);
-      return gi.width+gi2.width;
+      return (gi.width+gi2.width)*x11scale;
     }
-    return gi.width;
+    return gi.width*x11scale;
   }
 #endif
   return 0;
