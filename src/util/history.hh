@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 #include <toad/connect.hh>
 #include <deque>
 #include <stdexcept>
+#include <cassert>
 
 /**
  * \class toad::GHistory
@@ -44,7 +45,7 @@ namespace toad {
 template<class T>
 class GHistory
 {
-    typedef deque<T> TStorage;
+    typedef std::deque<T> TStorage;
     TStorage storage;
     typename TStorage::iterator p;
     unsigned bs, fs;
@@ -52,6 +53,12 @@ class GHistory
     
   public:
     GHistory() {
+      p=storage.begin();
+      bs = fs = 0;
+      size = 20;
+    }
+    GHistory(const GHistory &history) {
+      assert(history.storage.empty());
       p=storage.begin();
       bs = fs = 0;
       size = 20;
@@ -75,14 +82,14 @@ class GHistory
       bs=storage.size();
       signal();
     }
-    const T& getCurrent() {
+    const T& getCurrent() const {
       if (p==storage.begin())
-        throw runtime_error("GHistory: no current");
+        throw std::runtime_error("GHistory: no current");
       return *(p-1);
     }
     void goBack() {
       if (p==storage.begin())
-        throw runtime_error("GHistory: can't go back");
+        throw std::runtime_error("GHistory: can't go back");
       p--;
       bs--;
       fs++;
@@ -90,7 +97,7 @@ class GHistory
     }
     void goForward() {
       if (p==storage.end())
-        throw runtime_error("GHistory: can't go forward");
+        throw std::runtime_error("GHistory: can't go forward");
       p++;
       bs++;
       fs--;
