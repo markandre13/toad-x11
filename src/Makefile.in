@@ -75,7 +75,8 @@ GADGET		= figure.cc figurewindow.cc \
 		  figure/polygon.cc figure/polyline.cc figure/window.cc \
 		  figureeditor.cc figureeditor/undoablemove.cc \
 		  figureeditor/undoablehandlemove.cc \
-		  figureeditor/undoabledelete.cc
+		  figureeditor/undoabledelete.cc \
+		  colorselector.cc
 
 MDI		= mdiwindow.cc mdishell.cc
 

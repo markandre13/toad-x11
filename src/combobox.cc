@@ -124,6 +124,7 @@ TComboBox::button()
 void
 TComboBox::selected()
 {
+cerr << __PRETTY_FUNCTION__ << endl;
   btn->setDown(false);
   invalidateWindow();
   sigSelection();

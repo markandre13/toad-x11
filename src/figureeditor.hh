@@ -21,6 +21,7 @@
 #ifndef _TOAD_FIGUREEDITOR
 #define _TOAD_FIGUREEDITOR
 
+#include <toad/figuremodel.hh>
 #include <toad/scrollpane.hh>
 #include <toad/undoable.hh>
 #include <toad/util/history.hh>
@@ -195,21 +196,6 @@ class TFigureEditor:
 
     bool restore(TInObjectStream&);
     void store(TOutObjectStream&) const;
-
-    class TColorSelector:
-      public TWindow
-    {
-        TFigureEditor *gedit;
-        TRGB linecolor;
-        TRGB fillcolor;
-        bool filled;
-        int border;
-      public:
-        typedef TWindow super;
-        TColorSelector(TWindow *parent, const string &title, TFigureEditor *gedit);
-        void paint();
-        void mouseLDown(int, int, unsigned);
-    };
 
   protected:
     void init();

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,12 +104,6 @@ using namespace toad;
  *      an endless recursion; these calls are currently removed
  *   \li
  *      allow the usage of multiple models to provide layers
- *   \li
- *      TFigureEditor::TColorSelector: the dialogs set the colors even
- *      when [Abort] was pressed.
- *   \li
- *      TFigureEditor::TColorSelector: should add a third mode:
- *      outline, filled, filled & outline == fillcolor
  *   \li
  *      segfault after certain number of undos
  *   \li
@@ -1874,66 +1868,4 @@ TFigureEditor::redo()
     window->invalidateWindow();
     updateScrollbars();
   }
-}
-
-TFigureEditor::TColorSelector::TColorSelector(TWindow *parent, 
-                               const string &title,
-                               TFigureEditor *gedit):
-  super(parent, title)
-{
-  this->gedit = gedit;
-  setSize(32, 32);
-  filled = false;
-  linecolor.set(0,0,0);
-  fillcolor.set(255,255,255);
-}
-
-void
-TFigureEditor::TColorSelector::paint()
-{
-  TPen pen(this);
-
-  border = getWidth() / 6;
-  
-  pen.setColor(linecolor);
-  pen.fillRectanglePC(0, 0, getWidth(), getHeight());
-  
-  if (filled) {
-    pen.setColor(fillcolor);
-    pen.fillRectanglePC(border, border, getWidth()-border*2, getHeight()-border*2);
-  } else {
-    pen.setColor(255,255,255);
-    pen.fillRectanglePC(border, border, getWidth()-border*2, getHeight()-border*2);
-    pen.setColor(0,0,0);
-    pen.drawLine(getWidth()-border-1, border, border-1, getHeight()-border);
-    pen.drawLine(border, border, getWidth()-border, getHeight()-border);
-  }
-}
-
-void
-TFigureEditor::TColorSelector::mouseLDown(int x, int y, unsigned modifier)
-{
-  if (x<border || 
-      y<border || 
-      x>getWidth()-border ||
-      y>getWidth()-border) 
-  {
-    TColorDialog ce(this, "Line Color", &linecolor);
-    ce.doModalLoop();
-    invalidateWindow();
-  } else {
-    TColorDialog ce(this, "Fill Color", &fillcolor);
-    TCheckBox *fill = new TCheckBox(&ce, "Filled");
-    fill->setShape(x=8+256+8+16+8+12, 228, 80, 32);
-    fill->getModel()->setValue(true);
-    ce.doModalLoop();
-    if (ce.apply)
-      filled = fill->getModel()->getValue();
-    invalidateWindow();
-  }
-  gedit->setLineColor(linecolor);
-  if (filled)
-    gedit->setFillColor(fillcolor);
-  else
-    gedit->unsetFillColor();
 }
