@@ -1091,9 +1091,9 @@ cout << endl;
     //----------
     case KeyPress:
       toolTipClose();
+#if 0
 // i guess we don't need modal break anymore, focusmanager.cc
 // should be enough
-#if 0
       if (!window->isChildOf(TDialogEditor::getCtrlWindow()))
         MODAL_BREAK;
 #endif
@@ -1103,13 +1103,11 @@ cout << endl;
     // KeyRelease
     //------------
     case KeyRelease:
-      {
-        toolTipClose();
+      toolTipClose();
 #if 0
-        MODAL_BREAK;
+      MODAL_BREAK;
 #endif
-        handleKeyUp(0, 0, x11event.xkey.state);
-      }
+      handleKeyUp(0, 0, x11event.xkey.state);
       break;
 
     // MotionNotify
@@ -1670,7 +1668,7 @@ TKeyEvent::getKey() const
   if (new_key_eventhack) {
     getString();
   }
-  return key;
+  return ::key;
 }
 
 const char *
@@ -1680,19 +1678,29 @@ TKeyEvent::getString() const
     new_key_eventhack = false;
 
   int count;
-        
+
   if (xic_current) {
     Status status;
+    key=NoSymbol;
 #ifndef HAVE_LIBXUTF8
+#ifdef X_HAVE_UTF8_STRING
+    count = Xutf8LookupString(
+#else
     count = XmbLookupString(
+#endif
 #else
     count = XUtf8LookupString(
 #endif
       xic_current, 
       &x11event.xkey, 
       buffer, KB_BUFFER_SIZE,
-      &key,
+      &::key,
       &status );
+
+    // the above functions do fail for KeyReleased event so we look
+    // up the symbol again in case they failed:
+    if (key==NoSymbol)
+      key = XLookupKeysym(&x11event.xkey, 0);
 
     if (status==XLookupNone)
       return 0;
