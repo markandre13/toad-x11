@@ -34,6 +34,9 @@
 
 using namespace toad;
 
+/**
+ * Set *cx to the next UTF-8 character in text.
+ */
 inline void 
 utf8inc(const string &text, unsigned int *cx)
 {
@@ -42,6 +45,9 @@ utf8inc(const string &text, unsigned int *cx)
     ++*cx;
 }
 
+/**
+ * Set *cx to the previous UTF-8 character in text.
+ */
 inline void 
 utf8dec(const string &text, unsigned int *cx)
 {
@@ -50,13 +56,19 @@ utf8dec(const string &text, unsigned int *cx)
     --*cx;
 }
 
-// return the number of characters in text from start to start+bytelen
+/**
+ * Return the number of characters in text from start to start+bytelen.
+ */
 inline int
 utf8charcount(const string &text, int start, int bytelen)
 {
   return XCountUtf8Char((const unsigned char*)text.c_str()+start, bytelen);
 }
 
+/**
+ * Return the number for bytes used to store 'charlen' characters
+ * beginning at 'start' in 'text'.
+ */
 inline int
 utf8bytecount(const string &text, int start, int charlen)
 {
@@ -74,6 +86,10 @@ utf8bytecount(const string &text, int start, int charlen)
   return result;
 }
 
+/**
+ * Return the number of bytes required to store the character at position
+ * 'pos' in 'text'.
+ */
 inline int
 utf8charsize(const string &text, int pos)
 {
@@ -119,7 +135,9 @@ toad::createTextModel(TTextModel *m)
  *   \li improve screen updates
  */
 
-// timer for blinking caret
+/**
+ * Timer for blinking caret which is shared by all textareas.
+ */
 class TTextArea::TBlink:
   public TSimpleTimer   
 {
@@ -134,7 +152,7 @@ class TTextArea::TBlink:
   void tick();
 };
   
-static TTextArea::TBlink blink;
+TTextArea::TBlink blink;
 
 void
 TTextArea::TBlink::tick()
@@ -161,7 +179,6 @@ TTextArea::TPreferences::TPreferences()
   tabwidth = 8;
   singleline = false;
   password = false;
-//  fontname = "fixed,monospace:size=12";
   fontname = "sans-serif:size=12";
 }
 
@@ -169,6 +186,9 @@ TTextArea::TPreferences::~TPreferences()
 {
 }
 
+/**
+ * Helper method for TTextArea's constructors.
+ */
 void
 TTextArea::init()
 {
@@ -396,8 +416,9 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       if (preferences->mode==TPreferences::NORMAL)
         _selection_clear();
       if (preferences->notabs) {
-        unsigned m = (preferences->tabwidth -
-                      utf8charcount(model->getValue(), _bol, _pos-_bol+1)-1) % preferences->tabwidth;
+        unsigned m = preferences->tabwidth -
+                      (utf8charcount(model->getValue(), _bol, _pos-_bol+1)
+                      % preferences->tabwidth);
         string s;
         s.replace(0,1, m+1, ' ');
         _insert(s);
@@ -463,6 +484,9 @@ TTextArea::mouseLUp(int x, int y, unsigned)
 {
 }
 
+/**
+ * Set cursor based on pixel coordinates.
+ */
 void
 TTextArea::_goto_pixel(int x, int y)
 {
@@ -472,7 +496,7 @@ y-=2;
   int h = font->getHeight();
   y /= h;
 
-  setCursor(0, y + _ty);
+  setCursor(getCursorX(), y + _ty); // outch! overhead!
 
 //  string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
   string line;
@@ -530,6 +554,9 @@ TTextArea::focus(bool b)
   }
 }
 
+/**
+ * Helper method to set a new model.
+ */
 void
 TTextArea::_set_model(TTextModel *m)
 {
@@ -880,6 +907,9 @@ TTextArea::adjustScrollbars()
 //  cerr << "'" << getTitle() << "', leave" << endl;
 }
 
+/**
+ * Method to handle scrollbar changes.
+ */
 void
 TTextArea::scrolled()
 {
@@ -891,11 +921,16 @@ TTextArea::scrolled()
   }
 }
 
+/**
+ * Helper method to retrieve a line from the model.
+ *
+ * This method also inserts whitespace for tabs.
+ */
 void
 TTextArea::_get_line(string *line, 
           unsigned bol, unsigned eol,
           int *sx,
-          unsigned *bos, unsigned *eos)
+          unsigned *bos, unsigned *eos) const
 {
   assert(line!=0);
   assert(sx!=0);
@@ -928,7 +963,7 @@ TTextArea::_get_line(string *line,
     ++i, utf8inc(*line, &j))
   {
     if ((*line)[j]=='\t') {
-      unsigned m = preferences->tabwidth - (i % preferences->tabwidth);
+      unsigned m = preferences->tabwidth - ((i+1) % preferences->tabwidth);
       if (!preferences->viewtabs) {
         line->replace(j, 1, m+1, ' ');
       } else {
@@ -964,6 +999,27 @@ cout << "found tab:" << endl
 //cerr << "2 sx=" << *sx << endl;
 
 }
+
+#if 0
+unsigned
+TTextArea::_screenx_to_cx(const string &line, unsigned sx)
+{
+  unsigned i, j;     
+  for(i=0, j=0;
+      j<line.size();
+      ++j)     
+  {
+    unsigned m = 1;
+    if (line[j]=='\t') {
+      m = tabwidth - (i % tabwidth);         
+    }
+    if (i<=sx && sx<i+m)
+      break;
+    i+=m;   
+  }
+  return j;
+}
+#endif
 
 /**
  * Paint the screen.
@@ -1010,9 +1066,8 @@ TTextArea::paint()
       string line;
       unsigned bos, eos;
       _get_line(&line, bol, eol, &sx, &bos, &eos);
-
-//cerr << "draw line: '" << line << "'\n";
 /*
+// cerr << "draw line: '" << line << "'\n";
 for(unsigned i=0; i<line.size(); ++i) {
   int c=line[i];
   switch(c) {
@@ -1024,18 +1079,28 @@ for(unsigned i=0; i<line.size(); ++i) {
   }
 }
 cout << endl;
+cerr << "  line     : " << bol << " - " << eol << endl;
+cerr << "  selection: " << _bos << " - " << _eos << endl;
+cerr << "  selection: " << bos << " - " << eos << endl;
 */
-//cerr << "  line     : " << bol << " - " << eol << endl;
-//cerr << "  selection: " << _bos << " - " << _eos << endl;
-//cerr << "  selection: " << bos << " - " << eos << endl;
       // draw text
       bool part=false;
-      if (bos <= bol && eol <= eos) {
+      
+      unsigned bos2, eos2;
+      if (_bos < _eos) {
+        bos2 = _bos;
+        eos2 = _eos;
+      } else {
+        bos2 = _eos;
+        eos2 = _bos;
+      }
+      
+      if (bos2 <= bol && eol <= eos2) {
 //cerr << "    line is inside selection\n";
         // inside selection
         pen.setLineColor(255,255,255);
         pen.setFillColor(0,0,0);
-      } else if (eol < bos || bol > eos) {
+      } else if (eol < bos2 || bol > eos2) {
 //cerr << "    line is outside selection\n";
         // outside selection
         pen.setLineColor(0,0,0);
@@ -1062,15 +1127,15 @@ cout << endl;
         int x=0;
         unsigned pos = 0;
         unsigned len = eol-bol;
-        if (bol < bos) { // start is inside
+        if (bol < bos2) { // start is inside
 //cerr << "start is inside" << endl;
           pos = bos-bol;
         }
-        if (eos < eol) { // end is inside
+        if (eos2 < eol) { // end is inside
 //cerr << "end is inside" << endl;
           len = eos - bol;
         }
-        if (bol < bos) { // start is inside
+        if (bol < bos2) { // start is inside
 //cerr << "start is inside" << endl;
           pos = bos-bol;
           len-=pos;
@@ -1266,12 +1331,9 @@ TTextArea::_cursor_right(unsigned n)
 void
 TTextArea::_cursor_down(unsigned n)
 {
-#warning "_cursor_down doesn't handle utf-8"
   MARK
   if (_cxpx == -1) {
-//    cout << "_cursor_down: _cxpx==-1\n";
-    TFont *font = TPen::lookupFont(preferences->getFont());
-    _cxpx = font->getTextWidth(model->getValue().substr(_bol, _pos-_bol));
+    _cxpx_from_cx();
   }
   
   for(unsigned i=0; i<n; ++i) {
@@ -1288,13 +1350,23 @@ TTextArea::_cursor_down(unsigned n)
   blink.visible=true;
 }
 
+void
+TTextArea::_cxpx_from_cx()
+{
+  string line;
+  int sx;
+  unsigned d2, d3;
+  _get_line(&line, _bol, _eol, &sx, &d2, &d3);
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  _cxpx = font->getTextWidth(line.substr(0,utf8bytecount(line, 0, sx)));
+}
+
 /**
  * calculate _cx, _pos from _bol, _eol and _cxpx
  */
 void
 TTextArea::_pos_from_cxpx()
 {
-#warning "_pos_from_cxpx doesn't handle tabulators"
   assert(_cxpx != -1);
   TFont *font = TPen::lookupFont(preferences->getFont());
   string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
@@ -1323,15 +1395,11 @@ TTextArea::_pos_from_cxpx()
 void
 TTextArea::_cursor_up(unsigned n)
 {
-#warning "_cursor_up doesn't handle utf-8"
   MARK
 
   if (_cxpx == -1) {
-//    cout << "_cursor_down: _cxpx==-1\n";
-    TFont *font = TPen::lookupFont(preferences->getFont());
-    _cxpx = font->getTextWidth(model->getValue().substr(_bol, _pos-_bol));
+    _cxpx_from_cx();
   }
-
 
   for(unsigned i=0; i<n; ++i) {
     if (_bol>0) {
@@ -1363,11 +1431,11 @@ TTextArea::_cursor_home()
     bool flag = false;
     _pos=_bol;
     _cx=0;
-    _invalidate_line(_cy);
-    _cxpx = -1;
-    _catch_cursor();
-    blink.visible=true;
   }
+  _invalidate_line(_cy);
+  _cxpx = -1;
+  _catch_cursor();
+  blink.visible=true;
 }
 
 void
@@ -1461,11 +1529,12 @@ void
 TTextArea::_catch_cursor()
 {
   MARK
+
   TFont *font = TPen::lookupFont(preferences->getFont());
   int h = font->getHeight();
-  int w = font->getTextWidth("X");
+//  int w = font->getTextWidth("X");
   int th = (visible.h-h+1) / h;
-  int tw = (visible.w-w+1) / w;
+//  int tw = (visible.w-w+1) / w;
 
   DBM(cout << "_catch_cursor: th="<<th<<", tw="<<tw<<", _cx="<<_cx<<", _cy="<<_cy<<endl;)
 DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
@@ -1476,23 +1545,23 @@ DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
     _scroll_up(-_cy);
   }
 
-  int tx;
   if (_cxpx==-1) {
-    const string line(model->getValue().substr(_bol, _pos-_bol));
-    tx = font->getTextWidth(line);
-  } else {
-    tx = _cxpx;
+    _cxpx_from_cx();
   }
   
   int width = getWidth() - 5;
   if (vscroll)
     width -= vscroll->getWidth() + vscroll->getBorder()*2;
+
+//cerr << "_tx = " << _tx << ", _tx+width = " << (_tx+width) << ", tx = " << tx << endl;
   
-  if (tx > _tx+width) {
-    _tx = tx-width;
+  if (_cxpx > _tx+width) {
+//cerr << "  scroll to the right" << endl;
+    _tx = _cxpx-width;
     invalidateWindow(); // call scrollRectangle instead
-  } else if (tx < _tx) {
-    _tx = tx;
+  } else if (_cxpx < _tx) {
+//cerr << "  scroll to the left" << endl;
+    _tx = _cxpx;
     invalidateWindow(); // call scrollRectangle instead
   }
 DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
@@ -1588,96 +1657,76 @@ TTextArea::getValue() const
   return model->getValue();
 }
 
+/**
+ * Set cursor at text position (x, y).
+ */
 void
-TTextArea::setCursor(unsigned x, unsigned y)
+TTextArea::setCursor(unsigned cx, unsigned cy)
 {
-#warning "setCursor doesn't handle utf-8 and tabulators"
   if (!model)
     return;
-    
-  if (_cx == x && _cy==y)
-    return;
   
-  MARK
-  DBM(cout << "x, y = " << x << ", " << y << endl;)
-    
-  _invalidate_line(_cy);
+  // we need to calculate:
+  // _ty, _cx, _cy, _bol, _eol, _pos
   
-  TFont *font = TPen::lookupFont(preferences->getFont());
-  int wx = visible.w / font->getTextWidth("x");
-  int wy = visible.h / font->getHeight();
-
-#if 0
-cout << "screen position is at " << x << ", " << y << endl;
-cout << "screen is " << _tx << " - " << _ty << ", "
-     << (_tx + wx) << " - " << (_ty + wy) << endl;
-#endif
-  if (_ty <= y && y <= _ty + wy )
-  {
-    DBM(cout << "_bol, _pos, _eol = " << _bol << ", " << _pos << ", " << _eol << endl;)
-
-    unsigned i=0;
-    string::const_iterator tpos = model->getValue().begin();
-    while(i<_ty) {
-      if (*tpos=='\n')
-        ++i;
-      ++tpos;
+  const string &data = model->getValue();
+  unsigned i, j, y;
+  
+  // calculate _bol and _eol
+  i = 0;
+  y = 0;
+  _bol = 0;
+  while(cy!=y && i<data.size()) {
+    if (data[i]=='\n') {
+      ++y;
+      utf8inc(data, &i);
+      _bol = i;
+    } else {
+      utf8inc(data, &i);
     }
-    tpos+=0;
-    
-//    cerr << "old line: " << model->getValue().substr(_bol, _eol-_bol) << endl;
-    y-=_ty;
-    string::const_iterator p = tpos;
-    string::const_iterator bol = p;
-    _cx = _cy = 0;
-    while(p!=model->getValue().end()) {
-      DBM(cout << "_cx, _cy = " << _cx << ", " << _cy << endl;)
-      if (_cy==y && _cx==x) {
-        DBM(cout << "break 2" << endl;)
-        break;
-      }
-      if (*p=='\n') {
-        if (_cy==y) {
-          DBM(cout << "break 1" << endl;)
-          break;
-        }
-        _cx = 0;
-        ++_cy;
-        bol = p+1;
-      } else {
-        ++_cx;
-      }
-      ++p;
-    }
-    _bol = bol - model->getValue().begin();
-    // _pos = p - model->getValue().begin();
-    _pos = _bol + _cx;
-    _eol_from_bol();
-    DBM(cout << "_bol, _pos, _eol = " << _bol << ", " << _pos << ", " << _eol << endl;)
-//    cerr << "new line: " << model->getValue().substr(_bol, _eol-_bol) << endl;
-  } else
-  {
-    // stupid implementation
-    _cx = _cy = 0;
-    _ty = 0;
-    _pos = 0;
-    _bol = 0;
-    _eol = model->getValue().find('\n', _bol);
-    _cursor_down(x);
-    _cursor_right(y);
-    if (vscroll)
-      vscroll->setValue(_ty);
   }
-  DBM(cout << "_cx, _cy = " << _cx << ", " << _cy << endl;)
-  blink.visible=true;
+  _eol_from_bol();
+  
+  string line = data.substr(_bol, _eol-_bol);
+//  cerr << "_bol = " << _bol << ", _eol = " << _eol << endl;
+//  cerr << "found line '" << line << "'\n";
+
+  // calculate _pos and _cx
+  unsigned tabwidth = preferences->tabwidth;
+  _pos = _bol;
+  i = 0;
+  j = 0;
+  while(_pos<_eol) {
+    unsigned m = 1;
+    if (data[_pos]=='\t') {
+      m = tabwidth - (i % tabwidth);
+    }
+//cerr << " cx = " << cx << ", i = " << i << ", i+m = " << (i+m) << endl;
+    if (i<=cx && cx<i+m)
+      break;
+    i+=m;
+    ++j;
+    utf8inc(data, &_pos);
+  }
+  _cx = j;
+  
+  _cxpx = -1;
   _invalidate_line(_cy);
+  _cy = y - _ty;
+  _invalidate_line(_cy);
+  _catch_cursor();
+
+//  cerr << "_pos = " << _pos << endl;
 }
     
 unsigned 
 TTextArea::getCursorX() const
 {
-  #warning "getCursorX doesn't handle tabulators"
-  return _cx;
+  int cx;
+  unsigned d2, d3;
+  string line;
+  _get_line(&line, _bol, _eol, &cx, &d2, &d3);
+  return cx;
 }
 
 unsigned 

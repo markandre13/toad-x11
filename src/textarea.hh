@@ -134,10 +134,10 @@ class TTextArea:
     void _get_line(string *line, 
                    unsigned bol, unsigned eol,
                    int *sx,
-                   unsigned *bos, unsigned *eos);
+                   unsigned *bos, unsigned *eos) const;
     void _get_line(string *line, 
                    unsigned bol, unsigned eol,
-                   int *sx)
+                   int *sx) const
     {
       _get_line(line, bol, eol, sx, 0, 0);
     }
@@ -205,6 +205,7 @@ class TTextArea:
         _eol = model->getValue().size();
     }
     
+    void _cxpx_from_cx();
     void _pos_from_cxpx();
     
     void _set_model(TTextModel*);
