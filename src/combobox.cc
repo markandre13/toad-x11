@@ -70,8 +70,6 @@ TComboBox::paint()
   TPen pen(this);
 
   pen.draw3DRectanglePC(0,0, getWidth(), getHeight());
-#if 1
-#if 1
   if (!table->getRenderer()) {
     pen.setColor(TColor::DIALOG);
     pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
@@ -85,21 +83,11 @@ TComboBox::paint()
     false,
     false,
     isFocus());
-#endif
-#else
-  TAbstractTableSelectionModel *s = table->getSelectionModel();
-  TTableSelectionModel::iterator p(s->begin());
-  if (p==s->end())
-    return;
-  pen.translate(2, 2);
-  table->getRenderer()->renderItem(
-    pen,
-    p.getX(), p.getY(),
-    btn->getXPos()-2, getHeight()-4,
-    false,
-    false,
-    isFocus());
-#endif
+
+  if (isFocus()) {
+    pen.setColor(0,0,0);
+    pen.drawRectanglePC(0,0, getWidth()-4-btn->getWidth(), getHeight()-4);
+  }
 }
 
 void
@@ -112,9 +100,21 @@ TComboBox::resize()
 }
 
 void
+TComboBox::focus(bool b)
+{
+  // in case we're loosing the focus, close the combobox
+  if (b==false && table->isMapped()) {
+    btn->setDown(false);
+  }
+  invalidateWindow();
+}
+
+void
 TComboBox::button()
 {
   if (btn->isDown()) {
+    if (!isFocus())
+      setFocus();
     table->setSize(getWidth(), (getDefaultFont().getHeight()+1)*8);
     placeWindow(table, PLACE_PULLDOWN, this);
     table->setMapped(true);
@@ -123,9 +123,44 @@ TComboBox::button()
     } else {
       table->createWindow();
     }
+    grabPopupMouse();
   } else {
     table->setMapped(false);
+    ungrabMouse();
   }
+}
+
+void
+TComboBox::mouseLDown(int, int, unsigned)
+{
+  setFocus();
+}
+
+void
+TComboBox::keyDown(TKey key, char *string, unsigned modifier)
+{
+  // in case the combobox is open and the table popup window
+  // is mapped (visible), delegate all keyboard events to the
+  // table
+  if (table->isMapped()) {
+    // but not the SHIFT keys, as table interprets 'em as
+    // select.. which I don't think is a good idea in respect
+    // to the focus traversal using the tab key...
+    if (key==TK_SHIFT_L || key==TK_SHIFT_R)
+      return;
+    table->keyDown(key, string, modifier);
+    return;
+  }
+
+  if (key == TK_DOWN || key==TK_SPACE) {
+    btn->setDown(true);
+  }
+}
+
+void
+TComboBox::closeRequest()
+{
+  btn->setDown(false);
 }
 
 void

@@ -57,6 +57,10 @@ class TComboBox:
   protected:
     void resize();
     void paint();
+    void closeRequest();
+    void focus(bool);
+    void mouseLDown(int, int, unsigned);
+    void keyDown(TKey, char*, unsigned);
     void button();
     void selected();
 
