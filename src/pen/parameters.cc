@@ -551,7 +551,24 @@ void TPen::setLineStyle(ELineStyle n)
 void TPen::_setLineAttributes()
 {
   char dash[6];
-  int w = width ? width : 1;
+  int w = width;
+  
+  if (mat) {
+    double x0, y0, x1, y1;
+    mat->map(0.0, 0.0, &x0, &y0);
+    mat->map(1.0, 1.0, &x1, &y1);
+    double d = (double)w * (x1-x0);
+    if (d<0.0)
+      d = -d;
+    w = round(d);
+    // cout << "  set line width " << w << " for " << width << endl;
+  }
+  int pw = w;
+  if (w==0)
+    w=1;
+  if (pw==1)
+    pw=0;
+  
   for(int i=1;i<6;i++)
     dash[i]=w;
   switch(style) {
@@ -574,7 +591,7 @@ void TPen::_setLineAttributes()
     XSetDashes(x11display,o_gc,0, dash,6);
     break;
   }
-  XSetLineAttributes(x11display,o_gc,width,
+  XSetLineAttributes(x11display,o_gc,pw,
          style==SOLID ? LineSolid : LineOnOffDash,
          CapButt,JoinMiter);
 }

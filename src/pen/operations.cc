@@ -213,8 +213,10 @@ polygon2wpoint(const TPolygon &in, POINT *out, const TMatrix2D *mat) {
 void
 TPen::identity()
 {
-  if (mat)
+  if (mat) {
     mat->identity();
+    _setLineAttributes();
+  }
 }
 
 void
@@ -242,6 +244,7 @@ TPen::scale(double xfactor, double yfactor)
   if (!mat)
     mat = new TMatrix2D();
   mat->scale(xfactor, yfactor);
+  _setLineAttributes();
 }
 
 void
@@ -257,6 +260,7 @@ TPen::multiply(const TMatrix2D *m)
     mat = new TMatrix2D(*m);
   } else {
     mat->multiply(m);
+    _setLineAttributes();
   }
 }
 
@@ -266,6 +270,7 @@ TPen::setMatrix(double a11, double a12, double a21, double a22, double tx, doubl
   if (!mat)
     mat = new TMatrix2D();
   mat->set(a11, a12, a21, a22, tx, ty);
+  _setLineAttributes();
 }
 
 #warning "TPen push and pop use a list..."
@@ -288,17 +293,21 @@ TPen::pop()
     TMatrix2D *mold = mat;
     mat = mat->next;
     delete mold;
+    _setLineAttributes();
   }
 }
 
 void
 TPen::popAll()
 {
+  if (!mat)
+    return;
   while(mat) {
     TMatrix2D *mold = mat;
     mat = mat->next;
     delete mold;
   }
+  _setLineAttributes();
 }
 
 // point
