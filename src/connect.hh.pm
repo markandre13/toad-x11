@@ -15,7 +15,7 @@ print<<EOT;
 /* DO NOT EDIT - THIS IS A GENERATED FILE (EDIT CONNECT.HH.PM!)
  *
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf\@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf\@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -372,7 +372,7 @@ TSignalLink* connect_value_of(TSignal &sig, D *d, R(D::*dm)(V), V *v)
  *
  * A simplified variant of 'connect_value' for the GNU C++ Compiler.
  *
- * Connect method with `Value()' method:
+ * Connect method with `getValue()' method:
  * \\pre
  * CONNECT_VALUE(signal,
  *   destination object, destination method,
@@ -389,12 +389,12 @@ TSignalLink* connect_value_of(TSignal &sig, D *d, R(D::*dm)(V), V *v)
  * \\ingroup callback
  *
  * Add a callback that takes one parameter. The value for this parameter
- * is delivered from another objects 'Value()' method.
+ * is delivered from another objects 'getValue()' method.
  *
  * \\param sig Signal 
  * \\param d     Destination's object of the call.
  * \\param dm    Destination's method of the call which takes one parameter.
- * \\param s     Source's object whose 'Value()' method will be called to
+ * \\param s     Source's object whose 'getValue()' method will be called to
  *              deliver the parameter.
  */
 template <class D, class S, class R, class V>
