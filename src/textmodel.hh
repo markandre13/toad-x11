@@ -100,8 +100,16 @@ class TTextModel:
     void insert(unsigned offset, const string&);
     void remove(unsigned offset, unsigned length=1);
 
-    /** the model may not accept all characters or use other characters */
-    virtual int filter(int);
+    static const int CHARACTER_NONE = 0;
+    static const int CHARACTER_TABULATOR = 8;
+    static const int CHARACTER_RETURN = 13;
+    static const int CHARACTER_CURSOR_UP = 1;
+    static const int CHARACTER_CURSOR_DOWN = 2;
+
+    /** 
+     * The model may not accept all characters or use other characters.
+     */
+    virtual int filter(int character);
     
     virtual void focus(bool);
     

@@ -341,11 +341,13 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       _cursor_right();
       break;
     case TK_UP:
+      model->filter(TTextModel::CHARACTER_CURSOR_UP);
       if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
         _selection_clear();
       _cursor_up();
       break;
     case TK_DOWN:
+      model->filter(TTextModel::CHARACTER_CURSOR_DOWN);
       if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
         _selection_clear();
       _cursor_down();
