@@ -812,7 +812,7 @@ void
 TMenuHelper::TNode::noWindow()
 {
   if (winarray)
-    delete winarray;
+    delete[] winarray;
   winarray = NULL;
 }
 
