@@ -20,6 +20,7 @@
 
 #include <toad/undo.hh>
 
+using namespace std;
 using namespace toad;
 
 /**
@@ -30,3 +31,16 @@ using namespace toad;
  */
 
 unsigned TUndo::counter = 0;
+
+bool
+TUndo::getUndoName(string *name) const
+{
+  return false;
+}
+
+bool
+TUndo::getRedoName(string *name) const
+{
+  return false;
+}
+

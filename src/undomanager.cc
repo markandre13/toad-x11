@@ -324,20 +324,71 @@ TUndoManager::isRedoing()
 bool
 TUndoManager::TUndoAction::getState(string *text, bool *active) const
 {
-#if 0
-//  cerr << __PRETTY_FUNCTION__ << endl;
-  if (undo) {
-    if (manager->history.getBackSize()>0)
-      return manager->history.getCurrent()->getUndoName(text);
-  } else {
-    if (manager->history.getForwardSize()>0) {
-      manager->history.goForward();
-      bool b = manager->history.getCurrent()->getRedoName(text);
-      manager->history.goBack();
-      return b;
+  DBM(
+    cerr << __PRETTY_FUNCTION__ << endl;
+    cerr << "  action is:" << getTitle() << endl;
+  )
+  TModelStore::iterator pms;
+  TUndo *undo = 0;
+  unsigned count = 0;
+
+  if (this->undo) {
+
+    for(TModelSet::iterator p=manager->mmodels.begin();
+        p!=manager->mmodels.end();
+        ++p)
+    {
+      TModelStore::iterator q = models.find(*p);
+      assert(q!=models.end());
+      if (!q->second.undostack.empty()) {
+        count += q->second.undostack.size();
+        TUndo *u = q->second.undostack.back();
+        if (!undo) {
+          undo = u; 
+          pms = q;  
+        } else {    
+          if (undo->serial < u->serial) {
+            undo = u;
+            pms = q; 
+          }
+        }  
+      }    
     }
+    if (undo) {
+      return undo->getUndoName(text);
+    }
+
+  } else {
+
+    for(TModelSet::iterator p=manager->mmodels.begin();
+        p!=manager->mmodels.end();
+        ++p)
+    {
+      TModelStore::iterator q = models.find(*p);
+      assert(q!=models.end());
+      DBM(cerr << "  check model " << *p << endl;)
+      if (!q->second.redostack.empty()) {
+        count += q->second.redostack.size();
+        DBM(cerr << "    it's not empty" << endl;)
+        TUndo *u = q->second.redostack.back();
+        if (!undo) {
+          undo = u; 
+          pms = q;  
+        } else {    
+          if (undo->serial < u->serial) {
+            undo = u;
+            pms = q; 
+          }
+        }  
+      } else {
+        DBM(cerr << "    it's empty" << endl;)
+      }
+    }
+    if (undo) {
+      return undo->getRedoName(text);
+    }
+
   }
-#endif
   return false;
 }
 
@@ -434,9 +485,12 @@ TModelUndoStore::addUndo(TModel *model, TUndo *undo)
     {
       DBM(cerr << "enabled undo for undomanager " << *p << endl;)
       (*p)->undo->setEnabled(true);
+      bool memo = TUndoManager::redoing; // cheat canRedo method...
+      TUndoManager::redoing = false;
       if (!(*p)->canRedo()) {
         (*p)->redo->setEnabled(false);
       }
+      TUndoManager::redoing = memo;
     }
   } else {
     DBM(cerr << "add undo to models redostack" << endl;)

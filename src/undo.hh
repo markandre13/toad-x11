@@ -21,6 +21,8 @@
 #ifndef _TOAD_UNDO_HH
 #define _TOAD_UNDO_HH
 
+#include <string>
+
 namespace toad {
 
 class TUndo
@@ -30,6 +32,8 @@ class TUndo
       serial = counter++;
     };
     virtual void undo() = 0;
+    virtual bool getUndoName(std::string *name) const;
+    virtual bool getRedoName(std::string *name) const;
     static unsigned counter;
     unsigned serial;
 }; 

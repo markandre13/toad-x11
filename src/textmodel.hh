@@ -117,8 +117,8 @@ class TTextModel:
           offset = o;
           length = l;
         }
-        bool getRedoName(string *name) const { *name = "Redo: Insert"; return true; }
-        bool getUndoName(string *name) const { *name = "Undo: Insert"; return true; }
+        bool getRedoName(string *name) const;
+        bool getUndoName(string *name) const;
         void undo() {
           model->remove(offset, length);
         }
@@ -136,8 +136,8 @@ class TTextModel:
           offset = o;
           text   = t;
         }
-        bool getRedoName(string *name) const { *name = "Redo: Delete"; return true; }
-        bool getUndoName(string *name) const { *name = "Undo: Delete"; return true; }
+        bool getRedoName(string *name) const;
+        bool getUndoName(string *name) const;
         void undo() {
           model->insert(offset, text);
         }

@@ -1945,3 +1945,29 @@ void
 TTextModel::focus(bool)
 {
 }
+
+bool
+TTextModel::TUndoInsert::getUndoName(string *name) const
+{
+  *name = "Undo: Insert";
+  return true;
+}
+
+bool
+TTextModel::TUndoInsert::getRedoName(string *name) const
+{
+  *name = "Redo: Remove";
+  return true;
+}
+
+bool
+TTextModel::TUndoRemove::getUndoName(string *name) const
+{
+  *name = "Undo: Remove";
+}
+
+bool
+TTextModel::TUndoRemove::getRedoName(string *name) const
+{
+  *name = "Redo: Insert";
+}
