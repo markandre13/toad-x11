@@ -227,6 +227,7 @@ class TSignal
     
     void lock();
     void unlock();
+    void print();
 #ifdef TOAD_SECURE
     unsigned delayedtrigger;
 #endif

@@ -250,7 +250,23 @@ TSignal::unlock()
   }
 }
 
-TSignalLink* TSignal::add(TSignalLink *node)
+/**
+ * This method prints information for debugging purposes.
+ */
+void
+TSignal::print()
+{
+  unsigned count = 0;
+  TSignalLink *p = _list;
+  while(p) {
+    ++count;
+    p = p->next;
+  }
+  cerr << "signal owns " << count << " links" << endl;
+}
+
+TSignalLink*
+TSignal::add(TSignalLink *node)
 {
   if (!node)
     return NULL;
