@@ -273,10 +273,10 @@ class TPenBase:
       vdrawString(x, y, s.c_str(), s.size(), true);
     }
     void fillString(int x, int y, const char *str, int len = -1) {
-      vdrawString(x, y, str, len, true);
+      vdrawString(x, y, str, len, false);
     }
     void fillString(int x, int y, const string &s) {
-      vdrawString(x, y, s.c_str(), s.size(), true);
+      vdrawString(x, y, s.c_str(), s.size(), false);
     }
     virtual void vdrawString(int x, int y, const char *str, int len, bool transparent) = 0;
 
