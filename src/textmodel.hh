@@ -73,6 +73,9 @@ class TTextModel:
     void setValue(const char *data, unsigned len);
     const string& getValue() const { return data; }
     
+    TTextModel(const TTextModel &model) {
+      setValue(model.getValue());
+    }
     string& operator=(string &s) { setValue(s); return s; }
     const string& operator=(const string &s) { setValue(s); return s; }
     operator const string&() const { return getValue(); }
