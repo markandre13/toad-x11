@@ -208,7 +208,11 @@ class GSTLMap:
       return size();
     }
     const D& getElementAt(int, int index) {
-      assert(index<size());
+      if (index>=size()) {
+        cerr << "GSTLMap::getElementAt: index>=size (" << index << ">=" << size() << endl;
+        printStackTrace();
+        abort();
+      }
       while(idx<index) {
         ++idx;
         ++ptr;
@@ -226,10 +230,17 @@ class GSTLMap:
       ptr = begin();
       return d;
     }
+    void clear() {
+      container::clear();
+      sigChanged();
+    }
 };
 
 typedef GSTLSet<set<string>, string> TStringSet;
 
+/**
+ * Render items by printing them as a 'string'.
+ */
 template <class T>
 class GTableCellRenderer_String:
   public TAbstractTableCellRenderer
@@ -297,6 +308,74 @@ class GTableCellRenderer_String:
 
 typedef GTableCellRenderer_String<TStringVector> TTableCellRenderer_StringVector;
 typedef GTableCellRenderer_String<TStringSet> TTableCellRenderer_StringSet;
+
+/**
+ * Render items by printing the result of their 'toText()' method.
+ */
+template <class T>
+class GTableCellRenderer_Text:
+  public TAbstractTableCellRenderer
+{
+  private:
+    GSmartPointer<T> model;
+    typedef GTableCellRenderer_String<T> This;
+    
+  public:
+    GTableCellRenderer_Text(T *m)
+    {
+      setModel(m);
+    }
+    ~GTableCellRenderer_Text() {
+    }
+    // implements 'virtual TAbstractTableModel * getModel() = 0;'
+    T * getModel() {
+      return model;
+    }
+    void setModel(T *m) {
+      if (model)
+        disconnect(model->sigChanged, this);
+      model = m;
+      if (model)
+        connect(model->sigChanged, this, &This::modelChanged);
+    }
+    int getRows() {
+      return model->getRows();
+    }
+    int getCols() {
+      return model->getCols();
+    }
+    int getRowHeight(int) {
+      return TOADBase::getDefaultFont().getHeight()+2;
+    }
+    int getColWidth(int) {
+      int n = model->getRows();
+      int max = 0;
+      for(int i=0; i<n; i++) {
+        int w = TOADBase::getDefaultFont().getTextWidth(
+          model->getElementAt(0, i).toText()
+        );
+        if (w>max)
+          max = w;
+      }
+      return max+2;
+    }
+    void renderItem(TPen &pen, int, int index, int w, int h, bool selected, bool focus) {
+      if (selected) {
+        pen.setColor(TColor::SELECTED);
+        pen.fillRectangle(0,0,w, h);
+        pen.setColor(TColor::SELECTED_TEXT);
+      }
+      pen.drawString(
+        1, 1, model->getElementAt(0, index).toText()
+      );
+      if (selected) {
+        pen.setColor(TColor::BLACK);
+      }
+      if (focus) {
+        pen.drawRectangle(0,0,w, h);
+      }
+    }
+};
 
 } // namespace toad
 
