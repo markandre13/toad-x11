@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,9 +19,7 @@
  */
 
 #include <toad/toad.hh>
-
 #include <toad/combobox.hh>
-
 #include <toad/buttonbase.hh>
 #include <toad/scrollbar.hh>
 
@@ -57,6 +55,7 @@ TComboBox::TComboBox(TWindow * parent, const string &title):
   
   table = new TTable(this, "table");
   connect(table->sigClicked, this, &TComboBox::selected);
+  connect(table->sigDoubleClicked, this, &TComboBox::selected);
 
   table->bExplicitCreate = true;
   table->bPopup = true;
@@ -123,6 +122,7 @@ TComboBox::button()
     } else {
       table->createWindow();
     }
+    table->setFocus();
     grabPopupMouse();
   } else {
     table->setMapped(false);
@@ -145,15 +145,29 @@ TComboBox::keyDown(TKey key, char *string, unsigned modifier)
   if (table->isMapped()) {
     // but not the SHIFT keys, as table interprets 'em as
     // select.. which I don't think is a good idea in respect
-    // to the focus traversal using the tab key...
+    // to the backward focus traversal using shift+tab keys...
     if (key==TK_SHIFT_L || key==TK_SHIFT_R)
       return;
+    if (key==TK_ESCAPE) {
+      btn->setDown(false);
+      return;
+    }
     table->keyDown(key, string, modifier);
     return;
   }
 
-  if (key == TK_DOWN || key==TK_SPACE) {
-    btn->setDown(true);
+  switch(key) {
+    case TK_PAGE_DOWN:
+    case TK_SPACE:
+      btn->setDown(true);
+      break;
+    case TK_DOWN:
+    case TK_UP:
+      table->keyDown(key, string, modifier);
+      table->keyDown(TK_RETURN, string, modifier);
+      // table->selectAtCursor();
+      invalidateWindow();
+      break;
   }
 }
 
