@@ -24,6 +24,8 @@
 #ifndef TBitmapFilter
 #define TBitmapFilter TBitmapFilter
 
+#include <toad/config.h>
+
 namespace toad {
 
 class TBitmapFilter

@@ -18,8 +18,6 @@
  * MA  02111-1307,  USA
  */
 
-#ifdef HAVE_LIBPNG
-
 #include <cstdio>
 #include <cstring>
 
@@ -29,6 +27,8 @@
 #include <toad/filter_png.hh>
 
 #include <toad/io/urlstream.hh>
+
+#ifdef HAVE_LIBPNG
 
 extern "C" {
 #include <png.h>

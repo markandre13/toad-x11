@@ -18,8 +18,6 @@
  * MA  02111-1307,  USA
  */
 
-#ifdef HAVE_LIBJPEG
-
 #include <cstdio>
 #include <cstring>
 
@@ -27,6 +25,8 @@
 #include <toad/bitmap.hh>
 #include <toad/bitmapfilter.hh>
 #include <toad/filter_jpeg.hh>
+
+#ifdef HAVE_LIBJPEG
 
 #include <setjmp.h>
 extern "C" {

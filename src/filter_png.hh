@@ -18,12 +18,13 @@
  * MA  02111-1307,  USA
  */
 
-#ifdef HAVE_LIBPNG
 
 #ifndef TFilterPNG
 #define TFilterPNG TFilterPNG
 
 #include <toad/bitmapfilter.hh>
+
+#ifdef HAVE_LIBPNG
 
 namespace toad {
 

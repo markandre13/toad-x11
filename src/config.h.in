@@ -27,6 +27,10 @@
 /* Define if system has the Solaris dlopen interface */
 #undef HAVE_DLFCN
 
+#undef HAVE_LIBZ
+
+#undef HAVE_LIBPNG
+
 #undef HAVE_LIBJPEG
 
 /* Xft support for anti-aliased font, which is part of XFree86 */

@@ -18,14 +18,18 @@
  * MA  02111-1307,  USA
  */
 
-#ifdef HAVE_LIBJPEG
  
 #ifndef TFilterJPEG
 #define TFilterJPEG TFilterJPEG
 
+#include <toad/bitmapfilter.hh>
+
+#ifdef HAVE_LIBJPEG
+
 namespace toad {
 
-class TFilterJPEG: public TBitmapFilter
+class TFilterJPEG:
+  public TBitmapFilter
 {
   public:
     bool save(ostream&);
