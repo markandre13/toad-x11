@@ -184,6 +184,13 @@ main()
 
 namespace toad {
 
+TSignalLink::TSignalLink()
+{
+  next = 0;
+  lock = false;
+  dirty = false;
+}
+
 TSignalLink::~TSignalLink() {}
 void* TSignalLink::objref() {return NULL; }
 TSignalLink::TMethod TSignalLink::metref() {return NULL; }
@@ -202,6 +209,45 @@ TSignal::~TSignal()
   assert(delayedtrigger==0);
 #endif
   remove();
+}
+
+/**
+ * Lock the signal.
+ *
+ * The callbacks connected with this signal aren't called. Instead a dirty
+ * flag will be set.
+ *
+ * The behaviour when callbacks are added or removed while a lock is active
+ * is undefined.
+ *
+ * \sa unlock
+ */
+void
+TSignal::lock()
+{
+  if (_list)
+    _list->lock = true;
+}
+
+/**
+ * Unlock the signal and trigger it in case it was triggered while the
+ * lock was active.
+ *
+ * The behaviour when callbacks are added or removed while a lock is active
+ * is undefined.
+ *
+ * \sa lock
+ */
+void
+TSignal::unlock()
+{
+  if (_list) {
+    bool flag = _list->lock && _list->dirty;
+    _list->lock = false;
+    _list->dirty = false;
+    if (flag)
+      trigger();
+  }
 }
 
 TSignalLink* TSignal::add(TSignalLink *node)
@@ -321,14 +367,23 @@ void TSignal::remove(TSignalLink *node)
 /**
  * Invoke all actions connected to the signal.
  *
- * Actions are executed before returning.
+ * Actions are executed before returning when the signal isn't locked.
+ *
+ * When the signal is locked, it is triggered during 'unlock'.
  * 
  * \return 'false' when the signal is connected to anything
- * \sa delayedTrigger
+ * \sa delayedTrigger, unlock
  */
-bool TSignal::trigger()
+bool 
+TSignal::trigger()
 {
   if (!_list) return false;
+  
+  if (_list->lock) {
+    _list->dirty = true;
+    return true;
+  }
+  
   TSignalLink *p = _list;
   while(p) {
     p->execute();

@@ -14,7 +14,7 @@ print<<EOT;
 /* DO NOT EDIT - THIS IS A GENERATED FILE (EDIT CONNECT.HH.PM!)
  *
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2002 by Mark-André Hopf <mhopf\@mark13.de>
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf\@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -191,12 +191,14 @@ class TSignalLink
     class TClass;
   public:
     typedef void(TClass::*TMethod)(void);
-
+    TSignalLink();
     virtual ~TSignalLink();
     virtual void execute() = 0;
     virtual void* objref();
     virtual TMethod metref();
     TSignalLink *next;
+    bool lock:1;
+    bool dirty:1;    
 };
 
 /**
@@ -222,6 +224,9 @@ class TSignal
     bool trigger();
     bool delayedTrigger();
     bool operator()() { return trigger(); }
+    
+    void lock();
+    void unlock();
 #ifdef TOAD_SECURE
     unsigned delayedtrigger;
 #endif
@@ -267,12 +272,14 @@ class GSignalCodeLink:
 /**
  * \\ingroup callback
  *
- * A simplified variant of 'connect_value_of' for the GNU C Compiler.
+ * A simplified variant of 'connect_value_of' for the GNU C++ Compiler.
  *
  * Connect method with method/attribut:
+ * \\pre
  * CONNECT_VALUE_OF(signal,
  *   destination object, destination method,
  *   source object, source method or attribut)
+ * \\endpre
  */
 #define CONNECT_VALUE_OF(SIG, D, DM, S, SM)\\
 {\\
@@ -359,12 +366,14 @@ TSignalLink* connect_value_of(TSignal &sig, D *d, R(D::*dm)(V), V *v)
 /**
  * \\ingroup callback
  *
- * * A simplified variant of 'connect_value' for the GNU C Compiler.
+ * A simplified variant of 'connect_value' for the GNU C++ Compiler.
  *
  * Connect method with `Value()' method:
+ * \\pre
  * CONNECT_VALUE(signal,
  *   destination object, destination method,
  *   source object)
+ * \\endpre
  */
 #define CONNECT_VALUE(SIG, D, DM, S)\\
 {\\

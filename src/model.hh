@@ -35,6 +35,9 @@ class TModel:
     TModel() {}
     TModel(const TModel &m) { }
     TModel& operator=(const TModel&) { return *this; }
+    
+    void lock() { sigChanged.lock(); }
+    void unlock() { sigChanged.unlock(); }
 
     TSignal sigChanged;
 };
