@@ -7,543 +7,329 @@
  * License as published by the Free Software Foundation; either
  * version 2 of the License, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,   
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU Lesser General Public 
  * License along with this library; if not, write to the Free
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
  * MA  02111-1307,  USA
  */
 
-#include <typeinfo>
-#include <string>
-#include <algorithm>
+// currently doing: the directory memory list
 
-#include <toad/toadbase.hh>
-#include <toad/pen.hh>
-#include <toad/window.hh>
-#include <toad/dialog.hh>
-#include <toad/pushbutton.hh>
-#include <toad/table.hh>
-//#include <toad/listbox.hh>
-//#include <toad/combobox.hh>
-#include <toad/textfield.hh>
-#include <toad/textarea.hh>
-#include <toad/checkbox.hh>
 #include <toad/filedialog.hh>
-//#include <toad/lba/StaticCString.hh>
-//#include <toad/lba/STLVectorCString.hh>
 
+#include <toad/toad.hh>
+#include <toad/textfield.hh>
+#include <toad/combobox.hh>
+#include <toad/checkbox.hh>
+#include <toad/table.hh>
+#include <toad/tablemodels.hh>
+#include <toad/pushbutton.hh>
+
+// #include <toad/stacktrace.hh>
+
+#include <string.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
 
-/**
- * \class toad::TFileDialog
- * A dialog for file selections.
- *
- * \todo
- *   \li only change directories on double click!
- */
+#include <deque>
+
+// #include "filedialog.hh"
 
 using namespace toad;
 
+typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableCellRenderer_DirectoryEntrySet;
+typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
 namespace {
+  TBitmap bmp;
   string cwd;
+  TPreviousDirs previous_cwds;
+}; // namespace
+
+bool
+TDirectoryEntry::operator<(const TDirectoryEntry &f) const {
+  return (strcasecmp(name.c_str(), f.name.c_str()) < 0);
+}
+
+int
+TDirectoryEntry::getColWidth(int col) const {
+  switch(col) {
+    case 0:
+      return 16;
+    case 1:
+      return 320;
+    case 2:
+      return 40;
+  }
+  return 0;
+}
+
+void 
+TDirectoryEntry::renderItem(TPen &pen, int col, int w, int h) const {
+  switch(col) {
+    case 0:
+      if (S_ISDIR(mode)) {
+        pen.drawBitmap(0,0,bmp);
+      }
+      break;
+    case 1:
+      pen.drawString(0,0,name);
+      break;
+    case 2: {
+      char buffer[256];
+      int s = size;
+      if (s < 1024) {
+        snprintf(buffer, sizeof(buffer), "%iB", s);
+      } else {
+        s/=1024;
+        if (s < 1024) {
+          snprintf(buffer, sizeof(buffer), "%iKB", s);
+        } else {
+          s/=1024;
+          if (s < 1024) {
+            snprintf(buffer, sizeof(buffer), "%iMB", s);
+          } else {
+            s/=1024;
+            snprintf(buffer, sizeof(buffer), "%iGB", s);
+          }
+        }
+      }
+      pen.drawString(0,0,buffer);
+      } break;
+  }
+}
+
+#ifndef FINAL_FILEDIALOG
+
+void filedialog_mf();
+
+class TMyWindow:
+  public TPushButton
+{
+  public:
+    TMyWindow(TWindow *parent, const string &title):
+      TPushButton(parent, title)
+    {
+      connect(sigActivate, this, &TMyWindow::click);
+    }
+    
+    void click()
+    {
+      TFileDialog dlg(0, "TFileDialog");
+      dlg.doModalLoop();
+    }
 };
 
-TFileDialog::TFileDialog(TWindow *p,const string &t)
-  :TDialog(p,t)
+int
+main(int argc, char **argv, char **envv)
 {
-  setLayout(0);
-  result = TMessageBox::ABORT;
-  filter = "";
+  toad::initialize(argc, argv, envv);
 
-  setSize(442,315);
+  #warning "better make this one: addResourcePrefix or check for an resource prefix in the name and make this one part of the urlstream class"
+//  TOADBase::setResourcePrefix("");
+  
+  filedialog_mf();
+  
+  {
+    bmp.load("memory://toad/folder_red_open.png");
+  
+//    TFileDialog dlg(0, "TFileDialog");
+    TMyWindow wnd(0, "TFileDialog");
+    toad::mainLoop();
+  }
+  toad::terminate();
+  return 0;
+}
 
-#if 0
-  TTextField *tf;
-  tf = new TTextField(this, "filename");
-    tf->setShape(8,24,329,21);
-    CONNECT(tf->sigActivate, this, btnOk);
-#else
-  TTextArea *tf;
-  tf = new TTextField(this, "filename", &filename);
-    tf->setShape(8,24,329,21);
 #endif
 
-  TTable *table;
-  
-  TStringVectorSelectionModel *sel;
 
-  table = new TTable(this, "dirbox");
-    sel = new GTableSelectionModel<TStringVector>(&directory);
-    table->setSelectionModel(sel);
-    table->setRenderer(new TTableCellRenderer_StringVector(&directory));
-    table->setShape(8,68,161,197);
-    connect(sel->sigChanged,
-      this, &TFileDialog::selectDir,
-      sel);
-    
-  table = new TTable(this, "filebox");
-    sel = new GTableSelectionModel<TStringVector>(&file);
-    table->setSelectionModel(sel);
-    table->setRenderer(new TTableCellRenderer_StringVector(&file));
-    table->setShape(176,68,161,197);
-    connect(sel->sigChanged,
-      this, &TFileDialog::selectFile,
-      sel);
-
-#if 0
-  lb_dir=new TListBox(this,"dirbox", &directory);
-    CONNECT(lb_dir->sigSelect, this, dirSelect, lb_dir);
-    lb_dir->setShape(8,68,161,197);
-
-  lb_file=new TListBox(this,"filebox", &file);
-    CONNECT(lb_file->sigSelect, this, fileSelect, lb_file);
-    CONNECT(lb_file->sigDoubleClick, this, btnOk);
-    lb_file->setShape(176,68,161,197);
-  
-  cb=new TComboBox(this, "filetype", newListBoxAdapter(filetype));
-    cb->setSelection(0);
-    cb->setShape(8,288,329,21);
-    CONNECT(cb->sigSelect, this, actFileType, cb);
-#endif
-
-  TPushButton *btn;
-  btn = new TPushButton(this, "OK", TMessageBox::OK);
-    CONNECT(btn->sigActivate, this, btnOk);
-    btn->setShape(348,8,85,21);
-  btn = new TPushButton(this, "Abort", TMessageBox::ABORT);
-    CONNECT(btn->sigActivate, this, btnAbort);
-    btn->setShape(348,32,85,21);
-  btn = new TPushButton(this, "Reload", 102);
-    btn->setShape(348,68,85,21);
-    btn->setEnabled(false);
-
-  bShowHiddenFiles=false;
-  TCheckBox *chkb;
-  chkb = new TCheckBox(this, "show hidden files");
-  connect_value(chkb->getModel()->sigChanged,
-                this, &TFileDialog::hidden,
-                chkb->getModel());
-//    CONNECT(chkb->sigValueChanged, this, hidden, chkb);
-    chkb->setShape(348,104,85,29);
-//    chkb->setValue(bShowHiddenFiles);
-
-  if (filetype.size()>0)
-    filter = filetype[0].ext;
-
-  if (cwd.empty()) {  
-    char buffer[4097];
-    getcwd(buffer, 4096);
+TFileDialog::TFileDialog(TWindow *parent, const string &title):
+  TDialog(parent, title)
+{
+  // create data structures
+  if (cwd.empty()) {
+    char buffer[4096];
+    getcwd(buffer, 4095);
     cwd = buffer;
   }
   
-  filename=filter;
-  
-  loadDir();
-}
-
-void TFileDialog::create()
-{
-  super::create();
-  if (filetype.empty()) {
-//    cb->bExplicitCreate = true;
-//    setSize(getWidth(), getHeight()-28-16);
-#if 0
-    cb->bFocusTraversal = false;
-    cb->bNoFocus = true;
-#endif
+  if (previous_cwds.empty()) {
+    bmp.load("memory://toad/folder_red_open.png");
+    previous_cwds.push_front(cwd);
   }
-}
+  first_chdir = true;
 
-TFileDialog::~TFileDialog()
-{
-  clrDir();
-}
+  // announce data structures to the GUI (after TOAD 1.0)
 
-void
-TFileDialog::paint()
-{
-  TPen pen(this);
-  pen.drawString(8+8,24-16, "Selection");
-  pen.drawString(8+8,68-16,"Directories");
-  pen.drawString(176+8,68-16,"Files");
-  if (!filetype.empty())
-    pen.drawString(8+8,288-16,"Filetype");
-}
+  // create widgets (going to be obsolete after TOAD 1.0)
+  tfiles = new TTable(this, "fileview");
+  tfiles->setRenderer(new TTableCellRenderer_DirectoryEntrySet(&entries));
+  connect(tfiles->sigSelection, this, &This::fileSelected);
 
-unsigned
-TFileDialog::getResult() const
-{
-  return result;
-}
+  new TCheckBox(this, "show hidden", &show_hidden);
+  connect(show_hidden.sigChanged, this, &This::hidden);
+  new TTextField(this, "filename", &filename);
 
-const string& 
-TFileDialog::getFilename() const
-{
-  static string r;
-  r = cwd + "/" + filename;
-  return r;
-}
+  // TComboBox *cb;
+  cb = new TComboBox(this, "previous");
+  cb->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
+  cb->getSelectionModel()->setSelection(0,0);
+  connect(cb->sigSelection, this, &This::jumpDirectory);
 
-/**
- * file was selected
- */
-void 
-TFileDialog::selectFile(TStringVectorSelectionModel *m)
-{
-  TStringVectorSelectionModel::iterator
-    p = m->begin(),
-    e = m->end();
+  new TComboBox(this, "filetype");
 
-  if (p==e)
-    return;
-
-  filename = *p;
-}
-
-/**
- * directory was selected in listbox
- */
-void TFileDialog::selectDir(TStringVectorSelectionModel *m)
-{
-  TStringVectorSelectionModel::iterator
-    p = m->begin(),
-    e = m->end();
-
-  if (p==e)
-    return;
-
-  string filename = cwd + this->filename;
-
-  string where = *p;
-  if (where==".")
-    return;
-  
-  unsigned i = filename.rfind("/");
-  if (i!=string::npos) {
-    filename=filename.substr(0,i);
-  } else {
-    filename="";
-  }
-  if (where=="..") {
-    i = filename.rfind("/");
-    filename = i!=string::npos ? filename.substr(0,i) : "";
-  } else {
-    filename+="/"+where;
-  }
-/*
-  filename+="/"+filter;
-  this->filename = filename;
-*/
-  cwd = filename;
-
-  loadDir();
-}
-
-#if 0
-// file type selected in combobox
-//---------------------------------------------------------------------------
-void
-TFileDialog::actFileType(TComboBox *cb)
-{
-  // copy new file extension to 'filter'
-  //-------------------------------------
-  filter = filetype[cb->getFirstSelectedItem()].ext;
-  
-  // update textfield
-  //------------------
-  unsigned wild_pos = min( filename.find("*"), filename.find("?") );
-
-  unsigned slash_pos = filename.rfind("/", wild_pos);
-  if (slash_pos==string::npos) {
-    filename="/"+filename;
-    slash_pos = 0;
-  }
-  
-  string path = filename.substr(0,slash_pos+1);
-  filename = filename.substr(slash_pos+1);  
-  
-  unsigned n = filename.getValue().rfind(".");
-  if (n!=string::npos) {
-    if (filter.size()>=1)
-      filename = filename.getValue().substr(0,n) + filter.substr(1);
-  } else {
-    filename = filter;
-  }
-
-  filename = path + filename;
-  
-  TDataManipulator::assimilate(&filename);  // update 
-  
-  // update file and directory window
-  //----------------------------------
-  loadDir();
-
-  lb_file->setTopItemPosition(0);
-  lb_file->adapterChanged();
-  lb_dir->setTopItemPosition(0);
-  lb_dir->adapterChanged();
-}
-
-void *TFileDialog::getXtra() const
-{
-  unsigned p=cb->getFirstSelectedItem();
-  if (p==(unsigned)-1) {
-    #ifdef DEBUG
-    printf("void *TFileDialog::getXtra(): no selection, returning NULL\n");
-    #endif
-    return NULL;
-  }
-  return filetype[p].xtra;
-}
-#endif
-
-void TFileDialog::hidden(bool flag)
-{
-  bShowHiddenFiles = flag;
-  loadDir();
-/*
-  lb_file->setTopItemPosition(0);
-  lb_file->adapterChanged();
-
-  lb_dir->setTopItemPosition(0);
-  lb_dir->adapterChanged();
-*/
-} 
- 
-void TFileDialog::destroy()
-{
-//  lb_file = lb_dir = NULL;
-  ENTRYEXIT("TFileDialog::destroy()");
-  clrDir();
-  chdir(currentdir.c_str());
-}
-
-void TFileDialog::btnOk()
-{
-  filter = filename;
-  if (filter.find("*")!=(unsigned)-1 || filter.find("?")!=(unsigned)-1) {
-    loadDir();
-#if 0
-    lb_file->setTopItemPosition(0);
-    lb_file->adapterChanged();
-    lb_dir->setTopItemPosition(0);
-    lb_dir->adapterChanged();
-#endif
-  } else {
-    if (filter.size()==0)
-      result = TMessageBox::ABORT;
-    else
-      result = TMessageBox::OK;
-//    endDialog(this);
-    destroyWindow();
-  }
-}
-
-void TFileDialog::btnAbort()
-{
   result = TMessageBox::ABORT;
-//  endDialog(this);
+  connect((new TPushButton(this, "ok"))->sigActivate, 
+          this, &This::button, TMessageBox::OK);
+  connect((new TPushButton(this, "cancel"))->sigActivate, 
+          this, &This::button, TMessageBox::ABORT);
+  
+  loadDirectory();
+  
+  loadLayout("memory://toad/TFileDialog.atv");
+//  loadLayout("file://TFileDialog.atv");
+}
+
+void
+TFileDialog::hidden()
+{
+  tfiles->getSelectionModel()->clearSelection();
+  loadDirectory();
+}
+
+void
+TFileDialog::button(unsigned result)
+{
+  this->result = result;
+  
+  TPreviousDirs::iterator p, e;
+  
+  previous_cwds.push_front(cwd);
+  p = previous_cwds.begin();
+  e = previous_cwds.end();
+  ++p;
+  while(p!=e) {
+    if (*p == cwd) {
+      previous_cwds.erase(p);
+      p = previous_cwds.begin();
+      e = previous_cwds.end();
+    }
+    ++p;
+  }
+  
+  while(previous_cwds.size()>10)
+    previous_cwds.pop_back();
+  
   destroyWindow();
 }
- 
-struct TComp
-{
-  bool operator()(const char* a, const char* b) const{
-    return strcasecmp(a,b)<0;
-  }
-  bool operator()(const string& a, const string& b) const{
-    return strcasecmp(a.c_str(), b.c_str())<0;
-  }
-};
-static TComp comp;
 
 void
-TFileDialog::loadDir()
+TFileDialog::loadDirectory()
 {
-  // clear file and directory buffer
-  //---------------------------------
-  clrDir();
-  
-  // read current directory
-  //------------------------
-//  unsigned p = filename.getValue().rfind("/");
-//  string cwd = p!=string::npos ? filename.getValue().substr(0,p) : "";
-//  cwd+="/";
-
   dirent *de;
+  DIR *dd;
 
-cerr << "opendir " << cwd << endl;
+//cerr << "load directory " << cwd << endl;
   
-  DIR *dd = opendir(cwd.c_str());
-  if (dd==NULL) {
+  dd = opendir(cwd.c_str());
+  if (!dd) {
     perror("opendir");
-    directory.push_back("..");
     return;
   }
 
+  entries.sigChanged.lock();
+  entries.clear();
+  
   while( (de=readdir(dd))!=NULL ) {
-    string filename = cwd + de->d_name;
-    struct stat st;
-    stat(filename.c_str(), &st);
-    bool bShow = true;
+
+    if (de->d_name[0]=='.' && de->d_name[1]==0)
+      continue;
 
     // check if hidden file
-    //----------------------
-    if (!bShowHiddenFiles && de->d_name[0]=='.') {
-      bShow = false;
-      if (de->d_name[1]==0) {
-        bShow=true;
-      } else {
-        if (de->d_name[1]=='.' && de->d_name[2]==0)
-          bShow=true;
-      }
+    bool show = true;
+    if (!show_hidden && de->d_name[0]=='.') {
+      show = false;
+      if (de->d_name[1]=='.' && de->d_name[2]==0)
+        show = true;
     }
-    if (bShow) {
-      if (S_ISDIR(st.st_mode)) {
-        directory.push_back(de->d_name);
-      } else {
-        if (pFilterCompare(de->d_name)) {
-          file.push_back(de->d_name);
-        }
-      }
-    }
+    
+    if (!show)
+      continue;
+    
+    struct stat st;
+    string fullpath=cwd+"/"+de->d_name;
+    stat(fullpath.c_str(), &st);
+    
+    TDirectoryEntry e;
+    e.name = de->d_name;
+    e.mode = st.st_mode;
+    e.size = st.st_size;
+    entries.insert(e);
   }
-  closedir(dd);
   
-  // sort file and directory entrys
-  //--------------------------------
-  sort(file.begin(),file.end(), comp);
-  sort(directory.begin(),directory.end(),comp);
+  entries.unlock();
+  
+  closedir(dd);
+}
 
-  // directory without read permission
-  //----------------------------------
-  if (directory.size()==0) {
-    directory.push_back("..");
-  }
-
-  file.sigChanged();
-  directory.sigChanged();
-} 
-
-// compare filename 'str' with 'filter'
-//--------------------------------------
-bool TFileDialog::pFilterCompare(const char *str)
+void
+TFileDialog::jumpDirectory()
 {
-  const char *flt = filter.c_str();
-  bool wild = false;
-  int fp=0,sp=0, f,s;
+  cerr << "selected directory " << cb->getSelectionModel()->begin().getY() << endl;
+  cwd = previous_cwds[cb->getSelectionModel()->begin().getY()];
+  loadDirectory();
+}
 
-  moonchild:
-  while(flt[fp]=='*') {
-    fp++;
-    wild = true;
-  }
-  if (flt[fp]==0)
-    return true;
+void
+TFileDialog::fileSelected()
+{
+  static bool lock = false;
+  if (lock) return;
+//toad::printStackTrace();
+  if (tfiles->getSelectionModel()->isEmpty())
+    return;
 
-  while(true) {
-    f=fp; s=sp;
-    while(flt[f]==str[s] || flt[f]=='?') {
-      if (flt[f]==0 || str[s]==0)
-        return (flt[f]==str[s]);
-      s++;
-      f++;
+  const TDirectoryEntry &file(
+    entries.getElementAt(0, tfiles->getSelectionModel()->begin().getY())
+  );
+//  cerr << "selected " << file.name << endl;
+  if (S_ISDIR(file.mode)) {
+    if (file.name=="..") {
+      unsigned p = cwd.rfind('/');
+      if (p>0) {
+        cwd.erase(p);
+      } else {
+        cwd="/";
+      }
+    } else {
+      if (cwd.size()>1)
+        cwd+="/";
+      cwd+=file.name;
     }
-    if (flt[f]=='*') {
-      fp=f;
-      sp=s;
-      goto moonchild;
+//    cerr << "  is a directory '" << cwd << "'\n";
+    lock=true;
+
+    if (first_chdir) {
+cerr << "push current cwd" << endl;
+      previous_cwds.push_front(cwd);
+      first_chdir = false;
+    } else {
+cerr << "set previous_cwds[0] to current directory" << endl;
+      previous_cwds[0]=cwd;
     }
-    if (!wild)
-      return false;
-    sp++;
-    if (str[sp]==0)
-      return false;
+    previous_cwds.sigChanged();
+    cb->getSelectionModel()->setSelection(0,0);
+
+    loadDirectory();
+lock=false;
+  } else {
+//    cerr << "  is a file" << endl;
+    filename = file.name;
   }
-  return false;
 }
-
-void TFileDialog::clrDir()
-{
-  file.erase(file.begin(), file.end());
-  directory.erase(directory.begin(), directory.end());
-}
-
-void TFileDialog::setFileType(unsigned n) {
-//  cb->setSelection(n);
-}
-
-void TFileDialog::setFilename(const string& s)
-{
-  filename = s;
-#if 0
-  TDataManipulator::assimilate(&filename);
-  TFTList::iterator p=filetype.begin(), e=filetype.end();
-  unsigned i = 0;
-  while(p!=e) {
-    int n = s.size()-(*p).ext.size()+1;
-    if ( n>=0 && (*p).ext.size()>0 && s.substr(n) == (*p).ext.substr(1) ) {
-      setFileType(i);
-      return;
-    }
-    p++;
-    i++;
-  }
-  setFileType(0);
-#endif
-}
-
-void TFileDialog::addFileType(const string &name,const string &ext,void* xtra)
-{
-#if 0
-  filetype.push_back(TFileType(name,ext,xtra));
-  const string &s = filename;
-  unsigned i = 0;
-  TFTList::iterator p=filetype.begin(), e=filetype.end();
-  while(p!=e) {
-    int n = s.size()-(*p).ext.size()+1;
-    if ( n>=0 && (*p).ext.size()>0 && s.substr(n) == (*p).ext.substr(1) ) 
-    {
-      setFileType(i);
-      return;
-    }
-    p++;
-    i++;
-  }
-  setFileType(0);
-#endif
-}
-
-#if 0
-// ListBoxAdapter for TFileType vector
-//---------------------------------------------------------------------------
-
-void TLBA_FileType::printItem(int x,int y,unsigned item,TPen &pen)
-{
-  if (item>=vec.size()) return;
-  string s = vec[item].name;
-  if (vec[item].ext.size()>0) {
-    s+=" (";
-    s+=vec[item].ext;
-    s+=")";
-  }
-  pen.drawString(x,y,s);
-}
-
-unsigned TLBA_FileType::getItemHeight() const
-{
-  return TOADBase::getDefaultFont().getHeight();
-}
-
-unsigned TLBA_FileType::getItemCount() const
-{
-  return vec.size();
-}
-#endif

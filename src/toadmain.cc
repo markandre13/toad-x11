@@ -49,6 +49,8 @@ char** toad::envv;
 
 void* toad::top_address;
 
+extern void createTOADResource();
+
 /**
  * Initialize the TOAD library.
  *
@@ -100,6 +102,8 @@ toad::initialize(int argc, char **&argv, char **envv)
 
   // initialize stacktrace.cc
   toad::top_address = __builtin_return_address(1);
+
+  createTOADResource();
 
   // this is something other OO languages call class initialisation
   TOADBase::initTOAD();

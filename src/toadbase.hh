@@ -208,8 +208,6 @@ class TOADBase
     static TFont& getDefaultFont();
     static void setDefaultFont(TFont*);
     static void setColorLimit(unsigned);
-    static void setResourcePrefix(const string &);
-    static const string& getResourcePrefix();
 
     // `class constructor/destructor'
     //-------------------------------

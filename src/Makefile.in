@@ -100,13 +100,14 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		dialogeditor.cc colordialog.cc \
 		table.cc combobox.cc textarea.cc \
 		boundedrangemodel.cc rgbmodel.cc \
+		resource.cc \
 		$(MDI) \
 		$(GADGET) $(IO) $(NEW_CHECKER) $(FILTER) \
 		$(DEBUG)
 
 OBJS	= $(SRCS:.cc=.o)
 
-default: connect.hh include/toad $(LIBNAME) ../bin/toadbin2c
+default: connect.hh resource.cc include/toad $(LIBNAME) ../bin/toadbin2c
 
 ../bin/toadbin2c: bin2c.c
 	gcc bin2c.c -o ../bin/toadbin2c
@@ -128,6 +129,12 @@ install:
 #-----------------------
 connect.hh: connect.hh.pm
 	./connect.hh.pm > connect.hh
+
+resource.cc: ../bin/toadbin2c
+	cd resource && ../../bin/toadbin2c \
+	  --function-name createTOADResource \
+	  --prefix "toad/" -- \
+	  *.atv *.png > ../resource.cc
 
 include/toad:
 	mkdir -p include
@@ -166,7 +173,7 @@ clean:
 	@echo removing generated files in `pwd`
 	@rm -f $(CLEAN) $(OBJS) *.bak *~ .depend core DEADJOE
 	@rm -f $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR) $(LIBNAME)
-	@rm -f connect.hh ../bin/toadbin2c
+	@rm -f connect.hh resource.cc ../bin/toadbin2c
 	@rm -f include/toad
 	@-rmdir include
 	@echo Ok

@@ -1892,8 +1892,10 @@ void TWindow::setOrigin(int dx, int dy)
 
 /**
  * Set the origin for all drawing operations and scroll the windows content
- * to the new position.<BR>
- * <B>Attention: Child windows will not be moved!</B>
+ * to the new position.
+ *
+ * \note
+ *   Child windows will not be moved.
  */
 void TWindow::scrollTo(int nx, int ny)
 {
@@ -1936,7 +1938,7 @@ TWindow::loadLayout(const string &file)
 {
   TLayout * new_layout = NULL;
   // bDialogEditRequest = true; ???
-  string filename = getResourcePrefix() + file;
+  string filename = file;
   try {
     iurlstream url(filename);
     TInObjectStream in(&url);

@@ -1617,31 +1617,6 @@ string TOADBase::getSelection()
 
 //---------------------------------------------------------------------------
 
-static string resource_prefix = "file://";
-
-/**
- * Sets the prefix for the resource files, e.g. "file://resource/" or
- * "memory://". This feature is currently used by the dialog editor.
- * <P>
- * The default value is "file://".
- *
- * \sa getResourcePrefix()
- */
-void TOADBase::setResourcePrefix(const string &str)
-{
-  resource_prefix = str;
-}
-
-/**
- * Returns the current resource prefix, set with SetResourcePrefix.
- *
- * \sa setResourcePrefix()
- */
-const string& TOADBase::getResourcePrefix()
-{
-  return resource_prefix;
-}
-
 #ifdef __X11__
 // duplicated from dragndrop.cc for experiments:
 //-----------------------------------------------
