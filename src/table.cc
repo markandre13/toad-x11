@@ -89,6 +89,9 @@ TModel
  *       edit cell, row, column; delete row, column
  */
 
+/**
+ * Draws selection indicators, calls renderItem and draws the cursor.
+ */
 void 
 TAbstractTableCellRenderer::renderCell(TPen &pen, int col, int row, int w, int h, bool cursor, bool selected, bool focus)
 {
@@ -110,6 +113,11 @@ TAbstractTableCellRenderer::renderCell(TPen &pen, int col, int row, int w, int h
   if (cursor) {
     pen.drawRectanglePC(0,0,w, h);
   }
+}
+
+void 
+TAbstractTableCellRenderer::mouseEvent(TMouseEvent&, int col, int row, int w, int h)
+{
 }
 
 /**
@@ -825,10 +833,10 @@ DBSCROLL({
     return;
 
   // draw the fields with the table renderer
-  xp = fpx + visible.x;
-  for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
-    yp = fpy + visible.y;
-    for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
+  yp = fpy + visible.y;
+  for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
+    xp = fpx + visible.x;
+    for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
       TRectangle check(xp,yp,col_info[x].size, row_info[y].size);
       if (!getUpdateRegion() ||
           getUpdateRegion()->isInside(check)!=TRegion::OUT)
@@ -879,12 +887,15 @@ DBSCROLL(
             isFocus()
         );
       }
-      yp += row_info[y].size + border;
+      xp += col_info[x].size + border;
     }
-    xp += col_info[x].size + border;
+    yp += row_info[y].size + border;
   }
   // clear unused window region (we must do it on our own because
   // background is disabled to reduce flicker)
+//cout << "visible = " << visible << endl;
+
+//cout << xp << "<=" << (xp<=visible.x+visible.w) << endl;
   if (!stretchLastColumn && xp<=visible.x+visible.w) {
     pen|=dummy;
     pen.identity();
@@ -1031,6 +1042,14 @@ DBM2(cerr << "enter mouseLDown" << endl;)
   }
 
   DBM(cout << "click on item " << x << ", " << y << endl;);
+  if (renderer) {
+    TMouseEvent me;
+    me.window = this;
+    me.x = mx;
+    me.y = my;
+    me.modifier = modifier;
+    renderer->mouseEvent(me, x, y, col_info[x].size, row_info[y].size);
+  }
 
   sigPressed();
 
@@ -1230,8 +1249,11 @@ void
 TTable::keyDown(TKey key, char *string, unsigned modifier)
 {
   switch(key) {
-    case TK_DOWN:
-      if (!per_col && cy<rows-1) {
+    case TK_DOWN: {
+      int newcy = cy+1;
+      while(newcy<rows && row_info[newcy].size==0)
+        ++newcy;
+      if (!per_col && newcy<rows) {
         if (!selecting) {
           invalidateCursor();
           // in case nothing indicates the cursor position, don't move
@@ -1239,28 +1261,33 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
           if (! (noCursor && selectionFollowsMouse &&
                 (!getSelectionModel() || getSelectionModel()->isEmpty())))
           {
-            cy++;
+            cy=newcy;
             invalidateCursor();
           }
           sigCursor();
         } else {
-          invalidateChangedArea(sx,sy,cx,cy,cx,++cy);
+          invalidateChangedArea(sx,sy,cx,cy,cx,newcy);
+          cy = newcy;
         }
         if (selectionFollowsMouse) {
           selectAtCursor();
         }
         center(CENTER_VERT);
       }
-      break;
-    case TK_UP:
-      if (!per_col && cy>0) {
+    } break;
+    case TK_UP: {
+      int newcy = cy;
+      while(newcy>0 && row_info[--newcy].size==0)
+        ;
+      if (!per_col && newcy!=cy) {
         if (!selecting) {
           invalidateCursor();
-          cy--;
+          cy=newcy;
           invalidateCursor();
           sigCursor();
         } else {
-          invalidateChangedArea(sx,sy,cx,cy,cx,--cy);
+          invalidateChangedArea(sx,sy,cx,cy,cx,newcy);
+          cy=newcy;
         }
         if (selectionFollowsMouse) {
           selectAtCursor();
@@ -1272,7 +1299,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
           selectAtCursor();
         }
       }
-      break;
+    } break;
     case TK_PAGEUP:
       pageUp();
       break;

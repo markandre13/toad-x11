@@ -182,6 +182,7 @@ class TAbstractTableCellRenderer:
      */
     virtual void renderCell(TPen&, int xindex, int yindex, int w, int h, bool cursor, bool selected, bool focus);
     virtual void renderItem(TPen&, int xindex, int yindex, int w, int h, bool cursor, bool selected, bool focus) = 0;
+    virtual void mouseEvent(TMouseEvent &, int xindex, int yindex, int w, int h);
 
     // this method is to enable signals to trigger our signal:
     void modelChanged() { sigChanged(); }
