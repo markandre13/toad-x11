@@ -101,7 +101,7 @@ class TMessageBox:
 unsigned messageBox(TWindow* parent, 
                     const string& title,
                     const string &text, 
-                    ulong type, 
+                    ulong type=TMessageBox::ICON_INFORMATION|TMessageBox::OK,
                     TBitmap *bmp=NULL,
                     EWindowPlacement placement=PLACE_PARENT_CENTER);
 
