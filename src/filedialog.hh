@@ -32,21 +32,7 @@ namespace toad {
 class TTable;
 class TComboBox;
 
-/**
- *
- * A table item renderer to be called from 'GTableCellRenderer_ItemRow'.
- */
-struct TTableItemRow
-{
-  public:
-    virtual int getColWidth(int col) const = 0;
-    virtual void renderItem(TPen &pen, int col, int w, int h) const = 0;
-};
-
-//----------------------------------------------
-
-struct TDirectoryEntry:
-  public TTableItemRow
+struct TDirectoryEntry
 {
   string name;
   mode_t mode;

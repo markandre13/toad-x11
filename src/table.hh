@@ -319,6 +319,7 @@ class TTable:
 
     void adjustPane();
     void scrolled(int dx, int dy);
+    bool mouse2field(int mx, int my, int *fx, int *fy);
     
     // precalculated values for optimization
     void handleNewModel();

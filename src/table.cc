@@ -39,6 +39,7 @@ using namespace toad;
      GAbstractTableModel<T>
       TTableModel_CString
    TAbstractTableCellRenderer
+     GTableRowRenderer
      TTableCellRenderer_CString
    TTableSelectionModel
    TTable
@@ -727,7 +728,7 @@ TTable::resize()
 void
 TTable::focus(bool)
 {
-  invalidateCursor();
+  invalidateWindow();
 }
 
 void
@@ -742,17 +743,18 @@ TTable::selectAtCursor()
   selection->toggleSelection(perRow?0:cx, perCol?0:cy);
 }
 
-void
-TTable::mouseLDown(int mx, int my, unsigned modifier)
+/**
+ * Convert mouse position into a field position and return 'true' 
+ * or return 'false' in case it isn't possible.
+ */
+bool
+TTable::mouse2field(int mx, int my, int *fx, int *fy)
 {
-  setFocus();
+  int pos1, pos2, x, y;
 
-  int pos1, pos2;
-  int x, y;
-  
   if (!visible.isInside(mx, my)) {
     // code to handle this event outside the visible area is missing
-    return;
+    return false;
   }
   
   // transform (mx, my) from screen pixel to table pixel coordinates
@@ -761,9 +763,9 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
 
   pos1 = 0;
   for(x=ffx; ; x++) {
-    if (x>=cols || pos1>visible.x+visible.w) {
+    if (x>=cols /* || pos1>visible.x+visible.w */) {
 //cerr << __FILE__ << ':' << __LINE__ << endl;  
-      return;
+      return false;
     }
     int size = col_info[x].size;
     pos2 = pos1 + col_info[x].size;
@@ -787,7 +789,7 @@ cerr << " y=" << y
      << " visible.y+visible.h=" << (visible.y+visible.h)
      << endl;
 */
-      return;
+      return false;
     }
     pos2 = pos1 + row_info[y].size;
     if (pos1 <= my && my < pos2) {
@@ -802,6 +804,21 @@ cerr << " y=" << y
   if (per_col)
     y=0;
 
+  *fx = x;
+  *fy = y;
+}
+
+void
+TTable::mouseLDown(int mx, int my, unsigned modifier)
+{
+  setFocus();
+
+  int x, y;
+  if (!mouse2field(mx, my, &x, &y))
+    return;
+
+  cout << "mouse down on field " << x << ", " << y << endl;
+
   DBM(cout << "click on item " << x << ", " << y << endl;)
 
   sigPressed();
@@ -810,22 +827,66 @@ cerr << " y=" << y
     return;
 
   cx = x; cy = y;
+
+  if (selection->getSelectionMode() != TTableSelectionModel::MULTIPLE_INTERVAL)
+    selection->clearSelection();
+  sx=cx; sy=cy;
+  selecting=true;
+  invalidateCursor();
+
   selectAtCursor();
 
   if (modifier & MK_DOUBLE)
     sigDoubleClicked();
   else  
     sigCursor();
+
 }
 
 void
 TTable::mouseMove(int mx, int my, unsigned)
 {
+  int x, y;
+  if (!mouse2field(mx, my, &x, &y))
+    return;
+  cout << "mouse move on field " << x << ", " << y << endl;
+
+  invalidateChangedArea(sx,sy,cx,cy,cx,cy);
+
+  if (cx!=x && cy!=y)
+    return;
+  cx = x; cy = y;
+
+  invalidateChangedArea(sx,sy,cx,cy,cx,cy);
+
+  selectAtCursor();
+  sigCursor();
 }
 
 void
 TTable::mouseLUp(int mx, int my, unsigned)
 {
+  int x, y;
+  if (!mouse2field(mx, my, &x, &y))
+    return;
+  cout << "mouse up on field " << x << ", " << y << endl;
+
+  if (selecting) {
+    selecting=false;
+    int x1, y1, x2, y2;    
+    x1 = min(sx, cx);
+    x2 = max(sx, cx);
+    y1 = min(sy, cy);
+    y2 = max(sy, cy);
+    selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+  }
+/*
+  if (cx!=x && cy!=y)
+    return;
+  cx = x; cy = y;
+  selectAtCursor();
+  sigCursor();
+*/
 }
 
 /**
