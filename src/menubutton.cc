@@ -521,7 +521,14 @@ else
   cerr << "  node isn't enabled\n";
 )
       // first level menu button pressed & release in popup menubar
-      if (!master->btnmaster && node->isEnabled() && !node->down) {
+      if ( node->isEnabled() && 
+           ( ( !master->btnmaster && 
+               !node->down) || 
+             ( !node->actions.empty() && 
+               (*node->actions.begin())->type==TAction::RADIOBUTTON)
+           )
+         )
+      {
         dropKeyboard();
         trigger();
         master->state=MHS_WAIT;
