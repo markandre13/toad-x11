@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -213,6 +213,7 @@ TFilterGIF::load(istream &stream)
       default:
         if (byte != ',')
           break;
+cerr << "found gif image" << endl;
         image_count++;
         TImage *img = new TImage;
         in.readWord();                  // left
@@ -275,6 +276,7 @@ TFilterGIF::load(istream &stream)
         fin:
         LWZReadByte(in, FALSE, c);
         delete img;
+return OK; // the code can't handle more than one image yet, so stop here
         break;
     }
   }
