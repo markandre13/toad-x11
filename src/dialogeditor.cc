@@ -152,7 +152,7 @@ TDialogEditor::TFilter::keyEvent(TKeyEvent &ke)
 //---------------------------------------------------------------------------
 
 TDialogEditor::TDialogEditor():
-  TDialog(NULL, "Dialog Editor")
+  TDialog(NULL, "TOAD Layout Editor")
 {
   setLayout(0);
   TFatCheckButton *fcb;
