@@ -979,7 +979,7 @@ TOADBase::closeXInput()
  *
  * @param flt
  *    The keyfilter to be added.
- * @param window
+ * @param wnd
  *    A window or NULL.
  * @param pos
  *    @li KF_GLOBAL: Keyfilter to be called first: Before all other
