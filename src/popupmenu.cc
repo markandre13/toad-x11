@@ -28,19 +28,65 @@ using namespace toad;
  *
  */
 
+class TPopupMenu::TMenuFilter:
+  public TEventFilter
+{ 
+    TWindow *window;
+    TPopupMenu *menu;
+  public:
+    TMenuFilter(TPopupMenu *menu, TWindow *window) {
+      this->menu   = menu;
+      this->window = window;
+    }
+  protected:
+    bool mouseEvent(TMouseEvent &evt) {
+      if (evt.window == window &&
+          evt.type == TMouseEvent::RDOWN)
+      {
+        menu->open();
+        return true;
+      }
+      return false;
+    }
+};
+
 TPopupMenu::TPopupMenu(TWindow *parent, const string &title):
   TMenuHelper(parent, title)
 {
+  flt = 0;
   vertical = true;
   bExplicitCreate = true;
   bPopup = true;
   setLayout(new TMenuLayout()); // i require a layout
 }
 
+TPopupMenu::~TPopupMenu()
+{
+  if (flt) {
+    toad::removeEventFilter(flt);
+  }
+}
+
+/**
+ * Open the popup menu.
+ */
 void
 TPopupMenu::open()
 {
   placeWindow(this, PLACE_CORNER_MOUSE_POINTER, 0);
   createWindow();
   grabPopupMouse(TMMM_PREVIOUS);
+}
+
+/**
+ * Add a event filter, which catches the right mouse button being pressed
+ * inside the popup menu's parent window and invokes 'open()'.
+ */
+void
+TPopupMenu::addFilter()
+{
+  if (flt)
+    return;
+  flt = new TMenuFilter(this, getParent());
+  toad::insertEventFilter(flt, 0, KF_GLOBAL);
 }
