@@ -99,6 +99,8 @@ TAction::setEnabled(bool b)
 bool 
 TAction::isEnabled() const
 {
+  if (!enabled)
+    return false;
   if (!sigActivate.isConnected())
     return false;
   switch(activation) {
