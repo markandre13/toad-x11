@@ -195,6 +195,7 @@ enum {
   VMAS_KEYDOWN,
   VMAS_KEYUP,
   VMAS_MOUSEEVENT,
+  VMAS_KEYEVENT,
   VMAS_MAX,
 };
 
@@ -225,9 +226,10 @@ TWindow::TWindow(TWindow *p, const string &new_title)
     SET_VMAS(VMAS_MOUSEMOVE, mouseMove);
     SET_VMAS(VMAS_MOUSEENTER, mouseEnter);
     SET_VMAS(VMAS_MOUSELEAVE, mouseLeave);
-    SET_VMAS(VMAS_KEYDOWN, keyDown);
     SET_VMAS(VMAS_MOUSEEVENT, mouseEvent);
+    SET_VMAS(VMAS_KEYDOWN, keyDown);
     SET_VMAS(VMAS_KEYUP, keyUp);
+    SET_VMAS(VMAS_KEYEVENT, keyEvent);
   }
   
 
@@ -529,7 +531,8 @@ TWindow::_interactor_create()
   //--------------------------------------------------------
   if (!bNoFocus) {
       bNoFocus = !( CHK_VMAS(VMAS_KEYDOWN, keyDown) || 
-                    CHK_VMAS(VMAS_KEYUP, keyUp) );
+                    CHK_VMAS(VMAS_KEYUP, keyUp) ||
+                    CHK_VMAS(VMAS_KEYEVENT, keyEvent) );
   }
 
   // get all window attributes
@@ -1273,13 +1276,14 @@ TWindow::closeRequest()
  *
  * This method gives the opportunity to setup the window before it's creation.
  */
-void TWindow::adjust()
+void
+TWindow::adjust()
 {
   resize();
 }
-
  
-void TWindow::doResize()
+void
+TWindow::doResize()
 {
   if (layout)
     layout->arrange();
