@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -68,6 +68,7 @@ class TMatrix2D:
     void map(int inX, int inY, int *outX, int *outY) const;
     void map(int inX, int inY, long *outX, long *outY) const;
     void map(int inX, int inY, double *outX, double *outY) const;
+    void map(double inX, double inY, double *outX, double *outY) const;
  
     TMatrix2D *next;
     
