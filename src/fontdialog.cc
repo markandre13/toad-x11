@@ -1,3 +1,5 @@
+#warning "Webdings results in a complete different (Andale Mono IPA) font under Freetype"
+
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
  * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
@@ -185,6 +187,9 @@ class TFontDialog:
 
     void familySelected();
     void styleSelected();
+    
+    void updateStyle();
+    void updateRendertype();
     void updateFont();
     
     void paint();
@@ -391,7 +396,8 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
    */
   size = "12";
   dpi = "100";
-  sizetype = SIZE_POINT;  
+  sizetype = SIZE_POINT;
+  rendertype = RENDER_BITMAP;
 
   /*
    * retrieve Xft (X FreeType Extension) font names
@@ -495,8 +501,10 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
       ffsp->second.type_scaleable_x11 = true;
     } else {
       ffsp->second.type_bitmap = true;
-      ffsp->second.size_pt.insert(xfn.points);
-      ffsp->second.size_px.insert(xfn.pixels);
+      if (xfn.points!="0")
+        ffsp->second.size_pt.insert(xfn.points);
+      if (xfn.pixels!="0")
+        ffsp->second.size_px.insert(xfn.pixels);
     }
   }
 
@@ -506,8 +514,6 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
   /*
    * create widgets
    */
-  TRadioButton *rb;
-  TCheckBox *cb;
   TPushButton *pb;
   TTextField *tf;
   
@@ -517,22 +523,29 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
 
   tstyle = new TTable(this, "font style");
   tstyle->setRenderer(new TTableCellRenderer_FontStyleMap(&fs));
-  connect(tstyle->sigSelection, this, &This::styleSelected);
+  connect(tstyle->sigSelection, this, &This::updateFont);
 
   tf = new TTextField(this, "font size", &size);
+//  connect(size.sigChanged, this, &This::updateFont);
+
   tf = new TTextField(this, "dpi", &dpi);
 
   tsize = new TTable(this, "font size table");
   
   sizetype.add(new TRadioButton(this, "metric pt"), SIZE_POINT);
   sizetype.add(new TRadioButton(this, "metric px"), SIZE_PIXEL);
+  connect(sizetype.sigChanged, this, &This::updateFont);
 
   rendertype.add(new TRadioButton(this, "type bitmap"), RENDER_BITMAP);
   rendertype.add(new TRadioButton(this, "type scaleable x11"), RENDER_SCALEABLE);
   rendertype.add(new TRadioButton(this, "type scaleable ft"), RENDER_FREETYPE);
+  connect(rendertype.sigChanged, this, &This::updateStyle);
   
   pb = new TPushButton(this, "ok");
   pb = new TPushButton(this, "abort");
+
+  #warning "why don't we just add a style flag to TTable that the first entry in a new model shall be selected"
+  tfont->getSelectionModel()->setSelection(0, 0);
 
   loadLayout("TFontDialog.atv");
 }
@@ -540,18 +553,26 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
 void
 TFontDialog::familySelected()
 {
-  cerr << "font family selected" << endl;
+  const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
   
   // we don't want a copy here!! reference or iterator would be fine!!!
-  const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
-  cerr << f.family << endl;
+  cerr << "selected family '" << f.family << "'" << endl;
   
   TFontFamily &f2(const_cast<TFontFamily&>(f));
 
   tsize->setRenderer(new TTableCellRenderer_StringSet(&f2.size_pt));
-
-  TRadioButtonBase *b;
   
+  updateRendertype();
+  updateStyle();
+  
+  tsize->getSelectionModel()->setSelection(0, 0);
+}
+
+void
+TFontDialog::updateRendertype()
+{
+  const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
+
   rendertype.getButton(RENDER_BITMAP)->setEnabled(f.type_bitmap);
   rendertype.getButton(RENDER_SCALEABLE)->setEnabled(f.type_scaleable_x11);
   rendertype.getButton(RENDER_FREETYPE)->setEnabled(f.type_scaleable_ft);
@@ -578,6 +599,12 @@ TFontDialog::familySelected()
     else
       rendertype = RENDER_FREETYPE;
   }
+}
+
+void
+TFontDialog::updateStyle()
+{
+  const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
 
   if (rendertype!=RENDER_FREETYPE) {
     TX11FontName xfn;
@@ -590,7 +617,7 @@ TFontDialog::familySelected()
       xfn.hdpi = xfn.vdpi = dpi;
     }
   
-    cerr << "mask: '" << xfn.getXLFD() << "'\n";
+//    cerr << "mask: '" << xfn.getXLFD() << "'\n";
     int count;
     char **fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
     fs.lock();
@@ -616,7 +643,7 @@ TFontDialog::familySelected()
     XFreeFontNames(fl);
     fs.unlock();
   } else {
-    cerr << "getting freetype style's" << endl;
+//    cerr << "getting freetype style's" << endl;
     
     XftPattern *pattern = XftPatternCreate();
     XftPatternAddString(pattern, XFT_FAMILY, f.family.c_str());
@@ -633,20 +660,43 @@ TFontDialog::familySelected()
 */    
     XftObjectSet *os = XftObjectSetCreate();
     XftObjectSetAdd(os, XFT_STYLE);
-    XftObjectSetAdd(os, XFT_SLANT);
-    XftObjectSetAdd(os, XFT_WEIGHT);
-    XftObjectSetAdd(os, XFT_STYLE);
+    // XftObjectSetAdd(os, XFT_SLANT);
+    // XftObjectSetAdd(os, XFT_WEIGHT);
     
-    XftFontSet *fs = XftListFontsPatternObjects(
+    XftFontSet *xftfl = XftListFontsPatternObjects(
       x11display, x11screen,
       pattern, os);
       
-    XftFontSetPrint(fs);
+//    XftFontSetPrint(xftfl);
+
+    fs.lock();
+    fs.clear();
+    for(int i=0; i<xftfl->nfont; ++i) {
+      XftPattern *pt = xftfl->fonts[i];
+      TFontStyle thisstyle("", "", "", "");
+      for(int j=0; j<pt->num; ++j) {
+        XftPatternElt *e = pt->elts+j;
+        if (strcmp(e->object, XFT_STYLE)==0) {
+          XftValueList *vl = e->values;
+          while(vl) {
+            switch(vl->value.type) {  
+              case XftTypeString:
+                thisstyle.name = vl->value.u.s;
+                fs[thisstyle]=thisstyle;
+                break;
+            }
+            vl=vl->next;
+          }
+        }
+      }
+    }
+    fs.unlock();
 
     XftObjectSetDestroy(os);
-    XftFontSetDestroy(fs);
+    XftFontSetDestroy(xftfl);
   }
   
+  tstyle->getSelectionModel()->setSelection(0, 0);
   invalidateWindow();
 }
 
@@ -679,15 +729,16 @@ TFontDialog::updateFont()
     xfn.points = size + "0";
     xfn.hdpi = xfn.vdpi = dpi;
   }
-  
-  cerr << "mask: '" << xfn.getXLFD() << "'\n";
+ 
+  #warning "encoding isn't selected" 
+//  cerr << "mask: '" << xfn.getXLFD() << "'\n";
   int count;
   char **fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
   for(int i=0; i<count; ++i) {
     if (i==0) {
       font.setFont(fl[0]);
     }
-    cerr << fl[i] << endl;
+//    cerr << fl[i] << endl;
   }
   XFreeFontNames(fl);
   invalidateWindow();
@@ -737,7 +788,7 @@ TFontDialog::paint()
       XftPatternAddMatrix(pattern, XFT_MATRIX, &xftmat);
     }
     
-    if (sizetype==SIZE_POINT) {
+    if (sizetype==SIZE_PIXEL) {
       double s = atoi(size.c_str());
       XftPatternAddDouble(pattern, XFT_PIXEL_SIZE, s);
     } else {
@@ -746,6 +797,11 @@ TFontDialog::paint()
       XftPatternAddDouble(pattern, XFT_SIZE, s);
       XftPatternAddDouble(pattern, XFT_DPI, d);
     }
+    
+    const TFontStyle &style(
+      fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY())
+    );
+    XftPatternAddString(pattern, XFT_STYLE, style.name.c_str());
 
     XftResult result;
     XftPattern *pattern2 = XftFontMatch(x11display, x11screen,
