@@ -336,6 +336,7 @@ class TTable:
     void rendererChanged();
     void _handleInsertRow();
     void _handleResizedRow();
+    void _handleRemovedRow();
 
     // precalculated values for optimization
     void handleNewModel();

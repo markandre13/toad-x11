@@ -1143,8 +1143,12 @@ DBM2(cerr << "enter mouseMove" << endl;)
     sx = cx; sy = cy;
     invalidateCursor();
   } else {
+    if (selectionFollowsMouse) {
+      sx = x; sy = y;
+    }
     invalidateChangedArea(sx,sy,cx,cy,cx,cy);
   }
+  
 //  selectAtCursor();
   sigCursor();
   DBM2(cerr << "leave mouseMove" << endl << endl;)
@@ -1265,6 +1269,9 @@ TTable::setCursor(int col, int row)
     cx = cols-1;
   if (cy>=rows)
     cy = rows-1;
+  if (selectionFollowsMouse) {
+    sx = cx; sy = cy;
+  }
   invalidateCursor();
 }
 
@@ -1424,12 +1431,19 @@ TTable::rendererChanged()
 {
   switch(renderer->type) {
     case TAbstractTableCellRenderer::INSERT_ROW:
+//      cout << "table: insert row " << renderer->where << ", " << renderer->size << endl;
       _handleInsertRow();
       break;
     case TAbstractTableCellRenderer::RESIZED_ROW:
+//      cout << "table: resized row " << renderer->where << ", " << renderer->size << endl;
       _handleResizedRow();
       break;
+    case TAbstractTableCellRenderer::REMOVED_ROW:
+//      cout << "table: removed row " << renderer->where << ", " << renderer->size << endl;
+      _handleRemovedRow();
+      break;
     default:
+//      cout << "table: new model" << endl;
       handleNewModel();
       break;
   }
@@ -1463,6 +1477,47 @@ TTable::_handleInsertRow()
     sy+=renderer->size;
   if (renderer->where<ffy)
     ffy+=renderer->size;
+  // fpy ...
+    
+  // scrolling, screen update
+      
+  // selection model ??? ouch ....
+
+  rows = new_rows;
+  invalidateWindow();
+
+  doLayout();
+}
+
+void
+TTable::_handleRemovedRow()
+{
+  int new_rows = rows - renderer->size;
+  // row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
+
+//cerr << "move from " << renderer->where << " to " << (renderer->where + renderer->size) << " an amount of " << (rows - renderer->where) << " entries" << endl;
+  TRCInfo *info = row_info + renderer->where;
+  for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
+    DBM(cout << "pane.h: " << pane.h << endl;)
+    int n = renderer->getRowHeight(i);
+    info->size = n;
+    pane.h -= n + border;
+    ++info;
+  }
+
+  memmove(
+    row_info + renderer->where,
+    row_info + renderer->where + renderer->size,
+    (rows - renderer->where - renderer->size) * sizeof(TRCInfo)
+  );
+
+  if (renderer->where<cy)
+    cy+=renderer->size;
+  if (renderer->where<sy)
+    sy+=renderer->size;
+  if (renderer->where<ffy)
+    ffy+=renderer->size;
+
   // fpy ...
     
   // scrolling, screen update
