@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,21 +22,6 @@
  * @defgroup dnd Drag'n Drop
  *
  * Functions to implement the Xdnd3 Drag'n Drop Protocol.
- * @todo
- * @li not removing the drop site when destroying the window
- *   (how about the create/destroy methods in TWindow?)
- * @li Gtk+ doesn't recognize us as a drop source
- * @li the rectangle in XdndStatus is ignored
- * @li i'm not catching all protocol error, etc.
- * @li no timeouts
- * @li no time stamps
- * @li no checks for corrupted input
- * @li drop site structure is removed with its parent window
- * @li the drop site parent is responsible to rearrange its drop sites...
- *   could I implement the drop sites as figures?
- * @li no support for ACTION_ASK (XdndActionList and XdndActionDescription
- *   are missing)
- * @li even more...
  */
 
 /*
@@ -792,17 +777,17 @@ TDropSite::TDropSite(TWindow *p, TRectangle const &r)
   parent = p;
   rect = r;
   use_parent = false;
-  Init();
+  init();
 }
 
 TDropSite::TDropSite(TWindow *p)
 {
   parent = p;
   use_parent = true;
-  Init();
+  init();
 }
 
-void TDropSite::Init()
+void TDropSite::init()
 {
   TWindowDropSiteMap::iterator p = dropsitemap.find(parent);
   if (p==dropsitemap.end()) {
@@ -819,11 +804,26 @@ TDropSite::~TDropSite()
 {
 }
 
-const TRectangle& TDropSite::getShape()
+const TRectangle&
+TDropSite::getShape()
 {
   if (use_parent)
     rect.set(0,0,parent->getWidth(), parent->getHeight());
   return rect;
+}
+
+void
+TDropSite::setShape(int x, int y, int w, int h)
+{
+  use_parent = false;
+  rect.set(x, y, w, h);
+}
+
+void
+TDropSite::setShape(const TRectangle &r)
+{
+  use_parent = false;
+  rect = r;
 }
 
 void TDropSite::leave()

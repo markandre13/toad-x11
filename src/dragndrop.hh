@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -107,13 +107,15 @@ class TDropSite
     virtual ~TDropSite();
     
     const TRectangle& getShape();
+    void setShape(int x, int y, int w, int h);
+    void setShape(const TRectangle &);
     TWindow* getParent() const { return parent; }
     
     virtual void dropRequest(TDnDObject&) = 0;
     virtual void drop(TDnDObject&) = 0;
     virtual void leave();
   protected:
-    void Init();
+    void init();
     TWindow *parent;
     
     bool use_parent;
