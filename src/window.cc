@@ -28,6 +28,16 @@
  * eg. from the mouse pointer, the keyboard, displays graphics and can
  * contain other windows.
  *
+ * How paint events are handled:
+ * 
+ * \li
+ *   TWindow::_providePaintRgn creates an empty paint event for the window
+ *   and place it into the paint event queue.
+ *
+ * \li
+ *   TWindow::_dispatchPaintEvent removes a paint event from the paint event
+ *   queue and handles it.
+ *
  * \todo
  *   \li
  *     Remove the code for X event selection based on overridden virtual
@@ -76,7 +86,7 @@ TCommand::TCommand() {}
 TCommand::~TCommand() {}
 
 #include <vector>
-#include <stack>
+#include <queue>
 #include <map>
 
 // obsolete:
@@ -833,7 +843,7 @@ TWindow::lowerWindow()
 // Paint Queue
 //----------------------------------------------------------------------------
 
-static stack<TWindow::TPaintRegion*> paint_region_stack;
+static queue<TWindow::TPaintRegion*> paint_region_queue;
 
 //! Static method returning `true' when there are event in the paint queue.
 //---------------------------------------------------------------------------
@@ -842,7 +852,7 @@ TWindow::_havePaintEvents()
 {
   if (lock_paint_queue)
     return false;
-  return !paint_region_stack.empty();
+  return !paint_region_queue.empty();
 }
 
 /**
@@ -853,17 +863,17 @@ void
 TWindow::_dispatchPaintEvent()
 {
   THREAD_LOCK(mutexPaintQueue);
-  if (paint_region_stack.empty()) {
+  if (paint_region_queue.empty()) {
     THREAD_UNLOCK(mutexPaintQueue);
     return;
   }
     
-  TPaintRegion *rgn = paint_region_stack.top();
-  paint_region_stack.pop();
+  TPaintRegion *rgn = paint_region_queue.front();
+  paint_region_queue.pop();
 //  THREAD_UNLOCK(mutexPaintQueue);
   
-  if (rgn->wnd) {
-    if (rgn->wnd->x11window)  {
+  if (rgn->wnd) { // when the region is still valid...
+    if (rgn->wnd->x11window)  { // .. and the window is still valid:
       TRectangle wrect(0, 0, rgn->wnd->_w, rgn->wnd->_h);
       
       // clip update region to window (needed after scrolling)
@@ -949,13 +959,13 @@ TWindow::_providePaintRgn()
 //printf("TWindow: creating paint region for %lx\n",(long)this);
     paint_rgn = new TPaintRegion;
     paint_rgn->wnd = this;
-    paint_region_stack.push(paint_rgn);
+    paint_region_queue.push(paint_rgn);
   }
 }
 
 /**
  * Return the invalidated region of the window.
- *
+ */
 TRegion* 
 TWindow::getUpdateRegion() const
 {

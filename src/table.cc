@@ -20,7 +20,6 @@
 
 #include <toad/toad.hh>
 #include <toad/table.hh>
-#include <toad/scrollbar.hh>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -369,13 +368,11 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, int idx, int w, int h)
  */
 
 TTable::TTable(TWindow *p, const string &t): 
-  TWindow(p, t) 
+  super(p, t) 
 {
-  vscroll = hscroll = NULL;
   renderer = NULL;
   selection = new TTableSelectionModel();
   border = 0;
-  lx = ly = 0;
   cx = cy = 0;
   ffx = ffy = 0;
   fpx = fpy = 0;
@@ -441,32 +438,8 @@ TTable::setColHeaderRenderer(TAbstractTableHeaderRenderer *r)
  * Scrolls the table window and recalculates some internal variables.
  */
 void
-TTable::scrolled()
+TTable::scrolled(int dx, int dy)
 {
-  int dx, dy;
-  dx = dy = 0;
-  if (hscroll) {
-    int n = hscroll->getValue();
-    dx = lx - n;
-    lx = n;
-  }
-  if (vscroll) {
-    int n = vscroll->getValue();
-    dy = ly - n;
-    ly = n;
-  }
-  scrollRectangle(visible, dx, dy, true);
-  
-  if (row_header_renderer) {
-    TRectangle r(0,visible.y,visible.x,visible.h);
-    scrollRectangle(r, 0, dy, true);
-  }
-
-  if (col_header_renderer) {
-    TRectangle r(visible.x,0,visible.w,visible.y);
-    scrollRectangle(r, dx, 0, true);
-  }
-  
   // adjust (ffx, ffy) and (fpx, fpy)
 
   fpx+=dx;
@@ -554,6 +527,8 @@ DBSCROLL({
   if (col_header_renderer) {
     TRectangle clip(visible.x, 0, visible.w, visible.y);
     pen.setClipRect(clip);
+    if (getUpdateRegion())
+      pen&=*getUpdateRegion();
     xp = fpx + visible.x;
     int h = col_header_renderer->getHeight();
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
@@ -572,6 +547,8 @@ DBSCROLL({
   if (row_header_renderer) {
     TRectangle clip(0, visible.y, visible.x, visible.h);
     pen.setClipRect(clip);
+    if (getUpdateRegion())
+      pen&=*getUpdateRegion();
     yp = fpy + visible.y;
     int w = col_header_renderer->getWidth();
     for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
@@ -595,13 +572,18 @@ DBSCROLL({
     y2 = max(sy, cy);
   }
 
-
   bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
   bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
 
   pen.setClipRect(visible);
-
+  if (getUpdateRegion())
+    pen&=*getUpdateRegion();
   if (border) {
+    int panex, paney;
+    getPanePos(&panex, &paney);
+    panex&=1;
+    paney&=1;
+  
     pen.identity();
     pen.setColor(0,0,0);
     pen.setLineStyle(TPen::DOT);
@@ -609,14 +591,14 @@ DBSCROLL({
     xp = fpx + visible.x + border/2;
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
       xp += col_info[x].size;
-      pen.drawLine(xp, visible.y, xp, visible.y+visible.h);
+      pen.drawLine(xp, visible.y-paney, xp, visible.y+visible.h);
       xp += border;
     }
     
     yp = fpy + visible.y + border/2;
     for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
       yp += row_info[y].size;
-      pen.drawLine(visible.x, yp, visible.x+visible.w, yp);
+      pen.drawLine(visible.x-panex, yp, visible.x+visible.w, yp);
       yp += border;
     }
     
@@ -627,26 +609,31 @@ DBSCROLL({
   for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
     yp = fpy + visible.y;
     for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
-      pen.identity();
-      pen.translate(xp, yp);
-      bool selected = selection->isSelected(perRow?0:x,perCol?0:y);
-      if (selecting) {
-        if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
-          selected = true;
-      }
+      TRectangle check(xp,yp,col_info[x].size, row_info[y].size);
+      if (!getUpdateRegion() ||
+          getUpdateRegion()->isInside(check)!=TRegion::OUT)
+      {
+        pen.identity();
+        pen.translate(xp, yp);
+        bool selected = selection->isSelected(perRow?0:x,perCol?0:y);
+        if (selecting) {
+          if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
+            selected = true;
+        }
 
 DBSCROLL(
   pen.setColor(255,255,255);
   pen.fillRectanglePC(0,0,col_info[x].size, row_info[y].size);
   pen.setColor(0,0,0);
 )
-      renderer->renderItem(
-          pen,
-          x, y,
-          col_info[x].size, row_info[y].size,
-          selected,
-          cx == x && cy == y && isFocus()
+        renderer->renderItem(
+            pen,
+            x, y,
+            col_info[x].size, row_info[y].size,
+            selected,
+            cx == x && cy == y && isFocus()
         );
+      }
       yp += row_info[y].size + border;
     }
     xp += col_info[x].size + border;
@@ -716,46 +703,52 @@ TTable::mouseLDown(int mx, int my, unsigned)
 void
 TTable::center(int how)
 {
+  int panex, paney;
+  panex = paney = -1;
+  getPanePos(&panex, &paney, false);
+
   assert(cols!=0 && rows!=0);
-  if (vscroll && how&CENTER_VERT) {
+  if (paney!=-1 && how&CENTER_VERT) {
     int yp = 0;
     int y;
     for(y=0; y<cy; y++) {
       yp += row_info[y].size + border;
     }
     
-    int y1 = vscroll->getValue();
+    int y1 = paney;
     int y2 = y1 + visible.h;
       
     if (yp<y1) {
-      vscroll->setValue(yp);
+      paney = yp;
     } else {
       yp += row_info[y].size + border;
       if (yp>y2) {
-        vscroll->setValue(yp-visible.h);
+        paney = yp-visible.h;
       }
     }
   }
 
-  if (hscroll && how&CENTER_HORZ) {
+  if (panex!=-1 && how&CENTER_HORZ) {
     int xp = 0;
     int x;
     for(x=0; x<cx; x++) {
       xp += col_info[x].size + border;
     }
     
-    int x1 = hscroll->getValue();
+    int x1 = panex;
     int x2 = x1 + visible.w;
       
     if (xp<x1) {
-      hscroll->setValue(xp);
+      panex = xp;
     } else {
       xp += col_info[x].size + border;
       if (xp>x2) {
-        hscroll->setValue(xp-visible.w);
+        panex = xp-visible.w;
       }
     }
   }
+  
+  setPanePos(panex, paney);
 
   invalidateWindow();
 }
@@ -857,7 +850,7 @@ TTable::handleNewModel()
   if (selection)
     selection->clearSelection();
   cx = cy = 0;
-  lx = ly = 0;
+  resetScrollPane();
   ffx = ffy = 0;
   fpx = fpy = 0;
   selecting = false;
@@ -898,14 +891,11 @@ TTable::handleNewModel()
 }
 
 void
-TTable::doLayout()
+TTable::adjustPane()
 {
   visible.set(0,0,getWidth(),getHeight());
 
   DBM(cout << "tab_h: " << tab_h << endl;)
-
-  bool need_hscroll = false;
-  bool need_vscroll = false;
 
   if (row_header_renderer) {
     visible.x = row_header_renderer->getWidth();
@@ -915,76 +905,7 @@ TTable::doLayout()
     visible.y = col_header_renderer->getHeight();
     visible.h -= visible.y;
   }
-
-  if (tab_w > visible.w) {
-    need_hscroll = true;
-    visible.h -= TScrollBar::getFixedSize();
-  }
-  
-  if (tab_h > visible.h) {
-    need_vscroll = true;
-    visible.w -= TScrollBar::getFixedSize();
-  }
-
-  if (!need_hscroll && tab_w > visible.w) {
-    need_hscroll = true;
-    visible.h -= TScrollBar::getFixedSize();
-  }
-
-  DBM(cout
-      << "doLayout:" << endl
-      << "visible.w, visible.h = "<<visible.w<<", "<<visible.h<<endl
-      << "rows, cols           = "<<rows<<", "<<cols<<endl
-      << "tab_w, tab_h         = "<<tab_w<<", "<<tab_h<<endl
-      << "need h,v             = "<<need_hscroll<<", "<<need_vscroll<<endl;)
-  
-  if (need_vscroll) {
-    if (!vscroll) {
-      vscroll = new TScrollBar(this, "vertical");
-      connect(vscroll->getModel()->sigChanged, this, &TTable::scrolled);
-      vscroll->createWindow();
-    }
-    vscroll->bNoFocus=true;
-    vscroll->setShape(
-      visible.x+visible.w,
-      visible.y,
-      TScrollBar::getFixedSize(), 
-      visible.h);
-    vscroll->setExtent(visible.h);
-    vscroll->setMinimum(0);
-    vscroll->setMaximum(tab_h);
-    vscroll->setMapped(true);
-    vscroll->setUnitIncrement(tab_h/rows);
-  } else {
-    if (vscroll) {
-      vscroll->setMapped(false);
-      vscroll->setValue(0);
-    }
-  }
-
-  if (need_hscroll) {
-    if (!hscroll) {
-      hscroll = new TScrollBar(this, "horizontal");
-      connect(hscroll->getModel()->sigChanged, this, &TTable::scrolled);
-      hscroll->createWindow();
-    }
-    hscroll->bNoFocus=true;
-    hscroll->setShape(
-      visible.x,
-      visible.y+visible.h,
-      visible.w,
-      TScrollBar::getFixedSize());
-    hscroll->setExtent(visible.w);
-    hscroll->setMinimum(0);
-    hscroll->setMaximum(tab_w);
-    hscroll->setMapped(true);
-    hscroll->setUnitIncrement(tab_w/cols);
-  } else {
-    if (hscroll) {
-      hscroll->setMapped(false);
-      hscroll->setValue(0);
-    }
-  }
+  setUnitIncrement(cols ? tab_w/cols : 1, rows ? tab_h/rows : 1);
 }
 
 //---------------------------------------------------------------------------

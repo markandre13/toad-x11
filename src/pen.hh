@@ -121,8 +121,10 @@ class TPenBase:
     virtual void clrClipBox() = 0;
     virtual void getClipBox(TRectangle*) const = 0;
 
-    virtual void operator&=(TRectangle&) = 0;
-    virtual void operator|=(TRectangle&) = 0;
+    virtual void operator&=(const TRectangle&) = 0;
+    virtual void operator|=(const TRectangle&) = 0;
+    virtual void operator&=(const TRegion&) = 0;
+    virtual void operator|=(const TRegion&) = 0;
 
     // point
     //-----------------------
@@ -360,8 +362,10 @@ class TPen:
     void clrClipBox();
     void getClipBox(TRectangle*) const;
 
-    void operator&=(TRectangle&);
-    void operator|=(TRectangle&);
+    void operator&=(const TRectangle&);
+    void operator|=(const TRectangle&);
+    void operator&=(const TRegion&);
+    void operator|=(const TRegion&);
 
     // point
     //-----------------------

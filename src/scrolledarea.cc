@@ -23,233 +23,168 @@
 #include <toad/region.hh>
 #include <toad/scrolledarea.hh>
 
+#define DBM(X)
+
 /**
- * \class toad::TScrolledArea
- *
- * <B>Note</B>: This is going to become obsolete in the future.
- * <OL>
- *   <LI> size of an item
- *   <LI> size of the area by count of items
- *   <LI> position of the upper left corner by count of items
- * </OL>
+ * \class toad::TScrollPane
  */
 
-namespace toad {
+using namespace toad;
 
 // constructor
 //-------------------------------------
-TScrolledArea::TScrolledArea(TWindow *p, const string &t):
+TScrollPane::TScrollPane(TWindow *p, const string &t):
   TWindow(p,t)
 {
-  setArea(0,0);
-  hscroll = vscroll = NULL;
-  bAlwaysVertical = bAlwaysHorizontal = false;
+  vscroll = hscroll = 0;
+  uix = uiy = 1;
+  resetScrollPane();
 }
 
-// SetArea
-//-------------------------------------
-void 
-TScrolledArea::setArea(int aw, int ah, int x, int y, int iw, int ih)
+void
+TScrollPane::resetScrollPane()
 {
-  area_w=aw; area_h=ah;
-  area_x=x;  area_y=y;
-  item_w=iw; item_h=ih;
-  visi_w = visi_h = 0;
+  lx = ly = 0;
+}
+
+void
+TScrollPane::_scrolled()
+{
+  int dx, dy;
+  dx = dy = 0;
+  if (hscroll) {
+    int n = hscroll->getValue();
+    dx = lx - n;
+    lx = n;
+  }
+  if (vscroll) {
+    int n = vscroll->getValue();  
+    dy = ly - n;
+    ly = n;
+  }
+  scrollRectangle(visible, dx, dy, true);
   
-  if (isRealized()) {
-    pArrangeSB();
-    invalidateWindow();
-  }
-}
-
-void TScrolledArea::setItemSize(int w,int h)
-{
-  item_w = w;
-  item_h = h;
-}
-
-void TScrolledArea::setVisibleAreaPos(int x,int y)
-{
-  area_x = x;
-  area_y = y;
-}
-
-void TScrolledArea::setAreaSize(int w,int h)
-{
-  area_w = w;
-  area_h = h;
-}
-
-void TScrolledArea::setVisibleAreaSize(int w,int h)
-{
-  #warning "this is a hack"
-  setSize(w*item_w+TScrollBar::getFixedSize(),h*item_h);
-}
-
-// actVScroll
-//-------------------------------------
-void TScrolledArea::actVScroll()
-{
-  int ny = vscroll->getValue();   // new position
-  int dy = ny - area_y;           // movement
-  area_y = ny;                    // set new position
-  if (abs(dy)<visi_h)             // part of the area is still visible
-  {
-    scrollWindow(0,-dy*item_h);         // generates 'paint' event
-  } else {
-    invalidateWindow();
-  }
-}
-
-// actHScroll
-//-------------------------------------
-void TScrolledArea::actHScroll()
-{
-  int nx = hscroll->getValue();   // new position
-  int dx = nx - area_x;           // movement
-  area_x = nx;                    // set new position
-  if (abs(dx)<visi_w)             // part of the area is still visible
-  {
-    scrollWindow(-dx*item_w,0);   // generates 'paint' event
-  } else {
-    invalidateWindow();
-  }
-}
-
-// pArrangeSB
-//-------------------------------------
-void TScrolledArea::pArrangeSB()
-{
-  // calculate visible area
-  //------------------------
-  visi_w = getWidth() / item_w;
-  visi_h = getHeight() / item_h;
-  
-  // test which scrollbars are neccessary
-  //--------------------------------------
-  bool need_h, need_v;
-  need_h = need_v = false;
-
-  if (bAlwaysVertical || visi_h<area_h) // need vertical scrollbar
-  {
-    need_v = true;
-    visi_w = (getWidth()-TScrollBar::getFixedSize()) / item_w;
+  if (visible.x) {
+    TRectangle r(0,visible.y,visible.x,visible.h);
+    scrollRectangle(r, 0, dy, true);
   }
   
-  if (bAlwaysHorizontal || visi_w < area_w) // need horizontal scrollbar
-  {
-    need_h = true;
-    visi_h = (getHeight()-TScrollBar::getFixedSize()) / item_h;
-  }
-  
-  // after adding only a horizontal scrollbar a vertical may be needed now
-  if (!need_v && visi_h < area_h) {
-    need_v = true;
-    visi_w = (getWidth()-TScrollBar::getFixedSize()) / item_w;
-  }
-  
-  // ensure that most of the area is visible
-  //-----------------------------------------
-  if (area_y+visi_h > area_h) {
-    area_y = area_h - visi_h;
-    if (area_y < 0)
-      area_y = 0;
-  }
+  if (visible.y) {
+    TRectangle r(visible.x,0,visible.w,visible.y);
+    scrollRectangle(r, dx, 0, true);
+  } 
 
-  if (area_x+visi_w > area_w) {
-    area_x = area_w - visi_w;
-    if (area_x < 0)
-      area_x = 0;
-  }
+  scrolled(dx, dy);
+}
 
-  // create and destroy scrollbars
-  //-------------------------------
-  // NOTE: since a window is wasting about ?bytes of server memory,
-  //       i believe it's a good idea to destroy them when not needed
-  if (need_v) {
-    if (!vscroll) {
-      vscroll = new TScrollBar(this,"");
-      vscroll->bNoFocus = true;
-      CONNECT(vscroll->getModel()->sigChanged, this,actVScroll);
-    } else {
-      need_v = false;
+void
+TScrollPane::scrolled(int dx, int dy)
+{
+}
+
+void
+TScrollPane::doLayout()
+{
+  adjustPane();
+
+  bool need_hscroll = false;
+  bool need_vscroll = false;
+
+  if (tab_w > visible.w) {
+    need_hscroll = true;  
+    visible.h -= TScrollBar::getFixedSize();
+  }
+   
+  if (tab_h > visible.h) {
+    need_vscroll = true;  
+    visible.w -= TScrollBar::getFixedSize();
+  }
+   
+  if (!need_hscroll && tab_w > visible.w) {
+    need_hscroll = true;
+    visible.h -= TScrollBar::getFixedSize();
+  }
+   
+  DBM(cout
+      << "doLayout:" << endl
+      << "visible.w, visible.h = "<<visible.w<<", "<<visible.h<<endl
+      << "rows, cols           = "<<rows<<", "<<cols<<endl
+      << "tab_w, tab_h         = "<<tab_w<<", "<<tab_h<<endl
+      << "need h,v             = "<<need_hscroll<<", "<<need_vscroll<<endl;)
+  
+  if (need_vscroll) {
+    if (!vscroll) {  
+      vscroll = new TScrollBar(this, "vertical");
+      connect(vscroll->getModel()->sigChanged, this, &TScrollPane::_scrolled);
+      vscroll->createWindow();
     }
+    vscroll->bNoFocus=true;
+    vscroll->setShape(
+      visible.x+visible.w,
+      visible.y,
+      TScrollBar::getFixedSize(),
+      visible.h);
+    vscroll->setExtent(visible.h);
+    vscroll->setMinimum(0);
+    vscroll->setMaximum(tab_h);
+    vscroll->setMapped(true);  
+    vscroll->setUnitIncrement(uiy);
   } else {
     if (vscroll) {
-      delete vscroll;
-      vscroll = NULL;
+      vscroll->setMapped(false);
+      vscroll->setValue(0);
     }
-  }
-
-  if (need_h) {
-    if (!hscroll) {
-      hscroll = new TScrollBar(this,"");
-      hscroll->bNoFocus = true;
-      CONNECT(hscroll->getModel()->sigChanged, this,actHScroll);
-    } else {
-      need_h = false;
+  }  
+     
+  if (need_hscroll) {
+    if (!hscroll) {  
+      hscroll = new TScrollBar(this, "horizontal");
+      connect(hscroll->getModel()->sigChanged, this, &TScrollPane::_scrolled);
+      hscroll->createWindow();
     }
+    hscroll->bNoFocus=true;
+    hscroll->setShape(
+      visible.x,
+      visible.y+visible.h,
+      visible.w,
+      TScrollBar::getFixedSize());
+    hscroll->setExtent(visible.w);
+    hscroll->setMinimum(0);
+    hscroll->setMaximum(tab_w);
+    hscroll->setMapped(true);  
+    hscroll->setUnitIncrement(uix);
   } else {
     if (hscroll) {
-      delete hscroll;
-      hscroll = NULL;
+      hscroll->setMapped(false);
+      hscroll->setValue(0);
     }
-  }
+  }  
+}
 
-  // arrange scrollbars
-  //--------------------
-  if (vscroll) {
-    vscroll->setShape(
-      getWidth()-TScrollBar::getFixedSize(),
-      0,
-      TSIZE_PREVIOUS,
-      (hscroll ? getHeight()-TScrollBar::getFixedSize() : getHeight())
-    );
-    vscroll->getModel()->setRangeProperties(area_y, visi_h, 0,area_h-1);
+void
+TScrollPane::getPanePos(int *x, int *y, bool setall) const {
+  if (setall) {
+    *x = *y = 0;
   }
+  if (hscroll) *x = hscroll->getValue();
+  if (vscroll) *y = vscroll->getValue();
+}
 
-  if (hscroll) {
-    hscroll->setShape(
-      0,
-      getHeight()-TScrollBar::getFixedSize(),
-      vscroll ? getWidth()-TScrollBar::getFixedSize() : getWidth(),
-      TSIZE_PREVIOUS
-    );
-    hscroll->getModel()->setRangeProperties(area_x, visi_w, 0,area_w-1);
-  }
+void
+TScrollPane::setPanePos(int x, int y) {
+  if (hscroll) hscroll->setValue(x);
+  if (vscroll) vscroll->setValue(y);
+}
+
+void
+TScrollPane::setUnitIncrement(int uix, int uiy)
+{
+  this->uix = uix;
+  this->uiy = uiy;
   
-  // create new scrollbars
-  //-----------------------
-  if (isRealized() && need_v)
-    vscroll->createWindow();
+  if (hscroll)
+    hscroll->setUnitIncrement(uix);
+  if (vscroll)
+    vscroll->setUnitIncrement(uiy);
+}
     
-  if (isRealized() && need_h)
-    hscroll->createWindow();
-}
-
-// resize
-//--------
-void TScrolledArea::resize()
-{
-  pArrangeSB();
-}
-
-void TScrolledArea::clipPen(TPen &pen)
-{
-  if (vscroll && hscroll) {
-    TRectangle r(0,0,
-      getWidth()-TScrollBar::getFixedSize(),
-      getHeight()-TScrollBar::getFixedSize() );
-    if (bNoBackground) {
-      TPen pen2(this);
-      pen.setColor(TColor::DIALOG);
-      pen.fillRectanglePC(getWidth()-TScrollBar::getFixedSize(),
-                          getHeight()-TScrollBar::getFixedSize(),
-                          TScrollBar::getFixedSize(),
-                          TScrollBar::getFixedSize() );
-    } 
-    pen&=r;
-  }
-}
-
-} // namespace toad

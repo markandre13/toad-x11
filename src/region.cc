@@ -42,13 +42,14 @@ TRegion::TRegion()
 {
   TOAD_XLIB_MTLOCK();
   x11region = XCreateRegion();
-//cout << "creating X11 region " << x11region << endl;
+//cerr << "create x11region " << x11region << endl;
   TOAD_XLIB_MTUNLOCK();
 }
 
 TRegion::TRegion(const TRegion &r)
 {
   x11region = XCreateRegion();
+//cerr << "create x11region " << x11region << endl;
   XUnionRegion(x11region, r.x11region, x11region);
 }
 
@@ -62,7 +63,7 @@ TRegion::operator=(const TRegion &r)
 TRegion::~TRegion()
 {
   TOAD_XLIB_MTLOCK();
-//cout << "destroying X11 region " << x11region << endl;
+//err << "destroying X11 region " << x11region << endl;
   XDestroyRegion(x11region);
   TOAD_XLIB_MTUNLOCK();
 }
@@ -138,24 +139,34 @@ TRegion::getRect(long n, TRectangle *r) const
 void
 TRegion::operator&=(const TRegion &r)
 {
+  // avoid segfault in Xlib during XDestroyRegion
+  if (x11region==r.x11region) {
+    return;
+  }
   XIntersectRegion(x11region, r.x11region, x11region);
 }
 
 void
 TRegion::operator|=(const TRegion &r)
 {
+  if (x11region==r.x11region)
+    return;
   XUnionRegion(x11region, r.x11region, x11region);
 }
 
 void
 TRegion::operator-=(const TRegion &r)
 {
+  if (x11region==r.x11region)
+    return;
   XSubtractRegion(x11region, r.x11region, x11region);
 }
 
 void
 TRegion::operator^=(const TRegion &r)
 {
+  if (x11region==r.x11region)
+    return;
   XXorRegion(x11region, r.x11region, x11region);
 }
 

@@ -75,7 +75,7 @@ static string selection_kludge_data;
 static bool selection_kludge_flag;
 
 // define this for a periodic screen update every 1/12 seconds
-// #define PERIODIC_PAINT
+#define PERIODIC_PAINT
 
 namespace {
 class TCommandDeleteWindow:
@@ -530,6 +530,11 @@ static const char *x11eventname[34] = {
       !window->isChildOf(modal_stack.back()->wnd) ) { \
       break; }
 
+static Bool
+checkMotion(Display*, XEvent *event, XPointer) {
+  return event->type == MotionNotify;
+}
+
 bool
 TOADBase::handleMessage()
 {
@@ -600,7 +605,7 @@ TOADBase::handleMessage()
           window->handleX11Event();
 #ifdef PERIODIC_PAINT         
           bool dispatch_all_paint_events = false;
-          if (!TWindow::_HavePaintEvents()) {
+          if (!TWindow::_havePaintEvents()) {
             gettimeofday(&first_paint_event_age, NULL);
           } else {
             struct timeval crnt_time;
@@ -656,14 +661,14 @@ handle_event:
 #ifdef PERIODIC_PAINT
   // flush all paint events 12 times per second
   //--------------------------------------------
-  if (TWindow::_HavePaintEvents()) {
+  if (TWindow::_havePaintEvents()) {
     struct timeval crnt_time;
     gettimeofday(&crnt_time, NULL);
     if ( (ulong)(crnt_time.tv_sec -first_paint_event_age.tv_sec)*1000000UL
         +(ulong)(crnt_time.tv_usec-first_paint_event_age.tv_usec) 
         >= 1000000UL / 12UL ) {
-      while(TWindow::_HavePaintEvents())
-        TWindow::_DispatchPaintEvent();
+      while(TWindow::_havePaintEvents())
+        TWindow::_dispatchPaintEvent();
     }
   }
 #endif
@@ -1102,6 +1107,11 @@ cout << endl;
     // MotionNotify
     //--------------
     case MotionNotify: {
+
+    #warning compressing MotionNotify for all windows, must be optional
+    while(XCheckIfEvent(x11display, &x11event, checkMotion, 0))
+      ;
+
       CONSIDER_GRAB(xmotion)
 #if 1
 //      if (!window->isChildOf(TDialogEditor::getCtrlWindow()))
@@ -1111,9 +1121,15 @@ cout << endl;
       TMouseEvent me;
       me.type = TMouseEvent::MOVE;
       me.window = window;
+#if 0
       me.x = x-window->getOriginX();
       me.y = y-window->getOriginY();
       me.modifier = x11event.xbutton.state;
+#else
+      me.x = x11event.xmotion.x-window->getOriginX();
+      me.y = x11event.xmotion.y-window->getOriginY();
+      me.modifier = x11event.xmotion.state;
+#endif
       
       TEventFilter *flt = toad::global_evt_filter;
       while(flt) {

@@ -109,7 +109,15 @@ TPen::TPen(TWindow *wnd)
   // use the clip region when window has one
   if (wnd->paint_rgn) {
     if (!wnd->bDoubleBuffer) {
+#if 0
       setClipRegion(static_cast<TRegion*>(wnd->paint_rgn));
+#else
+      // someone might call TWindow::getUpdateRegion to reuse the
+      // original update region multiple times, so we always have to
+      // use a copy, add copy-on-write to TRegion instead
+      setClipRegion(new TRegion(*static_cast<TRegion*>(wnd->paint_rgn)));
+      bDeleteRegion = true;
+#endif      
     } else {
       setClipRegion(new TRegion(*static_cast<TRegion*>(wnd->paint_rgn)));
       bDeleteRegion = true;
@@ -229,7 +237,16 @@ void TPen::setClipRect(const TRectangle &r)
  * <I>Note: when the pen has no clipping region yet, this method doesn't
  * do anything. I guess we will change the behaviour by the time.</I>
  */
-void TPen::operator&=(TRectangle &rect)
+void
+TPen::operator&=(const TRectangle &rect)
+{
+  if (!region) return;
+  *region&=rect;
+  XSetRegion(x11display, o_gc, region->x11region);
+}
+
+void
+TPen::operator&=(const TRegion &rect)
 {
   if (!region) return;
   *region&=rect;
@@ -245,7 +262,16 @@ void TPen::operator&=(TRectangle &rect)
  * <I>Note: when the pen has no clipping region yet, this method doesn't
  * do anything. I guess we will change the behaviour by the time.</I>
  */
-void TPen::operator|=(TRectangle &rect)
+void
+TPen::operator|=(const TRectangle &rect)
+{
+  if (!region) return;
+  *region|=rect;
+  XSetRegion(x11display, o_gc, region->x11region);
+}
+
+void
+TPen::operator|=(const TRegion &rect)
 {
   if (!region) return;
   *region|=rect;

@@ -21,7 +21,7 @@
 #ifndef TTable
 #define TTable TTable
 
-#include <toad/window.hh>
+#include <toad/scrolledarea.hh>
 #include <toad/model.hh>
 
 namespace toad {
@@ -210,24 +210,18 @@ class TDefaultTableHeaderRenderer:
 };
 
 class TTable:
-  public TWindow
+  public TScrollPane
 {
+    typedef TScrollPane super;
     PAbstractTableCellRenderer renderer;
     PTableSelectionModel selection;
     PAbstractTableHeaderRenderer row_header_renderer;
     PAbstractTableHeaderRenderer col_header_renderer;
 
-    TScrollBar *vscroll, *hscroll;
-
     unsigned border;
     
     //! cursor position
     int cx, cy;
-    
-    //! last scrollbar position (so we know how much to scroll)
-    int lx, ly;
-    
-    TRectangle visible;
     
     //! position where selection over multiple fields started
     int sx, sy;
@@ -284,8 +278,8 @@ class TTable:
     static const int CENTER_BOTH=3;
     void center(int how);
 
-    void doLayout();
-    void scrolled();
+    void adjustPane();
+    void scrolled(int dx, int dy);
     
     // precalculated values for optimization
     void handleNewModel();
@@ -297,8 +291,6 @@ class TTable:
       int size;
     };
     TRCInfo *row_info, *col_info;
-    
-    int tab_w, tab_h;   // table size in pixels
     
     void invalidateCursor();
     void invalidateChangedArea(int sx, int sy,
