@@ -191,8 +191,9 @@ TFont::getAscent() const
   }
 #endif
 #ifdef HAVE_LIBXFT
-  if (xftfont)
-    return x11scale * xftfont->ascent;
+  if (xftfont) {
+    return ascent;
+  }
 #endif
 cerr << __PRETTY_FUNCTION__ << ": empty font" << endl;
   return 0;
@@ -212,8 +213,9 @@ TFont::getDescent() const
   }
 #endif
 #ifdef HAVE_LIBXFT
-  if (xftfont)
-    return x11scale * xftfont->descent;
+  if (xftfont) {
+    return descent;
+  }
 #endif
 cerr << __PRETTY_FUNCTION__ << ": empty font" << endl;
   return 0;
@@ -301,12 +303,13 @@ dummyhandler(Display *, XErrorEvent *)
 void
 TFont::createX11Font(TMatrix2D *mat)
 {
-  FcPattern *pattern = FcNameParse( (FcChar8 *)fontname.c_str());
+  FcPattern *pattern;
 
   // check that the required transformation matches the current font
   string newid;
   if (mat && !mat->isIdentity()) {
     double d;
+    pattern = XftNameParse(fontname.c_str());
     FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
     newid = "[";
     newid += d2s(mat->a11 * d);
@@ -334,11 +337,13 @@ TFont::createX11Font(TMatrix2D *mat)
 #ifdef TOAD_OLD_FONTCODE
       if (x11font) {
         // we have an rotated font and it's the one we need
+        FcPatternDestroy(pattern);
         return;
       }
 #endif
 #ifdef HAVE_LIBXUTF8
       if (xutf8font_r) {
+        FcPatternDestroy(pattern);
         return;
       }
 #endif
@@ -366,6 +371,7 @@ TFont::createX11Font(TMatrix2D *mat)
       return;
     }
 #endif
+    pattern = XftNameParse(fontname.c_str());
   }
 
   // Execute substitutions
@@ -511,11 +517,34 @@ TFont::createX11Font(TMatrix2D *mat)
 void
 TFont::createXftFont(TMatrix2D *mat)
 {
-  if (xftfont) {
-    XftFontClose(x11display, xftfont);
-    xftfont = 0;
+  XftPattern *pattern;
+  string newid;
+  if (mat && !mat->isIdentity()) {
+    double d;
+    pattern = XftNameParse(fontname.c_str());
+    FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
+    newid = "[";
+    newid += d2s(mat->a11 * d);
+    newid += d2s(mat->a12 * d);
+    newid += d2s(mat->a21 * d);
+    newid += d2s(mat->a22 * d);
+    newid += "]";
+    if (newid != id) {
+      if (xftfont) {
+        XftFontClose(x11display, xftfont);
+        xftfont = 0;
+      }
+      id = newid;
+    } else {
+      FcPatternDestroy(pattern);
+      return;
+    }
+  } else {
+    if (xftfont) {
+      return;
+    }
+    pattern = XftNameParse(fontname.c_str());
   }
-  XftPattern *pattern = XftNameParse(fontname.c_str());
 
   // fontconfig-devel.txt sais that the default dpi is 75 but my
   // version took about 100 dpi, so force it to 75 dpi here:
@@ -524,7 +553,14 @@ TFont::createXftFont(TMatrix2D *mat)
     XftPatternAddDouble(pattern, XFT_DPI, 75.0);
   }
 
+  XftResult result;
+  XftPattern *found;
+
   if (mat && !mat->isIdentity()) {
+    
+    // set x11scale to the fonts scaling factor which we need as
+    // XftTextExtentsUtf8 will deliver the font actually used but
+    // we need to deliver the unscaled dimensions
     double x1, y1, x2, y2;
     TMatrix2D m(*mat);
     m.invert();
@@ -533,6 +569,17 @@ TFont::createXftFont(TMatrix2D *mat)
     x1-=x2;
     y1-=y2;
     x11scale = sqrt(x1*x1+y1*y1);
+
+    // ascent and descent are wrong for rotated fonts, so we retrieve
+    // these values here for an unrotated font.
+    found = XftFontMatch(x11display, x11screen, pattern, &result);
+    XftFont *new_font = XftFontOpenPattern(x11display, found);
+    if (new_font) {
+      ascent  = new_font->ascent;
+      descent = new_font->descent;
+      XftFontClose(x11display, new_font);
+    }
+
     XftMatrix xftmat;
     XftMatrixInit(&xftmat);
     xftmat.xx = mat->a11;
@@ -540,81 +587,25 @@ TFont::createXftFont(TMatrix2D *mat)
     xftmat.xy = mat->a21;
     xftmat.yy = mat->a22;
     XftPatternAddMatrix(pattern, XFT_MATRIX, &xftmat);
+
+  } else {
+    x11scale = 1.0;
   }
 
-  XftResult result;
-  XftPattern *found;
   found = XftFontMatch(x11display, x11screen, pattern, &result);
 
   XftFont *new_font = XftFontOpenPattern(x11display, found);
   if (new_font) {
     clear();
     xftfont = new_font;
+    if (!mat || mat->isIdentity()) {
+      ascent  = xftfont->ascent;
+      descent = xftfont->descent;
+    }
   }
 
   XftPatternDestroy(pattern);
 }
-#endif
-
-#if 0
-
-static void
-drawString16(int x, int y,
-             XChar2b *text,
-             unsigned len )
-{
-  font.createFont(pen.mat);
-
-  switch(font.getRenderType()) {
-    case TFont::RENDER_X11:
-      if (!font.getX11Font())
-        return;
-      XSetFont(x11display, pen.o_gc, font.getX11Font());
-      y+=font.getAscent();
-      if (!pen.mat) {
-        XDrawString16(x11display, pen.x11drawable, pen.o_gc, x,y, text, len );
-cerr << __LINE__ << endl;
-      } else {
-#if 1
-        pen.mat->map(x, y, &x, &y);
-        XDrawString16(x11display, pen.x11drawable, pen.o_gc, x,y, text, len );
-#else
-        int x2, y2;
-        string::const_iterator p(text.begin()), e(text.end());
-        while(p!=e) {
-          XChar2b buffer[2];
-          buffer[0]=*p;
-          buffer[1]=0;
-          pen.mat->map(x, y, &x2, &y2);
-          XDrawString16(x11display, pen.x11drawable, pen.o_gc, x2,y2, buffer, 1);
-          x+=font.getTextWidth(buffer);
-          ++p;
-        }
-#endif
-      }
-      break;
-#ifdef HAVE_LIBXFT
-    case TFont::RENDER_FREETYPE: {
-      y+=font.getAscent();
-      if (pen.mat)
-        pen.mat->map(x, y, &x, &y);
-      XftColor color;
-      color.color.red = 0;
-      color.color.green = 0;
-      color.color.blue = 0;
-      color.color.alpha = 0xffff;
-for(int i=0; i<len; ++i) {
-  int a = text[i].byte1;
-  text[i].byte1 = text[i].byte2;
-  text[i].byte2 = a;
-}
-      XftDrawString16(xftdraw, &color, font.getXftFont(), x,y, (XftChar16*)text, len);
-      } break;
-#endif
-  }
-}
-
-
 #endif
 
 

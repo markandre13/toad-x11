@@ -81,6 +81,7 @@ class TFont:
 
 #ifdef HAVE_LIBXFT    
     XftFont * xftfont;
+    int ascent, descent;
     void createXftFont(TMatrix2D*);
 #endif
 #endif
