@@ -6,7 +6,7 @@
 AC_INIT(libtoad, 0.64.0, toad-bug@mark13.de)
 
 AC_CONFIG_SRCDIR([src/toadbase.cc])
-# AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -16,10 +16,13 @@ AC_PROG_MAKE_SET
 
 # Checks for libraries.
 AC_PATH_XTRA
+LIBS="${LIBS} ${X_LIBS}"
+
 # AC_CHECK_LIB([MesaGL], [main])
 # AC_CHECK_LIB([MesaGLU], [main])
 AC_CHECK_LIB([Xext], [main])
 AC_CHECK_LIB([m], [main])
+AC_CHECK_LIB([Xft], [XftFontOpen])
 
 # libpng (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -37,7 +40,7 @@ AC_PATH_X
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h limits.h malloc.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
+# AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h limits.h malloc.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -51,7 +54,7 @@ AC_PROG_GCC_TRADITIONAL
 AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
 AC_FUNC_STAT  
-AC_CHECK_FUNCS([floor getcwd gethostbyname gettimeofday memset select setlocale socket sqrt strcasecmp strchr strerror strncasecmp])
+# AC_CHECK_FUNCS([floor getcwd gethostbyname gettimeofday memset select setlocale socket sqrt strcasecmp strchr strerror strncasecmp])
 
 cwd=`pwd`
 cd $srcdir
