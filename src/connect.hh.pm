@@ -297,19 +297,23 @@ class GSignalCodeLink:
  */
 #define CONNECT_VALUE_OF(SIG, D, DM, S, SM)\\
 {\\
-	typedef typeof(*S) TS;\\
-	typedef typeof(*D) TD;\\
+	typedef typeof(S) TS;\\
+	typedef typeof(D) TD;\\
 	class unnamed:\\
-		public GSignalCodeLink<TS, TD>\\
+	  public TSignalLink\\
 	{\\
-	    typedef GSignalCodeLink<TS, TD> TThis;\\
+  		TS src;\\
+  		TD dst;\\
 		public:\\
-			unnamed(TS s, TD d): TThis(s,d) {}\\
+      unnamed(TS s, TD d) {\\
+        src = s;\\
+        dst = d;\\
+      }\\
 			void execute() {\\
 				this->dst->DM(this->src->SM);\\
 			}\\
 	};\\
-	SIG.add(new unnamed(S, D));\\
+	SIG.add(new unnamed(source, D));\\
 }
 
 /**
@@ -452,29 +456,33 @@ extern const TNone *NONE;
  *    3rd: pointer to source object or NONE
  *    4th: TSignalCode** or NULL
  */
-#define BGN_CONNECT_CODE(SIG,D,S,NR) \\
+#define BGN_CONNECT_CODE(SIG,D,S,NR)\\
 	{\\
-		typedef typeof(*S) TS;\\
-		typedef typeof(*D) TD;\\
-		TS *_s = S;\\
-		TD *_d = D;\\
+		typedef typeof(S) TS;\\
+		typedef typeof(D) TD;\\
+		TS _s = S;\\
+		TD _d = D;\\
 		TSignal *_sig = &SIG;\\
 		TSignalLink **_nr = NR;\\
-		class A:\\
-			public GSignalCodeLink<TS,TD>\\
+		class unnamed:\\
+			public TSignalLink\\
 		{\\
-		    typedef GSignalCodeLink<TS,TD> TThis;\\
+    		TS src;\\
+    		TD dst;\\
 			public:\\
-				A(TS s, TD d): TThis(s,d) {}\\
+				unnamed(TS s, TD d) {\\
+				  src = s;\\
+				  dst = d;\\
+				}\\
 				void execute() {
 
 /**
  * \\ingroup callback
  */
-#define END_CONNECT_CODE() \\
+#define END_CONNECT_CODE()\\
 				}\\
 		};\\
-		TSignalLink *n = _sig->add(new A(_s,_d));\\
+		TSignalLink *n = _sig->add(new unnamed(_s,_d));\\
 		if (_nr) *_nr = n;\\
 	}
 
