@@ -83,7 +83,8 @@ class GHistory
       signal();
     }
     const T& getCurrent() const {
-      if (p==storage.begin())
+      typename TStorage::const_iterator pc = p;
+      if (pc==storage.begin())
         throw std::runtime_error("GHistory: no current");
       return *(p-1);
     }
