@@ -122,18 +122,11 @@ TButtonBase::drawLabel(TPen &pen,const string &text, bool bDown, bool bEnabled)
 void
 TButtonBase::drawShadow(TPen &pen, bool down, bool onwhite)
 {
-  if (!isEnabled())
-    return;
-
   int a=isFocus()?1:0;
 
   TPoint p[6];
   if (down) {
     pen.setColor(TColor::BTNSHADOW);
-//    p[0].set(a,getHeight()-a);
-//    p[1].set(a,a);
-//    p[2].set(getWidth()-a,a);
-//    pen.drawLines(p, 3);
     pen.drawRectanglePC(a,a,getWidth()-a*2, getHeight()-a*2);
   } else {
     if (!onwhite) {
