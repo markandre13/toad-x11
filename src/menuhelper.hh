@@ -104,29 +104,12 @@ class TMenuHelper:
           SEPARATOR,
           INSERTION_POINT
         };
-        TNode(const string &t, 
+        TNode(const string &t,
               const char *l=NULL,
               const char *s=NULL,
               TBitmap *i=NULL,
-              EType nt=NORMAL):
-          title(t), type(nt), icon(i)
-        {
-          next = down = parent = NULL;
-          winarray = NULL;
-          if (l)
-            label = l;
-          else
-            label = title;
-          if (s) {
-            shortcut = s;
-          }
-        }
-        TNode() {
-          next = down = parent = NULL;
-          winarray = NULL;
-          icon = NULL;
-          type = NORMAL;
-        }
+              EType nt=NORMAL);
+        TNode();
         void createWindowAt(TMenuHelper *parent);
         void deleteWindow();
         virtual ~TNode();
@@ -187,9 +170,7 @@ class TMenuHelper:
     {
         TMenuHelper *owner;
       public:
-        TRootNode(TMenuHelper *owner) {
-          this->owner = owner;
-        }
+        TRootNode(TMenuHelper *owner);
         ~TRootNode();
         virtual void actionChanged();
         void clear();

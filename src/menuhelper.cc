@@ -379,6 +379,31 @@ layout2nodes(TMenuEntryList::iterator p,
 
 // TMenuHelper::TNode
 //---------------------------------------------------------------------------
+TMenuHelper::TNode::TNode(const string &t, 
+                   const char *l,
+                   const char *s,
+                   TBitmap *i,
+                   EType nt):
+  title(t), type(nt), icon(i)
+{
+  next = down = parent = NULL;
+  winarray = NULL;
+  if (l)
+    label = l;
+  else
+    label = title;
+  if (s) {
+    shortcut = s;
+  }
+}
+
+TMenuHelper::TNode::TNode()
+{
+  next = down = parent = NULL;
+  winarray = NULL;
+  icon = NULL;
+  type = NORMAL;
+}
 
 TMenuHelper::TNode::~TNode()
 {
@@ -396,6 +421,17 @@ TMenuHelper::TNode::~TNode()
   }
 }
 
+TMenuHelper::TRootNode::TRootNode(TMenuHelper *owner) 
+{
+  this->owner = owner;
+}
+
+TMenuHelper::TRootNode::~TRootNode()
+{
+//  deleteTree(down);
+}
+
+
 void
 TMenuHelper::TRootNode::clear()
 {
@@ -410,23 +446,16 @@ TMenuHelper::TRootNode::clear()
 void
 TMenuHelper::TRootNode::deleteTree(TNode *node)
 {
-  TNode *t;
-  TNode *p = node;
-  while(p) {
-    p->parent = NULL;
-    if (p->down)
-      deleteTree(p->down);
-    t = p;
-    p = p->next;
-    delete t;
+  TNode *tmp;
+  TNode *ptr = node;
+  while(ptr) {
+    tmp = ptr;
+    ptr = ptr->next;
+    tmp->parent = NULL;
+    if (tmp->down)
+      deleteTree(tmp->down);
+    delete tmp;
   }
-  node->down = 0;
-  node->next = 0;
-}
-
-TMenuHelper::TRootNode::~TRootNode()
-{
-//  deleteTree(down);
 }
 
 /**
@@ -815,7 +844,7 @@ TMenuLayout::~TMenuLayout()
 void
 TMenuLayout::arrange()
 {
-//cout << "TMenuLayout::arrange " << this << ", " << window << endl;
+// cerr << "TMenuLayout::arrange " << this << ", " << window << endl;
   if (!window)
     return;
 
@@ -824,7 +853,7 @@ TMenuLayout::arrange()
     cerr << "error: TMenuLayout isn't assigned to a TMenuHelper object" << endl;
     return;
   }
-//cout << "TMenuLayout::arrange '" << menu->getTitle() << "'\n";
+// cerr << "TMenuLayout::arrange '" << menu->getTitle() << "'\n";
   
   menu->root.clear();
   layout2nodes(entries.begin(), entries.end(), &menu->root);
