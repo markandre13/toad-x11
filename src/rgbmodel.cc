@@ -65,6 +65,18 @@ class TRGBTextModel:
       if (model)
         disconnect(model->sigChanged, this);
     }
+    int filter(int c) {
+      if (c=='\n') {
+        masterChanged();
+        return 0;
+      }
+      if ( (c>='0' && c<='9') || 
+           (c>='a' && c<='f') ||
+           (c>='A' && c<='F') ||
+           (c=='#') )
+        return c;
+      return 0;
+    }
     void focus(bool b) {
       if (!b)
         masterChanged();
