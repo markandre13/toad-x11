@@ -952,7 +952,7 @@ redo:
               }
               p++;
             }
-          }
+          } // end of handling the handles
 
           // selection, start movement, start edit
           //--------------------------------------
@@ -1035,6 +1035,8 @@ redo:
               }
             }
           } else {
+            // no gaget at cursor
+          
             #if VERBOSE
               cout << "      nothing at cursor => STATE_SELECT_RECT" << endl;
             #endif
@@ -1506,7 +1508,10 @@ TFigureEditor::findGadgetAt(int mx, int my)
       }
     }
   }
-  if (distance > TFigure::RANGE)
+  if (found == model->end())
+    return NULL;
+//  if (distance > TFigure::RANGE)
+  if (distance > 0.5*fuzziness*TFigure::RANGE)
     return NULL;
   return *found;
 }
