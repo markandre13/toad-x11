@@ -121,6 +121,7 @@ TObjectStore::clone(const string &type)
 void
 TOutObjectStream::setOStream(std::ostream *out)
 {
+  out->imbue(locale("C"));
   init(out->rdbuf()); // redirect our input to 'out'
 }
 

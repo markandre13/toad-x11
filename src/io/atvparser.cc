@@ -36,6 +36,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <iostream>
+#include <locale>
 
 using namespace std;
 using namespace atv;
@@ -62,11 +63,19 @@ TATVParser::TATVParser(istream *stream)
   interpreter = NULL;
   depth = 0;
   line = 1;
-  in = stream;
   istate = 0;
   position = 0;
   running = false;
+  setIStream(stream);
 }
+
+void
+TATVParser::setIStream(std::istream *stream) {
+  in = stream;
+  if (in)
+    in->imbue(locale("C"));
+}
+
 
 #define TKN_ERROR 257
 #define TKN_STRING 258

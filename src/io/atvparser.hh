@@ -84,9 +84,7 @@ class TATVParser
     const char * getWhatName() const;
     void failed(const char * file, unsigned line, const char *function);
     
-    void setIStream(std::istream *stream) {
-      in = stream;
-    }
+    void setIStream(std::istream *stream);
     
     /**
      * Start parsing the input stream.
