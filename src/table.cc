@@ -491,7 +491,13 @@ TTable::invalidateCursor()
     yp += row_info[y].size;
   }
   
-  invalidateWindow(xp, yp, col_info[cx].size, row_info[cy].size);
+  int size = col_info[cx].size;
+  
+  if (stretchLastColumn && cx==cols-1 && xp+size<visible.x+visible.w) {
+    size = visible.x+visible.w-xp;
+  }
+  
+  invalidateWindow(xp, yp, size, row_info[cy].size+1);
 }
 
 /**
