@@ -51,6 +51,10 @@
 
 using namespace toad;
 
+namespace {
+  string cwd;
+};
+
 TFileDialog::TFileDialog(TWindow *p,const string &t)
   :TDialog(p,t)
 {
@@ -132,13 +136,14 @@ TFileDialog::TFileDialog(TWindow *p,const string &t)
 
   if (filetype.size()>0)
     filter = filetype[0].ext;
+
+  if (cwd.empty()) {  
+    char buffer[4097];
+    getcwd(buffer, 4096);
+    cwd = buffer;
+  }
   
-  char buffer[4097];
-  getcwd(buffer, 4096);
-  
-  string b(buffer);
-  b+="/"+filter;
-  filename=b;
+  filename=filter;
   
   loadDir();
 }
@@ -161,7 +166,8 @@ TFileDialog::~TFileDialog()
   clrDir();
 }
 
-void TFileDialog::paint()
+void
+TFileDialog::paint()
 {
   TPen pen(this);
   pen.drawString(8+8,24-16, "Selection");
@@ -180,7 +186,9 @@ TFileDialog::getResult() const
 const string& 
 TFileDialog::getFilename() const
 {
-  return filename.getValue();
+  static string r;
+  r = cwd + "/" + filename;
+  return r;
 }
 
 /**
@@ -195,14 +203,8 @@ TFileDialog::selectFile(TStringVectorSelectionModel *m)
 
   if (p==e)
     return;
-    
-  string filename = this->filename;
-  unsigned i = filename.rfind("/");
-  filename = i!=string::npos ? filename.substr(0,i) : "";
-  filename+='/';
-  filename+=*p;
-  
-  this->filename = filename;
+
+  filename = *p;
 }
 
 /**
@@ -217,7 +219,7 @@ void TFileDialog::selectDir(TStringVectorSelectionModel *m)
   if (p==e)
     return;
 
-  string filename = this->filename;
+  string filename = cwd + this->filename;
 
   string where = *p;
   if (where==".")
@@ -235,9 +237,11 @@ void TFileDialog::selectDir(TStringVectorSelectionModel *m)
   } else {
     filename+="/"+where;
   }
-
+/*
   filename+="/"+filter;
   this->filename = filename;
+*/
+  cwd = filename;
 
   loadDir();
 }
@@ -369,11 +373,13 @@ TFileDialog::loadDir()
   
   // read current directory
   //------------------------
-  unsigned p = filename.getValue().rfind("/");
-  string cwd = p!=string::npos ? filename.getValue().substr(0,p) : "";
-  cwd+="/";
+//  unsigned p = filename.getValue().rfind("/");
+//  string cwd = p!=string::npos ? filename.getValue().substr(0,p) : "";
+//  cwd+="/";
 
   dirent *de;
+
+cerr << "opendir " << cwd << endl;
   
   DIR *dd = opendir(cwd.c_str());
   if (dd==NULL) {

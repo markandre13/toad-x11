@@ -78,9 +78,15 @@ class TRGBTextModel:
     void slaveChanged()
     {
       char buffer[8];
+#ifndef __WIN32__
       snprintf(buffer, 8, "#%02x%02x%02x", (int)model->r, 
                                            (int)model->g,
                                            (int)model->b);
+#else
+      sprintf(buffer, "#%02x%02x%02x", (int)model->r, 
+                                       (int)model->g,
+                                       (int)model->b);
+#endif
       setValue(buffer);
     }
 };

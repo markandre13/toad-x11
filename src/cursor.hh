@@ -62,7 +62,9 @@ class TCursor
     };
 
   #ifdef _TOAD_PRIVATE
+    #ifdef __X11__
     static Cursor X11Cursor(EType);
+    #endif
   #endif
 };
 

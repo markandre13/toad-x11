@@ -18,8 +18,10 @@
  * MA  02111-1307,  USA
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #include <assert.h>
 #include <cstring>
@@ -68,6 +70,7 @@ TPenBase::~TPenBase()
  */
 TPen::TPen(TBitmap *bmp)
 {
+#ifdef __X11__
   assert(bmp!=0 && bmp->pixmap!=0);
   this->bmp = bmp;
   wnd = 0;
@@ -75,6 +78,11 @@ TPen::TPen(TBitmap *bmp)
   _init();
 //  XCopyGC(x11display, TOADBase::x11gc, GCFont, o_gc);
   setFont(&getDefaultFont());
+#endif
+
+#ifdef __WIN32__
+  
+#endif
 } 
 
 /**
@@ -86,8 +94,8 @@ TPen::TPen(TBitmap *bmp)
  */
 TPen::TPen(TWindow *wnd)
 {
+#ifdef __X11__
   assert(wnd!=0 && wnd->x11window!=0);
-  this->wnd = wnd;
   
   if (wnd->bDoubleBuffer) {
     bmp = new TBitmap(wnd->getWidth(), wnd->getHeight(), TBITMAP_SERVER);
@@ -96,9 +104,13 @@ TPen::TPen(TWindow *wnd)
     bmp = 0;
     x11drawable = wnd->x11window;
   }
+#endif
+
+  this->wnd = wnd;
   _init();
   translate(wnd->_dx, wnd->_dy);
 
+#ifdef __X11__
   if (wnd->bDoubleBuffer) {
     setColor(wnd->background);
     fillRectangle(0,0,wnd->getWidth(), wnd->getHeight());
@@ -125,10 +137,17 @@ TPen::TPen(TWindow *wnd)
       bDeleteRegion = true;
     }
   }
+#endif
 }
 
-void TPen::_init()
+void
+TPen::_init()
 {
+  mat = 0;
+  width = 1;
+  style = TPen::SOLID;
+
+#ifdef __X11__
   // create X graphic context
   //--------------------------
   o_gc = XCreateGC(x11display, x11drawable,0,0);
@@ -141,22 +160,39 @@ void TPen::_init()
   cmode = TColor::NEAREST;
   // cmode = TColor::DITHER28;
   region = 0;
-  mat = 0;
   
   // make black the default color (needed by X11R5 on Sun)
   o_color.set(0,0,1);   // cheat SetColor to do it!
   setColor(0,0,0);
   setBackColor(255,255,255);
   
-  width = 1;
-  style = TPen::SOLID;
   bDeleteRegion = false;
   using_bitmap = false;
+#endif
+
+#ifdef __WIN32__
+  w32logpen.lopnStyle = PS_SOLID;
+  w32logpen.lopnWidth.x = 1;
+  w32logpen.lopnColor = RGB(0,0,0);
+  w32pen = NULL;
+  w32brush = NULL;
+
+  w32window = wnd->w32window;
+  if (wnd->paintstruct) {
+    wnd->paintstruct->refcount++;
+    w32hdc = wnd->paintstruct->hdc; 
+  } else {
+    wnd->paintstruct = new TWindow::TPaintStruct();
+    wnd->paintstruct->refcount = 1;
+    wnd->paintstruct->hdc = w32hdc = ::GetDC(w32window);
+  }
+#endif
 }
 
 TPen::~TPen()
 {
   popAll();
+#ifdef __X11__
   if (wnd && bmp) { // double buffer mode...
     x11drawable = wnd->x11window;
     if (wnd->paint_rgn)
@@ -173,6 +209,30 @@ TPen::~TPen()
     XFreeGC(x11display, f_gc);
   if (region && bDeleteRegion )
     delete region;
+#endif
+
+#ifdef __WIN32__
+  assert(wnd->paintstruct);
+  if (wnd->paintstruct->currentpen == this) {
+    if (wnd->paintstruct->origpen) {
+      HGDIOBJ prevpen = ::SelectObject(w32hdc, wnd->paintstruct->origpen);
+      wnd->paintstruct->origpen = 0;
+      ::DeleteObject(prevpen);
+    }
+    if (wnd->paintstruct->origbrush) {
+      HGDIOBJ prevbrush = ::SelectObject(w32hdc, wnd->paintstruct->origbrush);
+      wnd->paintstruct->origbrush = 0;
+      ::DeleteObject(prevbrush);
+    }
+    wnd->paintstruct->currentpen = 0;
+  }
+  wnd->paintstruct->refcount--;
+  if (wnd->paintstruct->refcount==0) {
+    ::ReleaseDC(w32window, w32hdc);
+    delete(wnd->paintstruct);
+    wnd->paintstruct=0;
+  }
+#endif
 }
 
 /**
@@ -181,10 +241,12 @@ TPen::~TPen()
 void
 TPen::setFont(TFont *newfont)
 {
+#ifdef __X11__
   assert(newfont!=0);
   TFont *oldfont = font;
   font = newfont;
   XSetFont(x11display, o_gc, font->fs->fid);
+#endif
 }
 
 /**
@@ -194,7 +256,9 @@ TPen::setFont(TFont *newfont)
  * including its children.
  */
 void TPen::setClipChildren(bool flag) {
+#ifdef __X11__
   XSetSubwindowMode(x11display, o_gc,flag ? ClipByChildren : IncludeInferiors);
+#endif
 }
 
 /**
@@ -203,6 +267,7 @@ void TPen::setClipChildren(bool flag) {
  */
 void TPen::setClipRegion(TRegion *rgn)
 {
+#ifdef __X11__
   if (region!=rgn) {
     if (region) {
       if (bDeleteRegion)
@@ -218,6 +283,7 @@ void TPen::setClipRegion(TRegion *rgn)
     if (f_gc)
       XSetRegion(x11display,f_gc,region->x11region);
   }
+#endif
 }
 
 /**
@@ -228,12 +294,14 @@ void TPen::setClipRegion(TRegion *rgn)
  */
 void TPen::setClipRect(const TRectangle &r)
 {
+#ifdef __X11__
   XRectangle xr;
   xr.x = r.x;
   xr.y = r.y;
   xr.width = r.w;
   xr.height = r.h;
   ::XSetClipRectangles(x11display, o_gc, 0,0, &xr, 1, Unsorted);
+#endif
 }
 
 /**
@@ -248,17 +316,21 @@ void TPen::setClipRect(const TRectangle &r)
 void
 TPen::operator&=(const TRectangle &rect)
 {
+#ifdef __X11__
   if (!region) return;
   *region&=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+#endif
 }
 
 void
 TPen::operator&=(const TRegion &rect)
 {
+#ifdef __X11__
   if (!region) return;
   *region&=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+#endif
 }
 
 /**
@@ -273,17 +345,21 @@ TPen::operator&=(const TRegion &rect)
 void
 TPen::operator|=(const TRectangle &rect)
 {
+#ifdef __X11__
   if (!region) return;
   *region|=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+#endif
 }
 
 void
 TPen::operator|=(const TRegion &rect)
 {
+#ifdef __X11__
   if (!region) return;
   *region|=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+#endif
 }
 
 /**
@@ -294,10 +370,12 @@ TPen::operator|=(const TRegion &rect)
  */
 void TPen::clrClipBox()
 {
+#ifdef __X11__
   if (!region)
     return;
   region->clear();
   XSetClipMask(x11display,o_gc,None);
+#endif
 }
 
 /**
@@ -307,6 +385,7 @@ void TPen::clrClipBox()
  */
 void TPen::getClipBox(TRectangle* r) const
 {
+#ifdef __X11__
   if (!region) {
       r->x = 0;
       r->y = 0;
@@ -320,6 +399,7 @@ void TPen::getClipBox(TRectangle* r) const
   } else {
     region->getBoundary(r);
   }
+#endif
 }
 
 /**
@@ -331,7 +411,9 @@ void TPen::getClipBox(TRectangle* r) const
  */
 void TPen::setMode(EPenMode mode)
 {
+#ifdef __X11__
   XSetFunction(x11display,o_gc,mode);
+#endif
 }
 
 /**
@@ -360,6 +442,7 @@ void TPen::setLineStyle(EPenLineStyle n)
 
 void TPen::_setLineAttributes()
 {
+#ifdef __X11__
   char dash[6];
   int w = width ? width : 1;
   for(int i=1;i<6;i++)
@@ -387,6 +470,7 @@ void TPen::_setLineAttributes()
   XSetLineAttributes(x11display,o_gc,width,
          style==SOLID ? LineSolid : LineOnOffDash,
          CapButt,JoinMiter);
+#endif
 }
 
 #ifdef COLORREF
@@ -398,6 +482,7 @@ void TPen::_setLineAttributes()
  */
 void TPen::setColorMode(TColor::EDitherMode cm)
 {
+#ifdef __X11__
   if (cmode==cm) return;
   cmode = cm;
   
@@ -406,6 +491,7 @@ void TPen::setColorMode(TColor::EDitherMode cm)
     o_color._setPen(this, o_gc);
   if (f_gc)
     f_color._setPen(this, f_gc);
+#endif
 }
 
 // SetColor
@@ -417,6 +503,7 @@ void TPen::setColorMode(TColor::EDitherMode cm)
 void 
 TPen::setBitmap(TBitmap *bmp)
 {
+#ifdef __X11__
   if (bmp) {
     two_colors = false;
     bmp->update();
@@ -431,7 +518,50 @@ TPen::setBitmap(TBitmap *bmp)
       using_bitmap = false;
     }
   }
+#endif
 }
+
+#ifdef __WIN32__
+void
+TPen::activateW32() const
+{
+  wnd->paintstruct->currentpen = this;
+  updateW32Pen();
+  updateW32Brush();
+}
+
+void
+TPen::updateW32Pen() const
+{
+  if (wnd->paintstruct->currentpen!=this)
+    return;
+  HPEN newpen  = ::CreatePenIndirect(&w32logpen);
+  HGDIOBJ prevpen = ::SelectObject(w32hdc, newpen);
+  if (wnd->paintstruct->origpen) {
+    ::DeleteObject(prevpen);
+  } else {
+    wnd->paintstruct->origpen = prevpen;
+  }
+}
+
+void
+TPen::updateW32Brush() const
+{
+  if (wnd->paintstruct->currentpen!=this)
+    return;
+  HBRUSH newbrush;
+  if (!two_colors)
+    newbrush = ::CreateSolidBrush(o_color.colorref);
+  else
+    newbrush = ::CreateSolidBrush(f_color.colorref);
+  HGDIOBJ prevbrush = ::SelectObject(w32hdc, newbrush);
+  if (wnd->paintstruct->origbrush) {
+    ::DeleteObject(prevbrush);
+  } else {
+    wnd->paintstruct->origbrush = prevbrush;
+  }
+}
+#endif
 
 // here is plenty room for optimations:
 
@@ -441,17 +571,26 @@ TPen::setBitmap(TBitmap *bmp)
 void 
 TPen::setColor(const TColor &color)
 {
+#ifdef __X11__
   if (using_bitmap) {
     XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
+#endif
 
   two_colors = false;
   if (color==o_color) {
     return;
   }
   o_color=color;
+#ifdef __X11__
   o_color._setPen(this, o_gc);
+#endif
+#ifdef __WIN32__
+  w32logpen.lopnColor = o_color.colorref;
+  updateW32Pen();
+  updateW32Brush();
+#endif
 }
 
 /**
@@ -460,10 +599,12 @@ TPen::setColor(const TColor &color)
 void 
 TPen::setLineColor(const TColor &color)
 {
+#ifdef __X11__
   if (using_bitmap) {
     XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
+#endif
 
   if (two_colors) {
     if (color==o_color)
@@ -472,11 +613,18 @@ TPen::setLineColor(const TColor &color)
     if (color==o_color)
       return;
     f_color = o_color;
+#ifdef __X11__
     f_color._setPen(this, f_gc);
+#endif
     two_colors=true;
   }
   o_color = color;
+#ifdef __X11__
   o_color._setPen(this, o_gc);
+#endif
+#ifdef __WIN32__
+  updateW32Pen();
+#endif
 }
 
 /**
@@ -485,10 +633,12 @@ TPen::setLineColor(const TColor &color)
 void 
 TPen::setFillColor(const TColor &color)
 {
+#ifdef __X11__
   if (using_bitmap) {
     XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
+#endif
 
   if (two_colors) {
     if (color==f_color)
@@ -505,7 +655,12 @@ TPen::setFillColor(const TColor &color)
       return;
   }
   f_color = color;
+#ifdef __X11__
   f_color._setPen(this, f_gc);
+#endif
+#ifdef __WIN32__
+  updateW32Brush();
+#endif
 }
 
 /**
@@ -516,11 +671,13 @@ TPen::setFillColor(const TColor &color)
 void
 TPen::setBackColor(const TColor& color)
 {
+#ifdef __X11__
   if (using_bitmap) {
     XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
 
   XSetBackground(x11display, o_gc, TColor::_getPixel(color));
+#endif
 }
 

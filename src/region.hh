@@ -25,6 +25,12 @@ namespace toad {
 
 class TRectangle;
 
+#ifdef __WIN32__
+#undef IN
+#undef OUT
+#undef PART
+#endif
+
 class TRegion
 {
   public:
@@ -59,7 +65,9 @@ class TRegion
     bool isInside(int x, int y) const;
     EInside isInside(const TRectangle &r) const;
 
+    #ifdef __X11__
     _TOAD_REGION x11region;
+    #endif
 };
 
 } // namespace toad

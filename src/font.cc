@@ -18,8 +18,10 @@
  * MA  02111-1307,  USA
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #define _TOAD_PRIVATE
 
@@ -35,7 +37,9 @@ using namespace toad;
 
 TFont::TFont()
 {
+#ifdef __X11__
   fs = NULL;
+#endif
   setFont(TFont::SANS, TFont::PLAIN, 12);
 }
 
@@ -62,46 +66,102 @@ TFont::TFont()
  */
 TFont::TFont(EFamily family, EStyle style,int size)
 {
+#ifdef __X11__
   fs = NULL;
+#endif
   setFont(family, style, size);
 }
 
 TFont::TFont(const string &family, EStyle style, int size)
 {
+#ifdef __X11__
   fs = NULL;
+#endif
   setFont(family, style, size);
 }
 
 TFont::~TFont()
 {
+#ifdef __X11__
   if (fs) {
 //cout << "~TFont TFont::fid = " << fs->fid << " removed" << endl;
     XUnloadFont(x11display, fs->fid);
     XFreeFontInfo(NULL,fs,0);
   }
+#endif
 }
 
-int TFont::getTextWidth(const string &str) const
+int
+TFont::getTextWidth(const string &str) const
 {
   return getTextWidth(str.c_str(),str.size());  
 }
 
-int TFont::getTextWidth(const char *str) const
+int
+TFont::getTextWidth(const char *str) const
 {
   return getTextWidth(str,strlen(str)); 
 }
 
-int TFont::getTextWidth(const char *str, int len) const
+int
+TFont::getTextWidth(const char *str, int len) const
 {
-  TOAD_XLIB_MTLOCK();
-  register int l=XTextWidth(fs,str,len);
-  TOAD_XLIB_MTUNLOCK();
-  return l;
+#ifdef __X11__
+  return XTextWidth(fs,str,len);
+#endif
+
+#ifdef __WIN32__
+  SIZE size;
+//  ::GetTextExtentPoint(w32hdc, str, len, &size);
+  return size.cx;
+#endif
 }
 
-int TFont::getAscent() const {return fs?fs->ascent:0;}
-int TFont::getDescent() const {return fs?fs->descent:0;}
-int TFont::getHeight() const {return getAscent()+getDescent();}
+int 
+TFont::getAscent() const 
+{
+#ifdef __X11__
+  if (fs)
+    return fs->ascent;
+  return 0;
+#endif
+
+#ifdef __WIN32__
+  TEXTMETRIC tm;
+//  ::GetTextMetrics(w32hdc, &tm);
+  return tm.tmAscent;
+#endif
+}
+
+int
+TFont::getDescent() const 
+{
+#ifdef __X11__
+  if (fs)
+    return fs->descent;
+  return 0;
+#endif
+
+#ifdef __WIN32__
+  TEXTMETRIC tm;
+//  ::GetTextMetrics(w32->dc, &tm);
+  return tm.tmDescent;
+#endif
+}
+
+int
+TFont::getHeight() const
+{
+  #ifdef __X11__
+  return getAscent()+getDescent();
+  #endif
+  
+  #ifdef __WIN32__
+  TEXTMETRIC tm;
+//  ::GetTextMetrics(w32->dc, &tm);
+  return tm.tmAscent + tm.tmDescent;
+  #endif
+}
 
 unsigned 
 TFont::getHeightOfTextFromWidth(const string &text, unsigned width) const
@@ -203,6 +263,7 @@ void TFont::setFont(const string &family, EStyle style, int size)
 void
 TFont::setFont(const string &x11fontname)
 {
+#ifdef __X11__
   XFontStruct *new_fs = XLoadQueryFont(x11display, x11fontname.c_str());
   if (!new_fs) {
     // the name might have been wrong for a 'font.scale' or 'font.dir' file
@@ -215,6 +276,7 @@ TFont::setFont(const string &x11fontname)
     XFreeFontInfo(NULL,fs,0);
   }
   fs = new_fs;
+#endif
 }
 
 /**
@@ -226,6 +288,7 @@ TFont::setFont(const string &x11fontname)
 //----------------------------------------------------------------------------
 void TFont::setFont(EFamily family, EStyle style, int size)
 {
+#ifdef __X11__
   if (fs) {
 //    cout << "SetFont TFont::fid = " << fs->fid << " removed" << endl;
     XUnloadFont(x11display, fs->fid);
@@ -328,8 +391,10 @@ void TFont::setFont(EFamily family, EStyle style, int size)
   XFreeFontNames(fl);
 //if (fs)
 //  cout << "SetFont TFont::fid = " << fs->fid << endl;
+#endif
 }
 
+#ifdef __X11__
 /**
  * Build X11 fontname
  */
@@ -379,3 +444,4 @@ void TFont::build_fontname(EFamily family, EStyle style,int size)
   mask+="-*-*-*-*-*-iso8859-1";
 //  printf("mask: %s\n",mask.c_str());
 }
+#endif

@@ -60,7 +60,6 @@ struct TRGB
     bool restore(TInObjectStream&);
 };
 
-
 class TColor
   :public TRGB
 {
@@ -68,6 +67,7 @@ class TColor
     friend class TWindow;
     friend class TBitmap;
 
+#ifdef __X11__
     class TData:
       public TSmartObject
     {
@@ -78,6 +78,7 @@ class TColor
         ulong xpixel;
         ulong /* Pixmap */ pm;
     };
+#endif
 
   public:
     enum EColor16 {
@@ -131,7 +132,6 @@ class TColor
       DITHER = 3
     };
 
-
     TColor();
     TColor(byte r, byte g, byte b);
     TColor(EColor16);
@@ -142,11 +142,21 @@ class TColor
       r = c.r;
       g = c.g;
       b = c.b;
+#ifdef __X11__
       _data = NULL;
+#endif
+#ifdef __WIN32__
+      colorref = RGB(r, g, b);
+#endif
     }
     void set(byte cr, byte cg, byte cb) {
       r = cr; g = cg; b = cb;
+#ifdef __X11__
       _data = NULL;
+#endif
+#ifdef __WIN32__
+      colorref = RGB(r, g, b);
+#endif
     }
     void set(EColor16);
     void set(ESystemColor);
@@ -155,7 +165,12 @@ class TColor
       r = c.r;
       g = c.g;
       b = c.b;
+#ifdef __X11__
       _data = c._data;
+#endif
+#ifdef __WIN32__
+      colorref = RGB(r, g, b);
+#endif
       return *this;
     }
 
@@ -163,14 +178,21 @@ class TColor
       r = c.r;
       g = c.g;
       b = c.b;
+#ifdef __X11__
       _data = NULL;
+#endif
+#ifdef __WIN32__
+      colorref = RGB(r, g, b);
+#endif
       return *this;
     }
 
 
   private:
     void _Init();
+    static const TColor& _palette(int i);
 
+#ifdef __X11__
     // for pen, window and bitmaps
     //-----------------------------
     void _setPen(TPen*, _TOAD_GC &gc);
@@ -178,12 +200,18 @@ class TColor
     ulong _getPixel() { return _getPixel(*this); }
     static ulong _getPixelAt(const TRGB&, int x,int y);
     ulong _getPixelAt(int x, int y) { return _getPixelAt(*this,x,y); }
-    static const TColor& _palette(int i);
     
     static bool _shouldNotDither();
-
     typedef GSmartPointer<TData> PData;
     PData _data;
+#endif
+
+#ifdef __WIN32__
+    public:
+    COLORREF colorref;
+#endif
+
+
 };
 
 } // namespace toad

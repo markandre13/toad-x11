@@ -40,6 +40,11 @@
 using namespace std;
 using namespace atv;
 
+#ifdef __WIN32__
+#define clear erase
+#endif
+
+
 TATVInterpreter::~TATVInterpreter()
 {
 }

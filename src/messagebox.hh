@@ -57,6 +57,9 @@ class TMessageBox:
     static const unsigned YES     = 16;
     static const unsigned NO      = 32;
     static const unsigned CANCEL  = 64;
+#ifdef __WIN32__
+#undef IGNORE
+#endif
     static const unsigned IGNORE  = 128;
 
     static const unsigned ABORTRETRYIGNORE = 2+8+128;

@@ -21,6 +21,11 @@
 #include <toad/matrix2d.hh>
 #include <cmath>
 
+// missing in mingw
+#ifndef M_PI
+#define M_PI 3.14159265358979323846  /* pi */
+#endif
+
 using namespace toad;
 
 TMatrix2D::TMatrix2D()
@@ -221,6 +226,16 @@ TMatrix2D::map(int inX, int inY, int *outX, int *outY) const
   *outX = static_cast<int>(a11 * x + a12 * y + tx);
   *outY = static_cast<int>(a21 * x + a22 * y + ty);
 }
+
+void
+TMatrix2D::map(int inX, int inY, long *outX, long *outY) const
+{
+  double x, y;
+  x = inX; y=inY;
+  *outX = static_cast<int>(a11 * x + a12 * y + tx);
+  *outY = static_cast<int>(a21 * x + a22 * y + ty);
+}
+
 void
 TMatrix2D::map(int inX, int inY, double *outX, double *outY) const
 {

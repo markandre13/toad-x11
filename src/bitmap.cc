@@ -18,8 +18,10 @@
  * MA  02111-1307,  USA
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #define _TOAD_PRIVATE
 #include <toad/toad.hh>
@@ -157,7 +159,9 @@ TBitmap::TBitmap()
   modified = false;
 
   mode = TBITMAP_SHOW;
+#ifdef __X11__
   dither = TColor::_shouldNotDither() ? TBITMAP_SUBSTITUTE : TBITMAP_FLOYD_STEINBERG;
+#endif
   
   pixmap = 0;
   mask   = 0;
@@ -184,16 +188,20 @@ TBitmap::TBitmap(int w,int h, EBitmapType type)
     case TBITMAP_SERVER:
       color = NULL;
       index = NULL;
+#ifdef __X11__
       pixmap = XCreatePixmap(
           x11display,
           RootWindow(x11display, x11screen),
           width,height,
           DefaultDepth(x11display, x11screen)
       );
+#endif
   }
   modified = false;
   mode = TBITMAP_SHOW;
+#ifdef __X11__
   dither = TColor::_shouldNotDither() ? TBITMAP_SUBSTITUTE : TBITMAP_FLOYD_STEINBERG;
+#endif
 }
 
 TBitmap::~TBitmap()
@@ -202,12 +210,14 @@ TBitmap::~TBitmap()
   if (color) delete[] color;
   if (index) delete[] index;
   
+#ifdef __X11__
   if (x11display) {
     if (pixmap)
       XFreePixmap(x11display, pixmap);
     if (mask)
       XFreePixmap(x11display, mask);
   }
+#endif
 }
 
 // experimental bitmap mask code
@@ -226,15 +236,18 @@ TBitmap::~TBitmap()
 //! Removes the <A HREF="TBitmap.html">bitmap mask</A>.
 void TBitmap::clearMask()
 {
+#ifdef __X11__
   if (x11display && mask) {
     XFreePixmap(x11display, mask);
     mask = 0;
   }
+#endif
 }
 
 //! Sets the bitmap mask.
 void TBitmap::setMask(const TBitmapMask &m)
 {
+#ifdef __X11__
   if (!mask) {
       mask = XCreatePixmap(
           x11display,
@@ -255,6 +268,7 @@ void TBitmap::setMask(const TBitmapMask &m)
     }
   }
   XFreeGC(x11display, gc);
+#endif
 }
 
 TBitmapMask::TBitmapMask(int w, int h)
@@ -346,6 +360,7 @@ void TBitmap::copy_bitmap_to_pixmap_and_delete_it()
   if (!modified || !color)
     return;
 
+#ifdef __X11__
   // create pixmap with the correct size
   //-------------------------------------
   if (pixmap && (pix_width!=width*zoom || pix_height!=width*height)) {
@@ -506,7 +521,7 @@ void TBitmap::copy_bitmap_to_pixmap_and_delete_it()
     0,0,
     0,0,
     (int)width*zoom,(int)height*zoom);
-
+#endif
   // free memory
   //-------------
   delete[] color; 
@@ -516,9 +531,11 @@ void TBitmap::copy_bitmap_to_pixmap_and_delete_it()
     index=NULL;
   }
 
+#ifdef __X11__
   delete[] img->data;
   img->data=NULL;
   XFree(img); 
+#endif
 }
 
 // DrawBitmap
@@ -531,6 +548,7 @@ void TBitmap::drawBitmap(const TPen*, int,int, int,int,int,int, int) const
 
 void TBitmap::drawBitmap(const TPen *pen, int x, int y, int ax, int ay, int aw, int ah) const
 {
+#ifdef __X11__
 //  cout << __PRETTY_FUNCTION__ << endl;
   switch(mode) {
     case TBITMAP_SHOW:
@@ -556,10 +574,12 @@ void TBitmap::drawBitmap(const TPen *pen, int x, int y, int ax, int ay, int aw, 
     default:
       cerr << "TBitmap::DrawBitmap: drawing mode not implemented" << endl;
   }
+#endif
 }
 
 void TBitmap::drawBitmap(const TPen *pen, int x,int y) const
 {
+#ifdef __X11__
 //  cout << __PRETTY_FUNCTION__ << endl;
   XImage *img;
   
@@ -674,6 +694,7 @@ void TBitmap::drawBitmap(const TPen *pen, int x,int y) const
       }
       break;
   }
+#endif
 }
 
 /*
@@ -694,7 +715,9 @@ void TBitmap::setZoom(int z)
 //----------------------------------------------------------------------------
 void TBitmap::setDither(EBitmapDither d)
 {
+#ifdef __X11__
   dither=TColor::_shouldNotDither() ? TBITMAP_SUBSTITUTE : d;
+#endif
 }
 
 /**
@@ -702,6 +725,7 @@ void TBitmap::setDither(EBitmapDither d)
  */
 void TBitmap::pCopyToLine(int x1,int x2,int y,int *line)
 {
+#ifdef __X11__
   if (zoom==1) {
     switch(dither) {
       case TBITMAP_SUBSTITUTE:
@@ -733,6 +757,7 @@ void TBitmap::pCopyToLine(int x1,int x2,int y,int *line)
         break;
     }
   }
+#endif
 }
 
 void TBitmap::setPixel(int x,int y,short r,short g,short b)

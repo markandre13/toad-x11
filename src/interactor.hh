@@ -50,6 +50,16 @@ class TKeyEvent {
     const char* getString() const { return string; }
 };
 
+#ifdef __WIN32__
+#ifdef NEW
+#undef NEW
+#endif
+
+#ifdef DELETE
+#undef DELETE
+#endif
+#endif
+
 class TWindowEvent {
   public:
     enum {

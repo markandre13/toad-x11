@@ -18,8 +18,10 @@
  * MA  02111-1307,  USA
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #include <cstring>
 
@@ -98,14 +100,24 @@ void TColor::set(TColor::EColor16 c16)
 {
   const TColor &c = _palette(c16);
   r = c.r; g = c.g; b = c.b;
+#if __X11__
   _data = NULL;
+#endif
+#ifdef __WIN32__
+  colorref = RGB(r, g, b);
+#endif
 }
 
 void TColor::set(ESystemColor sc)
 {
   const TColor &c = sysrgb[sc];
   r = c.r; g = c.g; b = c.b;
+#if __X11__
   _data = NULL;
+#endif
+#ifdef __WIN32__
+  colorref = RGB(r, g, b);
+#endif
 }
 
 bool

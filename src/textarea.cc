@@ -76,7 +76,11 @@ class TBoundedRangeTextModel:
     void slaveChanged()
     {
       char buffer[16];
+#ifndef __WIN32__
       snprintf(buffer, sizeof(buffer), "%i", model->getValue());
+#else
+      sprintf(buffer, "%i", model->getValue());
+#endif
       setValue(buffer);
     }
 };
@@ -1164,7 +1168,11 @@ TTextArea::_return()
       indent+=s[i];
     }
     if (_bol >= _eol) // ???
+#ifndef OLDLIBSTD
       indent.clear();
+#else
+      indent.erase();
+#endif
     if (_cx + _tx < i-_bol)
       indent.erase(_cx+_tx);
   }
@@ -1499,8 +1507,13 @@ TTextModel::setValue(const string &d)
 void
 TTextModel::setValue(const char *d, unsigned len)
 {
+#ifndef OLDLIBSTD
   if (data.compare(0, string::npos, d, len)==0)
     return;
+#else
+  if (data.compare(d, len)==0)
+    return;
+#endif
 
   offset = 0;
   length = len;

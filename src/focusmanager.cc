@@ -79,9 +79,11 @@
 
 #define DBM(CMD)
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xlocale.h>
+#endif
 
 #define _TOAD_PRIVATE
 
@@ -98,10 +100,12 @@
 
 namespace toad {
 
+#ifdef __X11__
 static XIM xim = NULL;
 static XIMStyle xim_style;
 
 XIC xic_current = NULL;
+#endif
 
 struct TDomain
 {
@@ -109,16 +113,22 @@ struct TDomain
     owner=focus_window=NULL; 
     focus=next=first_child=parent=NULL;
     filter = NULL;
+#ifdef __X11__
     xic = NULL;
+#endif
   }
   ~TDomain() {
+#ifdef __X11__
     if (xic)
       XDestroyIC(xic);
+#endif
   }
   TWindow *owner, *focus_window;
   TDomain *focus, *next, *first_child, *parent;
   TEventFilter *filter;
+#ifdef __X11__
   XIC xic;
+#endif
 };
 
 typedef map<TWindow*,TDomain*> TDomainMap;
@@ -153,6 +163,7 @@ TOADBase::focusNewWindow(TWindow* wnd)
 
     TDomain *domain = new TDomain();
     domain->owner = wnd;
+#ifdef __X11__
     if (xim) {
       domain->xic = XCreateIC(xim,
                               XNInputStyle, xim_style,
@@ -163,7 +174,7 @@ TOADBase::focusNewWindow(TWindow* wnd)
         cerr << "toad: Couldn't create X Input Context for window \"" 
              << wnd->getTitle() << "\"" << endl;
     }
-
+#endif
     top_domain_map[wnd]=domain;
   } else if (wnd->bFocusManager) {
     // add a new sub domain for window `wnd' in the windows' top level 
@@ -238,10 +249,12 @@ DBM(cout << "DomainToWindow " << (wnd ? wnd->getTitle() : "(NULL)") << endl;)
     // deactivate old domain
     //-----------------------
     if (current_domain) {
+#ifdef __X11__
       if (current_domain->xic) {
         xic_current = NULL;
         XUnsetICFocus(current_domain->xic);
       }
+#endif
       // deactivate subtree
       TDomain *p = current_domain;
       while(p) {
@@ -258,11 +271,12 @@ DBM(cout << "DomainToWindow " << (wnd ? wnd->getTitle() : "(NULL)") << endl;)
     // activate new domain
     //---------------------
     if (current_domain) {
+#ifdef __X11__
       if (current_domain->xic) {
         xic_current = current_domain->xic;
         XSetICFocus(current_domain->xic);
       }
-
+#endif
       // activate subtree
       TDomain *p = current_domain;
       while(p) {
@@ -822,6 +836,8 @@ Walk(TWindow *top, TWindow *focus, bool bNext)
   return dynamic_cast<TWindow*>(ptr);
 }
 
+#ifdef __X11__
+
 /*
  *
  * The X Input Context is bound to the focus management so it's located here:
@@ -909,6 +925,8 @@ TOADBase::closeXInput()
     XCloseIM(xim);
   xim = NULL;
 }
+
+#endif
 
 // key filter stuff
 //---------------------------------------------------------------------------

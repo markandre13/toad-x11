@@ -70,9 +70,12 @@ class TFont:
     unsigned getHeightOfTextFromWidth(const char* text, unsigned width) const;
 
   private:
+    #ifdef __X11__
     _TOAD_FONT fs;
-    string mask;
     void build_fontname(EFamily family, EStyle style,int size);
+    #endif
+    
+    string mask;
 
     struct TWord
     {

@@ -64,10 +64,18 @@
  * a pushbutton, a textfield, a scrollbar, a slider and so on.
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/Xmd.h>
+#endif
+
+#ifdef __WIN32__
+#define STRICT
+#define W32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 #define _TOAD_PRIVATE
 
@@ -129,6 +137,8 @@ static TVectorParentless parentless;
 #define isTopLevel(w) \
   (w->bPopup || w->getParent()==NULL)
 
+#ifdef __X11__
+
 // LessTif Window Manager Hints
 //---------------------------------------------------------------------------
 #define PROP_MOTIF_WM_HINTS_ELEMENTS 5
@@ -168,6 +178,7 @@ struct PropMotifWmHints {
   INT32 inputMode;
   CARD32 status;
 };
+#endif
 
 // virtual method auto selection (VMAS)
 //---------------------------------------------------------------------------
@@ -202,7 +213,7 @@ enum {
 #define _vmas_cast(f) ((void*)f)
 
 #define SET_VMAS(I, F) \
-  _vmas_table[I] = &TWindow::F
+  _vmas_table[I] = (void*)&TWindow::F
 #define CHK_VMAS(I, F) \
   (_vmas_table[I] != _vmas_cast(&TWindow::F))
 static const void* _vmas_table[VMAS_MAX] = { NULL,  };
@@ -232,8 +243,14 @@ TWindow::TWindow(TWindow *p, const string &new_title)
     SET_VMAS(VMAS_KEYEVENT, keyEvent);
   }
   
-
+  #ifdef __X11__
   x11window = 0;
+  #endif
+  
+  #ifdef __WIN32__
+  w32window = 0;
+  paintstruct = 0;
+  #endif
   
   // public flags
   bShell = bPopup = bExplicitCreate = bSaveUnder = bStaticFrame =
@@ -328,19 +345,36 @@ TWindow::~TWindow()
     paint_rgn->wnd = NULL;
   THREAD_UNLOCK(mutexPaintQueue);
 
+  #ifdef __X11__
   if (x11window)
     destroyWindow();
+  #endif
+  
+  #ifdef __WIN32__
+  assert(paintstruct==0);
+  if (w32window)
+    destroyWindow();
+  #endif
 
   _childNotify(TCHILD_REMOVE);
 
   // remove messages for this window
   //--------------------------------
   removeMessage(this);
+
+  #ifdef __X11__
   if (x11window) {
     XDeleteContext(x11display, x11window, nClassContext);
     XDestroyWindow(x11display, x11window);
     x11window = 0;
   }
+  #endif
+  
+  #ifdef __WIN32__
+  if (w32window) {
+    exit(0);
+  }
+  #endif
 
   // free bitmaps (icon & background)
   //--------------------------------
@@ -431,8 +465,10 @@ TWindow::createWindow()
   if (isRealized())
     return;
 
+  #ifdef __X11__
   if (x11window || flag_create)
     return;
+
   flag_create = true; // avoid recursion (for TMDIWindow)
 
   if (getParent() && !getParent()->x11window ) {
@@ -446,6 +482,27 @@ TWindow::createWindow()
     flag_explicit_create = false; // ???
   }
   flag_create = false;
+  #endif
+  
+  #ifdef __WIN32__
+  if (w32window || flag_create)
+    return;
+
+  flag_create = true; // avoid recursion (for TMDIWindow)
+
+  if (getParent() && !getParent()->w32window ) {
+#warning "disabled stupid hack for TMDIWindow without fixing TMDIWindow"
+//    getParent()->createWindow(); // create parent (for TMDIWindow)
+  } else if (!w32window) {
+    flag_explicit_create = true; // ???
+    _interactor_init();      // call create top-down
+    _interactor_adjustW2C(); // call adjust bottom-up
+    _interactor_create();    // now create windows top-down
+    flag_explicit_create = false; // ???
+  }
+  flag_create = false;
+  #endif
+    
 }
 
 void 
@@ -511,10 +568,19 @@ void
 TWindow::_interactor_create()
 {
   #ifdef SECURE
+
+  #ifdef __X11__
   if (x11window) {
     cerr << "toad: internal error; mustn't create an existing window";
     return;
   }
+  #endif
+  
+  #ifdef __WIN32__
+  if (w32window)
+    return;
+  #endif
+  
   #endif
 
   if (bExplicitCreate && !flag_explicit_create)
@@ -539,6 +605,7 @@ TWindow::_interactor_create()
   //---------------------------
   unsigned long mask=0;
 
+#ifdef __X11__
   XSetWindowAttributes attr;
 
   TWndBmpList::iterator p = backgroundlist.find(this);
@@ -606,6 +673,39 @@ TWindow::_interactor_create()
     cerr << "toad: XSaveContext failed\n";
     exit(1);
   }
+#endif
+
+#ifdef __WIN32__
+  DWORD style = ( getParent() && !bShell ) ? 
+    (WS_CHILD|WS_BORDER|WS_VISIBLE) : 
+    WS_OVERLAPPEDWINDOW;
+    
+  RECT rect;
+  rect.left = _x;
+  rect.top  = _y;
+  rect.right = _x+_w-1;
+  rect.bottom = _y+_h-1;
+  if ( !getParent() || bShell ) {
+    ::AdjustWindowRect(&rect, style, false);
+  }
+
+cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w << "," << _h << " -> "
+     << (rect.right - rect.left + 1) << "," << (rect.bottom - rect.top + 1)
+     << endl;
+
+  w32window = ::CreateWindow(
+    "TOAD:BASE",
+    getTitle().c_str(),
+    style,
+    ( getParent() && !bShell ) ? _x : CW_USEDEFAULT , _y,
+    rect.right - rect.left + 1, rect.bottom - rect.top + 1,
+    ( getParent() && !bShell ) ? getParent()->w32window : 0,
+    NULL,
+    w32instance,
+    NULL
+  );
+  ::SetWindowLong(w32window, 0, (LONG)this);
+#endif
   
   focusNewWindow(this); // inform focus management about the new window
 
@@ -618,11 +718,13 @@ TWindow::_interactor_create()
       break;
   }
 
+#ifdef __X11__
   // set additional WM parameters for top level windows
   //----------------------------------------------------
   if (bShell) {
     XSizeHints xsizehints;
     xsizehints.flags = 0;
+
 
     // tell the WM that we want to destroy the window ourself
     XSetWMProtocols(x11display, x11window, &xaWMDeleteWindow, 1);
@@ -638,6 +740,12 @@ TWindow::_interactor_create()
       XSetWMName(x11display, x11window, &tp);
       XFree(tp.value);
     }
+
+    // set for X Session Manager (xsm)
+    XSetCommand(x11display, x11window, argv, argc);
+    char *host = "localhost";
+    XStringListToTextProperty(&host, 1, &tp);
+    XSetWMClientMachine(x11display, x11window, &tp);
 
     // all windows which are not the mainwindow are transient, e.g. dialogs
     
@@ -703,6 +811,7 @@ TWindow::_interactor_create()
     if (xsizehints.flags!=0)
       XSetWMSizeHints(x11display, x11window, &xsizehints, XA_WM_NORMAL_HINTS);
   } // end of `if (bShell)'
+#endif
 
   // create children
   //-----------------
@@ -720,12 +829,19 @@ TWindow::_interactor_create()
   _childNotify(TCHILD_CREATE);
 
   if (_visible) {
+#ifdef __X11__
     XMapRaised(x11display, x11window);
     // adjust position for some window managers (ie. for fvwm2: the difference
     // between the, upper-left frame corner and the upper-left corner of our
     // window)
     if (bShell && !flag_position_undefined)
        XMoveWindow(x11display, x11window, _x, _y);
+#endif
+
+#ifdef __WIN32__
+    ::ShowWindow(w32window, w32cmdshow);
+    ::UpdateWindow(w32window);
+#endif
   }
 }
 
@@ -771,46 +887,63 @@ void
 TWindow::_destroy()
 {
   ENTRYEXIT("TWindow::_destroy");
-  if(x11window) {
-    // take care of pointer in TOADBase
-    if (this==TOADBase::wndTopPopup)
-      ungrabMouse();
-    
-    TWindowEvent we;
-    we.type = TWindowEvent::DESTROY;
-    we.window = this;
-    if (toad::global_evt_filter) {
-      TEventFilter * p = toad::global_evt_filter;
-      while(p) {
-        if (p->windowEvent(we))
-          break;
-        p = p->next;
-      }
-    }
-    windowEvent(we);
-    _childNotify(TCHILD_DESTROY);
-    if (getFirstChild()) {
-      TInteractor *ptr = getFirstChild();
-      while(ptr) {
-        TInteractor *next=getNextSibling(ptr);
-        TWindow *wnd = dynamic_cast<TWindow*>(ptr);
-        if (wnd) {
-          wnd->_destroy();
-          if (!wnd->before_create)
-            delete wnd;
-        }
-        ptr=next;
-      }
-    }
-    removeMessage(this);
-    XSaveContext(x11display, x11window, nClassContext, (XPointer)0);
-    XDestroyWindow(x11display, x11window);
-    x11window = 0;
 
-    // take care of pointer in TFocusManager
-    //---------------------------------------
-    focusDelWindow(this);
+#ifdef __X11__
+  if(!x11window)
+    return;
+#endif
+
+#ifdef __WIN32__
+  if (!w32window)
+    return;
+#endif
+    
+  // take care of pointer in TOADBase
+  if (this==TOADBase::wndTopPopup)
+    ungrabMouse();
+    
+  TWindowEvent we;
+  we.type = TWindowEvent::DESTROY;
+  we.window = this;
+  if (toad::global_evt_filter) {
+    TEventFilter * p = toad::global_evt_filter;
+    while(p) {
+      if (p->windowEvent(we))
+        break;
+      p = p->next;
+    }
   }
+  windowEvent(we);
+  _childNotify(TCHILD_DESTROY);
+  if (getFirstChild()) {
+    TInteractor *ptr = getFirstChild();
+    while(ptr) {
+      TInteractor *next=getNextSibling(ptr);
+      TWindow *wnd = dynamic_cast<TWindow*>(ptr);
+      if (wnd) {
+        wnd->_destroy();
+        if (!wnd->before_create)
+          delete wnd;
+      }
+      ptr=next;
+    }
+  }
+  removeMessage(this);
+
+#ifdef __X11__
+  XSaveContext(x11display, x11window, nClassContext, (XPointer)0);
+  XDestroyWindow(x11display, x11window);
+  x11window = 0;
+#endif
+
+#ifdef __WIN32__
+  ::DestroyWindow(w32window);
+  w32window = 0;
+#endif
+
+  // take care of pointer in TFocusManager
+  //---------------------------------------
+  focusDelWindow(this);
 }
 
 /**
@@ -834,16 +967,27 @@ void
 TWindow::raiseWindow()
 {
   CHECK_REALIZED("RaiseWindow");
+  #ifdef __X11__
   XRaiseWindow(x11display, x11window);
+  #endif
+  
+  #ifdef __WIN32__
+  #endif
 }
 
 void 
 TWindow::lowerWindow()
 {
   CHECK_REALIZED("LowerWindow");
+  #ifdef __X11__
   XLowerWindow(x11display, x11window);
+  #endif
+  
+  #ifdef __WIN32__
+  #endif
 }
 
+#ifdef __X11__
 // Paint Queue
 //----------------------------------------------------------------------------
 
@@ -907,6 +1051,22 @@ TWindow::_dispatchPaintEvent()
   THREAD_UNLOCK(mutexPaintQueue);
 }
 
+
+/**
+ * See that `TRegion *paint_rgn' contains a region.
+ */
+void
+TWindow::_providePaintRgn()
+{
+  if (paint_rgn==NULL) {      // make sure window has a paint region
+//printf("TWindow: creating paint region for %lx\n",(long)this);
+    paint_rgn = new TPaintRegion;
+    paint_rgn->wnd = this;
+    paint_region_queue.push(paint_rgn);
+  }
+}
+#endif
+
 /** 
  * Update the whole invalidated window region right now. 
  * The normal behaviour is to wait until no other events than paint events
@@ -915,6 +1075,7 @@ TWindow::_dispatchPaintEvent()
 void
 TWindow::paintNow()
 {
+#ifdef __X11__
 //  cout << "void TWindow::PaintNow()" << endl;
 THREAD_LOCK(mutexPaintQueue);
   if (paint_rgn) {
@@ -951,20 +1112,7 @@ THREAD_LOCK(mutexPaintQueue);
     paint_rgn = NULL;
   }
 THREAD_UNLOCK(mutexPaintQueue);
-}
-
-/**
- * See that `TRegion *paint_rgn' contains a region.
- */
-void
-TWindow::_providePaintRgn()
-{
-  if (paint_rgn==NULL) {      // make sure window has a paint region
-//printf("TWindow: creating paint region for %lx\n",(long)this);
-    paint_rgn = new TPaintRegion;
-    paint_rgn->wnd = this;
-    paint_region_queue.push(paint_rgn);
-  }
+#endif
 }
 
 /**
@@ -988,41 +1136,68 @@ TWindow::getUpdateRegion() const
 void 
 TWindow::invalidateWindow(bool clear)
 {
-  THREAD_LOCK(mutexPaintQueue);
+#ifdef __X11__
   _providePaintRgn();
   paint_rgn->addRect(0,0,_w,_h);
   bEraseBe4Paint |= clear;
-  THREAD_UNLOCK(mutexPaintQueue);
+#endif
+
+#ifdef __WIN32__
+  RECT rect;
+  rect.left = 0;
+  rect.right = _w;
+  rect.top = 0;
+  rect.bottom = _h;
+  ::InvalidateRect(w32window, &rect, clear);
+#endif
 }
 
 void 
 TWindow::invalidateWindow(int x,int y,int w,int h, bool clear)
 {
-  THREAD_LOCK(mutexPaintQueue);
+#ifdef __X11__
   _providePaintRgn();
   paint_rgn->addRect(x,y,w,h);
   bEraseBe4Paint |= clear;
-  THREAD_UNLOCK(mutexPaintQueue);
+#endif
+
+#ifdef __WIN32__
+  RECT rect;
+  rect.left = x;
+  rect.right = x+w-1;
+  rect.top = y;
+  rect.bottom = y+h-1;
+  ::InvalidateRect(w32window, &rect, clear);
+#endif
 }
 
 void 
 TWindow::invalidateWindow(const TRectangle &r, bool clear)
 {
-  THREAD_LOCK(mutexPaintQueue);
+#ifdef __X11__
   _providePaintRgn();
   (*paint_rgn)|=r;
   bEraseBe4Paint |= clear;
-  THREAD_UNLOCK(mutexPaintQueue);
+#endif
+
+#ifdef __WIN32__
+  RECT rect;
+  rect.left = r.x;
+  rect.right = r.x+r.w-1;
+  rect.top = r.y;
+  rect.bottom = r.y+r.h-1;
+  ::InvalidateRect(w32window, &rect, clear);
+#endif
 }
 
 void 
 TWindow::invalidateWindow(const TRegion &r, bool clear)
 {
-  THREAD_LOCK(mutexPaintQueue);
+#ifdef __X11__
   _providePaintRgn();
   (*paint_rgn)|=r;
   bEraseBe4Paint |= clear;
-  THREAD_UNLOCK(mutexPaintQueue);
+#endif
 }
 
 
@@ -1031,6 +1206,7 @@ TWindow::invalidateWindow(const TRegion &r, bool clear)
 
 #define SCROLL_WITH_SERVER_GRAB
 
+#ifdef __X11__
 static Bool CheckEvent(Display*, XEvent *event, char *window)
 {
   if (event->xany.window==reinterpret_cast<Window>(window) && 
@@ -1038,6 +1214,7 @@ static Bool CheckEvent(Display*, XEvent *event, char *window)
     return True;
   return False; 
 }
+#endif
 
 /**
  * Scroll window contents.
@@ -1052,6 +1229,7 @@ static Bool CheckEvent(Display*, XEvent *event, char *window)
 void
 TWindow::scrollWindow(int dx, int dy, bool bClrBG)
 {
+#ifdef __X11__
   if (!x11window || (dx==0 && dy==0)) 
     return;
 
@@ -1103,6 +1281,10 @@ TWindow::scrollWindow(int dx, int dy, bool bClrBG)
   #ifdef SCROLL_WITH_SERVER_GRAB
   XUngrabServer(x11display);
   #endif
+#endif
+
+#ifdef __WIN32__
+#endif
 }
 
 /**
@@ -1114,6 +1296,7 @@ TWindow::scrollWindow(int dx, int dy, bool bClrBG)
 void
 TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool bClrBG)
 {
+#ifdef __X11__
   if (!x11window || (dx==0 && dy==0)) 
     return;
 
@@ -1204,6 +1387,11 @@ TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool bClrBG)
   #ifdef SCROLL_WITH_SERVER_GRAB
   XUngrabServer(x11display);
   #endif
+#endif
+
+#ifdef __WIN32__
+#endif
+
 }
 
 /**
@@ -1371,6 +1559,7 @@ void TWindow::create(){}
  * don't sell X anymore. ;)
  */
 
+#ifdef __X11__
 /**
  * @ingroup directx
  *
@@ -1391,6 +1580,7 @@ void TWindow::createX11Window(TX11CreateWindow*){}
  * The default implementation does nothing.
  */
 void TWindow::handleX11Event(){}
+#endif
 
 /**
  * Key pressed.
@@ -1557,7 +1747,8 @@ TWindow::setSize(int w,int h)
 
   _w=w;
   _h=h;
-  
+
+#ifdef __X11__  
   if (x11window) {
     if (bStaticFrame) {
       XSizeHints sh;
@@ -1572,6 +1763,29 @@ TWindow::setSize(int w,int h)
     _bResizedBeforeCreate = true;
     return;
   }
+#endif
+
+#ifdef __WIN32__
+  if (w32window) {
+    ::InvalidateRect(w32window, NULL, TRUE);
+
+  DWORD style = ( getParent() && !bShell ) ? 
+    (WS_CHILD|WS_BORDER|WS_VISIBLE) : 
+    WS_OVERLAPPEDWINDOW;
+    
+  RECT rect;
+  rect.left = _y;
+  rect.top  = _x;
+  rect.right = _x+_w-1;
+  rect.bottom = _y+_h-1;
+  ::AdjustWindowRect(&rect, style, false);
+
+    ::MoveWindow(w32window, _x, _y, rect.right - rect.left+1, rect.bottom - rect.top+1, FALSE);
+  } else {
+    _bResizedBeforeCreate = true;
+    return;
+  }
+#endif
 
   // `flag_wm_resize' is true when this method was called
   // as consquence of `_childNotify(TCHILD_RESIZE)' below so before
@@ -1617,6 +1831,7 @@ void TWindow::setMapped(bool b)
   if (_visible == b)
     return;
   _visible = b;
+#ifdef __X11__
   if (!x11window)
     return;
   if (b) {
@@ -1624,6 +1839,17 @@ void TWindow::setMapped(bool b)
   } else {
     XUnmapWindow(x11display, x11window);
   }
+#endif
+
+#ifdef __WIN32__
+  if (!w32window)
+    return;
+  if (b) {
+    ::ShowWindow(w32window, 1);
+  } else {
+    ::ShowWindow(w32window, 0);
+  }
+#endif
 }
 
 /**
@@ -1631,8 +1857,15 @@ void TWindow::setMapped(bool b)
  */
 bool TWindow::isMapped() const
 {
+#ifdef __X11__
   if (!x11window)
     return false;
+#endif
+
+#ifdef __WIN32__
+  if (!w32window)
+    return false;
+#endif
   return _visible;
 }
 
@@ -1664,6 +1897,8 @@ void TWindow::scrollTo(int nx, int ny)
 void TWindow::setTitle(const string &title)
 {
   this->title=title;
+
+#ifdef __X11__
   if (x11window) {
     if (bShell) {
       XTextProperty tp;
@@ -1678,6 +1913,7 @@ void TWindow::setTitle(const string &title)
     }
     invalidateWindow();
   }
+#endif
   
   _childNotify(TCHILD_TITLE);
 }
@@ -1747,8 +1983,10 @@ TWindow::setLayout(TLayout *l)
    * todo: only subscribe for paint events, when the layout's paint
    * method is overwritten.
    */
+#ifdef __X11__
   if ( x11window && ((layout && !l) || (!layout && l)) )
     XSelectInput(x11display, x11window, _buildEventmask());
+#endif
   layout = l;
   if (layout) {
     if (layout->getFilename().size()==0 && oldfilename.size()!=0) {
@@ -1775,8 +2013,14 @@ TWindow::setPosition(int x,int y)
     return;
   _x = x;
   _y = y;
+#ifdef __X11__
   if (x11window)
     XMoveWindow(x11display, x11window,x,y);
+#endif
+#ifdef __WIN32__
+    ::InvalidateRect(w32window, NULL, TRUE);
+    ::MoveWindow(w32window, _x, _y, _w+(_b<<1), _h+(_b<<1), FALSE);
+#endif
   _childNotify(TCHILD_POSITION);
 }
 
@@ -1817,8 +2061,10 @@ void
 TWindow::setBackground(const TColor &nc)
 {
   background.set(nc.r,nc.g,nc.b);
+#ifdef __X11__
   if(x11window)
     XSetWindowBackground(x11display, x11window, background._getPixel());
+#endif
 }
 
 /**
@@ -1838,6 +2084,7 @@ TWindow::setBackground(TBitmap *bmp)
     backgroundlist[this]=bmp;
   }
 
+#ifdef __X11__
   if (x11window) {
     if (bmp) {
       bmp->update();
@@ -1846,6 +2093,7 @@ TWindow::setBackground(TBitmap *bmp)
       XSetWindowBackgroundPixmap(x11display, x11window, None);
     }
   }
+#endif
 }
 
 /**
@@ -1859,7 +2107,8 @@ void
 TWindow::setHasBackground(bool b)
 {
   bNoBackground = !b;
-  
+
+#ifdef __X11__
   if (!x11window)
     return;
 
@@ -1884,13 +2133,16 @@ TWindow::setHasBackground(bool b)
     x11display, x11window,
     mask,
     &attr);
+#endif
   invalidateWindow();
 }
 
 void 
 TWindow::clearWindow()
 {
+#ifdef __X11__
   XClearWindow(x11display, x11window);
+#endif
 }
 
 /**
@@ -1900,6 +2152,7 @@ TWindow::clearWindow()
  */
 void TWindow::getRootPos(int* x, int* y)
 {
+#ifdef __X11__
   if (!x11window) {
     *x=0;
     *y=0;
@@ -1912,11 +2165,13 @@ void TWindow::getRootPos(int* x, int* y)
     *x -= _b;
     *y -= _b;
   }
+#endif
 }
 
 #ifdef DEBUG
 void TWindow::debug_check_realized(const char *txt)
 {
+#ifdef __X11__
   if(!x11window)  {
     fprintf(stderr,
       "TOAD: FATAL ERROR\n"
@@ -1935,6 +2190,7 @@ void TWindow::debug_check_realized(const char *txt)
                     title.c_str());
     exit(1);
   }
+#endif
 }
 #endif
 
@@ -1956,6 +2212,7 @@ void TWindow::debug_check_realized(const char *txt)
 void 
 TWindow::grabMouse(unsigned short mouseMessages, TWindow* confine_window, TCursor::EType cursor)
 {
+#ifdef __X11__
 //  cerr << "grabMouse for window '" << getTitle() << "'\n";
 
   bSimulatedAutomaticGrab = false;
@@ -1988,6 +2245,7 @@ TWindow::grabMouse(unsigned short mouseMessages, TWindow* confine_window, TCurso
     cerr << "toad: warning; GrapPointer failed\n";
   }
   _mmm_mask = old_mmm_mask;
+#endif
 }
 
 /**
@@ -2010,6 +2268,7 @@ TWindow::grabMouse(unsigned short mouseMessages, TWindow* confine_window, TCurso
 void
 TWindow::grabPopupMouse(unsigned short mouseMessages, TCursor::EType cursor)
 {
+#ifdef __X11__
 //printf("%s.GrabPopupMouse(%03lx) (MMM:%03lx)\n",Title(),ulMouseMessages,iflags%IFLAG_MMM_MASK);
 
   bSimulatedAutomaticGrab = false;
@@ -2038,6 +2297,7 @@ TWindow::grabPopupMouse(unsigned short mouseMessages, TCursor::EType cursor)
   
   TOADBase::wndTopPopup = this;
   _mmm_mask = old_mmm_mask;
+#endif
 }
 
 /**
@@ -2048,9 +2308,11 @@ TWindow::grabPopupMouse(unsigned short mouseMessages, TCursor::EType cursor)
 void
 TWindow::ungrabMouse()
 {
+#ifdef __X11__
   XUngrabPointer(x11display, CurrentTime);
   TOADBase::bSimulatedAutomaticGrab = false;
   TOADBase::wndTopPopup = NULL;
+#endif
 }
 
 /**
@@ -2087,36 +2349,43 @@ TWindow::ungrabMouse()
 void
 TWindow::setMouseMoveMessages(unsigned short mode)
 {
+#ifdef __X11__
   if ( !CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) )
     return;
   _mmm_mask = mode;
   flag_mmm_modified = true;
   if (x11window)
     XSelectInput(x11display, x11window, _buildEventmask());
+#endif
 }
 
 void
 TWindow::addMouseMoveMessages(unsigned short mode)
 {
+#ifdef __X11__
   if ( !CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) )
     return;
   _mmm_mask |= mode;
   flag_mmm_modified = true;
   if (x11window)
     XSelectInput(x11display, x11window, _buildEventmask());
+#endif
 }
 
 void
 TWindow::clrMouseMoveMessages(unsigned short mode)
 {
+#ifdef __X11__
   if ( !CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) )
     return;
   _mmm_mask &= ~mode;
   flag_mmm_modified = true;
   if (x11window)
     XSelectInput(x11display, x11window, _buildEventmask());
+#endif
 }
 
+#ifdef __X11__
 /**
  * determine what events the window wants
  */
@@ -2139,6 +2408,7 @@ TWindow::_buildEventmask()
   mask |= PropertyChangeMask;
 
   return mask;              
+
 }
 
 //! private
@@ -2192,6 +2462,7 @@ TWindow::_buildMouseEventmask(bool force)
   }
   return mask;
 }
+#endif
 
 /**
  * <B>BEWARE: OLD DESCRIPTION</B><BR>

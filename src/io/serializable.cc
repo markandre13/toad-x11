@@ -375,7 +375,7 @@ restore(TInObjectStream &in, float *value)
   if (in.what != ATV_VALUE)
     return false;
   char *endptr;
-  *value = strtof(in.value.c_str(), &endptr);
+  *value = strtod(in.value.c_str(), &endptr);
   if (endptr!=0 && *endptr!=0)
     return false;
   return true;

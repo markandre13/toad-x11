@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef _TOAD_TOADBASE_HH
-#define _TOAD_TOADBASE_HH
+#ifndef TOADBase
+#define TOADBase TOADBase
 
 // TOAD version codes
 //-----------------------------------------------
@@ -34,6 +34,8 @@
 // hiding X11 types (better to be generated from the X11 headers!)
 //-----------------------------------------------
 #ifdef _TOAD_PRIVATE
+
+#ifdef __X11__
   #include <X11/Xlib.h>
   #include <X11/Xutil.h>
   namespace toad {
@@ -43,6 +45,9 @@
     typedef XFontStruct* _TOAD_FONT;
     typedef Region _TOAD_REGION;
   } // namespace toad
+#endif
+  
+
 #else
   namespace toad {
     typedef void* _TOAD_GC;
@@ -53,6 +58,11 @@
   } // namespace toad
 #endif
 
+#ifdef __WIN32__
+  #define STRICT
+  #define W32_LEAN_AND_MEAN
+  #include <windows.h>
+#endif
 
 #include <cstdlib>
 #include <cstdio>
@@ -67,7 +77,15 @@
 
 #include <toad/types.hh>
 #include <toad/debug.hh>
+
+#ifdef __X11__
 #include <toad/X11/keyboard.hh>
+#endif
+
+#ifdef __WIN32__
+#include <toad/w32/keyboard.hh>
+#endif
+
 #include <toad/connect.hh>
 
 namespace toad {
@@ -100,10 +118,16 @@ class TDnDObject;
 class TDialog;
 class TDialogEditor;
 
+#ifdef __X11__
 void initialize(int argc, char **&argv, char **envv);
+#endif
+
+#ifdef __WIN32__
+void initialize(HINSTANCE, HINSTANCE, LPSTR, int);
+#endif
+
 int mainLoop();
 void terminate();
-
 
 enum EEventFilterPos {
   KF_GLOBAL,
@@ -146,6 +170,8 @@ enum EWindowPlacement {
 };
 
 #ifdef _TOAD_PRIVATE
+
+#ifdef __X11__
 extern Display *x11display;
 extern Colormap x11colormap;
 extern Visual* x11visual;
@@ -157,6 +183,13 @@ extern XContext nClassContext;
 extern Atom xaWMSaveYourself;
 extern Atom xaWMDeleteWindow;
 extern Atom xaWMMotifHints;
+#endif
+
+#ifdef __WIN32__
+extern HINSTANCE w32instance;
+extern int w32cmdshow;
+#endif
+
 #endif
 
 class TOADBase
@@ -225,8 +258,10 @@ class TOADBase
     
     static void sendMessageDeleteWindow(TWindow*);
 
+#ifdef __X11__
     static bool peekMessage();
     static bool handleMessage();
+#endif
 
     static void lockPaintQueue() { lock_paint_queue = true; }
     static void unlockPaintQueue() { lock_paint_queue = false; }
@@ -254,6 +289,8 @@ class TOADBase
 
   private:
     #ifdef _TOAD_PRIVATE
+    
+    #ifdef __X11__
     static void DnDNewShellWindow(TWindow*);
     static bool DnDMotionNotify(XEvent &event);
     static bool DnDButtonRelease(XEvent &event);
@@ -261,6 +298,8 @@ class TOADBase
     static bool DnDSelectionNotify(XEvent &event);
     static bool DnDSelectionRequest(XEvent &event);
     static bool DnDSelectionClear(XEvent &event);
+    #endif
+
     #endif
 };
 

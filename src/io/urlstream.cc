@@ -34,10 +34,12 @@
 #include <map>
 
 #include <sys/types.h>
+#ifdef __X11__
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#endif
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -261,8 +263,10 @@ void urlstreambase::parse(const string &url)
   } typetable[] = {
     { MEMORY, "memory", false },
     { FILE,   "file",   false },
+#ifdef __X11__
     { HTTP,   "http",   true },
     { FTP,    "ftp",    true },
+#endif
   };
   unsigned p,l;
 
@@ -323,9 +327,11 @@ void urlstreambase::iopen()
     case FILE:
       iopen_file();
       break;
+#ifdef __X11__
     case HTTP:
       iopen_http();
       break;
+#endif
     case MEMORY:
       iopen_memory();
       break;
@@ -346,6 +352,7 @@ void urlstreambase::oopen()
   }
 }
 
+#ifdef __X11__
 void urlstreambase::iopen_http()
 {
   string error;
@@ -399,6 +406,7 @@ error3:
 error1:
   throw runtime_error(error.c_str());
 }
+#endif
 
 void urlstreambase::iopen_file()
 {

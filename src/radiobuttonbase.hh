@@ -92,10 +92,11 @@ class GRadioStateModel:
   
     void setValue(const T& v) {
       TRadioButtonBase* btn = getButton(v);
-      if (btn)
+      if (btn) {
         setCurrent(btn);
-      else
+      } else {
         memo = v;
+      }
     }
     
     const T& getValue() const {

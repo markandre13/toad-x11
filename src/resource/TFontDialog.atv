@@ -23,7 +23,7 @@ toad::TDialogLayout{
     }
     toad::TFText {
       linecolor ={ 0 0 0 }
-      x = 4
+      x = 8
       y = 4
       w = 30
       h = 16
@@ -85,7 +85,6 @@ toad::TDialogLayout{
       w = 121
       h = 13
       title = "type bitmap"
-      label = "Bitmap"
       taborder = 0
     }
     toad::TFWindow {
@@ -94,7 +93,6 @@ toad::TDialogLayout{
       w = 145
       h = 13
       title = "type scaleable ft"
-      label = "Scaleable (FreeType)"
       taborder = 0
     }
     toad::TFWindow {
@@ -103,7 +101,6 @@ toad::TDialogLayout{
       w = 113
       h = 13
       title = "type scaleable x11"
-      label = "Scaleable (X11)"
       taborder = 0
     }
     toad::TFFrame {
@@ -171,6 +168,24 @@ toad::TDialogLayout{
       h = 25
       title = "table"
       label = "Show Font"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 424
+      y = 92
+      w = 77
+      h = 13
+      title = "type x11"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 424
+      y = 108
+      w = 109
+      h = 13
+      title = "type freetype"
+      label = ""
       taborder = 0
     }
   }

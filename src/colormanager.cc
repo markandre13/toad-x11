@@ -18,9 +18,11 @@
  * MA  02111-1307,  USA
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#endif
 
 #include <cstring>
 
@@ -34,6 +36,8 @@ namespace toad {
 
 typedef unsigned char byte;
 typedef unsigned long ulong;
+
+#ifdef __X11__
 
 static void determine_color_mode();
 
@@ -189,6 +193,7 @@ ulong TColor::_getPixelAt(const TRGB &rgb, int x, int y)
     return dither_pixel(rgb.r,rgb.g,rgb.b, x,y);
 }
 
+#endif
 
 /****************************************************************************
  *                                                                          *
@@ -244,6 +249,8 @@ const TColor& TColor::_palette(int n)
 {
   return palette[n];
 }
+
+#ifdef __X11__
 
 // color translation tables
 //---------------------------------------------------------------------------
@@ -1034,4 +1041,7 @@ dither_pixel(byte r, byte g, byte b, int x, int y)
   }
 }
 
+#endif
+
 } // namespace toad
+

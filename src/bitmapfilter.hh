@@ -28,6 +28,12 @@
 
 namespace toad {
 
+#ifdef __WIN32__
+#undef OK
+#undef WRONG
+#undef ERROR
+#endif
+
 class TBitmapFilter
 {
   public:

@@ -480,12 +480,30 @@ class TPen:
   public:
 //#warning "'TRegion *region' is public"
     TRegion *region;
-  private:
+//  private:
     void _setLineAttributes();
     void _init();
     
+    #ifdef __X11__    
     _TOAD_GC o_gc, f_gc;
     _TOAD_DRAWABLE x11drawable; // either window or pixmap
+    #endif
+    
+    #ifdef __WIN32__
+    HDC w32hdc;
+    HWND w32window;
+
+    HGDIOBJ w32pen;
+    LOGPEN w32logpen;
+    
+    HGDIOBJ w32brush;
+    // LOGBRUSH w32logbrush;
+
+    void activateW32() const;
+    void updateW32Pen() const;
+    void updateW32Brush() const;
+
+    #endif
 };
 
 } // namespace toad

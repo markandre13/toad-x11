@@ -19,6 +19,7 @@
  */
 
 #include <toad/boundedrangemodel.hh>
+#include <limits.h>
 
 using namespace toad;
 

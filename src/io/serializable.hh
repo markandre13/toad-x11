@@ -32,7 +32,11 @@
 #define _ATV_SERIALIZE_HH
 
 #include <toad/io/atvparser.hh>
+#ifdef __WIN32__
+#include <ostream.h>
+#else
 #include <ostream>
+#endif
 #include <map>
 #include <string>
 #include <cstring>

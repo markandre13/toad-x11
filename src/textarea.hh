@@ -229,14 +229,18 @@ class TTextArea:
       super(p, t)
     {
       vscroll = 0;
+#ifdef __X11__
       setModel(new TTextModel());
+#endif
       init();
     }
     TTextArea(TWindow *p, const string &t, TTextModel *m):
       super(p, t)
     {
       vscroll = 0;
+#ifdef __X11__
       setModel(m);
+#endif
       init();
     }
     template <class T> 
@@ -244,7 +248,9 @@ class TTextArea:
       super(p, t)
     {
       vscroll = 0;
+#ifdef __X11__
       setModel(m);
+#endif
       init();
     }
     ~TTextArea();

@@ -30,7 +30,11 @@
 #include <toad/command.hh>
 
 #ifdef _TOAD_PRIVATE
+
+#ifdef __X11__
 #include <toad/X11/x11window.hh>
+#endif
+
 #else
 namespace toad {
   struct TX11CreateWindow;
@@ -110,7 +114,13 @@ class TWindow:
     bool bX11GC:1;              // use the Xlib default gc
 
     //! Return 'true' when the window is created on the screen.
+    #ifdef __X11__
     bool isRealized() const {return x11window!=0;}
+    #endif
+    
+    #ifdef __WIN32__
+    bool isRealized() const {return w32window!=0;}
+    #endif
 
     void clearWindow();
     void grabMouse(unsigned short mouseMessages=TMMM_PREVIOUS,TWindow* confine_window=NULL, TCursor::EType type=TCursor::DEFAULT);
@@ -248,9 +258,13 @@ class TWindow:
     virtual void closeRequest();          // the window should destroy itself
     virtual void create();                // called before the window is created
     virtual void created();               // called after the window is created; add childs here etc.
+    virtual void destroy();
+
+    #ifdef __X11__
     virtual void createX11Window(TX11CreateWindow*);
     virtual void handleX11Event();
-    virtual void destroy();
+    #endif
+    
   
     virtual void keyEvent(TKeyEvent&);
 #ifdef TOAD_EVENTCLASSES
@@ -304,7 +318,6 @@ class TWindow:
 //    TDropContext* GetDropArea(int,int);
 
   private:
-    TColor background;                      // background color
 
     void _interactor_init();
     void _interactor_adjustW2C();
@@ -316,7 +329,9 @@ class TWindow:
     void _setFocus(bool b);
   private:
 
+#ifdef __X11__
     void _providePaintRgn();
+#endif
     unsigned short _mmm_mask;
 
     // internal flags
@@ -338,9 +353,10 @@ class TWindow:
      * This values is set to 'false' by setPosition and setShape.
      */
     bool flag_position_undefined:1;
-    
+#ifdef __X11__    
     long _buildEventmask();
     long _buildMouseEventmask(bool force = true);
+#endif
 
     #ifdef DEBUG
     static const unsigned DFLAG_WMINIT    = 1;
@@ -353,6 +369,7 @@ class TWindow:
   #else
   private:
   #endif
+    TColor background;                      // background color
     class TPaintRegion;
   private:
     static bool _havePaintEvents();
@@ -361,9 +378,35 @@ class TWindow:
     
   public:
     TRegion* getUpdateRegion() const;
+    #ifdef __WIN32__
+    static void w32registerclass();
+    #endif
   protected:
 
+    #ifdef __X11__
     _TOAD_WINDOW x11window;
+    #endif
+    
+    #ifdef __WIN32__
+    HWND w32window;
+    static LRESULT CALLBACK w32proc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam);
+    
+    struct TPaintStruct {
+      TPaintStruct() {
+        hdc = 0;
+        refcount = 0;
+        origpen = 0;
+        origbrush = 0;
+        currentpen = 0;
+      }
+      HDC hdc;
+      unsigned refcount;
+      HGDIOBJ origpen;
+      HGDIOBJ origbrush;
+      const TPen *currentpen;
+    };
+    TPaintStruct *paintstruct;
+    #endif
 };
 
 class TWindow::TPaintRegion:

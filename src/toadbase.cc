@@ -24,19 +24,26 @@
  */
 
 #include <errno.h>
+
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 #include <X11/Xmd.h>
 #include <X11/Xatom.h>
 #include <X11/Xlocale.h>
+#endif
+
 #include <cstdarg>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
+#ifdef __X11__
 #include <sys/wait.h>
+#endif
 
 #include <deque>
 #include <set>
@@ -61,6 +68,7 @@
 
 using namespace toad;
 
+#ifdef __X11__
 static string GetWindowProperty(Window source, Atom property, Atom type);
 static string AtomName(Atom atom) {
   string result = "(None)";
@@ -71,6 +79,8 @@ static string AtomName(Atom atom) {
   }
   return result;
 }
+#endif
+
 static string selection_kludge_data;
 static bool selection_kludge_flag;
 
@@ -100,17 +110,20 @@ TOADBase::sendMessageDeleteWindow(TWindow* w)
 }
 
 namespace toad {
+#ifdef __X11__
 extern XIC xic_current;
+#endif
 } // namespace toad
+
 
 // X11 data
 //---------------------------------------------------------------------------
+#ifdef __X11__
 Display*  toad::x11display = NULL;
 Visual*   toad::x11visual = NULL;
 int       toad::x11depth = 0;
 int       toad::x11screen;
 
-TEventFilter * toad::global_evt_filter = 0;
 
 //! \ingroup directx
 XEvent    toad::x11event;
@@ -121,6 +134,9 @@ Atom      toad::xaWMDeleteWindow;
 Atom      toad::xaWMMotifHints;
 
 static Atom xaWMProtocols;
+#endif
+
+TEventFilter * toad::global_evt_filter = 0;
 
 // TOAD data
 //---------------------------------------------------------------------------
@@ -192,6 +208,7 @@ static void get_executable_path(char *prgname)
  */
 void TOADBase::bell(int volume, int freq)
 {
+#ifdef __X11__
   assert(x11display);
 
   if (volume<-100) volume=-100; else if (volume>100) volume=100;
@@ -201,6 +218,7 @@ void TOADBase::bell(int volume, int freq)
     XChangeKeyboardControl(x11display, KBBellPitch, &c);
   }
   XBell(x11display, volume);
+#endif
 }
 
 // open/close toad
@@ -212,6 +230,7 @@ TOADBase::~TOADBase()
 bool
 TOADBase::initTOAD()
 {
+#ifdef __X11__
   bool x11sync = false;
   string x11displayname;
 
@@ -257,22 +276,29 @@ TOADBase::initTOAD()
 
   if (i18n)
     initXInput();
+#endif
 
   bSimulatedAutomaticGrab = false;
   wndTopPopup = NULL;
 
+#ifdef __X11__
   initColor();
 
   initIO(ConnectionNumber(x11display));
+#endif
   TFigure::initStorage();
+#ifdef __X11__
   initDnD();
+#endif
 
   // parse arguments
   get_executable_path(*argv);
 
   // set up default font
   //---------------------
+#ifdef __X11__
   x11gc = DefaultGC(x11display, DefaultScreen(x11display));
+#endif
   default_font=new TFont(TFont::SANS, TFont::PLAIN, 12);
   bold_font   =new TFont(TFont::SANS, TFont::BOLD, 12);
 
@@ -296,11 +322,13 @@ TOADBase::closeTOAD()
   default_font = 0;
   bold_font = 0;
 
+#ifdef __X11__
   closeXInput();
 
   //  close connection to the X11 server
   XCloseDisplay(x11display);
   x11display = 0;
+#endif
   removeAllIntMsg();
 }
 
@@ -311,6 +339,7 @@ TOADBase::closeTOAD()
 // there seems to be a problem with nested exceptions
 static bool show_exception_message = false;
 
+#ifdef __X11__
 /**
  * Start TOAD message loop.
  *
@@ -357,6 +386,7 @@ TOADBase::mainLoop()
 
   return nStatus;
 }
+#endif
 
 /**
  * Stop mainLoop().
@@ -376,7 +406,9 @@ TOADBase::postQuitMessage(int nExitCode)
 void
 TOADBase::flush()
 {
+#ifdef __X11__
   XFlush(x11display);
+#endif
 }
 
 /*---------------------------------------------------------------------------*
@@ -452,6 +484,7 @@ TOADBase::removeAllIntMsg()
 /**
  * Return `true' when the message queue is not empty.
  */
+#ifdef __X11__
 bool
 TOADBase::peekMessage()
 {
@@ -463,6 +496,7 @@ TOADBase::peekMessage()
   THREAD_UNLOCK(mutexMessageQueue);
   return result;
 }
+#endif
 
 /**
  * Wait when the message queue is empty until a new message arrives
@@ -471,6 +505,7 @@ TOADBase::peekMessage()
  */
 //---------------------------------------------------------------------------
 
+#ifdef __X11__
 static const char *x11eventname[34] = {
   "(reserved)",
   "(reserved)",
@@ -1281,6 +1316,7 @@ cout << endl;
   }
   return bAppIsRunning;
 }
+#endif
 
 /**
  * Create window 'wnd' as a modal window and return when 'wnd' is being
@@ -1314,7 +1350,9 @@ TOADBase::doModalLoop(TWindow *wnd)
     }
 #else
     try {
+#if __X11__
       handleMessage();
+#endif
     } catch(exception &e) {
       wnd->destroyWindow();
       modal_stack.pop_back();
@@ -1367,7 +1405,13 @@ TOADBase::endAllModalLoops()
 int
 TOADBase::getScreenWidth()
 {
+#ifdef __X11__
   return WidthOfScreen(DefaultScreenOfDisplay(x11display));
+#endif
+
+#ifdef __WIN32__
+  return 800;
+#endif
 }
 
 /**
@@ -1376,7 +1420,13 @@ TOADBase::getScreenWidth()
 int
 TOADBase::getScreenHeight()
 {
+#ifdef __X11__
   return HeightOfScreen(DefaultScreenOfDisplay(x11display));
+#endif
+
+#ifdef __WIN32__
+  return 600;
+#endif
 }
 
 /**
@@ -1386,6 +1436,7 @@ TOADBase::getScreenHeight()
 void
 TOADBase::getMousePos(int *x,int *y)
 {
+#ifdef __X11__
   Window w1,w2;
   int c1,c2;
   unsigned m;
@@ -1396,6 +1447,7 @@ TOADBase::getMousePos(int *x,int *y)
     x,y,
     &c1,&c2,
     &m);
+#endif
 }
 
 /**
@@ -1405,6 +1457,7 @@ TOADBase::getMousePos(int *x,int *y)
 void
 TOADBase::setMousePos(int x,int y)
 {
+#ifdef __X11__
   XWarpPointer(
     x11display,
     None,
@@ -1412,6 +1465,7 @@ TOADBase::setMousePos(int x,int y)
     0,0,0,0,
     x,y
   );
+#endif
 }
 
 /**
@@ -1440,6 +1494,7 @@ TOADBase::setMousePos(int x,int y)
 void
 TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
 {
+#ifdef __X11__
   TRectangle who;
   window->getShape(&who);
 
@@ -1526,6 +1581,7 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
   if (y<dist)
     y=dist;
   window->setPosition(x,y);
+#endif
 }
 
 /**
@@ -1533,6 +1589,7 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
  */
 string TOADBase::getSelection()
 {
+#ifdef __X11__
   selection_kludge_data.erase();
   selection_kludge_flag = true;
 
@@ -1550,6 +1607,7 @@ string TOADBase::getSelection()
     handleMessage();
   }
   return selection_kludge_data;
+#endif
 }
 
 // SetSelection
@@ -1583,6 +1641,7 @@ const string& TOADBase::getResourcePrefix()
   return resource_prefix;
 }
 
+#if __X11__
 // duplicated from dragndrop.cc for experiments:
 //-----------------------------------------------
 string 
@@ -1619,3 +1678,4 @@ GetWindowProperty(Window source, Atom property, Atom type)
   }while(remaining!=0);
   return data;
 }
+#endif

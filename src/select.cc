@@ -107,6 +107,7 @@ static TSortedList _sorted_list;
 //----------------------------------------------------------------
 void TOADBase::select()
 {
+#ifdef __X11__
   // add new io observers to the list
   //----------------------------------
   TList::iterator p;
@@ -216,6 +217,7 @@ void TOADBase::select()
       return;
     flush();
   }
+#endif
 }
 
 /**
@@ -231,6 +233,7 @@ void TOADBase::select()
  */
 TIOObserver::TIOObserver(int fd)
 {
+#ifdef __X11__
   if (!_vmas_table[0]) {
     SET_VMAS(VMAS_READ, canRead);
     SET_VMAS(VMAS_WRITE, canWrite);
@@ -242,6 +245,7 @@ TIOObserver::TIOObserver(int fd)
     fd_max = fd+1;
   fd_list.push_back(this);
   fd_new.push_back(this);
+#endif
 }
 
 void TIOObserver::_check(int &r)
@@ -311,6 +315,7 @@ void TSimpleTimer::startTimer(ulong sec,
                               ulong usec, 
                               bool skip_first)
 {
+#ifdef __X11__
   while(usec>=(1000000UL)) {
     sec++;
     usec-=1000000UL;
@@ -338,6 +343,7 @@ void TSimpleTimer::startTimer(ulong sec,
 
   _sorted_list.insert(this);
   _running = true;
+#endif
 }
 
 /**

@@ -18,8 +18,10 @@
  * MA  02111-1307,  USA
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #define _TOAD_PRIVATE
 

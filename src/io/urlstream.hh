@@ -57,7 +57,9 @@ class urlstreambase
 
     void parse(const string&);
     void iopen();
+#ifdef __X11__
     void iopen_http();
+#endif
     void iopen_file();
     void iopen_memory();
     

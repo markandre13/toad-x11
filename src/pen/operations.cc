@@ -43,8 +43,10 @@
  *     (re-)add integer based translations
  */
 
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #include <assert.h>
 #include <cstring>
@@ -89,6 +91,7 @@ using namespace toad;
 
 namespace {
 
+#ifdef __X11__
 inline void
 tpoint2xpoint(const TPoint *in, XPoint *out, int n, const TMatrix2D *mat) {
   const TPoint *sp = in;
@@ -129,6 +132,50 @@ polygon2xpoint(const TPolygon &in, XPoint *out, const TMatrix2D *mat) {
     }
   }
 }
+#endif
+
+#ifdef __WIN32__
+inline void
+tpoint2wpoint(const TPoint *in, POINT *out, int n, const TMatrix2D *mat) {
+  const TPoint *sp = in;
+  const TPoint *se = in+n;
+  POINT *dp = out;
+  if (!mat) {
+    while(sp!=se) {
+      dp->x = sp->x;
+      dp->y = sp->y;
+      ++dp;
+      ++sp;
+    }
+  } else {
+    while(sp!=se) {
+      mat->map(sp->x, sp->y, &dp->x, &dp->y);
+      ++dp;
+      ++sp;
+    }
+  }
+}
+
+inline void
+polygon2wpoint(const TPolygon &in, POINT *out, const TMatrix2D *mat) {
+  TPolygon::const_iterator sp(in.begin()), se(in.end());
+  POINT *dp = out;
+  if (!mat) {
+    while(sp!=se) {
+      dp->x = sp->x;
+      dp->y = sp->y;
+      ++dp;
+      ++sp;
+    }
+  } else {
+    while(sp!=se) {
+      mat->map(sp->x, sp->y, &dp->x, &dp->y);
+      ++dp;
+      ++sp;
+    }
+  }
+}
+#endif
 
 } // namespace
 
@@ -225,6 +272,7 @@ TPen::popAll()
 void
 TPen::drawPoint(int x, int y) const
 {
+#ifdef __X11__
   if (!mat) {
     XDrawPoint(x11display, x11drawable, o_gc, x, y);
   } else {
@@ -232,6 +280,18 @@ TPen::drawPoint(int x, int y) const
     mat->map(x, y, &sx, &sy);
     XDrawPoint(x11display, x11drawable, o_gc, sx, sy);
   }
+#endif
+
+#ifdef __WIN32__
+  activateW32();
+  if (!mat) {
+    ::SetPixel(w32hdc, x, y, o_color.colorref);
+  } else {
+    int sx, sy;
+    mat->map(x, y, &sx, &sy);
+    ::SetPixel(w32hdc, x, y, o_color.colorref);
+  }
+#endif
 }
 
 // line
@@ -239,6 +299,7 @@ TPen::drawPoint(int x, int y) const
 void
 TPen::vdrawLine(int x1, int y1, int x2, int y2) const
 {
+#ifdef __X11__
   if (!mat) {
     XDrawLine(x11display, x11drawable, o_gc, x1,y1, x2, y2);
   } else {
@@ -247,25 +308,57 @@ TPen::vdrawLine(int x1, int y1, int x2, int y2) const
     mat->map(x2, y2, &sx2, &sy2);
     XDrawLine(x11display, x11drawable, o_gc, sx1,sy1, sx2, sy2);
   }
+#endif
+
+#ifdef __WIN32__
+  activateW32();
+  if (!mat) {
+    ::MoveToEx(w32hdc, x1, y1, NULL);
+    ::LineTo(w32hdc, x2, y2);
+  } else {
+    int sx1, sy1, sx2, sy2;
+    mat->map(x1, y1, &sx1, &sy1);
+    mat->map(x2, y2, &sx2, &sy2);
+    ::MoveToEx(w32hdc, sx1, sy1, NULL);
+    ::LineTo(w32hdc, sx2, sy2);
+  }
+#endif
 }
-
-
 
 void
 TPen::drawLines(const TPoint *s, int n) const
 {
+#ifdef __X11__
   XPoint xp[n];
   tpoint2xpoint(s, xp, n, mat);
   XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
+#endif
+
+#ifdef __WIN32__
+  activateW32();
+  POINT wp[n];
+  tpoint2wpoint(s, wp, n, mat);
+  ::Polyline(w32hdc, wp, n);
+#endif
 }
 
 void
 TPen::drawLines(const TPolygon &polygon) const
 {
+#ifdef __X11__
   unsigned n = polygon.size();
   XPoint xp[n];
   polygon2xpoint(polygon, xp, mat);
   XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
+#endif
+
+#ifdef __WIN32__
+  activateW32();
+  unsigned n = polygon.size();
+  POINT pts[n];
+  polygon2wpoint(polygon, pts, mat);
+  ::Polyline(w32hdc, pts, 5);
+#endif
 }
 
 // rectangle
@@ -273,6 +366,7 @@ TPen::drawLines(const TPolygon &polygon) const
 void
 TPen::vdrawRectangle(int x, int y, int w, int h) const
 {
+#ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
   if (!mat) {
     if (w==0 || h==0) {
@@ -291,12 +385,41 @@ TPen::vdrawRectangle(int x, int y, int w, int h) const
     p->y = pts->y;
     XDrawLines(x11display, x11drawable, o_gc, pts, 5, CoordModeOrigin);
   }
+#endif
+
+#ifdef __WIN32__
+  activateW32();
+  XDRAW_RASTER_COORD(w,h)
+  POINT pts[5];
+  if (!mat) {
+    if (w==0 || h==0) {
+      // XDrawLine(x11display, x11drawable, o_gc, x, y, x+w,y+h);
+      return;
+    }
+    pts[0].x = x;   pts[0].y = y;
+    pts[1].x = x+w; pts[1].y = y;
+    pts[2].x = x+w; pts[2].y = y+h;
+    pts[3].x = x;   pts[3].y = y+h;
+    pts[4].x = x;   pts[4].y = y;
+  } else {
+    POINT pts[5];
+    POINT *p = pts;
+    mat->map(x, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y+h, &p->x, &p->y); ++p;
+    mat->map(x, y+h, &p->x, &p->y); ++p;
+    p->x = pts->x;
+    p->y = pts->y;
+  }
+  ::Polyline(w32hdc, pts, 5);
+#endif
 }
 
 void
 TPen::vfillRectangle(int x, int y, int w, int h) const
 {
   XDRAW_RASTER_COORD(w,h)
+#ifdef __X11__
   if (!mat) {
     if (two_colors) {
       XFillRectangle(x11display, x11drawable, f_gc, x, y,w,h);
@@ -317,6 +440,24 @@ TPen::vfillRectangle(int x, int y, int w, int h) const
                  pts, 4, Nonconvex, CoordModeOrigin);
     XDrawLines(x11display, x11drawable, o_gc, pts, 5, CoordModeOrigin);
   }
+#endif
+
+#ifdef __WIN32__
+  activateW32();
+  if (!mat) {
+    ::Rectangle(w32hdc, x, y, w, h);
+  } else {
+    POINT pts[5];
+    POINT *p = pts;
+    mat->map(x, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y+h, &p->x, &p->y); ++p;
+    mat->map(x, y+h, &p->x, &p->y); ++p;
+    p->x = pts->x;
+    p->y = pts->y;
+    ::Polygon(w32hdc, pts, 5);
+  }
+#endif
 }
 
 void
@@ -374,6 +515,7 @@ map2(const TMatrix2D *m, long &x, long &y)
   y = (long)oy;
 }
 
+#ifdef __X11__
 XPoint *
 qtr_elips(const TPen *pen, XPoint *p, long xP, long yP, long xQ, long yQ, long xK, long yK, int m)
 {
@@ -415,10 +557,12 @@ qtr_elips(const TPen *pen, XPoint *p, long xP, long yP, long xQ, long yQ, long x
   }
   return p;
 }
+#endif
 
 void
 TPen::vdrawCircle(int x, int y, int w, int h) const
 {
+#ifdef __X11__
   if (!mat) {
     XDRAW_RASTER_COORD(w,h)
     if (w==0 || h==0) {
@@ -443,11 +587,13 @@ TPen::vdrawCircle(int x, int y, int w, int h) const
     p = qtr_elips(this, p,  x    , y+h/2 ,  x+w/2, y    ,  x  , y  ,  m);
     XDrawLines(x11display, x11drawable, o_gc, pts, n, CoordModeOrigin);
   }
+#endif
 }
 
 void
 TPen::vfillCircle(int x, int y, int w, int h) const
 {
+#ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
   if (!mat) {
     XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
@@ -471,20 +617,25 @@ TPen::vfillCircle(int x, int y, int w, int h) const
                  pts, n, Nonconvex, CoordModeOrigin);
     XDrawLines(x11display, x11drawable, o_gc, pts, n, CoordModeOrigin);
   }
+#endif
 }
 
 void
 TPenBase::drawCirclePC(int x, int y, int w, int h) const
 {
+#ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
   drawCircle(x, y, w, h);
+#endif
 }
 
 void
 TPenBase::fillCirclePC(int x, int y, int w, int h) const
 {
+#ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
   fillCircle(x, y, w, h);
+#endif
 }
 
 // arc
@@ -492,37 +643,45 @@ TPenBase::fillCirclePC(int x, int y, int w, int h) const
 void
 TPen::vdrawArc(int x, int y, int w, int h, double r1, double r2) const
 {
+#ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
   if (w==0 || h==0) {
     XDrawLine(x11display, x11drawable, o_gc, x, y, x+w,y+h);
     return;
   }
   XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, (int)(r1*64.0),(int)(r2*64.0));
+#endif
 }
 
 void
 TPen::vfillArc(int x, int y, int w, int h, double r1, double r2) const
 {
+#ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
   XDRAW_PIXEL_COORD(w,h)
   int i1=(int)(r1*64.0);
   int i2=(int)(r2*64.0);
   XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, i1,i2);
   XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, i1,i2);
+#endif
 }
 
 void
 TPenBase::drawArcPC(int x, int y, int w, int h, double r1, double r2) const
 {
+#ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
   drawArc(x, y, w, h, r1, r2);
+#endif
 }
 
 void
 TPenBase::fillArcPC(int x, int y, int w, int h, double r1, double r2) const
 {
+#ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
   fillArc(x, y, w, h, r1, r2);
+#endif
 }
 
 // polygon
@@ -530,13 +689,16 @@ TPenBase::fillArcPC(int x, int y, int w, int h, double r1, double r2) const
 void
 TPen::drawPolygon(const TPoint points[], int n) const
 {
+#ifdef __X11__
   drawLines(points, n);
   drawLine(points[0].x,points[0].y,points[n-1].x,points[n-1].y);
+#endif
 }
 
 void
 TPen::fillPolygon(const TPoint s[], int n) const
 {
+#ifdef __X11__
   XPoint d[n];
   tpoint2xpoint(s, d, n, mat);
   XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
@@ -546,11 +708,13 @@ TPen::fillPolygon(const TPoint s[], int n) const
   XDrawLine(x11display, x11drawable, o_gc,
      d[0].x,d[0].y,
      d[n-1].x,d[n-1].y);
+#endif
 }
 
 void
 TPen::drawPolygon(const TPolygon &polygon) const
 {
+#ifdef __X11__
   unsigned n = polygon.size();
   XPoint d[n];
   polygon2xpoint(polygon, d, mat);
@@ -560,11 +724,13 @@ TPen::drawPolygon(const TPolygon &polygon) const
   XDrawLine(x11display, x11drawable, o_gc,
     d[0].x, d[0].y,
     d[n-1].x, d[n-1].y);
+#endif
 }
 
 void
 TPen::fillPolygon(const TPolygon &polygon) const
 {
+#ifdef __X11__
   unsigned n = polygon.size();
   XPoint d[n];
   polygon2xpoint(polygon, d, mat);
@@ -576,6 +742,7 @@ TPen::fillPolygon(const TPolygon &polygon) const
   XDrawLine(x11display, x11drawable, o_gc,
     d[0].x, d[0].y,
     d[n-1].x, d[n-1].y);
+#endif
 }
 
 // bitmap
@@ -750,6 +917,7 @@ TPen::drawString(int x,int y, const string &str) const
 void
 TPen::drawString(int x,int y, const char *str, int strlen) const
 {
+#ifdef __X11__
   if (!str)
     return;
   y+=getAscent();
@@ -757,6 +925,14 @@ TPen::drawString(int x,int y, const char *str, int strlen) const
     mat->map(x, y, &x, &y);
   }
   XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
+#endif
+
+#ifdef __WIN32__
+  if (mat) {
+    mat->map(x, y, &x, &y);
+  }
+  ::TextOut(w32hdc, x,y, str, strlen);
+#endif
 }
 
 /**
@@ -783,7 +959,13 @@ TPen::fillString(int x,int y, const char *str, int strlen) const
     x+=mat->tx;
     y+=mat->ty;
   }
+#ifdef __X11__
   XDrawImageString(x11display, x11drawable, o_gc, x,y+getAscent(), str, strlen);
+#endif
+
+#ifdef __WIN32__
+  ::TextOut(w32hdc, x,y, str, strlen);
+#endif
 }
 
 /**
