@@ -423,13 +423,19 @@ TFigureEditor::paint()
     update_scrollbars = false;
   }
 
-  TBitmap bmp(visible.w, visible.h, TBITMAP_SERVER);
+#if 0
+  TPen scr(this);
+  scr.identity();
+  TRectangle r;
+  scr.getClipBox(&r);
+  TBitmap bmp(r.w, r.h, TBITMAP_SERVER);
   TPen pen(&bmp);
 
   pen.setColor(background_color);
   pen.identity();
-  pen.fillRectanglePC(0,0,visible.w,visible.h);
-  pen.translate(window->getOriginX(), window->getOriginY());
+  pen.fillRectanglePC(0,0,r.w,r.h);
+  pen.translate(window->getOriginX()-r.x+visible.x, 
+                window->getOriginY()-r.y+visible.y);
   if (mat)
     pen.multiply(mat);
     
@@ -438,24 +444,29 @@ TFigureEditor::paint()
   paintSelection(pen);
 
   // put the result onto the screen
-  TPen scr(window);
-/*
-TRectangle foo;
-scr.getClipBox(&foo);
-cout << "clip box " << foo << endl;
-*/
-  scr.identity();
-  scr.drawBitmap(visible.x,visible.y, &bmp);
-/*
-static bool bar=true;
-if (bar)
-  scr.setColor(255,0,0);
-else
-  scr.setColor(0,255,0);
-bar=!bar;
-  scr.drawLine(0,64, 64,0);
-*/
+  scr.drawBitmap(r.x,r.y, &bmp);
   paintDecoration(scr);
+#else
+  TPen pen(this);
+  TRectangle r;
+  pen.getClipBox(&r);
+
+  pen.setColor(background_color);
+  pen.identity();
+  pen.fillRectanglePC(r.x,r.y,r.w,r.h);
+  pen.translate(window->getOriginX()+visible.x, 
+                window->getOriginY()+visible.y);
+  if (mat)
+    pen.multiply(mat);
+
+  paintGrid(pen);
+  print(pen, true);
+  paintSelection(pen);
+
+
+  pen.identity();
+  paintDecoration(pen);
+#endif
 }
 
 /**
@@ -655,10 +666,32 @@ TFigureEditor::paintDecoration(TPenBase &scr)
 void
 TFigureEditor::print(TPenBase &pen, bool withSelection)
 {
+  TRectangle cb, r;
+  pen.getClipBox(&cb);
+//cout << endl << "unmapped clip box: " <<cb.x<<"-"<<(cb.x+cb.w)<<","<<cb.y<<"-"<<(cb.y+cb.h)<<endl;
+#if 0
+  if (pen.getMatrix()) {
+    TMatrix2D m = *pen.getMatrix();
+    m.invert();
+    m.map(cb.x, cb.y, &cb.x, &cb.y);
+    m.map(cb.w, cb.h, &cb.w, &cb.h);
+cout << endl << "mapped clip box: " <<cb.x<<"-"<<(cb.x+cb.w)<<","<<cb.y<<"-"<<(cb.y+cb.h)<<endl;
+
+  }
+#endif
   for(TFigureModel::iterator p = model->begin();
       p != model->end();
       ++p)
   {
+    TRectangle r;
+    getFigureShape(*p, &r);
+//cout << (*p)->getClassName() << ": " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h);
+    if (!r.intersects(cb)) {
+//cout<<" disjunkt"<<endl;
+      continue;
+    }
+//cout<<" schnitt"<<endl;
+    
     TFigure::EPaintType pt = TFigure::NORMAL;
     unsigned pushs = 0;
     if (gadget==*p) {
@@ -673,6 +706,7 @@ TFigureEditor::print(TPenBase &pen, bool withSelection)
         pt = TFigure::EDIT;
       }
     }
+
     if ((*p)->mat) {
       pen.push();
       pushs++;
@@ -818,11 +852,14 @@ TFigureEditor::deleteFigure(TFigure *g)
   model->erase(g);
 }
 
-void
+bool
 TFigureEditor::clearSelection()
 {
+  if (selection.empty())
+    return false;
   selection.erase(selection.begin(), selection.end());
   window->invalidateWindow();
+  return true;
 }
 
 /**
@@ -1180,6 +1217,7 @@ redo:
         } else {
           switch(key) {
             case TK_DELETE:
+            case TK_BACKSPACE:
               deleteSelection();
               break;
           }
@@ -1189,7 +1227,7 @@ redo:
     }
     case OP_CREATE: {
       if (state==STATE_NONE) {
-        if (key==TK_DELETE)
+        if (key==TK_DELETE || key==TK_BACKSPACE)
           deleteSelection();
         break;
       }
@@ -1280,8 +1318,9 @@ TFigureEditor::sheet2grid(int sx, int sy, int *gx, int *gy)
   }
 }
 
-
-static bool mouseMoved;
+namespace {
+  bool mouseMoved;
+}
 
 void
 TFigureEditor::mouseLDown(int mx,int my, unsigned m)
@@ -1462,8 +1501,8 @@ redo:
               cout << "      nothing at cursor => STATE_SELECT_RECT" << endl;
             #endif
             if (!(m & MK_CONTROL)) {
-              clearSelection();
-              sigSelectionChanged();
+              if (clearSelection())
+                sigSelectionChanged();
             }
             state =  STATE_SELECT_RECT;
             select_x = x;
@@ -1671,9 +1710,31 @@ redo:
       #if VERBOSE
         cout << "  STATE_SELECT_RECT => redrawing rectangle" << endl;
       #endif
-      window->invalidateWindow();
-      select_x = x;
-      select_y = y;
+      if (select_x != x || select_y != y) {
+        TRectangle r;
+        r.set(down_x, down_y, x-down_x, y-down_y);
+        if (mat) {
+          mat->map(r.x, r.y, &r.x, &r.y);
+          mat->map(r.w, r.h, &r.w, &r.h);
+        }
+        r.x+=visible.x;
+        r.y+=visible.y;
+        r.w++;
+        r.h++;
+        window->invalidateWindow(r);
+        r.set(down_x, down_y, select_x-down_x, select_y-down_y);
+        if (mat) {
+          mat->map(r.x, r.y, &r.x, &r.y);
+          mat->map(r.w, r.h, &r.w, &r.h);
+        }
+        r.x+=visible.x;
+        r.y+=visible.y;
+        r.w++;
+        r.h++;
+        window->invalidateWindow(r);
+        select_x = x;
+        select_y = y;
+      }
 /*
       window->paintNow();
       TPen pen(window);
@@ -1809,7 +1870,21 @@ redo:
           cout << selection.size() << " objects selected, STATE_NONE" << endl;
         #endif
       }
-      window->invalidateWindow(); // ??
+#if 1
+      window->invalidateWindow();
+#else
+      TRectangle r;
+      r.set(down_x, down_y, select_x-down_x, select_y-down_y);
+      if (mat) {
+        mat->map(r.x, r.y, &r.x, &r.y);
+        mat->map(r.w, r.h, &r.w, &r.h);
+      }
+      r.x+=visible.x;
+      r.y+=visible.y;
+      r.w++;
+      r.h++;
+      window->invalidateWindow(r);
+#endif
       state = STATE_NONE;
     } break;
     
@@ -1867,9 +1942,19 @@ TFigureEditor::invalidateFigure(TFigure* figure)
 {
   if (!window)
     return;
-
   TRectangle r;
-  figure->getShape(&r);
+//figure->getShape(&r);
+//cout << figure->getClassName() << ": invalidate shape " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h)<<endl;
+  getFigureShape(figure, &r);
+//cout << figure->getClassName() << ": invalidate window " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h)<<endl;
+  window->invalidateWindow(r);
+}
+
+void
+TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r)
+{
+  figure->getShape(r);
+
   if (mat || figure->mat) {
     TMatrix2D m;
     if (mat) {
@@ -1880,19 +1965,19 @@ TFigureEditor::invalidateFigure(TFigure* figure)
       
     int x1, x2, y1, y2;
     int x, y;
-    m.map(r.x, r.y, &x, &y);
+    m.map(r->x, r->y, &x, &y);
     x1 = x2 = x;
     y1 = y2 = y;
     for(int i=1; i<4; ++i) {
       switch(i) {
         case 1:
-          m.map(r.x+r.w, r.y, &x, &y);
+          m.map(r->x+r->w, r->y, &x, &y);
           break;
         case 2:
-          m.map(r.x+r.w, r.y+r.h, &x, &y);
+          m.map(r->x+r->w, r->y+r->h, &x, &y);
           break;
         case 3:
-          m.map(r.x, r.y+r.h, &x, &y);
+          m.map(r->x, r->y+r->h, &x, &y);
           break;
       }
       if (x1>x)
@@ -1904,19 +1989,17 @@ TFigureEditor::invalidateFigure(TFigure* figure)
       if (y2<y)
         y2=y;
     }
-    r.set(TPoint(x1,y1), TPoint(x2, y2));
+    r->set(TPoint(x1,y1), TPoint(x2, y2));
   }
 //cout << "invalidating shape " << r.x << "," << r.y << "," << r.w << "," << r.h << endl;
 
-  r.x-=3;
-  r.y-=3;
-  r.w+=6;
-  r.h+=6;
+  r->x-=3;
+  r->y-=3;
+  r->w+=6;
+  r->h+=6;
 
-  r.x+=window->getOriginX() + visible.x;
-  r.y+=window->getOriginY() + visible.y;
-
-  window->invalidateWindow(r);
+  r->x+=window->getOriginX() + visible.x;
+  r->y+=window->getOriginY() + visible.y;
 }
 
 /**

@@ -241,6 +241,7 @@ class TFigureEditor:
 
     void invalidateWindow() { if (window) window->invalidateWindow(); }
     void invalidateFigure(TFigure*);
+    void getFigureShape(TFigure*,TRectangle *r);
 
     void addFigure(TFigure*);   
     void deleteFigure(TFigure*);
@@ -248,7 +249,7 @@ class TFigureEditor:
     void selectAll();
 
     //! Unselect all selected objects.
-    void clearSelection();
+    bool clearSelection();
     
     //! Delete Selected Objects
     void deleteSelection();
