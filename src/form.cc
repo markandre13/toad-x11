@@ -22,6 +22,7 @@
 #include <toad/pen.hh>
 #include <toad/window.hh>
 #include <toad/form.hh>
+#include <toad/stacktrace.hh>
 
 #include <algorithm>
 
