@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,6 +90,9 @@ class TPenBase:
     virtual void setColor(const TRGB &c) { setColor(TColor(c.r,c.g,c.b)); }
     virtual void setColor(TColor::ESystemColor c) { setColor(TColor(c)); }
     virtual void setColor(TColor::EColor16 c) { setColor(TColor(c)); }
+
+    virtual void setAlpha(byte) {}
+    virtual byte getAlpha() const { return 255; }
 
     virtual void setFillColor(const TColor&) = 0;
     virtual void setFillColor(byte r, byte g, byte b) { setFillColor(TColor(r,g,b)); }
