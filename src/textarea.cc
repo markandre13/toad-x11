@@ -1194,6 +1194,7 @@ TTextArea::_cursor_left(unsigned n)
       if (_cx>0) {
         --_cx;
         _invalidate_line(_cy);
+        _cxpx = -1;
         _catch_cursor();
       }
     } else 
@@ -1202,7 +1203,6 @@ TTextArea::_cursor_left(unsigned n)
       _cursor_end();
     }
   }
-  _cxpx = -1;
   blink.visible=true;
 }
 
@@ -1218,6 +1218,7 @@ TTextArea::_cursor_right(unsigned n)
       ++_cx;
       utf8inc(model->getValue(), &_pos);
       _invalidate_line(_cy);
+      _cxpx = -1;
       _catch_cursor();
     } else 
     if (_eol+1<model->getValue().size()) {
@@ -1227,7 +1228,6 @@ TTextArea::_cursor_right(unsigned n)
   }
 //cerr << "   _cx = " << _cx << endl;
 //cerr << "  _pos = " << _pos << endl;
-  _cxpx = -1;
   blink.visible=true;
 }
 
@@ -1332,8 +1332,8 @@ TTextArea::_cursor_home()
     _pos=_bol;
     _cx=0;
     _invalidate_line(_cy);
-    _catch_cursor();
     _cxpx = -1;
+    _catch_cursor();
     blink.visible=true;
   }
 }
@@ -1346,11 +1346,11 @@ TTextArea::_cursor_end()
   if (n!=0) {
     _cx+=utf8charcount(model->getValue(), _pos, n);
     _pos=_eol;
-    _invalidate_line(_cy);
-    _catch_cursor();
-    _cxpx = -1;
-    blink.visible=true;
   }
+  _cxpx = -1;
+  _catch_cursor();
+  _invalidate_line(_cy);
+  blink.visible=true;
 }
 
 void
@@ -1444,8 +1444,13 @@ DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
     _scroll_up(-_cy);
   }
 
-  const string line(model->getValue().substr(_bol, _pos-_bol));
-  int tx = font->getTextWidth(line);
+  int tx;
+  if (_cxpx==-1) {
+    const string line(model->getValue().substr(_bol, _pos-_bol));
+    tx = font->getTextWidth(line);
+  } else {
+    tx = _cxpx;
+  }
   
   int width = getWidth() - 5;
   if (vscroll)
