@@ -29,6 +29,7 @@ class TMatrix2D:
   public TSerializable
 {
     typedef TSerializable super;
+    bool _identity;
   public:
     TMatrix2D();
     TMatrix2D(const TMatrix2D&);
@@ -43,6 +44,7 @@ class TMatrix2D:
     double tx, ty;
 
     void identity();
+    bool isIdentity() const { return _identity; }
     void rotate(double);
     void rotateAt(double x, double y, double degree);
     void translate(double, double);

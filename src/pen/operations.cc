@@ -1018,6 +1018,7 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 {
   if (strlen==-1)
     strlen = ::strlen(str);
+
 #ifdef __X11__
   assert(font!=NULL);
   font->createFont(mat);
@@ -1036,7 +1037,9 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
         XSetFillStyle(x11display, o_gc, FillSolid);
       }
       
-      if (!mat) {
+      if (!mat || mat->isIdentity()) {
+        if (mat)
+          mat->map(x, y, &x, &y);
         if (transparent)
           XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
         else
@@ -1045,7 +1048,7 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
         int x2, y2;
         const char *p = str;
         int len=0;
-        while(*p) {
+        while(*p && len<strlen) {
           char buffer[2];
           buffer[0]=*p;
           buffer[1]=0;

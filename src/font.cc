@@ -253,7 +253,7 @@ TFont::createX11Font(TMatrix2D *mat)
 
   // check that the required transformation matches the current font
   string newid;
-  if (mat) {
+  if (mat && !mat->isIdentity()) {
     double d;
     FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
     newid = "[";
@@ -332,8 +332,8 @@ TFont::createX11Font(TMatrix2D *mat)
       x11scale = pt / 23040.0;
       xfn.points = "23040";
     }
-    
-    // finaly load the font
+
+    // finally load the font
     new_fs = XLoadQueryFont(x11display, xfn.getXLFD().c_str());
     if (!new_fs) {
       cerr << "error while loading font '" << fontname << "':\n"
@@ -346,7 +346,7 @@ TFont::createX11Font(TMatrix2D *mat)
   // which will be used for output. The untransformed font will
   // then be used to get text extents.
   Font new_font = 0;
-  if (mat) {
+  if (mat && !mat->isIdentity()) {
     xfn.points = id;
     xfn.pixels = "0";
 
@@ -401,7 +401,7 @@ TFont::createXftFont(TMatrix2D *mat)
     XftPatternAddDouble(pattern, XFT_DPI, 75.0);
   }
 
-  if (mat) {
+  if (mat && !mat->isIdentity()) {
     XftMatrix xftmat;
     XftMatrixInit(&xftmat);
     xftmat.xx = mat->a11;
@@ -608,12 +608,13 @@ X11ConfigBuildFonts(FcConfig *config)
     fs = FcFontSetCreate();
   
   FcPattern *font;
-
+/*
   Display *x11display;
   if ((x11display = XOpenDisplay(""))==NULL) {
     cerr << "Couldn't open X11 display\n";
     return result;
   }
+*/
   int count;
   char **fl;
   TX11FontName xfn;

@@ -49,6 +49,7 @@ TMatrix2D::operator=(const TMatrix2D &m)
   a22 = m.a22;
   tx  = m.tx;
   ty  = m.ty;
+  _identity = m._identity;
   return *this;
 }
 
@@ -66,6 +67,7 @@ TMatrix2D::identity()
 {
   a11 = a22 = 1.0;
   a21 = a12 = tx = ty = 0.0;
+  _identity = true;
 }
  
 /**
@@ -104,6 +106,8 @@ TMatrix2D::rotate(double degree)
   a22 = n22;
   tx = ntx; 
   ty = nty; 
+  
+  _identity = false;
 }
 
 /**
@@ -155,6 +159,8 @@ TMatrix2D::rotateAt(double x, double y, double degree)
   a22 = n22;
   tx = ntx; 
   ty = nty; 
+  
+  _identity = false;
 }
 
 /**
@@ -167,6 +173,8 @@ TMatrix2D::scale(double xfactor, double yfactor)
   a12 *= xfactor;
   a21 *= yfactor;
   a22 *= yfactor;
+  
+  _identity = false;
 }
 
 void
@@ -200,6 +208,8 @@ TMatrix2D::multiply(const TMatrix2D *m)
   a22 = n22;
   tx = ntx; 
   ty = nty; 
+  
+  _identity = false;
 }
  
 /**
@@ -270,6 +280,7 @@ TMatrix2D::invert()
   a22 = n22;
   tx  = nx;
   ty  = ny;
+  _identity = false;
 }
 
 void
@@ -286,6 +297,7 @@ TMatrix2D::store(TOutObjectStream &out) const
 bool
 TMatrix2D::restore(TInObjectStream &in)
 {
+  _identity = false;
   if (
     ::restore(in, 0, &a11) ||
     ::restore(in, 1, &a21) ||
