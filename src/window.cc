@@ -175,11 +175,11 @@ static TVectorParentless parentless;
 #define MWM_TEAROFF_WINDOW      (1L<<0)
 
 struct PropMotifWmHints {
-  CARD32 flags;
-  CARD32 functions;
-  CARD32 decorations;
-  INT32 inputMode;
-  CARD32 status;
+  unsigned long flags;
+  unsigned long functions;
+  unsigned long decorations;
+  long inputMode;
+  unsigned long status;
 };
 #endif
 
@@ -745,8 +745,8 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
 
     // set for X Session Manager (xsm)
     XSetCommand(x11display, x11window, argv, argc);
-    char *host = "localhost";
-    XStringListToTextProperty(&host, 1, &tp);
+    const char *host = "localhost";
+    XStringListToTextProperty(const_cast<char **>(&host), 1, &tp);
     XSetWMClientMachine(x11display, x11window, &tp);
 
     // all windows which are not the mainwindow are transient, e.g. dialogs
