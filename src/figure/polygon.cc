@@ -59,6 +59,8 @@ void
 TFPolygon::paint(TPenBase &pen, EPaintType)
 {
   pen.setLineColor(line_color);
+  pen.setLineStyle(line_style);
+  pen.setLineWidth(line_width);
   if (!filled) {
     pen.drawPolygon(polygon);
   } else {
