@@ -14,6 +14,9 @@ Alain Rougé
 Armin Faltl
   inspiration for void TWindow::handleX11Event()
 
+Martin Dickopp
+  amd64 feedback
+
 Michael Müller
   bug reports and feedback
 
