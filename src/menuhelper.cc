@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -543,7 +543,7 @@ TMenuHelper::TNode::isEnabled() const
       }
       p = p->next;
     }
-    return false;
+    return !actions.empty();
   }
 
   if (actions.empty())
@@ -579,12 +579,12 @@ DBM2(cerr << "        got available\n";)
       p = p->next;
     }
 DBM2(cerr << "        not available\n";)
-    return false;
+    return !actions.empty();
   }
 
   if (type==SEPARATOR)
     return true;
-    
+
   if (actions.empty()) {
 DBM2(cerr << "        no actions -> not available\n";)
     return false;
@@ -601,9 +601,11 @@ TAction *
 TMenuHelper::TNode::addAction(TAction *a)
 {
   assert(a!=NULL);
+/*
   if (down) {
     TOAD_WARN("a node with children shouldn't contain an action");
   }
+*/
   if (!actions.empty() && (*actions.begin())->type!=TAction::BUTTON) {
     cout<< "in file " << __FILE__ << ", line " << __LINE__
         << ": a non button menu entry can't hold multiple actions"
@@ -823,7 +825,16 @@ TMenuHelper::TNode::getLabel(unsigned idx) const
   if (!actions.empty())
     action = *actions.begin();
   if (action && action->type==TAction::RADIOBUTTON) {
-    return action->getID(idx);
+    const string &id = action->getID(idx);
+    TNode *ptr = down;
+    while(ptr) {
+      if (ptr->title == id) {
+        return ptr->label;
+      }
+      ptr = ptr->next;
+    }
+//cerr << "getLabel for '" << title << "' -> '" << action->getID(idx) << "'\n";
+    return id;
   }
   static string alt_label;
   bool alt_active = true;

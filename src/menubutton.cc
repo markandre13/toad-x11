@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -222,7 +222,12 @@ TMenuButton::paint()
       pen.drawString(x_short, y, shortcut);
   }
   
-  if(node->down && master->vertical) {
+  if(node->down && master->vertical &&
+      (node->actions.empty() || 
+        (*node->actions.begin())->type!=TAction::RADIOBUTTON
+      )
+    )
+  {
     int y=_h>>1;
     TPoint tri[3];
     tri[0].x=_w-7; tri[0].y=y-4;
@@ -640,7 +645,12 @@ TMenuButton::closePopup()
 void 
 TMenuButton::openPopup()
 {
-  if (node->down && node->isEnabled() && popup==NULL) {
+  if (node->down && node->isEnabled() && popup==NULL &&
+       (node->actions.empty() || 
+         (*node->actions.begin())->type!=TAction::RADIOBUTTON
+       )
+     )
+  {
     DBM(cerr << "+ openPopup " << this << "\n";)
     popup = new TPopup(this, "popup");
     popup->btnmaster = this;
