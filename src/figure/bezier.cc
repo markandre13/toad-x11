@@ -313,6 +313,9 @@ TFBezierline::_translateHandle(unsigned h0, int x, int y, unsigned m, bool fille
       }
     }
     
+    polygon[h0].x=x;
+    polygon[h0].y=y;
+
     if (b) {    
       if (m & MK_SHIFT) {
         // symmetric
@@ -330,8 +333,6 @@ TFBezierline::_translateHandle(unsigned h0, int x, int y, unsigned m, bool fille
         polygon[h2].y = polygon[h1].y + sin(d)*n;
       }
     }
-    polygon[h0].x=x;
-    polygon[h0].y=y;
   }
 }
 
