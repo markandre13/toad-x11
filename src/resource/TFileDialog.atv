@@ -6,63 +6,87 @@ toad::TDialogLayout{
   drawfocus = false
   toad::TFigureModel {
     toad::TFWindow {
-      x = 364
-      y = 284
-      w = 73
+      x = 356
+      y = 280
+      w = 81
       h = 25
       title = "cancel"
       label = "Cancel"
       taborder = 0
     }
     toad::TFWindow {
-      x = 4
-      y = 232
-      w = 433
+      x = 88
+      y = 228
+      w = 345
       h = 21
       title = "filename"
       taborder = 0
     }
     toad::TFWindow {
-      x = 4
-      y = 260
-      w = 325
+      x = 88
+      y = 252
+      w = 345
       h = 21
       title = "filetype"
       taborder = 0
     }
     toad::TFWindow {
-      x = 4
-      y = 36
-      w = 433
-      h = 189
+      x = 8
+      y = 32
+      w = 425
+      h = 193
       title = "fileview"
       taborder = 0
     }
     toad::TFWindow {
-      x = 288
-      y = 284
-      w = 73
+      x = 268
+      y = 280
+      w = 81
       h = 25
       title = "ok"
       label = "OK"
       taborder = 0
     }
     toad::TFWindow {
-      x = 4
+      x = 56
       y = 8
-      w = 433
+      w = 377
       h = 21
       title = "previous"
       taborder = 0
     }
     toad::TFWindow {
-      x = 336
-      y = 264
-      w = 101
+      x = 12
+      y = 288
+      w = 217
       h = 13
       title = "show hidden"
-      label = "Show hidden"
+      label = "Show hidden files and directories"
       taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 8
+      y = 12
+      w = 48
+      h = 18
+      text = "Look in:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 232
+      w = 63
+      h = 18
+      text = "File name:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 256
+      w = 78
+      h = 18
+      text = "Files of type:"
     }
   }
 }
