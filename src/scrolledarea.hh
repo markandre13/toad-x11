@@ -50,7 +50,7 @@ class TScrollPane:
 
     //! pane size in pixels (rename this one!)
     int tab_w, tab_h;
-    
+
   private:
     //! unit increment as set by setUnitIncrement
     int uix, uiy;

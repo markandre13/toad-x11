@@ -85,6 +85,7 @@ TScrollPane::scrolled(int dx, int dy)
 void
 TScrollPane::doLayout()
 {
+  visible.set(0,0,getWidth(), getHeight());
   adjustPane();
 
   bool need_hscroll = false;
@@ -111,7 +112,7 @@ TScrollPane::doLayout()
       << "rows, cols           = "<<rows<<", "<<cols<<endl
       << "tab_w, tab_h         = "<<tab_w<<", "<<tab_h<<endl
       << "need h,v             = "<<need_hscroll<<", "<<need_vscroll<<endl;)
-  
+
   if (need_vscroll) {
     if (!vscroll) {  
       vscroll = new TScrollBar(this, "vertical");
