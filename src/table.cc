@@ -447,6 +447,8 @@ TTableSelectionModel::clearSelection()
   if (region.isEmpty())
     return;
   region.clear();
+  if (!region.isEmpty())
+    cerr << "error: region isn't empty!!!" << endl;
   sigChanged();
 }
 
@@ -580,6 +582,7 @@ TTable::TTable(TWindow *p, const string &t):
   rows = cols = 0;
   row_header_renderer = col_header_renderer = NULL;
   selecting = false;
+  start_selecting = false;
   stretchLastColumn = true;
   noCursor = false;
   selectionFollowsMouse = false;
@@ -646,6 +649,7 @@ TTable::setRowHeaderRenderer(TAbstractTableHeaderRenderer *r)
     setMouseMoveMessages(TMMM_ANYBUTTON);
   }
   doLayout();
+  invalidateWindow();
 }
 
 void
@@ -660,6 +664,7 @@ TTable::setColHeaderRenderer(TAbstractTableHeaderRenderer *r)
     setMouseMoveMessages(TMMM_ANYBUTTON);
   }
   doLayout();
+  invalidateWindow();
 }
 
 /**
@@ -848,6 +853,7 @@ DBSCROLL({
     x2 = max(sx, cx);
     y1 = min(sy, cy);
     y2 = max(sy, cy);
+cout << "sx="<<sx<<", sy="<<sy<<", cx="<<cx<<", cy="<<cy<<endl;
   }
 
   pen|=dummy;
@@ -907,7 +913,7 @@ DBSCROLL({
       {
         pen.identity();
         pen.translate(xp, yp);
-        bool selected;
+        bool selected=false;
         if (selection) {
           selected = selection->isSelected(per_row?0:x,per_col?0:y);
           DBM2(cerr << "  render " << x << ", " << y << ": has sm: selected=" << selected << endl;)
@@ -917,14 +923,17 @@ DBSCROLL({
           selected = (per_row?0:x == sx) && (per_col?0:y == sy);
           DBM2(cerr << "  render " << x << ", " << y << ": no sm: selected=" << selected << endl;)
         }
-        if (selecting) {
-DBM2(cerr << "  selecting is enabled, fake selected" << endl;)
-          if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
+        if (selecting && !selected) {
+          if (x1<=x && x<=x2 && y1<=y && y<=y2) {
+cout << "  selecting is enabled, fake selected for "<<x<<", "<<y<<endl;
             selected = true;
+          }
+/*
           if (per_row && y>=y1 && y<=y2)
             selected = true;
           if (per_col && x>=x1 && x<=x2)
             selected = true;
+*/
         }
 
 DBSCROLL(
@@ -1174,17 +1183,13 @@ TTable::mouseEvent(TMouseEvent &me)
 void
 TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
-DBM2(cerr << "enter mouseLDown" << endl;)
   setFocus();
 
   int x, y, fx, fy;
   if (!mouse2field(mx, my, &x, &y, &fx, &fy)) {
-    DBM2(cerr << "  mouse2field failed" << endl;
-    cerr << "leave mouseLDown" << endl << endl;)
     return;
   }
-
-  DBM(cout << "click on item " << x << ", " << y << endl;);
+cout << "MOUSE down" << endl;
   if (renderer) {
     TMouseEvent me;
     me.window = this;
@@ -1196,37 +1201,61 @@ DBM2(cerr << "enter mouseLDown" << endl;)
 
   sigPressed();
 
-  if (selection && !selection->isEmpty() &&
-       ( !(modifier&MK_CONTROL) || 
-         selection->getSelectionMode() == TAbstractTableSelectionModel::SINGLE ))
-  {
-    DBM2(cerr << "  clear the whole selection" << endl;)
-    selection->clearSelection();
-  }
+  TAbstractTableSelectionModel::ESelectionMode mode;
+  mode = selection ? selection->getSelectionMode() : TAbstractTableSelectionModel::SINGLE;
 
-#if 0
-  if ((selectionFollowsMouse || !selection) && cx==x && cy==y) {
-    DBM2(cerr << "  assume that nothing has changed" << endl;
-    cerr << "leave mouseLDown" << endl << endl;)
-    return;
-  }  
-#endif
-
-  selecting = false;
-  if (selection) {
-    selecting=true;
-    if (modifier&MK_SHIFT && selection->getSelectionMode() != TAbstractTableSelectionModel::SINGLE) {
-      // shift was hold, start selecting from the previous cursor position
+  selecting = start_selecting = false;
+  bool justcursor = true;
+  if (modifier&MK_SHIFT) {
+    if (mode != TAbstractTableSelectionModel::SINGLE) {
+      // start selecting an area from the previous cursor position
+      cout << "  start selecting area" << endl;
       sx = cx; sy = cy;
-      invalidateWindow();
+      start_selecting = true;
     } else {
-      // start selecting at the cursor position
+      // single selection
       sx = x; sy = y;
     }
-  }
-  else if (selectionFollowsMouse) {
+    justcursor = false;
+    invalidateWindow();
+  } else 
+  if (selectionFollowsMouse) {
     sx = x; sy = y;
+    if (mode != TAbstractTableSelectionModel::SINGLE)
+      start_selecting = true;
+    justcursor = false;
   }
+
+  if (!justcursor && selection) {
+    if (mode == TAbstractTableSelectionModel::SINGLE) {
+      if (!(modifier&MK_CONTROL)) {
+        if (!selection->isSelected(x, y)) {
+          selection->clearSelection();
+          selection->setSelection(x, y);
+          sx=x; sy=y;
+        }
+      } else {
+        cout << "  toggle selection" << endl;
+        selection->toggleSelection(x, y);
+        sx=x; sy=sy;
+      }
+    } else {
+      if (!(modifier&MK_CONTROL)) {
+        int sx1=sx, sy1=sy;
+        selection->clearSelection();
+        sx=sx1; sy=sy1;
+        if (mode != TAbstractTableSelectionModel::SINGLE) {
+          selecting = true;
+          start_selecting = false;
+        }
+      } else {
+        int sx1=sx, sy1=sy;
+        selection->toggleSelection(x, y);
+        sx=sx1; sy=sy1;
+      }
+    }
+  }
+  invalidateWindow();
 
   invalidateCursor();
   cx = x; cy = y;
@@ -1237,18 +1266,11 @@ DBM2(cerr << "enter mouseLDown" << endl;)
 }
 
 void
-TTable::mouseMove(int mx, int my, unsigned)
+TTable::mouseMove(int mx, int my, unsigned modifier)
 {
-//cout << "TTable::mouseMove("<<mx<<", "<<my<<")"<<endl;
-
-DBM2(cerr << "enter mouseMove" << endl;)
-  if (!selecting) {
-    DBM2(cerr << "  not selecting" << endl;
-    cerr << "leave mouseMove" << endl << endl;)
+  if (!(modifier&MK_LBUTTON))
     return;
-  }
 
-//cerr << __PRETTY_FUNCTION__ << endl;
   int x, y;
   if (!mouse2field(mx, my, &x, &y)) {
     DBM2(cerr << "  mouse2field failed" << endl;
@@ -1263,19 +1285,53 @@ DBM2(cerr << "enter mouseMove" << endl;)
     return;
   }
 
-  invalidateChangedArea(sx,sy,cx,cy,cx,cy);
-  cx = x; cy = y;
-  if (selection && selection->getSelectionMode() == TAbstractTableSelectionModel::SINGLE) {
-    sx = cx; sy = cy;
-    invalidateCursor();
-  } else {
-    if (selectionFollowsMouse) {
+  if (start_selecting) {
+    start_selecting = false;
+    selecting = true;
+  } else
+  if (!selecting && (modifier&MK_SHIFT)) {
+    TAbstractTableSelectionModel::ESelectionMode mode;
+    mode = selection ? selection->getSelectionMode() : TAbstractTableSelectionModel::SINGLE;
+    if (mode != TAbstractTableSelectionModel::SINGLE) {
+      // start selecting an area from the previous cursor position
+      cout << "  start selecting area" << endl;
+      sx = cx; sy = cy;
+      selecting = true;
+
+      if (!(modifier&MK_CONTROL)) {
+        int sx1=sx, sy1=sy;
+        selection->clearSelection();
+        sx=sx1; sy=sy1;
+      }
+
+    } else {
+      // single selection
       sx = x; sy = y;
     }
+    invalidateWindow();
+  }
+
+cout << "MOUSE move" << endl;
+
+  TAbstractTableSelectionModel::ESelectionMode mode;
+  mode = selection ? selection->getSelectionMode() : TAbstractTableSelectionModel::SINGLE;
+
+  if (selectionFollowsMouse || modifier & MK_SHIFT) {
     invalidateChangedArea(sx,sy,cx,cy,cx,cy);
+    cx = x; cy = y;
+    if (!selecting) {
+      sx = x; sy = y;
+    }
+    if (selection && mode==TAbstractTableSelectionModel::SINGLE) {
+      selection->setSelection(sx, sy);
+    }
+    invalidateChangedArea(sx,sy,cx,cy,cx,cy);
+  } else {
+    invalidateCursor();
+    cx = x; cy = y;
+    invalidateCursor();
   }
   
-//  selectAtCursor();
   sigCursor();
   DBM2(cerr << "leave mouseMove" << endl << endl;)
 }
@@ -1284,45 +1340,31 @@ void
 TTable::mouseLUp(int mx, int my, unsigned modifier)
 {
 DBM2(cerr << "enter mouseLUp" << endl;)
-//cerr << __PRETTY_FUNCTION__ << endl;
   int x, y;
   if (!mouse2field(mx, my, &x, &y)) {
-    DBM2(cerr << "  mouse2field failed" << endl;
-    cerr << "leave mouseLUp" << endl << endl;)
-    selecting = false;
-    return;
+    x = cx;
+    y = cy;
   }
 
+cout << "MOUSE up" << endl;
+
   if (selection && selecting) {
-    if (cx==sx && cy==sy) {
-      DBM2(cerr << "  toggle current field" << endl;)
-      selection->toggleSelection(cx, cy);
-    } else {
-      DBM2(cerr << "  select range" << endl;)
-      int x1, y1, x2, y2;    
-      x1 = min(sx, cx);
-      x2 = max(sx, cx);
-      y1 = min(sy, cy);
-      y2 = max(sy, cy);
-      selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
-    }
-  } else {
-    DBM2(
-      cerr << "  not selecting or no selection" << endl;
-    )
+    int x1, y1, x2, y2;    
+    x1 = min(sx, cx);
+    x2 = max(sx, cx);
+    y1 = min(sy, cy);
+    y2 = max(sy, cy);
+    cout << "  set selection" << endl;
+    selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+    selecting = false;
+    invalidateWindow();
   }
-  selecting = false;
+  
   if (modifier & MK_DOUBLE)
     sigDoubleClicked();
   else  
     sigClicked();
-/*
-  if (cx!=x && cy!=y)
-    return;
-  cx = x; cy = y;
-  selectAtCursor();
-  sigCursor();
-*/
+
   DBM2(cerr << "leave mouseLUp" << endl << endl;)
 }
 
@@ -1402,59 +1444,76 @@ TTable::setCursor(int col, int row)
 }
 
 void
+TTable::_moveCursor(int newcx, int newcy, unsigned modifier)
+{
+  int how = 0;
+  if (cols==0 || rows==0)
+    return;
+  
+  if (newcx>=cols)
+    newcx=cols-1;
+  if (newcy>=rows)
+    newcy=rows-1;
+  
+  if (newcx!=cx)
+    how |= CENTER_HORZ;
+  if (newcy!=cy)
+    how |= CENTER_VERT;
+  if (how==0)
+    return;
+
+  TAbstractTableSelectionModel::ESelectionMode mode;
+  mode = selection ? selection->getSelectionMode() : TAbstractTableSelectionModel::SINGLE;
+
+  if (selecting && !(modifier&MK_SHIFT)) {
+    cout << "stop select area" << endl;
+    selecting = false;
+  }
+  
+  if (!selecting) {
+    if (mode!=TAbstractTableSelectionModel::SINGLE && (modifier & MK_SHIFT)) {
+      cout << "start select area" << endl;
+      if (selection && !(modifier & MK_CONTROL) ) {
+        cout << "  clear selection" << endl;
+        cout << "  cx="<<cx<<", cy="<<cy<<", sx="<<sx<<", sy="<<sy<<endl;
+        selection->clearSelection();
+      }
+      sx = cx;
+      sy = cy;
+      selecting = true;
+    }
+    cy = newcy;
+    cx = newcx;
+    if (selectionFollowsMouse && !(modifier&MK_CONTROL)) {
+      selectAtCursor();
+    }
+//    invalidateCursor();
+invalidateWindow();
+    sigCursor();
+  } else {
+    invalidateChangedArea(sx,sy,cx,cy,cx,newcy);
+    cy = newcy;
+    cx = newcx;
+  }
+  center(how);
+}
+
+void
 TTable::keyDown(TKey key, char *string, unsigned modifier)
 {
+cout << "keyDown: enter: sx="<<sx<<", sy="<<sy<<endl;
   switch(key) {
     case TK_DOWN: {
       int newcy = cy+1;
       while(newcy<rows && row_info[newcy].size==0)
         ++newcy;
-      if (!per_col && newcy<rows) {
-        if (!selecting) {
-          invalidateCursor();
-          // in case nothing indicates the cursor position, don't move
-          // the cursor now:
-          if (! (noCursor && selectionFollowsMouse &&
-                (!getSelectionModel() || getSelectionModel()->isEmpty())))
-          {
-            cy=newcy;
-            invalidateCursor();
-          }
-          sigCursor();
-        } else {
-          invalidateChangedArea(sx,sy,cx,cy,cx,newcy);
-          cy = newcy;
-        }
-        if (selectionFollowsMouse) {
-          selectAtCursor();
-        }
-        center(CENTER_VERT);
-      }
+      _moveCursor(cx, newcy, modifier);
     } break;
     case TK_UP: {
       int newcy = cy;
       while(newcy>0 && row_info[--newcy].size==0)
         ;
-      if (!per_col && newcy!=cy) {
-        if (!selecting) {
-          invalidateCursor();
-          cy=newcy;
-          invalidateCursor();
-          sigCursor();
-        } else {
-          invalidateChangedArea(sx,sy,cx,cy,cx,newcy);
-          cy=newcy;
-        }
-        if (selectionFollowsMouse) {
-          selectAtCursor();
-        }
-        center(CENTER_VERT);
-      } else {
-        // why did we include 'noCursor' in the following statement?
-        if (noCursor && selectionFollowsMouse) {
-          selectAtCursor();
-        }
-      }
+      _moveCursor(cx, newcy, modifier);
     } break;
     case TK_PAGEUP:
       pageUp();
@@ -1462,76 +1521,55 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
     case TK_PAGEDOWN:
       pageDown();
       break;
-    case TK_RIGHT:
-      if (!per_row && cx<cols-1) {
-        if (!selecting) {
-          invalidateCursor();
-          // in case nothing indicates the cursor position, don't move
-          // the cursor now:
-          if (!(noCursor && selectionFollowsMouse &&
-               (!getSelectionModel() || getSelectionModel()->isEmpty())))
-          {
-            cx++;
-            invalidateCursor();
-          }
-          sigCursor();
-        } else {
-          invalidateChangedArea(sx,sy,cx,cy,++cx,cy);
-        }
-        if (selectionFollowsMouse) {
-          selectAtCursor();
-        }
-        center(CENTER_HORZ);
-      }
-      break;
-    case TK_LEFT:
-      if (!per_row && cx>0) {
-        if (!selecting) {
-          invalidateCursor();
-          cx--;
-          invalidateCursor();
-          sigCursor();
-        } else {
-          invalidateChangedArea(sx,sy,cx,cy,--cx,cy);
-        }
-        if (selectionFollowsMouse) {
-          selectAtCursor();
-        }
-        center(CENTER_HORZ);
-      }
-      break;
+    case TK_RIGHT: {
+      int newcx = cx+1;
+      while(newcx<cols && col_info[newcx].size==0)
+        ++newcx;
+      _moveCursor(newcx, cy, modifier);
+    } break;
+    case TK_LEFT: {
+      int newcx = cx;
+      while(newcx>0 && col_info[--newcx].size==0)
+        ;
+      _moveCursor(newcx, cy, modifier);
+    } break;
     case TK_RETURN:
       selectAtCursor();
       sigDoubleClicked();
       break;
     case ' ': {
       if (selection) {
-        if (selectionFollowsMouse)
-          selection->setSelection(per_row?0:cx, per_col?0:cy);
-        else
-          selection->toggleSelection(per_row?0:cx, per_col?0:cy);
+        cout << "SPACE: toggle selection" << endl;
+        if (!(modifier&MK_CONTROL)) {
+          int sx1=sx, sy1=sy;
+          selection->clearSelection();
+          sx=sx1; sy=sy1;
+          if (!(modifier&MK_SHIFT) ) {
+            selection->setSelection(cx, cy);
+          } else {
+            int x1, y1, x2, y2;    
+            x1 = min(sx, cx);
+            x2 = max(sx, cx);
+            y1 = min(sy, cy);
+            y2 = max(sy, cy);
+            cout << "  set selection" << endl;
+            selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+          }
+        } else {
+          cout << "  toggle selection" << endl;
+          selection->toggleSelection(cx, cy);
+        }
       }
-#if 0
-      else {
-        // sx=cx; sy=cy;
-        // selectionChanged();
-        selectAtCursor();
-        sigDoubleClicked();
-      }
-#endif
+      sx = cx;
+      sy = cy;
+//      invalidateCursor();
+      invalidateWindow();
       } break;
     case TK_SHIFT_L:
     case TK_SHIFT_R:
-      sx=cx; sy=cy;
-      if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::MULTIPLE_INTERVAL) 
-        selection->clearSelection();
-      else
-        selectionChanged();
-      if (selection)
-        selecting=true;
-      invalidateCursor();
       break;
   }
+cout << "keyDown: leave: sx="<<sx<<", sy="<<sy<<endl;
 }
 
 void
@@ -1539,8 +1577,10 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
 {
   switch(key) {
     case TK_SHIFT_L:
-    case TK_SHIFT_R: 
-      if (selection) {
+    case TK_SHIFT_R:
+      cout << "SHIFT up" << endl;
+      if (selection && selecting) {
+        cout << "  stop selecting and set selection" << endl;
         selecting=false;
         int x1, y1, x2, y2;    
         x1 = min(sx, cx);

@@ -251,6 +251,7 @@ class TTable:
 
     //! 'true' means, user is defining a selection over multiple fields
     bool selecting;
+    bool start_selecting;
     
     //! first (upper, left) field
     int ffx, ffy;
@@ -327,6 +328,7 @@ class TTable:
     bool selectionFollowsMouse;
     
   protected:
+    void _moveCursor(int newcx, int newcy, unsigned modifier);
     static const int CENTER_VERT=1;
     static const int CENTER_HORZ=2;
     static const int CENTER_BOTH=3;
