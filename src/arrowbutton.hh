@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,37 +18,35 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef _TOAD_FIGUREWINDOW_HH
-#define _TOAD_FIGUREWINDOW_HH
+#ifndef _TOAD_ARROWBUTTON_HH
+#define _TOAD_ARROWBUTTON_HH
 
-#include <toad/figuremodel.hh>
+#include <toad/pushbutton.hh>
+#include <toad/simpletimer.hh>
 
 namespace toad {
 
-/**
- * \ingroup figure
- */
-class TFigureWindow: 
-  public TWindow
+class TArrowButton: 
+  public TPushButton, TSimpleTimer
 {
-    typedef TWindow super;
   public:
-    TFigureWindow(TWindow *p, const string& t);
-    void store(TOutObjectStream&) const;
-    virtual bool restore(TInObjectStream&);
-    virtual void addFigure(TFigure *g) { gadgets->add(g); }
+    enum EArrowType {
+      ARROW_DOWN=1, ARROW_UP, ARROW_RIGHT, ARROW_LEFT
+    };
+    TArrowButton(TWindow *parent, const string &title, EArrowType d)
+      :TPushButton(parent, title)
+    { direction=d;bNoFocus=true; }
+    void setType(EArrowType type) { direction = type; }
+      
   protected:
+    void mouseLDown(int,int,unsigned);
+    void mouseLUp(int,int,unsigned);
+    void tick();
     void paint();
-  public:
-    virtual void print(TPenBase&);
-    void setModel(TFigureModel *m) {
-      gadgets = m;
-    }
-    TFigureModel * getModel() const {
-      return gadgets;
-    }
-  
-    PFigureModel gadgets;
+
+  private:
+    int delay;
+    EArrowType direction;
 };
 
 } // namespace toad

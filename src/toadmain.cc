@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -103,10 +103,11 @@ toad::initialize(int argc, char **&argv, char **envv)
   // initialize stacktrace.cc
   toad::top_address = __builtin_return_address(1);
 
+  // register memory files from the resource directory
   createTOADResource();
 
   // this is something other OO languages call class initialisation
-  TOADBase::initTOAD();
+  TOADBase::initialize();
 
   if (layouteditor)
     new TDialogEditor();
@@ -131,7 +132,7 @@ toad::mainLoop()
 void
 toad::terminate()
 {
-  TOADBase::closeTOAD();
+  TOADBase::terminate();
 
 #ifdef DEBUG_MEMORY
   toad::debug_mem_end();

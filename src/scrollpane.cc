@@ -78,8 +78,8 @@ TScrollPane::_scrolled()
     scrollRectangle(r, dx, 0, true);
   } 
 
-#warning "invalidating the whole window to avoid off-by-one error in scrollRectangle"
-invalidateWindow();
+//#warning "invalidating the whole window to avoid off-by-one error in scrollRectangle"
+//invalidateWindow();
 
   scrolled(dx, dy);
 }

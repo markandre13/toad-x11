@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,10 @@
  */
 
 #define DBM(X)
+
+// debugging code added to implement popup menus
+#define DBM2(X)
+
 #define DBM_FEEL(A)
 
 #include <toad/menubutton.hh>
@@ -61,8 +65,9 @@ TMenuButton::~TMenuButton()
   DISCONNECT(node->sigChanged, this, adjust);
 }
 
-void TMenuButton::adjust()
+void TMenuButton::adjustButton()
 {
+DBM2(cerr << "+ TMenuButton::adjustButton" << endl;)
   if (node->type==TMenuHelper::TNode::SEPARATOR) {
     setSize(1,4);
     return;
@@ -97,6 +102,7 @@ void TMenuButton::adjust()
 
   setSize(w,h);
 #endif
+DBM2(cerr << "- TMenuButton::adjustButton" << endl;)
 }
 
 /**
@@ -154,7 +160,7 @@ TMenuButton::paint()
     y = 1+4;
   }
 
-#if 1
+#if 0
   // debug code: check `isAvailable()'
   if (!node->isAvailable()) {
     pen.setColor(0,128,0);
@@ -471,6 +477,28 @@ TMenuButton::mouseLUp(int,int,unsigned)
   DBM(cerr << "+ mouseLUp " << this << ": state " << statename(master->state) << endl;)
   switch(master->state) {
     case MHS_DOWN:
+DBM2(
+cerr << "*** MHS_DOWN" << endl;
+if (master->btnmaster)
+  cerr << "  master->btnmaster is set" << endl;
+else
+  cerr << "  master->btnmaster isn't set" << endl;
+if (node->down)
+  cerr << "  node->down is set\n";
+else
+  cerr << "  node->down isn't set\n";
+if (node->isEnabled())
+  cerr << "  node is enabled\n";
+else
+  cerr << "  node isn't enabled\n";
+)
+      // first level menu button pressed & release in popup menubar
+      if (!master->btnmaster && node->isEnabled() && !node->down) {
+        dropKeyboard();
+        trigger();
+        master->state=MHS_WAIT;
+      } else
+  
       if (
         master->btnmaster // this should be always true: master->master->state=2
         && !(node->down && node->isEnabled()) // must be same cond as in OpenPopup
@@ -557,8 +585,13 @@ void TMenuButton::mouseEnter(int,int,unsigned m)
     case MHS_DOWN_N_HOLD:
       if (m&(MK_LBUTTON|MK_RBUTTON) && node->isEnabled()) {
         stopat = this;
-        if (master->active)
+        if (master->active) {
+          #warning "here is a dirty hack to avoid an unwanted close in deactivate"
+          bool hack = master->bPopup;
+          master->bPopup = false;
           master->active->deactivate();
+          master->bPopup = hack;
+        }
         activate();
         master->state = MHS_DOWN_N_INSIDE_AGAIN;
         stopat = 0;
@@ -606,6 +639,16 @@ TMenuButton::activate()
 {
   DBM(cerr << "+ activate " << this << "\n";)
 //  GrabPopupMouse(TMMM_PREVIOUS, TCursor::MOVE);
+
+  // the following situation happens because of another bug in code
+  // currently under development: should be removed later!!!
+  if (!isRealized()) {
+    cerr << "got 'activate()' for TMenuButton '" << getTitle() 
+         << "' but it's not realized anymore" << endl;
+    // printStackTrace();
+    return;
+  }
+
   grabPopupMouse(TMMM_PREVIOUS);
   grabKeyboard();
   if (toad::debug_menubutton) {
@@ -645,6 +688,13 @@ TMenuButton::deactivate()
   }
   closePopup();
   master->state = MHS_WAIT;
+
+  #warning "just destroying a window because it's master is a popup is to rude"
+  if (master->bPopup) {
+DBM2( cerr << "*** MASTER IS A POPUP ==> DESTROY WINDOW" << endl; )
+    master->destroyWindow();
+  }
+  
   DBM(cerr << "- deactivate " << this << endl;)
 }
 

@@ -27,423 +27,890 @@
 
 #define _TOAD_PRIVATE
 
+#include <toad/config.h>
 #include <toad/toadbase.hh>
 #include <toad/font.hh>
+#include <toad/pen.hh>
+
+#ifdef HAVE_LIBXFT
+
+#ifdef _XFT_NO_COMPAT_
+#undef _XFT_NO_COMPAT_
+#endif
+
+#include <X11/Xft/Xft.h>
+
+#endif
+
+#ifndef HAVE_LIBXFT
+#define XftDraw void
+#endif
+
+#ifndef FC_WEIGHT_BOOK                       
+#define FC_WEIGHT_BOOK 75            
+#endif
+#ifndef FC_DUAL
+#define FC_DUAL 90
+#endif
 
 using namespace toad;
 
-/**
- * \class toad::TFont
- * Represents fonts to be used with TPen.
- */
+// X Logical Font Description
+struct TX11FontName {
+  
+  string vendor, family, weight, slant, set_width, adj_style,
+         pixels, points, hdpi, vdpi, spacing, avg_width,
+         registry, encoding;
+  
+  void setWildcards();
+  void setXLFD(const char *name);
+  string getXLFD() const;
+
+  bool isScaleable() const;
+};
+
+static bool X11ConfigBuildFonts(FcConfig *config);
+static string d2s(double d);
 
 TFont::TFont()
 {
-#ifdef __X11__
-  fs = NULL;
-#endif
-  setFont(TFont::SANS, TFont::PLAIN, 12);
+  init();
+  createFont(0);
 }
 
 /**
- * Creates a new font.
- * <H4>family</H4>
- * <UL>
- * <LI>SANS
- * <LI>SANSSERIF
- * <LI>SERIF
- * <LI>TYPEWRITER
- * </UL>
- * <H4>style</H4>
- * <UL>
- * <LI>PLAIN
- * <LI>REGULAR
- * <LI>BOLD
- * <LI>ITALIC
- * <LI>BOLD_ITALIC
- * <LI>OBLIQUE
- * <LI>BOLD_OBLIQUE
- * </UL>
- * </TABLE>
+ *
+ * Possible fontnames:
+ *
+ * \li Times
+ * \li Times-12
+ * \li Times:size=12
+ * \li Times,serif:size=12
+ * \li Times:size=12:dpi=100
+ * \li Times-12:bold
+ * \li Times-12:bold:italic
+ * \li Times:bold:italic:pixelsize=18
  */
-TFont::TFont(EFamily family, EStyle style,int size)
+TFont::TFont(const string &fontname)
 {
-#ifdef __X11__
-  fs = NULL;
-#endif
-  setFont(family, style, size);
+  init();
+  this->fontname = fontname;
+  createFont(0);
 }
 
-TFont::TFont(const string &family, EStyle style, int size)
+void
+TFont::setFont(const string &fontname)
 {
-#ifdef __X11__
-  fs = NULL;
-#endif
-  setFont(family, style, size);
+  this->fontname = fontname;
+  createFont(0);
 }
 
-TFont::~TFont()
+TFont::~TFont() {
+  clear();
+}
+
+static FcConfig *fc_x11fonts = 0;
+
+void
+TFont::init()
 {
-#ifdef __X11__
-  if (fs) {
-//cout << "~TFont TFont::fid = " << fs->fid << " removed" << endl;
-    XUnloadFont(x11display, fs->fid);
-    XFreeFontInfo(NULL,fs,0);
+  if (!fc_x11fonts) {
+    fc_x11fonts = FcInitLoadConfig();
+    if (fc_x11fonts) {
+      if (!X11ConfigBuildFonts(fc_x11fonts)) {
+        cerr << "failed to scan available X11 fonts" << endl;
+        FcConfigDestroy(fc_x11fonts);
+        fc_x11fonts = 0;
+      }
+    }
+  }
+
+  x11font = 0;
+  x11fs = 0;
+  x11scale = 1.0;
+#ifdef HAVE_LIBXFT
+  xftfont = 0;
+#endif
+
+  fontname = "arial,helvetica,sans-serif";
+  setRenderType(RENDER_X11);
+//  setRenderType(RENDER_FREETYPE);
+}
+
+void
+TFont::clear()
+{
+  if (x11font) {
+    XUnloadFont(x11display, x11font);
+    x11font = 0;
+  }
+  if (x11fs) {
+    XUnloadFont(x11display, x11fs->fid);
+    XFreeFontInfo(NULL, x11fs, 0);
+    x11fs = 0;
+  }
+#ifdef HAVE_LIBXFT
+  if (xftfont) {
+    XftFontClose(x11display, xftfont);
+    xftfont = 0;
   }
 #endif
+}
+
+int
+TFont::getAscent() const
+{
+  if (x11fs) {
+    return x11scale * x11fs->ascent;
+  }
+#ifdef HAVE_LIBXFT
+  if (xftfont)
+    return xftfont->ascent;
+#endif
+  return 0;
+}
+
+int
+TFont::getDescent() const
+{
+  if (x11fs) {
+    return x11scale * x11fs->descent;
+  }
+#ifdef HAVE_LIBXFT
+  if (xftfont)
+    return xftfont->descent;
+#endif
+  return 0;
 }
 
 int
 TFont::getTextWidth(const string &str) const
 {
-  return getTextWidth(str.c_str(),str.size());  
+  return getTextWidth(str.c_str(),str.size());
 }
-
+ 
 int
 TFont::getTextWidth(const char *str) const
 {
-  return getTextWidth(str,strlen(str)); 
+  return getTextWidth(str,strlen(str));
 }
-
+ 
 int
 TFont::getTextWidth(const char *str, int len) const
 {
-#ifdef __X11__
-  return XTextWidth(fs,str,len);
+  if (x11fs) {
+    return x11scale * XTextWidth(x11fs,str,len);
+  }
+#ifdef HAVE_LIBXFT
+  if (xftfont) {
+    XGlyphInfo gi;
+    XftTextExtents8(x11display, xftfont, (XftChar8*)str, len, &gi);
+    return gi.width;
+  }
 #endif
-
-#ifdef __WIN32__
-  SIZE size;
-//  ::GetTextExtentPoint(w32hdc, str, len, &size);
-  return size.cx;
-#endif
-}
-
-int 
-TFont::getAscent() const 
-{
-#ifdef __X11__
-  if (fs)
-    return fs->ascent;
   return 0;
-#endif
-
-#ifdef __WIN32__
-  TEXTMETRIC tm;
-//  ::GetTextMetrics(w32hdc, &tm);
-  return tm.tmAscent;
-#endif
-}
-
-int
-TFont::getDescent() const 
-{
-#ifdef __X11__
-  if (fs)
-    return fs->descent;
-  return 0;
-#endif
-
-#ifdef __WIN32__
-  TEXTMETRIC tm;
-//  ::GetTextMetrics(w32->dc, &tm);
-  return tm.tmDescent;
-#endif
-}
-
-int
-TFont::getHeight() const
-{
-  #ifdef __X11__
-  return getAscent()+getDescent();
-  #endif
-  
-  #ifdef __WIN32__
-  TEXTMETRIC tm;
-//  ::GetTextMetrics(w32->dc, &tm);
-  return tm.tmAscent + tm.tmDescent;
-  #endif
-}
-
-unsigned 
-TFont::getHeightOfTextFromWidth(const string &text, unsigned width) const
-{
-  return getHeightOfTextFromWidth(text.c_str(),width);
-}
-
-
-unsigned 
-TFont::getHeightOfTextFromWidth(const char* text, unsigned width) const
-{
-  unsigned i, y=getHeight();
-
-  // 1st step: count number of words and lines
-  unsigned word_count, min_lines;
-  count_words_and_lines(text, &word_count, &min_lines);
-  if (!word_count) return 0;
-
-  // 2nd step: collection information on each word
-  TWord* word = make_wordlist(text, word_count);
-  
-  // 3rd step: output
-  unsigned blank_width = getTextWidth(" ",1);
-  unsigned line_len = 0;
-  unsigned word_of_line = 1;
-  
-  for(i=0; i<word_count; i++) {
-    if ((line_len+word[i].len>width && i!=0) || word[i].linefeeds) {
-      if (word[i].linefeeds)
-        y+=getHeight()*word[i].linefeeds;
-      else
-        y+=getHeight();
-      line_len = 0;
-      word_of_line = 0;
-    }
-    line_len+=word[i].len+blank_width;
-    word_of_line++;
-  }
-  delete[] word;
-  return y+getHeight();
-}
-
-void TFont::count_words_and_lines(const char *text, unsigned* word_count, unsigned* min_lines) const
-{
-  *word_count = 0;
-  *min_lines = 1;
-  const char* ptr = text;
-  bool word_flag = false;
-  while(*ptr) {
-    if(!word_flag && *ptr!=' ' && *ptr!='\n') {
-      word_flag=true;
-      (*word_count)++;
-    } else 
-    if (word_flag && (*ptr==' ' || *ptr=='\n'))
-      word_flag=false;
-    if (*ptr=='\n')
-      (*min_lines)++;
-    ptr++;
-  }
-}
-
-TFont::TWord* TFont::make_wordlist(const char *text, unsigned word_count) const
-{
-  TWord* word = new TWord[word_count];
-
-  unsigned j,i = 0;
-  const char* ptr = text;
-  bool word_flag = false;
-  unsigned lf=0;
-  while(*ptr) {
-    if(!word_flag && *ptr!=' ' && *ptr!='\n') {
-      word[i].pos = ptr;
-      j = 0;
-      word_flag=true;
-    }
-    ptr++;
-    j++;
-    if (word_flag && (*ptr==' ' || *ptr=='\n' || *ptr==0)) {
-      word[i].bytes     = j;
-      word[i].len       = getTextWidth(word[i].pos,j);
-      word[i].linefeeds = lf;
-      word_flag=false;
-//      printf("word %2u, bytes=%i\n",i,j);
-      i++;
-      lf=0;
-    }
-    if(*ptr=='\n')
-      lf++;
-  }
-//  printf("word_count=%i\n",word_count);
-  return word;
-}
-
-void TFont::setFont(const string &family, EStyle style, int size)
-{
-  cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
 }
 
 void
-TFont::setFont(const string &x11fontname)
+TFont::createFont(TMatrix2D *mat)
 {
-#ifdef __X11__
-  XFontStruct *new_fs = XLoadQueryFont(x11display, x11fontname.c_str());
-  if (!new_fs) {
-    // the name might have been wrong for a 'font.scale' or 'font.dir' file
-    // pointed to a non-existend file
-    cerr << "TFont::setFont: failed to load font '" << x11fontname << "'\n";
-    return;
-  }
-  if (fs) {
-    XUnloadFont(x11display, fs->fid);
-    XFreeFontInfo(NULL,fs,0);
-  }
-  fs = new_fs;
+  switch(rendertype) {
+    case RENDER_X11:
+      createX11Font(mat);
+      break;
+    case RENDER_FREETYPE:
+#ifdef HAVE_LIBXFT
+      createXftFont(mat);
+#else
+      cerr << "fatal: no Xft available" << endl;
 #endif
+      break;
+  }
 }
 
-/**
- * The base function to set a font
- *
- * Prefers bitmap fonts when available in the right size, which
- * improves quality quite a lot.
- */
-//----------------------------------------------------------------------------
-void TFont::setFont(EFamily family, EStyle style, int size)
+Font
+TFont::getX11Font() const
 {
-#ifdef __X11__
-  if (fs) {
-//    cout << "SetFont TFont::fid = " << fs->fid << " removed" << endl;
-    XUnloadFont(x11display, fs->fid);
-    XFreeFontInfo(NULL,fs,0);
-  }
-  fs = NULL;
+  if (x11font)
+    return x11font;
+  if (x11fs)
+    return x11fs->fid;
+  return 0;
+}
 
-  // this should be done in `build_fontname' when there's no
-  // italic variant available!!!
-  if (family==SANS) {
-    switch(style) {
-      case ITALIC:
-        style = OBLIQUE;
-        break;
-      case BOLD_ITALIC:
-        style = BOLD_OBLIQUE;
-        break;
-      default:
-        break;
+static bool dummy;
+
+static int
+dummyhandler(Display *, XErrorEvent *)
+{
+  dummy = true;
+}
+
+void
+TFont::createX11Font(TMatrix2D *mat)
+{
+  FcPattern *pattern = FcNameParse( (FcChar8 *)fontname.c_str());
+
+  // check that the required transformation matches the current font
+  string newid;
+  if (mat) {
+    double d;
+    FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
+    newid = "[";
+    newid += d2s(mat->a11 * d);
+    newid += d2s(mat->a12 * d);
+    newid += d2s(mat->a21 * d);
+    newid += d2s(mat->a22 * d);
+    newid += "]";
+
+    if (newid != id) {
+      if (x11font) {  
+        // we have an rotated font, but not the one we need
+        XUnloadFont(x11display, x11font);
+        x11font = 0;
+      }
+      id = newid;
+    } else {
+      if (x11font) {
+        // we have an rotated font and it's the one we need
+        return;
+      }
+    }
+  } else {
+    if (x11font) {
+      XUnloadFont(x11display, x11font);
+      x11font = 0;
+    }
+    if (x11fs) {
+      // no rotated font is required and we have the normal font
+      return;
     }
   }
 
-  build_fontname(family, style, size);
+  // Execute substitutions
+  FcConfigSubstitute(fc_x11fonts, pattern, FcMatchPattern);
+  // Perform default substitutions in a pattern
+  FcDefaultSubstitute(pattern);
+  
+  FcResult result;
+  FcPattern *found = FcFontMatch(fc_x11fonts, pattern, &result);
 
+  FcChar8 *filename;
+  FcPatternGetString(found, FC_FILE, 0, &filename);
+  TX11FontName xfn;
+  xfn.setXLFD((char*)filename);
+
+  FcBool scaleable;
+  FcPatternGetBool(found, FC_SCALABLE, 0, &scaleable);
+  if (scaleable) {
+    double size, dpi;
+    FcPatternGetDouble(found, FC_SIZE, 0, &size);
+    FcPatternGetDouble(found, FC_DPI, 0, &dpi);
+    
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%i", (int)(size*10.0));
+    xfn.points = buffer;
+    snprintf(buffer, sizeof(buffer), "%i", (int)dpi);
+    xfn.hdpi = buffer;
+    xfn.vdpi = buffer;
+    xfn.pixels="0";
+  }
+
+  FcPatternDestroy(pattern);
+
+  XFontStruct *new_fs = NULL;
+  if (!x11fs) {
+  
+    // In case someone is scaling, font size may become bigger
+    // than the ones actually used on the screen, so we set a
+    // limit here at 2304pt (as an unwanted side effect this is
+    // also the largest unscaled font size now...)
+    unsigned points;
+    sscanf(xfn.points.c_str(), "%u", &points);
+    if (points>23040) {
+      double pt = points;
+      x11scale = pt / 23040.0;
+      xfn.points = "23040";
+    }
+    
+    // finaly load the font
+    new_fs = XLoadQueryFont(x11display, xfn.getXLFD().c_str());
+    if (!new_fs) {
+      cerr << "failed to load font structure" << endl;
+      return;
+    }
+  }
+  
+  // In case a matrix is available, we need to load a 2nd font,
+  // which will be used for output. The untransformed font will
+  // then be used to get text extents.
+  Font new_font = 0;
+  if (mat) {
+    xfn.points = id;
+    xfn.pixels = "0";
+
+    new_font = 0;
+  
+    // Some matrizes, ie. small ones, cause XLoadFont to fail, so we
+    // need to temporary install an error handler or the default error
+    // handler would call 'exit(..)'. the XSync below is done because
+    // XLoadFont is assynchron.
+    XErrorHandler oldhandler;
+    oldhandler = XSetErrorHandler(dummyhandler);
+    dummy = false;
+    new_font = XLoadFont(x11display, xfn.getXLFD().c_str());
+    XSync(x11display, False);
+    XSetErrorHandler(oldhandler);
+    if (dummy) {
+      cerr << "failed to load font" << endl;
+      if (new_fs) {
+        XUnloadFont(x11display, new_fs->fid);
+        XFreeFontInfo(NULL,new_fs,0);
+      }
+      return;
+    }
+  }
+  
+  // set new font
+  if (new_font) {
+    assert(x11font==0);
+    x11font = new_font;
+  }
+  if (new_fs) {
+    assert(x11fs==NULL);
+    x11fs = new_fs;
+  }
+}
+
+#ifdef HAVE_LIBXFT
+void
+TFont::createXftFont(TMatrix2D *mat)
+{
+  if (xftfont) {
+    XftFontClose(x11display, xftfont);
+    xftfont = 0;
+  }
+  XftPattern *pattern = XftNameParse(fontname.c_str());
+
+  // fontconfig-devel.txt sais that the default dpi is 75 but my
+  // version took about 100 dpi, so force it to 75 dpi here:
+  double dpi;
+  if (XftPatternGetDouble(pattern, XFT_DPI, 0, &dpi)==XftResultNoMatch) {
+    XftPatternAddDouble(pattern, XFT_DPI, 75.0);
+  }
+
+  if (mat) {
+    XftMatrix xftmat;
+    XftMatrixInit(&xftmat);
+    xftmat.xx = mat->a11;
+    xftmat.yx = mat->a12;
+    xftmat.xy = mat->a21;
+    xftmat.yy = mat->a22;
+    XftPatternAddMatrix(pattern, XFT_MATRIX, &xftmat);
+  }
+
+  XftResult result;
+  XftPattern *found;
+  found = XftFontMatch(x11display, x11screen, pattern, &result);
+
+  XftFont *new_font = XftFontOpenPattern(x11display, found);
+  if (new_font) {
+    clear();
+    xftfont = new_font;
+  }
+
+  XftPatternDestroy(pattern);
+}
+#endif
+
+#if 0
+
+static void
+drawString16(int x, int y,
+             XChar2b *text,
+             unsigned len )
+{
+  font.createFont(pen.mat);
+
+  switch(font.getRenderType()) {
+    case TFont::RENDER_X11:
+      if (!font.getX11Font())
+        return;
+      XSetFont(x11display, pen.o_gc, font.getX11Font());
+      y+=font.getAscent();
+      if (!pen.mat) {
+        XDrawString16(x11display, pen.x11drawable, pen.o_gc, x,y, text, len );
+cerr << __LINE__ << endl;
+      } else {
+#if 1
+        pen.mat->map(x, y, &x, &y);
+        XDrawString16(x11display, pen.x11drawable, pen.o_gc, x,y, text, len );
+#else
+        int x2, y2;
+        string::const_iterator p(text.begin()), e(text.end());
+        while(p!=e) {
+          XChar2b buffer[2];
+          buffer[0]=*p;
+          buffer[1]=0;
+          pen.mat->map(x, y, &x2, &y2);
+          XDrawString16(x11display, pen.x11drawable, pen.o_gc, x2,y2, buffer, 1);
+          x+=font.getTextWidth(buffer);
+          ++p;
+        }
+#endif
+      }
+      break;
+#ifdef HAVE_LIBXFT
+    case TFont::RENDER_FREETYPE: {
+      y+=font.getAscent();
+      if (pen.mat)
+        pen.mat->map(x, y, &x, &y);
+      XftColor color;
+      color.color.red = 0;
+      color.color.green = 0;
+      color.color.blue = 0;
+      color.color.alpha = 0xffff;
+for(int i=0; i<len; ++i) {
+  int a = text[i].byte1;
+  text[i].byte1 = text[i].byte2;
+  text[i].byte2 = a;
+}
+      XftDrawString16(xftdraw, &color, font.getXftFont(), x,y, (XftChar16*)text, len);
+      } break;
+#endif
+  }
+}
+
+
+#endif
+
+
+/*********************************************************************
+ *                                                                   *
+ * Create Fontconfig configuration with X11 server fonts             *
+ *                                                                   *
+ *********************************************************************/
+
+extern "C" {
+extern void 
+FcConfigSetFonts(FcConfig *config,
+                 FcFontSet *fonts,
+                 FcSetName set);
+
+extern FcFontSet *
+FcConfigGetFonts (FcConfig  *config,
+                  FcSetName set);
+}
+
+static FcBool
+FcPatternAddCharset(FcPattern *p, const char *object, FcCharSet *charset)
+{
+  FcValue v;
+  v.type = FcTypeCharSet;
+  v.u.c = charset;
+  return FcPatternAdd(p, object, v, FcTrue);
+} 
+ 
+struct weight_t {
+  const char *x11;
+  int fc;
+};
+
+static weight_t weights[] = {
+  { "thin",         FC_WEIGHT_THIN },
+  { "extralight",   FC_WEIGHT_EXTRALIGHT },
+  { "extra light",  FC_WEIGHT_EXTRALIGHT },
+  { "ultralight",   FC_WEIGHT_ULTRALIGHT },
+  { "ultra light",  FC_WEIGHT_ULTRALIGHT },
+  { "light",        FC_WEIGHT_LIGHT },
+  { "book",         FC_WEIGHT_BOOK },
+  { "regular",      FC_WEIGHT_REGULAR },
+  { "normal",       FC_WEIGHT_NORMAL },
+  { "medium",       FC_WEIGHT_MEDIUM },
+  { "demi",         FC_WEIGHT_DEMIBOLD },
+  { "demibold",     FC_WEIGHT_DEMIBOLD },
+  { "demi bold",    FC_WEIGHT_DEMIBOLD },
+  { "semibold",     FC_WEIGHT_SEMIBOLD },
+  { "semi bold",    FC_WEIGHT_SEMIBOLD },
+  { "bold",         FC_WEIGHT_BOLD },
+  { "extrabold",    FC_WEIGHT_EXTRABOLD },
+  { "extra bold",   FC_WEIGHT_EXTRABOLD },
+  { "ultrabold",    FC_WEIGHT_ULTRABOLD },
+  { "ultra bold",   FC_WEIGHT_ULTRABOLD },
+  { "ultrablack",   FC_WEIGHT_ULTRABOLD },
+  { "ultra black",  FC_WEIGHT_ULTRABOLD },
+  { "black",        FC_WEIGHT_BLACK  },
+  { "heavy",        FC_WEIGHT_HEAVY }
+};
+
+struct slant_t {
+  const char *x11;
+  int fc;
+  const char *text;
+};
+
+static slant_t slants[] = {
+  { "", FC_SLANT_ROMAN, "roman" },
+  { "r", FC_SLANT_ROMAN, "roman" },
+  { "i", FC_SLANT_ITALIC, "italic" },
+  { "o", FC_SLANT_OBLIQUE, "oblique" }
+};
+
+struct width_t {
+  const char *x11;
+  int fc;
+};
+
+width_t widths[] = {
+  { "condensed",        FC_WIDTH_CONDENSED },
+  { "extended",         FC_WIDTH_EXPANDED },
+  { "expanded",         FC_WIDTH_EXPANDED },
+  { "narrow",           FC_WIDTH_CONDENSED },
+  { "normal",           FC_WIDTH_NORMAL },
+  { "semicondensed",    FC_WIDTH_SEMICONDENSED },
+  { "semi condensed",   FC_WIDTH_SEMICONDENSED },
+  { "extracondensed",   FC_WIDTH_EXTRACONDENSED },
+  { "extra condensed",  FC_WIDTH_EXTRACONDENSED },
+  { "ultracondensed",   FC_WIDTH_ULTRACONDENSED },
+  { "ultra condensed",  FC_WIDTH_ULTRACONDENSED },
+  { "semiexpanded",     FC_WIDTH_SEMIEXPANDED },
+  { "semi expanded",    FC_WIDTH_SEMIEXPANDED },
+  { "extraexpanded",    FC_WIDTH_EXTRAEXPANDED },
+  { "extra expanded",   FC_WIDTH_EXTRAEXPANDED },
+  { "ultraexpanded",    FC_WIDTH_ULTRAEXPANDED },
+  { "ultra expanded",   FC_WIDTH_ULTRAEXPANDED }
+};
+
+struct spacing_t {
+  const char *x11;
+  int fc;
+};
+
+static spacing_t spacings[] = {
+  { "c", FC_CHARCELL },
+  { "d", FC_DUAL },
+  { "m", FC_MONO },
+  { "p", FC_PROPORTIONAL }
+};
+
+/**
+ * 
+ */
+bool
+X11ConfigBuildFonts(FcConfig *config)
+{
+  bool result = false;
+
+  FcFontSet *fs = FcConfigGetFonts(config, FcSetSystem);
+  if (!fs)
+    fs = FcFontSetCreate();
+  
+  FcPattern *font;
+
+  Display *x11display;
+  if ((x11display = XOpenDisplay(""))==NULL) {
+    cerr << "Couldn't open X11 display\n";
+    return result;
+  }
   int count;
   char **fl;
+  TX11FontName xfn;
   
-  fl = XListFonts(x11display, mask.c_str(), 10, &count);
-  if (count==0) {
-    switch(style) {
-      case OBLIQUE:
-        style = ITALIC;
-        break;
-      case ITALIC:
-        style = OBLIQUE;
-        break;
-      case BOLD_OBLIQUE:
-        style = BOLD_ITALIC;
-        break;
-      case BOLD_ITALIC:
-        style = BOLD_OBLIQUE;
-        break;
-      default:
-        break;
-    }
-    build_fontname(family, style, size);
-    fl = XListFonts(x11display, mask.c_str(), 10, &count);
-  }
+  // unicode 0x00-0xFF
+  fl = XListFonts(x11display, "*-iso8859-1", 8192, &count);
+  // unicode 0x0000 - 0xFFFF
+  //  fl = XListFonts(x11display, "*-iso10646-1", 8192, &count);
+  if (count>0)
+    result=true;
+  for(int i=0; i<count; ++i) {
+    xfn.setXLFD(fl[i]);
+    font = FcPatternCreate();
+    FcPatternAddString(font, FC_RASTERIZER, (FcChar8*)"X11");
+    FcPatternAddString(font, FC_FILE, (FcChar8*)fl[i]);
+#if 0
+    FcPatternAddString(font, FC_LANG, (FcChar8*)
+      "aa|af|ar|ast|ava|ay|be|bg|bi|bin|br|bs|ca|ce|ch|co|cs|cy|da|de|el|"
+      "en|eo|es|et|eu|fi|fj|fo|fr|fur|fy|gd|gl|gn|gv|he|ho|hr|hu|ia|ibo|id|"
+      "ie|ik|io|is|it|ki|kl|kum|la|lb|lez|lt|lv|mg|mh|mt|nb|nl|nn|no|ny|oc|"
+      "om|os|pl|pt|rm|ru|se|sel|sh|sk|sl|sma|smj|smn|so|sq|sr|sv|sw|tn|tr|"
+      "ts|ug|uk|ur|vo|vot|wa|wen|wo|xh|yap|yi|zu");
+#endif
+    FcPatternAddString(font, FC_FOUNDRY, (FcChar8*)xfn.vendor.c_str());
 
-  if (count==0) {
-    printf("couldn't find font\n");
-    exit(1);
-  }
-  
-  // try to load a bitmap font
-  //---------------------------
-  for (int i=0; i<count; i++) {
-    int j=0, c=0;
-    while(c<12) {
-      if (fl[i][j]=='-')
-        c++;
-      j++;
+    if (!xfn.family.empty()) {
+      bool flag = true;
+      for(unsigned i=0; i<xfn.family.size(); ++i) {
+        if (flag)
+          xfn.family[i] = toupper(xfn.family[i]);
+        flag = (xfn.family[i]==' ');
+      }
     }
-    if (fl[i][j]=='0' && fl[i][j+1]=='-') // seems to be an outline font
-      continue;
+    FcPatternAddString(font, FC_FAMILY, (FcChar8*)xfn.family.c_str());
     
-    fs = XLoadQueryFont(x11display, fl[i]);
-    if (!fs) {
-//      printf("couldn't load font %i\n",i);
-      continue;
-    }
-    break;
-  }
-
-  // try to load a vector font
-  //---------------------------
-  if (!fs) {
-    for (int i=0; i<count; i++) {
-      int j=0, c=0;
-      while(c<12) {
-        if (fl[i][j]=='-')
-          c++;
-        j++;
+    for(int j=0; j<sizeof(weights)/sizeof(weight_t); ++j) {
+      if (xfn.weight == weights[j].x11) {
+        FcPatternAddInteger(font, FC_WEIGHT, weights[j].fc);
+        break;
       }
-      if (fl[i][j]!='0' || fl[i][j+1]!='-')
-        continue;
+    }
+
+    string slant;
+    for(int j=0; j<sizeof(slants)/sizeof(slant_t); ++j) {
+      if (xfn.slant == slants[j].x11) {
+        FcPatternAddInteger(font, FC_SLANT, slants[j].fc);
+        slant = slants[j].text;
+        break;
+      }
+    }
+    
+    for(int j=0; j<sizeof(widths)/sizeof(width_t); ++j) {
+      if (xfn.set_width == widths[j].x11) {
+        FcPatternAddInteger(font, FC_WIDTH, widths[j].fc);
+        break;
+      }
+    }
       
-      fs = XLoadQueryFont(x11display, fl[i]);
-      if (!fs) {
-//        printf("couldn't load font %i\n",i);
-        continue;
+    for(int j=0; j<sizeof(spacings)/sizeof(spacing_t); ++j) {
+      if (xfn.slant == spacings[j].x11) {
+        FcPatternAddInteger(font, FC_SPACING, spacings[j].fc);
+        break;
       }
-      break;
     }
-  }
 
-  if (!fs) {
-    fprintf(stderr, "no such font\n");
+    if (xfn.isScaleable()) {    
+      FcPatternAddBool(font, FC_SCALABLE, FcTrue);
+      FcPatternAddBool(font, FC_OUTLINE, FcTrue);
+    } else {
+      FcPatternAddBool(font, FC_SCALABLE, FcFalse);
+      FcPatternAddBool(font, FC_OUTLINE, FcFalse);
+
+      double px, pt, dpi;
+      px = atof(xfn.pixels.c_str());
+      pt = atof(xfn.points.c_str()) / 10.0;
+      dpi = atof(xfn.hdpi.c_str());
+      FcPatternAddDouble(font, FC_PIXEL_SIZE, px);
+      FcPatternAddDouble(font, FC_SIZE, pt);
+      FcPatternAddDouble(font, FC_DPI, dpi);
+    }
+
+    FcPatternAddInteger(font, FC_INDEX, 0);
+    FcPatternAddInteger(font, FC_FONTVERSION, 0);
+
+#if 0
+    FcPatternAddString(font, FC_STYLE, (FcChar8*)"Regular");
+#endif
+#if 0
+    // style overwrites weight and slant
+
+    string style = xfn.weight + ' ' + xfn.set_width + ' ' + slant;
+    FcPatternAddString(font, FC_STYLE, (FcChar8*)style.c_str());
+/*
+  weight  width     slant     
+  Regular
+  Regular           Italic
+  Regular           Oblique
+  Bold              Italic
+  Plain
+  Roman
+  Medium            Italic
+  Bold              Italic
+  Normal
+  Demi
+  Regular Condensed Italic
+  Bold    Condensed Italic
+  Bold              Oblique
+  Demi              Oblique
+  Demi Bold         Italic
+  Regular Condensed
+  Book              Oblique
+
+  no style or weight -> "Medium"
+  no style or slant  -> "Roman"
+  no pixel size      -> 12pt, 75dpi, scale=1
+*/
+#endif
+
+    FcCharSet *charset = FcCharSetCreate();
+    FcPatternAddCharset(font, FC_CHARSET, charset);
+    FcFontSetAdd(fs, font);
   }
   XFreeFontNames(fl);
-//if (fs)
-//  cout << "SetFont TFont::fid = " << fs->fid << endl;
+
+  FcConfigSetFonts(config, fs, FcSetSystem);
+
+#if 0
+  if (fs) {
+    int j;
+    for(j=0; j<fs->nfont; j++) {
+      FcPatternPrint(fs->fonts[j]);
+    }
+  }
+  cout << "----------------------------------------------" << endl;
 #endif
+  return result;
 }
 
-#ifdef __X11__
-/**
- * Build X11 fontname
- */
-void TFont::build_fontname(EFamily family, EStyle style,int size)
+/*********************************************************************
+ *                                                                   *
+ * TX11FontName definitions                                          *
+ *                                                                   *
+ *********************************************************************/
+
+void
+TX11FontName::setWildcards()
 {
-  mask = "-*-";
-  
-  switch(family)
-  {
-    case SANS:
-      mask += "helvetica";
-      break;
-    case SERIF:
-      mask += "times";
-      break;
-    case TYPEWRITER:
-      mask += "courier";
-      break;
-  }
-  switch(style)
-  {
-    case REGULAR:
-      mask += "-medium-r-";
-      break;
-    case BOLD:
-      mask += "-bold-r-";
-      break;
-    case ITALIC:
-      mask += "-medium-i-";
-      break;
-    case BOLD_ITALIC:
-      mask += "-bold-i-";
-      break;
-    case OBLIQUE:
-      mask += "-medium-o-";
-      break;
-    case BOLD_OBLIQUE:
-      mask += "-bold-o-";
-      break;
-  }
-  mask+="normal--";         // width
-  
-  char buffer[25];          // size
-  sprintf(buffer,"%i",size);
-  mask+=buffer;
-  
-  mask+="-*-*-*-*-*-iso8859-1";
-//  printf("mask: %s\n",mask.c_str());
+  vendor = family = weight = slant = set_width = adj_style =
+  pixels = points = hdpi = vdpi = spacing = avg_width =
+  registry = encoding = "*";
 }
-#endif
+
+void
+TX11FontName::setXLFD(const char *name)
+{
+  int l, r;
+    
+  l = 1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  vendor.assign(name+l, r-l);
+    
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  family.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  weight.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  slant.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  set_width.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  adj_style.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  pixels.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  points.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  hdpi.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  vdpi.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  spacing.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  avg_width.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  registry.assign(name+l, r-l);
+
+  l=r+1;
+  for(r=l; name[r]!=0 && name[r]!='-'; ++r);
+  encoding.assign(name+l, r-l);
+}
+
+string
+TX11FontName::getXLFD() const
+{
+  string name;
+  name = "-" + vendor +
+         "-" + family +
+         "-" + weight +
+         "-" + slant + 
+         "-" + set_width + 
+         "-" + adj_style +
+         "-" + pixels +
+         "-" + points +
+         "-" + hdpi +
+         "-" + vdpi +
+         "-" + spacing +
+         "-" + avg_width +
+         "-" + registry +
+         "-" + encoding;
+  return name;
+}
+
+bool
+TX11FontName::isScaleable() const
+{
+   return (pixels=="0" &&
+           points=="0" && 
+           hdpi=="0" && 
+           vdpi=="0" &&
+           avg_width=="0");
+}
+
+/*
+ * X11R6 provides 2d transformations for characters
+ *
+ * + : plus
+ * ~ : minus
+ *                  / a b 0 \
+ *  [ a b c d ] <-> | c d 0 |
+ *                  \ 0 0 1 /
+ */
+string
+d2s(double d)
+{
+  string s;
+  
+  if (d<0.0) {
+    s+='~';
+    d=-d;
+  } else {
+    s+='+';
+  }
+  
+  double a = 1.0;
+  while(a<=d) a*=10.0;
+
+  bool b;
+
+  a/=10.0;
+
+  if (a>=1.0) {
+    while(a>=1.0) {
+      int digit=0; 
+      while(d>=a) {
+        digit++;
+        d-=a;
+      }
+      a/=10.0;
+      s+='0'+digit;
+    }
+  } else {
+    s+='0';
+  }
+  
+  if (d>=0.0001) {
+    s+='.';
+    while(d>=0.0001) {
+      int digit=0; 
+      while(d>=a) {
+        digit++;
+        d-=a;
+      }
+      a/=10.0;
+      s+='0'+digit;
+    }
+  }
+
+  return s;
+}

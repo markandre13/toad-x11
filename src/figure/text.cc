@@ -32,9 +32,10 @@ TFText::calcSize()
   unsigned l,r;
   l = 0;
   while(true) {
-    h+=TOADBase::getDefaultFont().getHeight();
+    PFont font = TPen::lookupFont(fontname);
+    h+=font->getHeight();
     r = text.find('\n', l);
-    int wl = TOADBase::getDefaultFont().getTextWidth(text.substr(l,r==string::npos ? r : r-l));
+    int wl = font->getTextWidth(text.substr(l,r==string::npos ? r : r-l));
     if (wl>w)
       w=wl;
     if (r==string::npos)
@@ -48,7 +49,7 @@ TFText::calcSize()
 void 
 TFText::paint(TPenBase &pen, EPaintType type)
 {
-  pen.setFont(&TOADBase::getDefaultFont());
+  pen.setFont(fontname);
   pen.setLineColor(line_color);
   unsigned l,r;
   int yp = p1.y;
@@ -70,6 +71,9 @@ TFText::paint(TPenBase &pen, EPaintType type)
 double 
 TFText::distance(int mx, int my)
 {
+TRectangle r(p1, p2);
+// cerr << "mouse at (" << mx << ", " << my << "), text " << r << endl;
+
   if (TRectangle(p1, p2).isInside(mx, my))
     return INSIDE;
   return super::distance(mx,my);
@@ -201,6 +205,7 @@ void
 TFText::store(TOutObjectStream &out) const
 {
   super::store(out);
+  ::store(out, "fontname", fontname);
   ::store(out, "text", text);
 }
 
@@ -209,6 +214,7 @@ TFText::restore(TInObjectStream &in)
 {
   if (
     ::restore(in, "text", &text) ||
+    ::restore(in, "fontname", &fontname) ||
     super::restore(in)
   ) return true;
   ATV_FAILED(in)

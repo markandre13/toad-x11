@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,36 +28,12 @@
 #include <toad/simpletimer.hh>
 #include <toad/boundedrangemodel.hh>
 #include <toad/scrollbar.hh>
+#include <toad/arrowbutton.hh>
 
 #include <unistd.h>
 #include <limits.h>
 
 using namespace toad;
-
-namespace toad {
-
-enum EArrowType {ARROW_DOWN=1, ARROW_UP, ARROW_RIGHT, ARROW_LEFT};
-
-class TNArrowButton: 
-  public TPushButton, TSimpleTimer
-{
-  private:
-    int delay;
-    EArrowType direction;
-
-  public:
-    TNArrowButton(TWindow *parent, EArrowType d)
-      :TPushButton(parent,"scrollbar.arrowbutton"){direction=d;bNoFocus=true;}
-    void setType(EArrowType type) { direction = type; }
-      
-  protected:
-    void mouseLDown(int,int,unsigned);
-    void mouseLUp(int,int,unsigned);
-    void tick();
-    void paint();
-};
-
-}
 
 /**
  * \class TScrollBar
@@ -88,9 +64,13 @@ TScrollBar::TScrollBar(TWindow *parent, const string &title, TBoundedRangeModel 
   _w=_h=DEFAULT_FIXED_SIZE;
 
   setMouseMoveMessages(TMMM_LBUTTON);
-  btn1  = new TNArrowButton(this, bVertical ? ARROW_UP : ARROW_LEFT);
+  btn1 = new TArrowButton(this, "up/left", bVertical ? 
+                                TArrowButton::ARROW_UP : 
+                                TArrowButton::ARROW_LEFT);
   CONNECT(btn1->sigActivate, this, decrement);
-  btn2  = new TNArrowButton(this, bVertical ? ARROW_DOWN : ARROW_RIGHT);
+  btn2 = new TArrowButton(this, "down/right", bVertical ? 
+                                TArrowButton::ARROW_DOWN : 
+                                TArrowButton::ARROW_RIGHT);
   CONNECT(btn2->sigActivate, this, increment);
 }
 
@@ -524,89 +504,16 @@ void
 TScrollBar::_placeChildren()
 {
   if (bVertical) {
-    btn1->setType(ARROW_UP);
-    btn2->setType(ARROW_DOWN);
+    btn1->setType(TArrowButton::ARROW_UP);
+    btn2->setType(TArrowButton::ARROW_DOWN);
     btn1->setShape(0,0,_w,_w);
     // btn1->setShape(0,_h-_w-_w,_w,_w);
     btn2->setShape(0,_h-_w,_w,_w);
   } else {  
-    btn1->setType(ARROW_LEFT);
-    btn2->setType(ARROW_RIGHT);
+    btn1->setType(TArrowButton::ARROW_LEFT);
+    btn2->setType(TArrowButton::ARROW_RIGHT);
     btn1->setShape(0,0,_h,_h);
     // btn1->setShape(_w-_h-_h,0,_h,_h);
     btn2->setShape(_w-_h,0,_h,_h);
   }
-}
-
-/*****************************************************************************
- *                                                                           *
- * TNArrowButton                                                             *
- *                                                                           *
- *****************************************************************************/
-void
-TNArrowButton::paint()
-{
-  TPen pen(this);
-
-  drawShadow(pen, bDown && bInside);
-
-  int n=bDown && bInside ? 1:0;
-
-  const int d=4;
-  TPoint p[3];
-  
-  switch(direction)
-  {
-    case ARROW_DOWN:
-      p[0].set(n+(_w>>1), n+_h-d-2);
-      p[1].set(n+_w-d   , n+d-1+2);
-      p[2].set(n+d-1        , n+d-1+2);
-      break;
-    case ARROW_UP:
-      p[2].set(n+_w-d   , n+_h-d-2);
-      p[1].set(n+d-1        , n+_h-d-2);
-      p[0].set(n+(_w>>1), n+d-1+2);
-      break;
-    case ARROW_LEFT:
-      p[0].set(n+d-1+2      , n+(_h)>>1);
-      p[1].set(n+_w-d-2 , n+d-1);
-      p[2].set(n+_w-d-2 , n+_h-d);
-      break;
-    case ARROW_RIGHT:
-      p[0].set(n+d-1+2      , n+d-1);
-      p[1].set(n+_w-d-2 , n+(_h)>>1);
-      p[2].set(n+d-1+2      , n+_h-d);
-      break;
-  }
-  pen.setColor(TColor::BTNTEXT);
-  pen.fillPolygon(p,3);
-}
-
-void
-TNArrowButton::mouseLDown(int,int,unsigned)
-{
-  bDown=true;
-  invalidateWindow();
-  sigArm();
-  sigActivate();
-  delay = 0;
-  startTimer(0, 1000000/12);
-}
-
-void
-TNArrowButton::mouseLUp(int,int,unsigned)
-{
-  bDown=false;
-  invalidateWindow();
-  sigDisarm();
-  stopTimer();
-}
-
-void
-TNArrowButton::tick()
-{
-  if(delay<3)
-    delay++;
-  else if (bInside)
-    sigActivate();
 }

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,18 @@ class TFigure:
       EDIT
     };
     
+    void setLineColor(const TRGB &color) {
+      line_color = color;
+    }
+    void setFillColor(const TRGB &color) {
+      fill_color = color;
+      filled = true;
+    }
+    void unsetFillColor() {
+      filled = false;
+    }
+    virtual void setFont(const string&);
+    
     //! Called to paint the gadget.
     virtual void paint(TPenBase& pen, EPaintType) = 0;
     virtual void paintSelection(TPenBase &pen);
@@ -65,10 +77,12 @@ class TFigure:
      */
     virtual void getShape(TRectangle&) = 0;
 
+  protected:
     TRGB line_color;
     TRGB fill_color;
     bool filled:1;        // true when filled
-    
+  
+  public:    
     /**
      * 'true' when TFigureEditor is allowed to delete this object.
      */
@@ -128,8 +142,8 @@ class TFigure:
 
     // storage stuff for all gadgets
     //-------------------------------------- 
-    static void initStorage();
-    static void loseStorage();
+    static void initialize();
+    static void terminate();
     static TInObjectStream serialize;
 };
 
@@ -146,8 +160,7 @@ class TFRectangle:
       line_color.set(0,0,0);
       fill_color.set(0,0,0);
     }
-    TFRectangle(TFigureWindow *parent, int x,int y,int w, int h) {
-      parent->addGadget(this);
+    TFRectangle(int x,int y,int w, int h) {
       setShape(x, y, w, h);
       filled = false;
     };
@@ -272,8 +285,8 @@ class TFCircle:
 {
   public:
     TFCircle(){}
-    TFCircle(TFigureWindow *parent, int x, int y, int w, int h):
-      TFRectangle(parent,x,y,w,h) {}
+    TFCircle(int x, int y, int w, int h):
+      TFRectangle(x,y,w,h) {}
     void paint(TPenBase &, EPaintType);
     
     double distance(int x, int y);
@@ -291,13 +304,6 @@ class TFText:
     typedef TFRectangle super;
   public:
     TFText() {}
-    TFText(TFigureWindow *parent, int x,int y, const string &text) {
-      parent->addGadget(this);
-      p1.x = x;
-      p1.y = y;
-      this->text = text;
-      calcSize();
-    }
     TFText(int x,int y, const string &text) {
       p1.x = x;
       p1.y = y;
@@ -307,6 +313,9 @@ class TFText:
     void setText(const string &t) {
       text = t;
       calcSize();
+    }
+    void setFont(const string &fontname) {
+      this->fontname = fontname;
     }
     void paint(TPenBase &, EPaintType);
 
@@ -330,6 +339,7 @@ class TFText:
     
   protected:
     string text;
+    string fontname;
     virtual void calcSize();
     static int cx;  // cursor position while editing
 };
@@ -343,8 +353,7 @@ class TFFrame:
     typedef TFText super;
   public:
     TFFrame() {}
-    TFFrame(TFigureWindow *parent, int x,int y,int w, int h, const string &text="") {
-      parent->addGadget(this);
+    TFFrame(int x,int y,int w, int h, const string &text="") {
       this->text = text;
       setShape(x,y,w,h);
     };

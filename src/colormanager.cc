@@ -887,7 +887,6 @@ dither27_8x8(byte r, byte g, byte b, Pixmap pm)
   }
 
   // the following code makes dithering really slow and even images won't help
-  TOAD_XLIB_MTLOCK();
   GC ink=XCreateGC(x11display, DefaultRootWindow(x11display),0,0);
   int p=0;
   for(i=0; i<8; i++) {

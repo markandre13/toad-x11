@@ -214,10 +214,10 @@ class TTextArea:
           WORDSTAR
         } mode;
         
-        void setFont(TFont *aFont) { font = aFont; }
-        TFont* getFont() const { return font; }
+        void setFont(const string &aFontname) { fontname = aFontname; }
+        const string& getFont() const { return fontname; }
       protected:
-        PFont font;
+        string fontname;
     };
     
     TPreferences *preferences;

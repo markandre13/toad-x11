@@ -35,7 +35,7 @@ class TFLine:
     typedef TFigure super;
   
     TFLine();
-    TFLine(TFigureWindow *parent, int x1, int y1, int x2, int y2);
+    TFLine(int x1, int y1, int x2, int y2);
     void paint(TPenBase &, EPaintType);
     void getShape(TRectangle&);
     

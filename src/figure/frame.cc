@@ -42,8 +42,9 @@ TFFrame::paint(TPenBase &pen, EPaintType type)
   pen.drawRectanglePC(r.x,r.y,r.w-1,r.h-1);
 
   if (!text.empty()) {
-    int fh = TOADBase::getDefaultFont().getHeight();
-    int tw = TOADBase::getDefaultFont().getTextWidth(text);
+    pen.setFont(fontname);
+    int fh = pen.getHeight();
+    int tw = pen.getTextWidth(text);
     pen.setColor(TColor::DIALOG);
     pen.fillRectanglePC(r.x+5-1, r.y-fh/2, tw+2, fh);
     pen.setColor(line_color);
@@ -62,7 +63,8 @@ TFFrame::paint(TPenBase &pen, EPaintType type)
 void
 TFFrame::getShape(TRectangle &r)
 {
-  int a = TOADBase::getDefaultFont().getHeight()/2;
+  PFont font = TPen::lookupFont(fontname);
+  int a = font->getHeight()/2;
   TFRectangle::getShape(r);
   r.y-=a;
   r.h+=a;
@@ -74,8 +76,9 @@ TFFrame::distance(int mx, int my)
 //  cout << __PRETTY_FUNCTION__ << endl;
 #if 1
   if (!text.empty()) {
-    int fh = TOADBase::getDefaultFont().getHeight();
-    int tw = TOADBase::getDefaultFont().getTextWidth(text);
+    PFont font = TPen::lookupFont(fontname);
+    int fh = font->getHeight();
+    int tw = font->getTextWidth(text);
     TRectangle r(min(p1.x,p2.x)+5-1, min(p1.y,p2.y)-fh/2, tw+2, fh);
     if (r.isInside(mx, my))
       return INSIDE;

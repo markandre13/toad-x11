@@ -27,14 +27,13 @@
 namespace toad {
 
 // class TSlider;
-class TNArrowButton;
+class TArrowButton;
 
 class TScrollBar: 
   public TControl
 {
     typedef TControl super;
     typedef TScrollBar thisClass;
-    friend class TNArrowButton;
 
   protected:
     bool bVertical;
@@ -83,8 +82,8 @@ class TScrollBar:
     void _placeSlider();
     void _moveSliderTo(int y);
 
-    TNArrowButton *btn1;
-    TNArrowButton *btn2;
+    TArrowButton *btn1;
+    TArrowButton *btn2;
     void increment();
     void decrement();
     TRectangle rectSlider;

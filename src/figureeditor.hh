@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,11 +34,9 @@ class TScrollBar;
 
 class TFigureEditorHeaderRenderer
 {
-    bool vertical;
   public:
-    TFigureEditorHeaderRenderer(bool vertical=false);
-    void render(TPen &pen, int pos, int size, TMatrix2D *mat);
-    int getSize();
+    virtual void render(TPen &pen, int pos, int size, TMatrix2D *mat) = 0;
+    virtual int getSize() = 0;
 };
 
 /**
@@ -63,6 +61,19 @@ class TFigureEditor:
     void setGrid(int x, int y);
     void setBackground(int,int,int);
 
+    void setRowHeaderRenderer(TFigureEditorHeaderRenderer *r) {
+      row_header_renderer = r;
+    }
+    TFigureEditorHeaderRenderer* getRowHeaderRenderer() const {
+      return row_header_renderer;
+    }
+    void setColHeaderRenderer(TFigureEditorHeaderRenderer *r) {
+      col_header_renderer = r;
+    }
+    TFigureEditorHeaderRenderer* getCowHeaderRenderer() const {
+      return col_header_renderer;
+    }
+    
     unsigned result;            // values are defined in TFigure
     
     void setModel(TFigureModel *m) {
@@ -89,6 +100,7 @@ class TFigureEditor:
     void setOperation(unsigned);
     void setCreate(TFigure*);
     
+    // not all these methods work now, but the first 4 should do
     void identity();
     void rotate(double);
     void rotateAt(double x, double y, double degree);
@@ -97,9 +109,11 @@ class TFigureEditor:
     void shear(double, double);
     void multiply(const TMatrix2D*);
 
+    // methods to modify selected or objects to be created
     void setLineColor(const TRGB&);
     void setFillColor(const TRGB&);
-    void setFilled(bool);
+    void unsetFillColor();
+    void setFont(const string &fontname);
 
     void invalidateWindow() { if (window) window->invalidateWindow(); }
     void invalidateFigure(TFigure*);
@@ -122,10 +136,10 @@ class TFigureEditor:
     void selectionDown();
     
 #if 0
-    void gadget2Top(TFigure*);
-    void gadget2Bottom(TFigure*);
-    void gadgetUp(TFigure*);
-    void gadgetDown(TFigure*);
+    void figure2Top(TFigure*);
+    void figure2Bottom(TFigure*);
+    void figureUp(TFigure*);
+    void figureDown(TFigure*);
 #endif
 
     void group();
@@ -201,6 +215,7 @@ class TFigureEditor:
     bool filled;
     TRGB line_color;
     TRGB fill_color;
+    string fontname;
     
     TRGB background_color;
     bool draw_grid;

@@ -71,6 +71,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/Xmd.h>
+#include <X11/cursorfont.h>
 #endif
 
 #ifdef __WIN32__
@@ -640,6 +641,10 @@ TWindow::_interactor_create()
   if (bPopup) {
     mask|=CWOverrideRedirect;
     attr.override_redirect = true;
+    // the override redirect option results in a 'X' cursor but we 
+    // still want the default cursor:
+    mask|=CWCursor;
+    attr.cursor = TCursor::X11Cursor(TCursor::DEFAULT);
   }
 
   // 'createX11Window' messsage is needed for things like OpenGL support
@@ -708,6 +713,7 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
   );
   ::SetWindowLong(w32window, 0, (LONG)this);
 #endif
+
   
   focusNewWindow(this); // inform focus management about the new window
 
@@ -1475,9 +1481,13 @@ TWindow::adjust()
 void
 TWindow::doResize()
 {
+  if (flag_wm_resize)
+    return;
+  flag_wm_resize = true;
   if (layout)
     layout->arrange();
   resize();
+  flag_wm_resize = false;
 }
 
 /**
@@ -1800,12 +1810,10 @@ TWindow::setSize(int w,int h)
     cout << "don't calling resize() and parents childNotify()" << endl;
     return;
   }
-  flag_wm_resize = true;
   doResize();
   if (getParent()) {
     _childNotify(TCHILD_RESIZE);
   }
-  flag_wm_resize = false;
 }
 
 /**

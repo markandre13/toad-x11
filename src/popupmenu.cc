@@ -14,28 +14,33 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+ * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307,  USA
  */
 
-#ifndef TPushButton
-#define TPushButton TPushButton
+#include <toad/popupmenu.hh>
 
-#include <toad/buttonbase.hh>
+using namespace toad;
 
-namespace toad {
+/**
+ * \ingroup control
+ * \class toad::TPopupMenu
+ *
+ */
 
-class TPushButton: 
-  public TButtonBase
+TPopupMenu::TPopupMenu(TWindow *parent, const string &title):
+  TMenuHelper(parent, title)
 {
-  public:
-    TPushButton(TWindow *p, const string &t)
-      :TButtonBase(p,t) { }
+  vertical = true;
+  bExplicitCreate = true;
+  bPopup = true;
+  setLayout(new TMenuLayout()); // i require a layout
+}
 
-  protected:
-    void paint();
-};
-
-} // namespace toad
-
-#endif
+void
+TPopupMenu::open()
+{
+  placeWindow(this, PLACE_CORNER_MOUSE_POINTER, 0);
+  createWindow();
+  grabPopupMouse(TMMM_PREVIOUS);
+}

@@ -114,8 +114,9 @@ TLayoutEditGeneric::TLayoutEditGeneric(TWindow *parent,
   x=5; y=5;
   
   ta = new TTextArea(this, "layout", text);
-  ta->setShape(x, y, ta->getPreferences()->getFont()->getTextWidth("x")*60, 
-                     ta->getPreferences()->getFont()->getHeight()*25);
+  PFont font = new TFont(ta->getPreferences()->getFont());
+  ta->setShape(x, y, font->getTextWidth("x")*60, 
+                     font->getHeight()*25);
   ta->getPreferences()->tabwidth=2;
   
   y+=ta->getHeight()+5;

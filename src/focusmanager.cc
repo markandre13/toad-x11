@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -520,14 +520,17 @@ print(TInteractor *p, unsigned d=0)
       }
     }
     
-    TDomain *domain = GetDomain(w);
-    if (domain->owner==w) {
-      cout << " [domain owner]";
+    if (!w->isRealized()) {
+      cout << " [no window & no domain]";
+    } else {
+      TDomain *domain = GetDomain(w);
+      if (domain->owner==w) {
+        cout << " [domain owner]";
+      }
+      if (domain->focus_window==w) {
+        cout << " [current sub]";
+      }
     }
-    if (domain->focus_window==w) {
-      cout << " [current sub]";
-    }
-    
     if (w == print_top_domain->focus_window) {
       cout << " (focus window)";
     }
@@ -740,6 +743,9 @@ GetDomain(TWindow *wnd)
   //-------------------------------------------------------------------
   if (wnd->bShell) {
     TDomainMap::iterator p = top_domain_map.find(wnd);
+    if (p==top_domain_map.end()) {
+      cerr << "window '" << wnd->getTitle() << "' has no top domain\n";
+    }
     assert(p!=top_domain_map.end());  // shell without top domain
     return (*p).second;
   }

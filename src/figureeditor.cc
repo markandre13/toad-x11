@@ -130,8 +130,7 @@ TFigureEditor::TFigureEditor():
   init();
   bExplicitCreate = true; // don't create, see TWindow::createParentless()
   window = NULL;
-  row_header_renderer = new TFigureEditorHeaderRenderer(true);
-  col_header_renderer = new TFigureEditorHeaderRenderer(false);
+  row_header_renderer = col_header_renderer = 0;
 }
 
 TFigureEditor::TFigureEditor(TWindow *p, const string &t):
@@ -141,8 +140,7 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t):
   setMouseMoveMessages(TMMM_LBUTTON);
   bNoBackground = true;
   window = this;
-  row_header_renderer = new TFigureEditorHeaderRenderer(false);
-  col_header_renderer = new TFigureEditorHeaderRenderer(true);
+  row_header_renderer = col_header_renderer = 0;
 }
 
 TFigureEditor::~TFigureEditor()
@@ -209,6 +207,7 @@ TFigureEditor::init()
   fill_color.set(255,255,255);
   filled = false;
   background_color.set(192,192,192);
+  fontname = "arial,helvetica,sans-serif:size=12";
 
   gridx = gridy = 8;
   draw_grid = true;
@@ -388,83 +387,6 @@ double rotd0;
 int select_x;
 int select_y;
 
-TFigureEditorHeaderRenderer::TFigureEditorHeaderRenderer(bool vertical)
-{
-  this->vertical = vertical;
-}
-
-int
-TFigureEditorHeaderRenderer::getSize()
-{
-  return 16;
-}
-
-/*
-  o our internal resolution is 9600dpi
-  o our assumed screen resolution is 100dpi
-  o 1cm = 0.394in
-  o 2.54cm = 1in
-*/
-void
-TFigureEditorHeaderRenderer::render(TPen &pen, int pos, int size, TMatrix2D *mat)
-{
-cerr << "render pos " << pos << " with size " << size << endl;
-  pen.setColor(TColor::BTNFACE);
-
-  double x0, x1, y0, y1;
-  mat->map(0,0, &x0, &y0);
-  mat->map(1,1, &x1, &y1);
-  
-  double res;
-  if (!vertical)
-    res = ((x1-x0)*9600.0);
-  else
-    res = ((y1-y0)*9600.0);
-  
-  if (!vertical) {
-    pen.fillRectangle(pos, 0, size, 16);
-    pen.setColor(TColor::BTNLIGHT);
-    pen.drawLine(pos,0,pos+size,0);
-    pen.setColor(TColor::BTNSHADOW);
-    pen.drawLine(pos,15,pos+size,15);
-  } else {
-    pen.fillRectangle(0, pos, 16, size);
-    pen.setColor(TColor::BTNLIGHT);
-    pen.drawLine(0,pos,0,pos+size);
-    pen.setColor(TColor::BTNSHADOW);
-    pen.drawLine(15,pos,15,pos+size);
-  }
-  
-  pen.setColor(0,0,0);
-  
-  int f = res/10;
-  
-  pos = (pos/f)*f;
-  for(unsigned i=pos; i<pos+size; i+=f) {
-    int y = 0;
-    if (i%10==0)
-      y = 10;
-    if (i%20==0)
-      y = 8;
-    if (i%100==0)
-      y = 2;
-    if (y!=0) {
-      if (!vertical)
-        pen.drawLine(i,16,i,y);
-      else
-        pen.drawLine(16,i,y,i);
-    }
-    if (y==2) {
-      char buffer[64];
-      snprintf(buffer, sizeof(buffer), "%lf", ((double)i/res));
-      if (!vertical)
-        pen.drawString(i+2, 0, buffer);
-      else
-        pen.drawString(0, i+2, buffer);
-    }
-  }
-}
-
 void
 TFigureEditor::paint()
 {
@@ -608,24 +530,23 @@ bar=!bar;
   paintCorner(scr);
   
   if (row_header_renderer) {
-//    TRectangle clip(0, visible.y, visible.x, visible.h);
-    TRectangle clip(visible.x, 0, visible.w, visible.y);
-    TRectangle dummy(0,0,getWidth(), getHeight());
-    scr.identity();
-    scr|=dummy;
-    scr&=clip;
-    scr.translate(visible.x+window->getOriginX(), 0);
-    row_header_renderer->render(scr, -window->getOriginX(), visible.w, mat);
-  }
-
-  if (col_header_renderer) {
     TRectangle clip(0, visible.y, visible.x, visible.h);
     TRectangle dummy(0,0,getWidth(), getHeight());
     scr.identity();
     scr|=dummy;
     scr&=clip;
     scr.translate(0, visible.y+window->getOriginY());
-    col_header_renderer->render(scr, -window->getOriginY(), visible.h, mat);
+    row_header_renderer->render(scr, -window->getOriginY(), visible.h, mat);
+  }
+
+  if (col_header_renderer) {
+    TRectangle clip(visible.x, 0, visible.w, visible.y);
+    TRectangle dummy(0,0,getWidth(), getHeight());
+    scr.identity();
+    scr|=dummy;
+    scr&=clip;
+    scr.translate(visible.x+window->getOriginX(), 0);
+    col_header_renderer->render(scr, -window->getOriginX(), visible.w, mat);
   }
 }
   
@@ -675,11 +596,11 @@ TFigureEditor::setLineColor(const TRGB &rgb)
   p = selection.begin();
   e = selection.end();
   while(p!=e) {
-    (*p)->line_color = line_color;
+    (*p)->setLineColor(line_color);
     p++;
   }
   if (gtemplate)
-    gtemplate->line_color = line_color;
+    gtemplate->setLineColor(line_color);
   window->invalidateWindow();
 }
 
@@ -687,31 +608,48 @@ void
 TFigureEditor::setFillColor(const TRGB &rgb)
 {
   fill_color = rgb;
+  filled = true;
   TFigureSet::iterator p,e;
   p = selection.begin();
   e = selection.end();
   while(p!=e) {
-    (*p)->fill_color = fill_color;
+    (*p)->setFillColor(fill_color);
     p++;
   }
   if (gtemplate)
-    gtemplate->fill_color = fill_color;
+    gtemplate->setFillColor(fill_color);
   window->invalidateWindow();
 }
 
 void
-TFigureEditor::setFilled(bool b)
+TFigureEditor::unsetFillColor()
 {
-  filled = b;
+  filled = false;
   TFigureSet::iterator p,e;
   p = selection.begin();
   e = selection.end();
   while(p!=e) {
-    (*p)->filled = b;
+    (*p)->unsetFillColor();
     p++;
   }
   if (gtemplate)
-    gtemplate->filled = b;
+    gtemplate->unsetFillColor();
+  window->invalidateWindow();
+}
+
+void
+TFigureEditor::setFont(const string &fontname)
+{
+  this->fontname = fontname;
+  TFigureSet::iterator p,e;
+  p = selection.begin();
+  e = selection.end();
+  while(p!=e) {
+    (*p)->setFont(fontname);
+    p++;
+  }
+  if (gtemplate)
+    gtemplate->setFont(fontname);
   window->invalidateWindow();
 }
 
@@ -1025,10 +963,14 @@ TFigureEditor::setCreate(TFigure *t)
     delete clone;
     return;
   }
-  gtemplate->line_color = line_color;
-  gtemplate->fill_color = fill_color;
-  gtemplate->filled     = filled;
+  gtemplate->setLineColor(line_color);
+  if (filled)
+    gtemplate->setFillColor(fill_color);
+  else
+    gtemplate->unsetFillColor();
+  gtemplate->setFont(fontname);
   gtemplate->removeable = true;
+  
   clearSelection();
   setOperation(OP_CREATE);
 }
@@ -1755,18 +1697,16 @@ TFigureEditor::findGadgetAt(int mx, int my)
 void
 TFigureEditor::adjustPane()
 {
-#if 1
   visible.set(0,0,getWidth(),getHeight());
 
   if (row_header_renderer) {
     visible.x = row_header_renderer->getSize();
     visible.w -= visible.x;
   }
-  if (true /*col_header_renderer*/) {
-    visible.y = 16; // col_header_renderer->getHeight();
+  if (col_header_renderer) {
+    visible.y = col_header_renderer->getSize();
     visible.h -= visible.y;
   }
-#endif
 }
 
 void
@@ -1944,6 +1884,8 @@ TFigureEditor::TColorSelector::mouseLDown(int x, int y, unsigned modifier)
     invalidateWindow();
   }
   gedit->setLineColor(linecolor);
-  gedit->setFillColor(fillcolor);
-  gedit->setFilled(filled);
+  if (filled)
+    gedit->setFillColor(fillcolor);
+  else
+    gedit->unsetFillColor();
 }

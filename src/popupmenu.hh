@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -14,26 +14,23 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+ * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307,  USA
  */
 
-#ifndef TPushButton
-#define TPushButton TPushButton
+#ifndef _TOAD_POPUPMENU_HH
+#define _TOAD_POPUPMENU_HH
 
-#include <toad/buttonbase.hh>
+#include <toad/menuhelper.hh>
 
 namespace toad {
 
-class TPushButton: 
-  public TButtonBase
+class TPopupMenu:
+  public TMenuHelper   
 {
   public:
-    TPushButton(TWindow *p, const string &t)
-      :TButtonBase(p,t) { }
-
-  protected:
-    void paint();
+    TPopupMenu(TWindow *parent, const string &title);
+    void open();
 };
 
 } // namespace toad

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,8 +91,8 @@ class TBitmap:
     static bool getInputFilter(TFileDialog&);
     static bool getOutputFilter(TFileDialog&);
 
-    static void open();
-    static void close();
+    static void initialize();
+    static void terminate();
     
     void setDither(EBitmapDither);
     void setZoom(int z);

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,8 @@ const double TFigure::RANGE;
 const double TFigure::INSIDE;
 #endif
 
-void TFigure::initStorage()
+void
+TFigure::initialize()
 {
   TObjectStore& serialize(toad::getDefaultStore());
   serialize.registerObject(new TRGB());
@@ -90,7 +91,8 @@ void TFigure::initStorage()
   serialize.registerObject(new TFigureModel());
 }
 
-void TFigure::loseStorage()
+void
+TFigure::terminate()
 {
   toad::getDefaultStore().unregisterAll();
 }
@@ -105,6 +107,11 @@ TFigure::TFigure()
 }
 
 TFigure::~TFigure()
+{
+}
+
+void
+TFigure::setFont(const string&)
 {
 }
 

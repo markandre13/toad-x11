@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,11 @@
  * \file operation.cc
  * \todo
  *   \li
- *     rotate fonts
+ *     Xft fonts are too big
+ *   \li
+ *     Xft fonts are always black
+ *   \li
+ *     better rendering of rotated X11 fonts
  *   \li
  *     rotate bitmaps
  *   \li
@@ -31,8 +35,6 @@
  *     improve quality of rotated arcs
  *   \li
  *     implement shear
- *   \li
- *     move TMatrix2D definition into a separate header file
  *   \li
  *     make TMatrix2D map virtual in for more complicated transformation
  *   \li
@@ -50,6 +52,7 @@
 #include <X11/Xutil.h>
 #endif
 
+
 #include <assert.h>
 #include <cstring>
 #include <cmath>
@@ -62,6 +65,19 @@
 #include <toad/window.hh>
 #include <toad/region.hh>
 #include <iostream>
+
+#ifdef HAVE_LIBXFT
+
+#ifdef _XFT_NO_COMPAT_
+#undef _XFT_NO_COMPAT_
+#endif
+
+#include <X11/Xft/Xft.h>
+#ifdef FC_VERSION
+#define HAVE_FONTCONFIG
+#endif
+
+#endif
 
 using namespace toad;
 
@@ -242,11 +258,9 @@ TPen::setMatrix(double a11, double a12, double a21, double a22, double tx, doubl
 void
 TPen::push()
 {
-  if (mat) {
-    TMatrix2D *mnew = new TMatrix2D(*mat);
-    mnew->next = mat;
-    mat = mnew;
-  }
+  TMatrix2D *mnew = new TMatrix2D(*mat);
+  mnew->next = mat;
+  mat = mnew;
 }
 
 void
@@ -592,10 +606,10 @@ TPen::vdrawCircle(int x, int y, int w, int h)
   } else {
     double dw, dh;
     mat->map(w,h, &dw, &dh);
-    unsigned long m = pow(max(dw, dh), 0.25);
+    unsigned long m = static_cast<unsigned long>(pow(max(dw, dh), 0.25));
     ++m;
     if (m<3) m = 3;
-    if (m>14) m = 14; // maximum will be 102948 points
+    if (m>14) m = 14; // maximum will be 4*102948 points
     unsigned long n = ( ((PIV2<<m) >> 16)+1 )*4;
     XPoint pts[n];
     XPoint *p = pts;
@@ -618,10 +632,10 @@ TPen::vfillCircle(int x, int y, int w, int h)
     XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
     XDrawArc(x11display, x11drawable, o_gc, x, y,w,h, 0,360*64);
   } else {
-    int m = pow(max(w, h), 0.25);
+    unsigned long m = static_cast<unsigned long>(pow(max(w, h), 0.25));
     ++m;
     if (m<3) m = 3;
-    if (m>16) m = 15;
+    if (m>14) m = 14; // maximum will be 4*102948 points
   
     int n = ( ((PIV2<<m) >> 16)+1 )*4;
     XPoint pts[n];
@@ -1005,30 +1019,100 @@ TPen::getHeight() const
  * DrawString is a little bit slower than FillString.
  */
 void
-TPen::drawString(int x,int y, const string &str)
+TPen::drawString(int x,int y, const string &str, bool transparent)
 {
-  TPen::drawString(x,y,str.c_str(),(int)str.size());
+  TPen::drawString(x,y,str.c_str(),(int)str.size(), transparent);
 }
 
 void
-TPen::drawString(int x,int y, const char *str, int strlen)
+TPen::drawString(int x,int y, const char *str, int strlen, bool transparent)
 {
 #ifdef __X11__
-  if (!str)
-    return;
-  y+=getAscent();
-  if (mat) {
-    mat->map(x, y, &x, &y);
+  font->createFont(mat);
+  switch(font->getRenderType()) {
+
+    case TFont::RENDER_X11:
+      if (!font->getX11Font()) {
+        cout << "no X11 font found" << endl;
+        return;
+      }
+//      cout << "setting X11 font" << endl;
+      XSetFont(x11display, o_gc, font->getX11Font());
+      y+=font->getAscent();
+
+      if (!transparent && using_bitmap) {
+        XSetFillStyle(x11display, o_gc, FillSolid);
+      }
+      
+      if (!mat) {
+        if (transparent)
+          XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
+        else
+          XDrawImageString(x11display, x11drawable, o_gc, x,y, str, strlen);
+      } else {
+        int x2, y2;
+        const char *p = str;
+        int len=0;
+        while(*p) {
+          char buffer[2];
+          buffer[0]=*p;
+          buffer[1]=0;
+
+          int direction, fasc, fdesc;
+
+          XCharStruct xcs1;
+          XTextExtents(font->x11fs, buffer, 1, &direction, &fasc, &fdesc, &xcs1);
+          mat->map(x,
+              y,
+            &x2, &y2);
+          if (transparent)
+            XDrawString(x11display, x11drawable, o_gc, x2,y2, buffer, 1);
+          else
+            XDrawImageString(x11display, x11drawable, o_gc, x2,y2, buffer, 1);
+          x+=font->x11scale * xcs1.width;
+          ++len;
+          ++p;
+        }
+      }
+
+      if (!transparent && using_bitmap) {
+        XSetFillStyle(x11display, o_gc, FillTiled);
+      }
+
+      break;
+
+#ifdef HAVE_LIBXFT
+    case TFont::RENDER_FREETYPE: {
+      y+=font->getAscent();
+      if (mat)
+        mat->map(x, y, &x, &y);
+      XftColor color;
+      color.color.red   = (o_color.r << 8) | o_color.r;
+      color.color.green = (o_color.g << 8) | o_color.g;
+      color.color.blue  = (o_color.b << 8) | o_color.b;
+      color.color.alpha = 0xffff;
+      if (!xftdraw) {
+        *(const_cast<XftDraw**>(&xftdraw)) = XftDrawCreate(x11display, x11drawable, x11visual, x11colormap);
+        if (wnd)
+          XftDrawSetClip(xftdraw, wnd->getUpdateRegion()->x11region);
+#warning "clipping required!!!"
+      }
+      XftDrawString8(xftdraw, &color, font->getXftFont(), x,y, (XftChar8*)str, strlen);
+      } break;
+#endif
   }
-  XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
 #endif
 
 #ifdef __WIN32__
   if (mat) {
     mat->map(x, y, &x, &y);
   }
-  
-  ::SetBkMode(w32hdc, TRANSPARENT);
+
+  if (transparent) {  
+    ::SetBkMode(w32hdc, TRANSPARENT);
+  } else {
+    ::SetBkMode(w32hdc, OPAQUE);
+  }
   ::TextOut(w32hdc, x,y, str, strlen);
 //  ::ExtTextOut(w32hdc, x, y, 0, 0, str, strlen, 0);
 //  RECT r;
@@ -1040,39 +1124,70 @@ TPen::drawString(int x,int y, const char *str, int strlen)
 #endif
 }
 
-/**
- * FillString will fill the background with the current back color when
- * drawing the string.<BR>
- * The back color can be set with SetBackColor.<BR>
- * Please note that FillString doesn't support color dithering and will
- * use the nearest color TOAD was able to allocate.<BR>
- * Maybe i'm going to rename this method into `PrintString' since
- * `FillString' is really a very idiotic name.
- */
-void
-TPen::fillString(int x,int y, const string &str)
+namespace {
+
+struct TWord
 {
-  TPen::fillString(x,y,str.c_str(),(int)str.size());
-}
+  const char* pos;
+  unsigned bytes; 
+  unsigned len;   
+  unsigned linefeeds;
+};
 
 void
-TPen::fillString(int x,int y, const char *str, int strlen)
+count_words_and_lines(const char *text, unsigned* word_count, unsigned* min_lines)
 {
-  if (!str)
-    return;
-  if (mat) {
-    x+=mat->tx;
-    y+=mat->ty;
+  *word_count = 0;
+  *min_lines = 1;
+  const char* ptr = text;
+  bool word_flag = false;
+  while(*ptr) {
+    if(!word_flag && *ptr!=' ' && *ptr!='\n') {
+      word_flag=true;
+      (*word_count)++;
+    } else 
+    if (word_flag && (*ptr==' ' || *ptr=='\n'))
+      word_flag=false;   
+    if (*ptr=='\n')
+      (*min_lines)++;
+    ptr++;
   }
-#ifdef __X11__
-  XDrawImageString(x11display, x11drawable, o_gc, x,y+getAscent(), str, strlen);
-#endif
-
-#ifdef __WIN32__
-  ::SetBkMode(w32hdc, OPAQUE);
-  ::TextOut(w32hdc, x,y, str, strlen);
-#endif
 }
+
+TWord*
+make_wordlist(const TFont *font, const char *text, unsigned word_count)
+{
+  TWord* word = new TWord[word_count];
+
+  unsigned j,i = 0;
+  const char* ptr = text;
+  bool word_flag = false;
+  unsigned lf=0;
+  while(*ptr) {
+    if(!word_flag && *ptr!=' ' && *ptr!='\n') {
+      word[i].pos = ptr;
+      j = 0;
+      word_flag=true;
+    }
+    ptr++;
+    j++;
+    if (word_flag && (*ptr==' ' || *ptr=='\n' || *ptr==0)) {
+      word[i].bytes     = j;
+      word[i].len       = font->getTextWidth(word[i].pos,j);
+      word[i].linefeeds = lf;
+      word_flag=false;
+//      printf("word %2u, bytes=%i\n",i,j);
+      i++;
+      lf=0;
+    }
+    if(*ptr=='\n')
+      lf++;
+  }
+//  printf("word_count=%i\n",word_count);
+  return word;
+}
+
+} // namespace
 
 /**
  * Draw string 'str' in multiple lines, reduce spaces between words to one 
@@ -1089,36 +1204,68 @@ TPen::drawTextWidth(int x,int y,const string &str, unsigned width)
     x+=mat->tx;
     y+=mat->ty;
   }
-  
+
   // 1st step: count words and lines
   unsigned word_count, min_lines;
-  font->count_words_and_lines(text, &word_count, &min_lines);
+  count_words_and_lines(text, &word_count, &min_lines);
   if (!word_count) return 0;
   
   // 2nd step: create a word list
-  TFont::TWord* word = font->make_wordlist(text, word_count);
+  TWord* word = make_wordlist(font, text, word_count);
   
   // 3rd step: output
   unsigned blank_width = getTextWidth(" ",1);
   unsigned line_len = 0;
   unsigned word_of_line = 1;
   
-  for(i=0; i<word_count; i++)
-    {
-      if ((line_len+word[i].len>width && i!=0) || word[i].linefeeds)
-  {
-    if (word[i].linefeeds)
-      y+=getHeight()*word[i].linefeeds;
-    else
-      y+=getHeight();
-    line_len = 0;
-    word_of_line = 0;
-  }
-      drawString(x+line_len,y, word[i].pos, word[i].bytes);
-      line_len+=word[i].len+blank_width;
-      word_of_line++;
+  for(i=0; i<word_count; i++) {
+    if ((line_len+word[i].len>width && i!=0) || word[i].linefeeds) {
+      if (word[i].linefeeds)
+        y+=getHeight()*word[i].linefeeds;
+      else
+        y+=getHeight();
+      line_len = 0;
+      word_of_line = 0;
     }
+    drawString(x+line_len,y, word[i].pos, word[i].bytes);
+    line_len+=word[i].len+blank_width;
+    word_of_line++;
+  }
   
   delete[] word;
   return y+getHeight();
+}
+
+int
+TPen::getHeightOfTextFromWidth(TFont *font, const string &text, int width)
+{
+  unsigned i, y=font->getHeight();
+
+  // 1st step: count number of words and lines
+  unsigned word_count, min_lines;
+  count_words_and_lines(text.c_str(), &word_count, &min_lines);
+  if (!word_count) return 0;
+
+  // 2nd step: collection information on each word
+  TWord* word = make_wordlist(font, text.c_str(), word_count);
+  
+  // 3rd step: output
+  unsigned blank_width = font->getTextWidth(" ",1);
+  unsigned line_len = 0;
+  unsigned word_of_line = 1;
+  
+  for(i=0; i<word_count; i++) {
+    if ((line_len+word[i].len>width && i!=0) || word[i].linefeeds) {
+      if (word[i].linefeeds)
+        y+=font->getHeight()*word[i].linefeeds;
+      else
+        y+=font->getHeight();
+      line_len = 0;
+      word_of_line = 0;
+    }
+    line_len+=word[i].len+blank_width;
+    word_of_line++;
+  }
+  delete[] word;
+  return y+font->getHeight();
 }

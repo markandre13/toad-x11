@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,10 @@ using namespace toad;
 
 #define DBM_FEEL(A)
 #define DBM(A)
+
+// debugging code added to implement popup menus
+#define DBM2(X)
+
 
 #define TOAD_WARN(MSG) \
   cout << "toad warning (file \"" << __FILE__ << "\", line " << __LINE__ << ')' << endl \
@@ -154,14 +158,28 @@ TMenuHelper::~TMenuHelper()
  *
  * This one is also responsible to create TMenuButtons.
  */
+
 void 
 TMenuHelper::resize()
 {
-  if (!isRealized())
+DBM2(cerr << "+ TMenuHelper::resize\n");
+  if (!isRealized()) {
+    DBM2(cerr << "  isn't realized yet, forget it\n";)
     return;
+  }
   menu_width_icon = menu_width_text = menu_width_short = menu_width_sub = 0;
   TInteractor *i;
   TWindowEvent we;
+
+#if 1
+  i = getFirstChild();
+  while(i) {
+    TMenuButton *mb = dynamic_cast<TMenuButton*>(i);
+    assert(mb!=NULL);
+    mb->adjustButton();
+    i = i->getNextSibling();
+  }
+#else
   we.window = 0;
   we.type   = TWindowEvent::ADJUST;
   i = getFirstChild();
@@ -169,6 +187,7 @@ TMenuHelper::resize()
     i->windowEvent(we);
     i = i->getNextSibling();
   }
+#endif
 
   if (vertical) {
     // vertical
@@ -187,6 +206,7 @@ TMenuHelper::resize()
       node = node->next;
     }
     rw = 3+menu_width_icon+8+menu_width_text+8+menu_width_short+8;
+DBM2(cerr << "  vertical setSize " << rw << ", " << y << endl;)
     setSize(rw, y);
     node = root.down;
     y=0;
@@ -203,13 +223,24 @@ TMenuHelper::resize()
     //------------
     TNode *node = root.down;
     int x=0, y=0, rh = 0;
+DBM2(
+if (root.down==0) {
+  cerr << "  root.down = 0\n";
+  rh = 16;
+}
+)
     while(node!=NULL) {
+DBM2(cerr << "    check node '" << node->getTitle() << "'\n";)
+
       if (node->isAvailable()) {
+DBM2(cerr << "      is available: create window\n";)
         node->createWindowAt(this);
       } else {
+DBM2(cerr << "      isn't available: delete window \n";)
         node->deleteWindow();
       }
       if (node->isRealized()) {
+DBM2(cerr << "      node has a window\n";)
         if (x > 0 && x+node->getWidth() > getWidth()) {
           x=0;
           y+=rh;
@@ -219,15 +250,30 @@ TMenuHelper::resize()
         x+=node->getWidth();
         if (rh < node->getHeight())
           rh = node->getHeight();
+      } else {
+DBM2(cerr << "      node has no window\n";)
       }
       node = node->next;
     }
+DBM2(cerr << "  TMenuHelper::resize " << __LINE__ << endl;);
     setSize(TSIZE_PREVIOUS, y+rh);
+DBM2(cerr << "  horizontal setSize TSIZE_PREVIOUS " << y << "+" << rh << endl;)
   }
+DBM2(cerr << "- TMenuHelper::resize\n");
 }
 
 void TMenuHelper::adjust()
 {
+}
+
+void
+TMenuHelper::closeRequest()
+{
+DBM2(cerr << "TMenuHelper received closeRequest" << endl;)
+  if (bPopup) {
+    DBM2(cerr << "  it's a popup, closing it\n" << endl;)
+    destroyWindow();
+  }
 }
 
 /**
@@ -503,21 +549,30 @@ TMenuHelper::TNode::isEnabled() const
 bool 
 TMenuHelper::TNode::isAvailable() const
 {
+DBM2(cerr << "      " << __PRETTY_FUNCTION__ << endl;)
   if (down) {
+DBM2(cerr << "        is down\n";)
     TNode *p = down;
     while(p) {
-      if (p->type!=SEPARATOR && p->isAvailable())
+      if (p->type!=SEPARATOR && p->isAvailable()) {
         return true;
+DBM2(cerr << "        got available\n";)
+      }
       p = p->next;
     }
+DBM2(cerr << "        not available\n";)
     return false;
   }
 
   if (type==SEPARATOR)
     return true;
     
-  if (actions.empty())
+  if (actions.empty()) {
+DBM2(cerr << "        no actions -> not available\n";)
     return false;
+//return true;
+  }
+DBM2(cerr << "        actions -> available\n";)
   return true;
 }
 
@@ -659,7 +714,7 @@ TMenuHelper::TNode::createWindowAt(TMenuHelper *parent)
         break;
 #endif
     }
-    winarray[i]->adjust();
+    winarray[i]->adjustButton();
     winarray[i]->createWindow();
     
     if (vertical) {
@@ -859,7 +914,7 @@ TMenuLayout::~TMenuLayout()
 void
 TMenuLayout::arrange()
 {
-// cerr << "TMenuLayout::arrange " << this << ", " << window << endl;
+DBM2(cerr << "TMenuLayout::arrange " << this << ", " << window << endl;)
   if (!window)
     return;
 
@@ -868,44 +923,54 @@ TMenuLayout::arrange()
     cerr << "error: TMenuLayout isn't assigned to a TMenuHelper object" << endl;
     return;
   }
-// cerr << "TMenuLayout::arrange '" << menu->getTitle() << "'\n";
+DBM2(cerr << "TMenuLayout::arrange '" << menu->getTitle() << "'\n";)
   
   menu->root.clear();
   layout2nodes(entries.begin(), entries.end(), &menu->root);
   
-  TActionStorage::iterator p(TAction::actions.begin()), e(TAction::actions.end());
-
+DBM2(cerr << "  find top level window of window '" << window->getTitle() << "'\n";)
   TWindow *toplvl = window;
-  while(!toplvl->bShell && toplvl->getParent()) {
+  while((toplvl->bPopup || !toplvl->bShell) && toplvl->getParent()) {
     toplvl = toplvl->getParent();
   }
+DBM2(cerr << "  okay, it's '" << toplvl->getTitle() << "'\n";)
 
+  TActionStorage::iterator p(TAction::actions.begin()), e(TAction::actions.end());
   while(p!=e) {
-//cout << "  adding node " << (*p)->getTitle() << endl;
+DBM2(cerr << "  create node " << (*p)->getTitle() << endl;)
     TMenuHelper::TNode *node = insert_node((*p)->getTitle(), &menu->root.down, &menu->root);
     switch(scope) {
       case GLOBAL:
+DBM2(cerr << "    global menubar, always add\n";)
         node->addAction(*p);
         break;
       case TOPLEVEL: {
+DBM2(cerr << "    toplevel menubar, check that action is a child\n";)
           TInteractor *ptr = *p;
           while(ptr) {
             TWindow *w = dynamic_cast<TWindow*>(ptr);
             if (w) {
+DBM2(cerr << "      found window '" << w->getTitle() << "'\n";)
               if (w->bShell || !w->getParent()) {
-                if (toplvl == w)
+DBM2(cerr << "       it's a shell window or has no other parent\n";)
+                if (toplvl == w) {
+DBM2(cerr << "         and it's the top level window\n";)
                   node->addAction(*p);
+                } else {
+DBM2(cerr << "         but it's not the top level window\n";)
+                }
                 break;
               }
             }
+DBM2(cerr << "      go up to parent\n";)
             ptr = ptr->getParent();
           }
         } break;
     }
     ++p;
   }
-//  printTree(&menu->root);
-//cout << "TMenuLayout::arrange done" << endl;
+//printTree(&menu->root);
+DBM2(cout << "TMenuLayout::arrange done" << endl << endl << endl;)
   menu->resize();
 }
 

@@ -19,6 +19,7 @@
  */
 
 #include <toad/pointer.hh>
+#include <toad/stacktrace.hh>
 
 #define DBM(X)
 
@@ -92,6 +93,7 @@ TSmartObject::operator new(std::size_t n, void* p) {
 TSmartObject::~TSmartObject() {
   if (_toad_ref_cntr!=0 && _toad_ref_cntr!=nodelete) {
     cerr << "warning: object with pending references destroyed" << endl;
+    printStackTrace();
     // Another idea would be to find all associated smart pointers
     // and set 'em to NULL or to throw an exception
   }

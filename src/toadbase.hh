@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,7 +44,8 @@
     typedef GC _TOAD_GC;
     typedef Drawable _TOAD_DRAWABLE;
     typedef Window _TOAD_WINDOW;
-    typedef XFontStruct* _TOAD_FONT;
+    typedef XFontStruct* _TOAD_FONTSTRUCT;
+    typedef Font _TOAD_FONT;
     typedef Region _TOAD_REGION;
   } // namespace toad
 #endif
@@ -55,7 +56,8 @@
     typedef void* _TOAD_GC;
     typedef unsigned long _TOAD_DRAWABLE;
     typedef unsigned long _TOAD_WINDOW;
-    typedef void* _TOAD_FONT;
+    typedef void* _TOAD_FONTSTRUCT;
+    typedef unsigned long _TOAD_FONT;
     typedef struct _XRegion* _TOAD_REGION;
   } // namespace toad
 #endif
@@ -92,15 +94,9 @@
 
 namespace toad {
 
-
 using namespace std; // use std within namesapce toad
 
 class TCommand;
-
-// this was part of TOAD some versions ago but i'm going
-// to introduce it again
-#define TOAD_XLIB_MTLOCK()
-#define TOAD_XLIB_MTUNLOCK()
 
 void debug_mem_start();
 void debug_mem_end();
@@ -110,7 +106,6 @@ extern int argc;
 extern char ** envv;
 
 extern void* top_address;
-  
 
 class TWindow;
 class TBitmap;
@@ -167,6 +162,7 @@ enum EWindowPlacement {
   PLACE_PARENT_CENTER,
   PLACE_PARENT_RANDOM,
   PLACE_MOUSE_POINTER,
+  PLACE_CORNER_MOUSE_POINTER,
   PLACE_PULLDOWN,
   PLACE_TOOLTIP
 };
@@ -211,8 +207,8 @@ class TOADBase
 
     // `class constructor/destructor'
     //-------------------------------
-    static bool initTOAD();
-    static void closeTOAD();
+    static bool initialize();
+    static void terminate();
     static void initColor();
     static void initIO(int);
     static void initThreads();

@@ -22,10 +22,15 @@
 #define TPen TPen
 
 #include <toad/os.hh>
+#include <toad/config.h>
 #include <toad/font.hh>
 #include <toad/color.hh>
 #include <toad/bitmap.hh>
 #include <toad/matrix2d.hh>
+
+#ifdef HAVE_LIBXFT
+typedef struct _XftDraw XftDraw;
+#endif
 
 namespace toad {
 
@@ -99,15 +104,9 @@ class TPenBase:
     virtual void setLineColor(TColor::ESystemColor c) { setLineColor(TColor(c)); }
     virtual void setLineColor(TColor::EColor16 c) { setLineColor(TColor(c)); }
 
-    virtual void setBackColor(const TColor&) = 0;
-    virtual void setBackColor(byte r, byte g, byte b) { setBackColor(TColor(r,g,b)); }
-    virtual void setBackColor(const TRGB &c) { setBackColor(TColor(c.r,c.g,c.b)); }
-    virtual void setBackColor(TColor::ESystemColor c) { setBackColor(TColor(c)); }
-    virtual void setBackColor(TColor::EColor16 c) { setBackColor(TColor(c)); }
-
     // more parameters
     //-----------------------
-    virtual void setFont(TFont*) = 0;
+    virtual void setFont(const string&) = 0;
     virtual void setMode(EPenMode) = 0;
     virtual void setLineWidth(int) = 0;
     virtual void setLineStyle(EPenLineStyle) = 0;
@@ -268,10 +267,9 @@ class TPenBase:
     virtual int getAscent() const = 0;
     virtual int getDescent() const = 0;
     virtual int getHeight() const = 0;
-    virtual void drawString(int x, int y, const char*, int len) = 0;
-    virtual void drawString(int x, int y, const string&) = 0;
-    virtual void fillString(int x, int y, const char*, int len) = 0;
-    virtual void fillString(int x, int y, const string&) = 0;
+
+    virtual void drawString(int x, int y, const char*, int len, bool transparent=true) = 0;
+    virtual void drawString(int x, int y, const string&, bool transparent=true) = 0;
     virtual int drawTextWidth(int x, int y, const string &text, unsigned width) = 0;
     // void drawTextAspect(int x,int y,const char* text,double xa,double ya);
 
@@ -338,15 +336,16 @@ class TPen:
     void setLineColor(TColor::ESystemColor c) { setLineColor(TColor(c)); }
     void setLineColor(TColor::EColor16 c) { setLineColor(TColor(c)); }
 
-    void setBackColor(const TColor&);
-    void setBackColor(byte r, byte g, byte b) { setBackColor(TColor(r,g,b)); }
-    void setBackColor(const TRGB &c) { setBackColor(TColor(c.r,c.g,c.b)); }
-    void setBackColor(TColor::ESystemColor c) { setBackColor(TColor(c)); }
-    void setBackColor(TColor::EColor16 c) { setBackColor(TColor(c)); }
-
     // more parameters
     //-----------------------
+private:
     void setFont(TFont*);
+public:
+    static void TPen::initialize();
+    static void TPen::terminate();
+
+    void setFont(const string &fontname);
+    static TFont* lookupFont(const string &fontname);
     void setMode(EPenMode);
     void setLineWidth(int);
     void setLineStyle(EPenLineStyle);
@@ -428,11 +427,10 @@ class TPen:
     int getAscent() const;
     int getDescent() const;
     int getHeight() const;
-    void drawString(int x, int y, const char*, int len);
-    void drawString(int x, int y, const string&);
-    void fillString(int x, int y, const char*, int len);
-    void fillString(int x, int y, const string&);
+    void drawString(int x, int y, const char*, int len, bool transparent=true);
+    void drawString(int x, int y, const string&, bool transparent=true);
     int drawTextWidth(int x, int y, const string &text, unsigned width);
+    static int getHeightOfTextFromWidth(TFont *font, const string &text, int width);
     // void drawTextAspect(int x,int y,const char* text,double xa,double ya);
 
     // bitmap
@@ -485,6 +483,11 @@ class TPen:
     #ifdef __X11__    
     _TOAD_GC o_gc, f_gc;
     _TOAD_DRAWABLE x11drawable; // either window or pixmap
+    
+    #ifdef HAVE_LIBXFT
+    XftDraw *xftdraw;
+    #endif
+    
     void _setLineAttributes();
     #endif
     

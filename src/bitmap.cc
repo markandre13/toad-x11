@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,9 +72,8 @@ using namespace toad;
  *     a bad idea or I was to stupid to implement it
  */
  
-// Open
-//-----------------------------------------------------------------------------
-void TBitmap::open()
+void
+TBitmap::initialize()
 {
   // install import/export filters
   //-------------------------------
@@ -99,9 +98,8 @@ void TBitmap::open()
 
 static TBitmapFilter* filter_list = NULL;
 
-// Close
-//----------------------------------------------------------------------------
-void TBitmap::close()
+void
+TBitmap::terminate()
 {
   // remove import/export filters
   //------------------------------  

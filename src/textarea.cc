@@ -174,7 +174,7 @@ TTextArea::TPreferences::TPreferences()
   tabwidth = 8;
   singleline = false;
   password = false;
-  font = new TFont(TFont::TYPEWRITER, TFont::PLAIN, 12);
+  fontname = "monospace-12";
 }
 
 TTextArea::TPreferences::~TPreferences()
@@ -441,8 +441,9 @@ DBM(cout << "LEAVE keyDown" << endl;
 void
 TTextArea::mouseLDown(int x, int y, unsigned)
 {
-  int h = preferences->getFont()->getHeight();
-  int w = preferences->getFont()->getTextWidth("x");
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  int h = font->getHeight();
+  int w = font->getTextWidth("x");
   x /= w;
   y /= h;
   setCursor(x + _tx, y + _ty);
@@ -684,7 +685,8 @@ TTextArea::adjustScrollbars()
   bool need_vscroll = false;
 
   // vertical visible lines
-  int vvl = visible.h/preferences->getFont()->getHeight();
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  int vvl = visible.h/font->getHeight();
   if (vvl<model->nlines)
     need_vscroll = true;
 
@@ -758,9 +760,8 @@ TTextArea::paint()
   pen &= visible;
 
   pen.translate(2,2);
-  
   pen.setFont(preferences->getFont());
-  
+
   const string &data = model->getValue();
   
   // paint the lines
@@ -817,23 +818,23 @@ TTextArea::paint()
       bool part=false;
       if (_bos <= bol && eol <= _eos) {
         // inside selection
-        pen.setColor(255,255,255);
-        pen.setBackColor(0,0,0);
+        pen.setLineColor(255,255,255);
+        pen.setFillColor(0,0,0);
       } else if (eol < _bos || bol > _eos) {
         // outside selection
-        pen.setColor(0,0,0);
-        pen.setBackColor(255,255,255);
+        pen.setLineColor(0,0,0);
+        pen.setFillColor(255,255,255);
       } else {
-        pen.setColor(0,0,0);
-        pen.setBackColor(255,255,255);
+        pen.setLineColor(0,0,0);
+        pen.setFillColor(255,255,255);
         part = true;
       }
       
       if (_tx==0) {
-        pen.fillString(0,y,line);
+        pen.drawString(0,y,line,false);
       } else {
         if (_tx < line.size())
-          pen.fillString(0,y,line.substr(_tx));
+          pen.drawString(0,y,line.substr(_tx),false);
       }
       
       if (part) {
@@ -880,9 +881,9 @@ TTextArea::paint()
         }
 // cout << "x   = " << x << endl << "len = " << len << endl;
         if (len>0 && pos<line.size()) {
-          pen.setColor(255,255,255);
-          pen.setBackColor(0,0,0);
-          pen.fillString(x, y, line.substr(pos, len));
+          pen.setLineColor(255,255,255);
+          pen.setFillColor(0,0,0);
+          pen.drawString(x, y, line.substr(pos, len), false);
         }
       }
       
@@ -909,7 +910,7 @@ TTextArea::paint()
 void
 TTextArea::_invalidate_line(unsigned y, bool statusChanged)
 {
-  int h = preferences->getFont()->getHeight();
+  int h = TPen::lookupFont(preferences->getFont())->getHeight();
   invalidateWindow(visible.x, visible.y+y * h, visible.w, h);
   if (statusChanged)
     sigStatus();
@@ -1142,7 +1143,7 @@ void
 TTextArea::_page_down()
 {
   MARK
-  int h = visible.h / preferences->getFont()->getHeight();
+  int h = visible.h / TPen::lookupFont(preferences->getFont())->getHeight();
   _cursor_down(h);
 }
 
@@ -1150,7 +1151,7 @@ void
 TTextArea::_page_up()
 {
   MARK
-  int h = visible.h / preferences->getFont()->getHeight();
+  int h = visible.h / TPen::lookupFont(preferences->getFont())->getHeight();
   _cursor_up(h);
 }
 
@@ -1213,8 +1214,9 @@ void
 TTextArea::_catch_cursor()
 {
   MARK
-  int h = preferences->getFont()->getHeight();
-  int w = preferences->getFont()->getTextWidth("X");
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  int h = font->getHeight();
+  int w = font->getTextWidth("X");
   int th = (visible.h-h+1) / h;
   int tw = (visible.w-w+1) / w;
 
@@ -1262,7 +1264,7 @@ TTextArea::_scroll_down(unsigned n)
   _ty+=n;
   if (vscroll)
     vscroll->setValue(_ty);
-  scrollRectangle(visible, 0, -preferences->getFont()->getHeight()*n);
+  scrollRectangle(visible, 0, -TPen::lookupFont(preferences->getFont())->getHeight()*n);
 }
 
 void
@@ -1277,7 +1279,7 @@ TTextArea::_scroll_up(unsigned n)
   _ty-=n;
   if (vscroll)
     vscroll->setValue(_ty);
-  scrollRectangle(visible, 0, preferences->getFont()->getHeight()*n);
+  scrollRectangle(visible, 0, TPen::lookupFont(preferences->getFont())->getHeight()*n);
 }
 
 void
@@ -1353,9 +1355,10 @@ TTextArea::setCursor(unsigned x, unsigned y)
   DBM(cout << "x, y = " << x << ", " << y << endl;)
     
   _invalidate_line(_cy);
-    
-  int wx = visible.w / preferences->getFont()->getTextWidth("x");
-  int wy = visible.h / preferences->getFont()->getHeight();
+  
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  int wx = visible.w / font->getTextWidth("x");
+  int wy = visible.h / font->getHeight();
 
 #if 0
 cout << "screen position is at " << x << ", " << y << endl;

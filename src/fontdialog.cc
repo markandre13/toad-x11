@@ -61,8 +61,9 @@ using namespace toad;
 // - copy 'em to /usr/X11R6/lib/X11/fonts/TrueType/
 // - run 'ttmkfdir > fonts.scale' inside this directory
 // - add the module "xtt" or "freetype" to your XF86Config file
-//   (the later is faster but seems to fail for 180°, while the
-//   first seems to fail around 90° and 270°)
+//   (the later is faster but seems to fail for 180°, which is also
+//   true for ordinary X11(R6) rotated fonts while the first seems to fail
+//   around 90° and 270°)
 
 // antialiased fonts
 // - xterm -fa 'Andale Mono' -fs 14
@@ -1318,7 +1319,7 @@ TFontDialog::paint()
 //  pen.rotate(15);
 
   XftDraw *xftdraw = XftDrawCreate(x11display, pen.x11drawable, x11visual, x11colormap);
-  XftDrawSetClip(xftdraw, getUpdateRegion()->x11region);
+  XftDrawSetClip(xftdraw, wnd->getUpdateRegion()->x11region);
 
   drawString(pen, font, xftdraw, 0, 0, "abcxyz ABCXYZ 123 `'΄!?${}. αδζηλί ΒΔΖΗΛ");
 

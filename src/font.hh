@@ -22,12 +22,24 @@
 #define TFont TFont
 
 #include <toad/os.hh>
+#include <toad/config.h>
 #include <toad/toadbase.hh>
+#include <toad/matrix2d.hh>
 #include <toad/pointer.hh>
 
-namespace toad {
+#include <fontconfig/fontconfig.h>
 
-class TPen;
+#if ( FC_VERSION < 20200 )
+  #warning "Fontconfig 2.2.0 or higher, ie. from the CVS at freedesktop.org, is required."
+#endif
+
+// #include <toad/tablemodels.hh>
+
+#ifdef HAVE_LIBXFT    
+typedef struct _XftFont XftFont;
+#endif
+
+namespace toad {
 
 class TFont:
   public TSmartObject, public TOADBase
@@ -35,29 +47,51 @@ class TFont:
   friend class TPen;
   
   public:
-    enum EFamily
-    {
-      SANS=0, SANSSERIF=0,
-      SERIF=1, 
-      TYPEWRITER=3
-    };
-    enum EStyle
-    {
-      PLAIN = 0, 
-      REGULAR = 0,
-      BOLD = 1,
-      ITALIC = 2,
-      BOLD_ITALIC = 3,
-      OBLIQUE = 4,
-      BOLD_OBLIQUE = 5
-    };
     TFont();
-    TFont(EFamily,EStyle,int);
-    TFont(const string &family, EStyle, int);
-    void setFont(const string &x11fontname);
-    void setFont(EFamily,EStyle,int);
-    void setFont(const string& family, EStyle, int);
+    TFont(const string &fontname);
+    void setFont(const string &fontname);
     virtual ~TFont();
+
+  public:
+    enum ERenderType {
+      RENDER_X11,
+      RENDER_FREETYPE
+    };
+//  private:
+    string id;
+#ifdef __X11__
+    _TOAD_FONTSTRUCT x11fs;
+    double x11scale;          // only used for rotated fonts
+    _TOAD_FONT       x11font; // only used for rotated fonts
+    void createX11Font(TMatrix2D*);
+
+#ifdef HAVE_LIBXFT    
+    XftFont * xftfont;
+    void createXftFont(TMatrix2D*);
+#endif
+#endif
+
+    void init();
+    void clear();
+
+    string fontname; // Fontconfig font name
+    ERenderType rendertype;
+
+  public:
+    void setRenderType(ERenderType rt) { rendertype=rt; clear(); }
+    ERenderType getRenderType() const { return rendertype; }
+    
+    void createFont(TMatrix2D*);
+
+#ifdef __X11__    
+    _TOAD_FONT getX11Font() const;
+    
+#ifdef HAVE_LIBXFT
+    XftFont * getXftFont() const {
+      return xftfont;
+    }
+#endif    
+#endif
 
     int getTextWidth(const string&) const;
     int getTextWidth(const char*) const;
@@ -66,27 +100,7 @@ class TFont:
     int getTextWidth(const unsigned char *s,int len) const { return getTextWidth((const char*)s,len); }
     int getAscent() const;
     int getDescent() const;
-    int getHeight() const;
-    unsigned getHeightOfTextFromWidth(const string &text, unsigned width) const;
-    unsigned getHeightOfTextFromWidth(const char* text, unsigned width) const;
-
-  private:
-    #ifdef __X11__
-    _TOAD_FONT fs;
-    void build_fontname(EFamily family, EStyle style,int size);
-    #endif
-    
-    string mask;
-
-    struct TWord
-    {
-      const char* pos;
-      unsigned bytes;
-      unsigned len;
-      unsigned linefeeds;
-    };
-    void count_words_and_lines(const char*, unsigned*, unsigned*) const;
-    TWord* make_wordlist(const char*,unsigned) const;
+    int getHeight() const {return getAscent()+getDescent();}
 };
 
 typedef GSmartPointer<TFont> PFont;

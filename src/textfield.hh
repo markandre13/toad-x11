@@ -34,7 +34,8 @@ class TTextField:
     {
       preferences->singleline = true;
       bTabKey = false;
-      setSize(320, preferences->getFont()->getHeight()+2);
+      PFont font = new TFont(/*preferences->getFont()*/);
+      setSize(320, font->getHeight()+2);
     }
 
     TTextField(TWindow *p, const string &t, TTextModel *m):
@@ -43,7 +44,8 @@ class TTextField:
       setModel(m);
       preferences->singleline = true;
       bTabKey = false;
-      setSize(320, preferences->getFont()->getHeight()+2);
+      PFont font = new TFont(preferences->getFont());
+      setSize(320, font->getHeight()+2);
     }
 
     template <class T>
@@ -53,7 +55,8 @@ class TTextField:
       setModel(m);
       preferences->singleline = true;
       bTabKey = false;
-      setSize(320, preferences->getFont()->getHeight()+2);
+      PFont font = new TFont(preferences->getFont());
+      setSize(320, font->getHeight()+2);
     }
 };
 

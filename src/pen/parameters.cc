@@ -36,6 +36,20 @@
 #include <toad/region.hh>
 
 #include <iostream>
+#include <map>
+
+#ifdef HAVE_LIBXFT
+
+#ifdef _XFT_NO_COMPAT_
+#undef _XFT_NO_COMPAT_
+#endif
+
+#include <X11/Xft/Xft.h>
+#ifdef FC_VERSION
+#define HAVE_FONTCONFIG
+#endif
+
+#endif
 
 using namespace toad;
 
@@ -166,10 +180,13 @@ TPen::_init()
   // make black the default color (needed by X11R5 on Sun)
   o_color.set(0,0,1);   // cheat SetColor to do it!
   setColor(0,0,0);
-  setBackColor(255,255,255);
   
   bDeleteRegion = false;
   using_bitmap = false;
+#ifdef HAVE_LIBXFT
+  xftdraw = 0;
+#endif
+
 #endif
 
 #ifdef __WIN32__
@@ -211,6 +228,11 @@ TPen::~TPen()
     XFreeGC(x11display, f_gc);
   if (region && bDeleteRegion )
     delete region;
+#ifdef HAVE_LIBXFT
+  if (xftdraw) {
+    XftDrawDestroy(xftdraw);
+  }
+#endif
 #endif
 
 #ifdef __WIN32__
@@ -247,9 +269,46 @@ TPen::setFont(TFont *newfont)
   assert(newfont!=0);
   TFont *oldfont = font;
   font = newfont;
-  XSetFont(x11display, o_gc, font->fs->fid);
+//  XSetFont(x11display, o_gc, font->fs->fid);
 #endif
 }
+
+namespace {
+
+typedef map<string,PFont> TFontMap;
+TFontMap fontmap;
+
+} // end namespace
+
+void
+TPen::initialize()
+{
+}
+
+void
+TPen::terminate()
+{
+  fontmap.clear();
+}
+
+TFont *
+TPen::lookupFont(const string &fontname)
+{
+  TFontMap::iterator p = fontmap.find(fontname);
+  if (p!=fontmap.end()) {
+    return p->second;
+  }
+  TFont *newfont = new TFont(fontname);
+  fontmap[fontname] = newfont;
+  return newfont;
+}
+
+void
+TPen::setFont(const string &fontname)
+{
+  setFont(lookupFont(fontname));
+}
+
 
 /**
  * When <I>true</I>, TPen will not paint inside the child windows of
@@ -257,7 +316,8 @@ TPen::setFont(TFont *newfont)
  * TPen will use the entire area of the current window for painting
  * including its children.
  */
-void TPen::setClipChildren(bool flag) {
+void
+TPen::setClipChildren(bool flag) {
 #ifdef __X11__
   XSetSubwindowMode(x11display, o_gc,flag ? ClipByChildren : IncludeInferiors);
 #endif
@@ -267,7 +327,8 @@ void TPen::setClipChildren(bool flag) {
  * You shouldn't call this yourself currently, it's used by
  * TWindow::_DispatchPaintEvent().
  */
-void TPen::setClipRegion(TRegion *rgn)
+void
+TPen::setClipRegion(TRegion *rgn)
 {
 #ifdef __X11__
   if (region!=rgn) {
@@ -294,7 +355,8 @@ void TPen::setClipRegion(TRegion *rgn)
  * This method should be obsolete as it's incompatible with
  * clipping regions!
  */
-void TPen::setClipRect(const TRectangle &r)
+void
+TPen::setClipRect(const TRectangle &r)
 {
 #ifdef __X11__
   XRectangle xr;
@@ -618,6 +680,7 @@ TPen::setColor(const TColor &color)
   o_color=color;
 #ifdef __X11__
   o_color._setPen(this, o_gc);
+  XSetBackground(x11display, o_gc, TColor::_getPixel(color));
 #endif
 #ifdef __WIN32__
   w32logpen.lopnColor = o_color.colorref;
@@ -690,27 +753,9 @@ TPen::setFillColor(const TColor &color)
   f_color = color;
 #ifdef __X11__
   f_color._setPen(this, f_gc);
+  XSetBackground(x11display, o_gc, TColor::_getPixel(color));
 #endif
 #ifdef __WIN32__
   updateW32Brush();
 #endif
 }
-
-/**
- * Sets the background color for `fillString(..)'.
- *
- * \sa fillString
- */
-void
-TPen::setBackColor(const TColor& color)
-{
-#ifdef __X11__
-  if (using_bitmap) {
-    XSetFillStyle(x11display, o_gc, FillSolid);
-    using_bitmap = false;
-  }
-
-  XSetBackground(x11display, o_gc, TColor::_getPixel(color));
-#endif
-}
-

@@ -629,8 +629,7 @@ void TConfig::paint()
   pen.setColorMode(TColor::DITHER);
   pen.fillRectanglePC(10,105,180,20);
 
-  TFont font(TFont::SANS, TFont::ITALIC, 12);
-  pen.setFont(&font);
+  pen.setFont("arial,helvetica,sans:italic");
   pen.setColor(0,0,0);
 
   pen.drawTextWidth(10,10,

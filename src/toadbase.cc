@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -160,7 +160,7 @@ struct TModalNode {
   TWindow *wnd;
   bool running;
 };
-}
+} // namespace
 
 typedef vector<TModalNode*> TModalStack;
 static TModalStack modal_stack;
@@ -229,7 +229,7 @@ TOADBase::~TOADBase()
 }
 
 bool
-TOADBase::initTOAD()
+TOADBase::initialize()
 {
 #ifdef __X11__
   bool x11sync = false;
@@ -287,7 +287,7 @@ TOADBase::initTOAD()
 
   initIO(ConnectionNumber(x11display));
 #endif
-  TFigure::initStorage();
+  TFigure::initialize();
 #ifdef __X11__
   initDnD();
 #endif
@@ -300,15 +300,17 @@ TOADBase::initTOAD()
 #ifdef __X11__
   x11gc = DefaultGC(x11display, DefaultScreen(x11display));
 #endif
-  default_font=new TFont(TFont::SANS, TFont::PLAIN, 12);
-  bold_font   =new TFont(TFont::SANS, TFont::BOLD, 12);
+  default_font = new TFont("arial,helvetica,sans-serif:size=12");
+  bold_font    = new TFont("arial,helvetica,sans-serif:size=12:bold");
 
-  TBitmap::open();
+  TBitmap::initialize();
+  TPen::initialize();
+
   return true;
 }
 
 void
-TOADBase::closeTOAD()
+TOADBase::terminate()
 {
 #if 0
   if (TDialogEditor::getCtrlWindow()) {
@@ -317,11 +319,13 @@ TOADBase::closeTOAD()
   }
 #endif
 
-  TFigure::loseStorage();
-  TBitmap::close();
-
   default_font = 0;
   bold_font = 0;
+
+  TFigure::terminate();
+  TBitmap::terminate();
+  TPen::terminate();
+
 
 #ifdef __X11__
   closeXInput();
@@ -1470,25 +1474,28 @@ TOADBase::setMousePos(int x,int y)
 }
 
 /**
- * PlaceWindow is intended to place top level windows, e.g. dialog windows.<BR>
+ * PlaceWindow is intended to place top level windows, e.g. dialog windows.
+ * 
  * There are several modes of operation:
- * <UL>
- *   <LI>PLACE_PARENT_CENTER<BR>
- *       Center window over `parent'.
- *   <LI>PLACE_PARENT_RANDOM<BR>
- *       Randomly place window over `parent'.
- *   <LI>PLACE_SCREEN_CENTER<BR>
- *       Place window in the middle of the screen.
- *   <LI>PLACE_SCREEN_RANDOM<BR>
- *       Place window randomly on the screen.
- *   <LI>PLACE_MOUSE_POINTER<BR>
- *       Place window under the mouse pointer.
- *   <LI>PLACE_PULLDOWN<BR>
- *       Place window under the parent.
- *   <LI>PLACE_TOOLTIP<BR>
- *       Place window near the parent.
- * </UL>
- *  When you use the `PARENT_' types and `parent' is NULL, the function will
+ * 
+ * \li PLACE_PARENT_CENTER
+ *   Place window centered above the parent.
+ * \li PLACE_PARENT_RANDOM
+ *   Random position above the parent.
+ * \li PLACE_SCREEN_CENTER
+ *   Place window in the center of the screen.
+ * \li PLACE_SCREEN_RANDOM
+ *   Place window somewhere on the screen.
+ * \li PLACE_MOUSE_POINTER
+ *   Place window centered under the mouse pointer.
+ * \li PLACE_CORNER_MOUSE_POINTER
+ *   Place the windows upper left corner at the mouse pointer.
+ * \li PLACE_PULLDOWN
+ *   Place window beyond it's parent.
+ * \li PLACE_TOOLTIP
+ *   Place window near it's parent.
+ *
+ *  When you use the 'PARENT_' types and 'parent' is NULL, the function will
  *  try the applications first window and when there is none, the whole screen.
  */
 //---------------------------------------------------------------------------
@@ -1518,6 +1525,7 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
     case PLACE_SCREEN_RANDOM:
     case PLACE_SCREEN_CENTER:
     case PLACE_MOUSE_POINTER:
+    case PLACE_CORNER_MOUSE_POINTER:
       where.set(0, 0, sw, sh);
       break;
     case PLACE_PULLDOWN:
@@ -1552,6 +1560,9 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
       getMousePos(&x,&y);
       x-=who.w>>1;
       y-=who.h>>1;
+      break;
+    case PLACE_CORNER_MOUSE_POINTER:
+      getMousePos(&x,&y);
       break;
     case PLACE_PULLDOWN:
       parent->getRootPos(&where.x, &where.y);

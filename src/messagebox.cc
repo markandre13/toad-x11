@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,8 +81,8 @@ TMessageBox::TMessageBox(TWindow* p,
 
   // text size
   int txt_width = msg_width - tx - 8;
-  int txt_height = getDefaultFont().getHeightOfTextFromWidth(text, txt_width)
-    - getDefaultFont().getHeight();
+  int txt_height = TPen::getHeightOfTextFromWidth(&getDefaultFont(), text, txt_width);
+
   tw = txt_width; // store value for 'paint()' method
 
   if (txt_height<icon_height) {
@@ -128,8 +128,8 @@ TMessageBox::TMessageBox(TWindow* p,
   for(unsigned i=0; i<8; i++) {
     if (btn&1) {
       // create button
-      TPushButton *pb = new TPushButton(this, label[i], 1<<i);
-        CONNECT(pb->sigActivate, this, button, pb);
+      TPushButton *pb = new TPushButton(this, label[i]);
+        CONNECT(pb->sigActivate, this, button, 1<<i);
         pb->setShape(x,y,btn_width,btn_height);
       x=x+btn_width+btn_hspace;
       // MB_DEFBUTTON?
@@ -141,24 +141,27 @@ TMessageBox::TMessageBox(TWindow* p,
   }
 }
 
-unsigned TMessageBox::getResult() const
+unsigned
+TMessageBox::getResult() const
 {
   return result;
 }
 
-void TMessageBox::button(TPushButton* pb)
+void
+TMessageBox::button(int id)
 {
-  result = pb->getID();
+  result = id;
   destroyWindow();
-//  endDialog(this);
 }
 
-void TMessageBox::adjust()
+void
+TMessageBox::adjust()
 {
   TOADBase::placeWindow(this, _placement, getParent());
 }
 
-void TMessageBox::paint()
+void
+TMessageBox::paint()
 {
   TPen pen(this);
   pen.drawTextWidth(tx,ty,text,tw);
