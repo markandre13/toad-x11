@@ -318,6 +318,9 @@ DBM(cout << __FILE__ << ":" << __LINE__ << endl;)
   x11_message_enter.xclient.data.l[4] = 0;
   unsigned n;
 
+  x11_message_enter.xclient.data.l[0] = x11_drag_source_window;
+  x11_message_enter.xclient.data.l[1] |= 0x03000000; // source version
+
   n = source->typelist.size();
   if (ntypes>3) {
     Atom atoms[ntypes];
@@ -1524,8 +1527,9 @@ string GetWindowProperty(Window source, Atom property, Atom type)
                            &remaining,
                            &buffer) == Success )
     {
-      data.append((char*)buffer, received);
-      position+=received/4L;
+      unsigned long n = received * (format/8);
+      data.append((char*)buffer, n);
+      position+=n/4L;
       XFree(buffer);
     } else {
       break;
