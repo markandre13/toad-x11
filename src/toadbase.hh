@@ -281,6 +281,7 @@ class TOADBase
   public:
     static void startDrag(TDnDObject *obj, unsigned modifier = 0);
     static string getSelection();
+    static void setSelection(const string &);
 
   private:
     #ifdef _TOAD_PRIVATE

@@ -1165,9 +1165,6 @@ TTextArea::_insert(const string &s)
   model->insert(_pos, s);
 }
 
-// dummy clipboard
-static string clipboard;
-
 void
 TTextArea::_selection_erase()
 {
@@ -1197,7 +1194,7 @@ TTextArea::_selection_copy()
     _bos = _eos;
     _eos = a;
   }
-  clipboard = model->getValue().substr(_bos, _eos-_bos);
+  setSelection(model->getValue().substr(_bos, _eos-_bos));
 //  cout << "'" << clipboard << "'" << endl;
 }
 
@@ -1205,7 +1202,7 @@ void
 TTextArea::_selection_paste()
 {
   MARK
-  _insert(clipboard);
+  _insert(getSelection());
 }
 
 void

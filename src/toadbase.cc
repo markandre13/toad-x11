@@ -84,6 +84,7 @@ static string AtomName(Atom atom) {
 
 static string selection_kludge_data;
 static bool selection_kludge_flag;
+static bool selection_kludge_owner = false;
 
 // define this for a periodic screen update every 1/12 seconds
 #define PERIODIC_PAINT
@@ -135,6 +136,8 @@ Atom      toad::xaWMDeleteWindow;
 Atom      toad::xaWMMotifHints;
 
 static Atom xaWMProtocols;
+static Atom xaUTF8_STRING;
+static Atom xaTEXT;
 #endif
 
 TEventFilter * toad::global_evt_filter = 0;
@@ -274,6 +277,9 @@ TOADBase::initialize()
   xaWMDeleteWindow  = XInternAtom(x11display, "WM_DELETE_WINDOW", False);
   xaWMProtocols     = XInternAtom(x11display, "WM_PROTOCOLS", False);
   xaWMMotifHints    = XInternAtom(x11display, "_MOTIF_WM_HINTS", False);
+  
+  xaUTF8_STRING     = XInternAtom(x11display, "UTF8_STRING", False);
+  xaTEXT            = XInternAtom(x11display, "TEXT", False);
 
   if (i18n)
     initXInput();
@@ -736,15 +742,22 @@ handle_event:
       break;
       
     case SelectionClear:
+      cout << "SelectionClear" << endl;
+      selection_kludge_owner = false;
       if (DnDSelectionClear(x11event));
         return bAppIsRunning;
+      if (x11event.xselectionclear.selection==XA_PRIMARY) {
+cout << "XA_PRIMARY clear" << endl;
+        selection_kludge_owner = false;
+      }
       break;
 
     case SelectionNotify: {
+      cout << "SelectionNotify" << endl;
       if (DnDSelectionNotify(x11event))
         return bAppIsRunning;
 // start of hack
-#if 0
+#if 1
       cout << "got SelectionNotify" << endl;
       cout << "  requestor: " << x11event.xselection.requestor << endl;
       cout << "  selection: " << AtomName(x11event.xselection.selection) << endl;
@@ -752,9 +765,8 @@ handle_event:
       cout << "  property : " << AtomName(x11event.xselection.property) << endl;
       cout << "  time     : " << x11event.xselection.time << endl;
 #endif
-      if (x11event.xselection.selection==XA_PRIMARY &&
-          x11event.xselection.target==XA_STRING)
-      {
+      if (x11event.xselection.selection==XA_PRIMARY) {
+        cout << "XA_PRIMARY notify" << endl;
         if ( x11event.xselection.target==XA_STRING)
         {
           selection_kludge_data = GetWindowProperty(
@@ -769,8 +781,56 @@ handle_event:
     } break;
 
     case SelectionRequest:
+      cout << "SelectionRequest" << endl;
       if (DnDSelectionRequest(x11event))
         return bAppIsRunning;
+#if 1
+      cout << "got SelectionRequest" << endl;
+      cout << "  requestor: " << x11event.xselection.requestor << endl;
+      cout << "  selection: " << AtomName(x11event.xselectionrequest.selection) << endl;
+      cout << "  target   : " << AtomName(x11event.xselectionrequest.target) << endl;
+      cout << "  property : " << AtomName(x11event.xselectionrequest.property) << endl;
+      cout << "  time     : " << x11event.xselectionrequest.time << endl;
+#endif
+      if (x11event.xselectionrequest.selection==XA_PRIMARY) {
+        cout << "XA_PRIMARY request" << endl;
+        if (x11event.xselectionrequest.target==XA_STRING ||
+            x11event.xselectionrequest.target==xaUTF8_STRING ||
+            x11event.xselectionrequest.target==xaTEXT /* ||
+            x11event.xselectionrequest.target==xa_COMPOUND_TEXT */
+           ) 
+        {
+cout << "change property..." << endl;
+          XChangeProperty(x11display,
+            x11event.xselectionrequest.requestor,
+            x11event.xselectionrequest.property,
+            x11event.xselectionrequest.target, 8,
+            PropModeReplace,
+            (ubyte*)selection_kludge_data.c_str(),
+            selection_kludge_data.size());
+cout << "send selection notify..." << endl;        
+          XEvent sevent;
+          sevent.xselection.type      = SelectionNotify;
+          sevent.xselection.serial    = 0;
+          sevent.xselection.send_event= True;
+          sevent.xselection.display   = x11display;
+          sevent.xselection.requestor = x11event.xselectionrequest.requestor;
+          sevent.xselection.selection = x11event.xselectionrequest.selection;
+          sevent.xselection.target    = x11event.xselectionrequest.target;
+          sevent.xselection.property  = None;
+          sevent.xselection.time      = x11event.xselectionrequest.time;
+          if (XSendEvent(x11display, 
+                         x11event.xselectionrequest.requestor,
+                         False,
+                         NoEventMask,
+                         &sevent)==0)
+          {
+             cerr << __FILE__ << ":" << __LINE__ << ": XSendEvent failed\n";
+          }
+        } else {
+          cout << "  not supported target " << XGetAtomName(x11display, x11event.xselectionrequest.target) << endl;
+        }
+      }
       break;
   }
 
@@ -1573,6 +1633,9 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
 string TOADBase::getSelection()
 {
 #ifdef __X11__
+  if (selection_kludge_owner)
+    return selection_kludge_data;
+
   selection_kludge_data.erase();
   selection_kludge_flag = true;
 
@@ -1586,16 +1649,29 @@ string TOADBase::getSelection()
     CurrentTime);
 
   // timeout needed!
-  while(selection_kludge_flag) {
+  time_t t = time(0);
+  do {
     handleMessage();
-  }
+  } while(selection_kludge_flag && time(0)-t<5);
+  selection_kludge_flag = false;
   return selection_kludge_data;
 #endif
 }
 
 // SetSelection
+void
+TOADBase::setSelection(const string &data)
+{
+  selection_kludge_owner = true;
+  selection_kludge_data = data;
 
-// ClearSelection
+  cout << "XSetSelectionOwner " <<
+  XSetSelectionOwner(
+    x11display,
+    XA_PRIMARY,
+    TWindow::getParentless(0)->x11window,
+    CurrentTime) << endl;
+}
 
 //---------------------------------------------------------------------------
 
