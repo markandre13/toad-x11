@@ -796,6 +796,7 @@ Walk(TWindow *top, TWindow *focus, bool bNext)
   TInteractor *ptr = focus;
   
   do {
+    DBM(cerr << "walk...\n";)
     if ( ptr->getFirstChild() &&      // go down when `ptr' has a child
          !(ptr->bShell&&ptr!=top) &&  // but skip alien focus domains
          ptr->bFocusTraversal &&      // and windows that don't want to be part of the focus traversal
@@ -805,27 +806,42 @@ Walk(TWindow *top, TWindow *focus, bool bNext)
            || ptr->bShell             //   or a shell window
         ))
     {
+      DBM(cerr << "  go one step down\n";)
       // go one step down
       bNext ? ptr = ptr->getFirstChild() : ptr = ptr->getLastChild();
     } else {
+      DBM(cerr << "  go sideways\n";)
       // couldn't go downwards and can't go sideways or up either because
       // `ptr' is the `top' window and we have to stay in the tops' subtree
       // so leave =>
-      if (ptr==top)
+      if (ptr==top) {
+        DBM(cerr << "    ups, back at the top => return NULL\n";)
         return NULL;
+      }
         
       // try to get the next/previous sibling of the window; when there is
       // no such sibling walk upwards until there's one
+
+      DBM(cerr << "  try to get next/previous sibling of window '" << ptr->getTitle() << "'\n";)
+
       TInteractor *next;
-      while( bNext ? (next=TWindow::getNextSibling(ptr))==NULL
-                   : (next=TWindow::getPrevSibling(ptr))==NULL )
-      {
+      while(true) {
+        if (bNext)
+          next=TWindow::getNextSibling(ptr);
+        else
+          next=TWindow::getPrevSibling(ptr);
+        if (next!=0) {
+          DBM(cerr << "    no next/prev sibling => leave loop\n";)
+          break;
+        }
         // no next/prev sibling so go one step upwards
+        DBM(cerr << "    go up to parent '" << ptr->getParent()->getTitle() << "'\n";)
         ptr = ptr->getParent();
         
         // when we've reached the top of the tree, leave the loop to
         // walk down again
         if (ptr==top) {
+        DBM(cerr << "    we've reached the top, make top the next => leave loop\n";)
           next = top;
           break;
         }
@@ -835,6 +851,18 @@ Walk(TWindow *top, TWindow *focus, bool bNext)
       if (ptr==focus)
         return old_focus;
     }
+    DBM(
+      cerr << "found ptr = '" << ptr->getTitle() << "'\n";
+      if (ptr!=top) {
+        cerr << "  it's not the top window\n";
+        if (ptr->bShell)
+          cerr << "  but it's a shell window => continue loop\n";
+      }
+      if (ptr->bNoFocus)
+        cerr << "  but it doesn't want the focus => continue loop\n";
+      if (!ptr->isRealized())
+        cerr << "  but it's not realized => continue loop\n";
+    )
   } while(
       ptr->bNoFocus ||          // continue when window doesn't want the focus
       !ptr->isRealized() ||     // or isn't mapped
