@@ -150,7 +150,7 @@ TOADBase::getDefaultFont() {
 }
 
 int       nStatus;
-bool      TOADBase::bAppIsRunning;
+bool      TOADBase::bAppIsRunning=true;
 TWindow*  TOADBase::wndTopPopup;
 bool      TOADBase::bSimulatedAutomaticGrab;
 bool      TOADBase::lock_paint_queue = false;
