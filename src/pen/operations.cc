@@ -272,7 +272,7 @@ TPen::popAll()
 // point
 //----------------------------------------------------------------------------
 void
-TPen::drawPoint(int x, int y) const
+TPen::drawPoint(int x, int y)
 {
 #ifdef __X11__
   if (!mat) {
@@ -299,7 +299,7 @@ TPen::drawPoint(int x, int y) const
 // line
 //----------------------------------------------------------------------------
 void
-TPen::vdrawLine(int x1, int y1, int x2, int y2) const
+TPen::vdrawLine(int x1, int y1, int x2, int y2)
 {
 #ifdef __X11__
   if (!mat) {
@@ -328,7 +328,7 @@ TPen::vdrawLine(int x1, int y1, int x2, int y2) const
 }
 
 void
-TPen::drawLines(const TPoint *s, int n) const
+TPen::drawLines(const TPoint *s, int n)
 {
 #ifdef __X11__
   XPoint xp[n];
@@ -354,7 +354,7 @@ TPen::drawLines(const TPoint *s, int n) const
 }
 
 void
-TPen::drawLines(const TPolygon &polygon) const
+TPen::drawLines(const TPolygon &polygon)
 {
 #ifdef __X11__
   unsigned n = polygon.size();
@@ -378,7 +378,7 @@ TPen::drawLines(const TPolygon &polygon) const
 // rectangle
 //----------------------------------------------------------------------------
 void
-TPen::vdrawRectangle(int x, int y, int w, int h) const
+TPen::vdrawRectangle(int x, int y, int w, int h)
 {
 #ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
@@ -434,7 +434,7 @@ TPen::vdrawRectangle(int x, int y, int w, int h) const
 }
 
 void
-TPen::vfillRectangle(int x, int y, int w, int h) const
+TPen::vfillRectangle(int x, int y, int w, int h)
 {
   XDRAW_RASTER_COORD(w,h)
 #ifdef __X11__
@@ -479,14 +479,14 @@ TPen::vfillRectangle(int x, int y, int w, int h) const
 }
 
 void
-TPenBase::drawRectanglePC(int x, int y, int w, int h) const
+TPenBase::drawRectanglePC(int x, int y, int w, int h)
 {
   XDRAW_PIXEL_COORD(w,h);
   drawRectangle(x,y,w,h);
 }
 
 void
-TPenBase::fillRectanglePC(int x, int y, int w, int h) const
+TPenBase::fillRectanglePC(int x, int y, int w, int h)
 {
   XDRAW_PIXEL_COORD(w,h)
   fillRectangle(x, y, w, h);
@@ -578,7 +578,7 @@ qtr_elips(const TPen *pen, XPoint *p, long xP, long yP, long xQ, long yQ, long x
 #endif
 
 void
-TPen::vdrawCircle(int x, int y, int w, int h) const
+TPen::vdrawCircle(int x, int y, int w, int h)
 {
 #ifdef __X11__
   if (!mat) {
@@ -610,7 +610,7 @@ TPen::vdrawCircle(int x, int y, int w, int h) const
 }
 
 void
-TPen::vfillCircle(int x, int y, int w, int h) const
+TPen::vfillCircle(int x, int y, int w, int h)
 {
 #ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
@@ -640,7 +640,7 @@ TPen::vfillCircle(int x, int y, int w, int h) const
 }
 
 void
-TPenBase::drawCirclePC(int x, int y, int w, int h) const
+TPenBase::drawCirclePC(int x, int y, int w, int h)
 {
 #ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
@@ -649,7 +649,7 @@ TPenBase::drawCirclePC(int x, int y, int w, int h) const
 }
 
 void
-TPenBase::fillCirclePC(int x, int y, int w, int h) const
+TPenBase::fillCirclePC(int x, int y, int w, int h)
 {
 #ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
@@ -660,7 +660,7 @@ TPenBase::fillCirclePC(int x, int y, int w, int h) const
 // arc
 //----------------------------------------------------------------------------
 void
-TPen::vdrawArc(int x, int y, int w, int h, double r1, double r2) const
+TPen::vdrawArc(int x, int y, int w, int h, double r1, double r2)
 {
 #ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
@@ -673,7 +673,7 @@ TPen::vdrawArc(int x, int y, int w, int h, double r1, double r2) const
 }
 
 void
-TPen::vfillArc(int x, int y, int w, int h, double r1, double r2) const
+TPen::vfillArc(int x, int y, int w, int h, double r1, double r2)
 {
 #ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
@@ -686,7 +686,7 @@ TPen::vfillArc(int x, int y, int w, int h, double r1, double r2) const
 }
 
 void
-TPenBase::drawArcPC(int x, int y, int w, int h, double r1, double r2) const
+TPenBase::drawArcPC(int x, int y, int w, int h, double r1, double r2)
 {
 #ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
@@ -695,7 +695,7 @@ TPenBase::drawArcPC(int x, int y, int w, int h, double r1, double r2) const
 }
 
 void
-TPenBase::fillArcPC(int x, int y, int w, int h, double r1, double r2) const
+TPenBase::fillArcPC(int x, int y, int w, int h, double r1, double r2)
 {
 #ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
@@ -706,7 +706,7 @@ TPenBase::fillArcPC(int x, int y, int w, int h, double r1, double r2) const
 // polygon
 //----------------------------------------------------------------------------
 void
-TPen::drawPolygon(const TPoint points[], int n) const
+TPen::drawPolygon(const TPoint points[], int n)
 {
 #ifdef __X11__
   XPoint pts[n+1];
@@ -730,7 +730,7 @@ TPen::drawPolygon(const TPoint points[], int n) const
 }
 
 void
-TPen::fillPolygon(const TPoint s[], int n) const
+TPen::fillPolygon(const TPoint s[], int n)
 {
 #ifdef __X11__
   XPoint d[n];
@@ -752,7 +752,7 @@ TPen::fillPolygon(const TPoint s[], int n) const
 }
 
 void
-TPen::drawPolygon(const TPolygon &polygon) const
+TPen::drawPolygon(const TPolygon &polygon)
 {
 #ifdef __X11__
   unsigned n = polygon.size();
@@ -781,7 +781,7 @@ TPen::drawPolygon(const TPolygon &polygon) const
 }
 
 void
-TPen::fillPolygon(const TPolygon &polygon) const
+TPen::fillPolygon(const TPolygon &polygon)
 {
 #ifdef __X11__
   unsigned n = polygon.size();
@@ -808,7 +808,7 @@ TPen::fillPolygon(const TPolygon &polygon) const
 // bitmap
 //----------------------------------------------------------------------------
 void
-TPen::drawBitmap(int x, int y, const TBitmap* bmp) const
+TPen::drawBitmap(int x, int y, const TBitmap* bmp)
 {
   if (mat) {
     x+=mat->tx;
@@ -818,7 +818,7 @@ TPen::drawBitmap(int x, int y, const TBitmap* bmp) const
 }
 
 void
-TPen::drawBitmap(int x, int y, const TBitmap& bmp) const
+TPen::drawBitmap(int x, int y, const TBitmap& bmp)
 {
   if (mat) {
     x+=mat->tx;
@@ -828,7 +828,7 @@ TPen::drawBitmap(int x, int y, const TBitmap& bmp) const
 }
 
 void
-TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int ah) const
+TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int ah)
 {
   if (mat) {
     x+=mat->tx;
@@ -840,7 +840,7 @@ TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int a
 }
 
 void
-TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int ah) const
+TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int ah)
 {
   if (mat) {
     x+=mat->tx;
@@ -857,7 +857,7 @@ TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int a
  * This is a special function for widgets.
  */
 void
-TPen::vdraw3DRectangle(int x, int y, int w, int h, bool inset) const
+TPen::vdraw3DRectangle(int x, int y, int w, int h, bool inset)
 {
   TColor saved_color = o_color;
   
@@ -907,7 +907,7 @@ TPen::vdraw3DRectangle(int x, int y, int w, int h, bool inset) const
 }
 
 void
-TPenBase::draw3DRectanglePC(int x, int y, int w, int h, bool inset) const
+TPenBase::draw3DRectanglePC(int x, int y, int w, int h, bool inset)
 {
   XDRAW_PIXEL_COORD(w,h)
   vdraw3DRectangle(x, y, w, h, inset);
@@ -1005,13 +1005,13 @@ TPen::getHeight() const
  * DrawString is a little bit slower than FillString.
  */
 void
-TPen::drawString(int x,int y, const string &str) const
+TPen::drawString(int x,int y, const string &str)
 {
   TPen::drawString(x,y,str.c_str(),(int)str.size());
 }
 
 void
-TPen::drawString(int x,int y, const char *str, int strlen) const
+TPen::drawString(int x,int y, const char *str, int strlen)
 {
 #ifdef __X11__
   if (!str)
@@ -1050,13 +1050,13 @@ TPen::drawString(int x,int y, const char *str, int strlen) const
  * `FillString' is really a very idiotic name.
  */
 void
-TPen::fillString(int x,int y, const string &str) const
+TPen::fillString(int x,int y, const string &str)
 {
   TPen::fillString(x,y,str.c_str(),(int)str.size());
 }
 
 void
-TPen::fillString(int x,int y, const char *str, int strlen) const
+TPen::fillString(int x,int y, const char *str, int strlen)
 {
   if (!str)
     return;
@@ -1079,7 +1079,7 @@ TPen::fillString(int x,int y, const char *str, int strlen) const
  * an break lines to fit width. 'str' can contain '\n'.
  */
 int
-TPen::drawTextWidth(int x,int y,const string &str, unsigned width) const
+TPen::drawTextWidth(int x,int y,const string &str, unsigned width)
 {
   const char* text=str.c_str();
   

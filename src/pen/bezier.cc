@@ -44,7 +44,7 @@ void
 TPen::drawBezier(int x1,int y1, 
                  int x2,int y2, 
                  int x3,int y3, 
-                 int x4,int y4) const
+                 int x4,int y4)
 {
   lst.erase(lst.begin(), lst.end());
   lst.push_back(TPoint(x1, y1));
@@ -57,7 +57,7 @@ void
 TPen::drawBezier(double x1,double y1, 
                  double x2,double y2, 
                  double x3,double y3, 
-                 double x4,double y4) const
+                 double x4,double y4)
 {
   lst.erase(lst.begin(), lst.end());
   lst.push_back(TPoint((int)x1, (int)y1));
@@ -67,7 +67,7 @@ TPen::drawBezier(double x1,double y1,
 }
 
 void
-TPen::drawPolyBezier(const TPoint *p, int n) const
+TPen::drawPolyBezier(const TPoint *p, int n)
 {
   lst.erase(lst.begin(), lst.end());
   lst.push_back(p[0]);
@@ -86,7 +86,7 @@ TPen::drawPolyBezier(const TPoint *p, int n) const
 }
 
 void
-TPen::drawPolyBezier(const TDPoint *p, int n) const
+TPen::drawPolyBezier(const TDPoint *p, int n)
 {
   lst.erase(lst.begin(), lst.end());
   lst.push_back(TPoint(p[0].x, p[0].y));
@@ -105,7 +105,7 @@ TPen::drawPolyBezier(const TDPoint *p, int n) const
 }
 
 void
-TPen::fillPolyBezier(const TPoint *p, int n) const
+TPen::fillPolyBezier(const TPoint *p, int n)
 {
   lst.erase(lst.begin(), lst.end());
   lst.push_back(p[0]);
@@ -124,7 +124,7 @@ TPen::fillPolyBezier(const TPoint *p, int n) const
 }
 
 void
-TPen::fillPolyBezier(const TDPoint *p, int n) const
+TPen::fillPolyBezier(const TDPoint *p, int n)
 {
   lst.erase(lst.begin(), lst.end());
   lst.push_back(TPoint(p[0].x, p[0].y));
@@ -143,7 +143,7 @@ TPen::fillPolyBezier(const TDPoint *p, int n) const
 }
 
 void
-TPen::drawPolyBezier(const TPolygon &polygon) const
+TPen::drawPolyBezier(const TPolygon &polygon)
 {
   unsigned n = polygon.size();
   if (n<4)
@@ -168,13 +168,13 @@ TPen::drawPolyBezier(const TPolygon &polygon) const
 }
 
 void
-TPen::drawPolyBezier(const TDPolygon &) const
+TPen::drawPolyBezier(const TDPolygon &)
 {
   #warning "not implemented: TPen::drawPolyBezier(const TDPolygon &)"
 }
 
 void
-TPen::fillPolyBezier(const TPolygon &polygon) const
+TPen::fillPolyBezier(const TPolygon &polygon)
 {
   unsigned n = polygon.size();
   if (n<4)
@@ -198,7 +198,7 @@ TPen::fillPolyBezier(const TPolygon &polygon) const
 }
 
 void
-TPen::fillPolyBezier(const TDPolygon &) const
+TPen::fillPolyBezier(const TDPolygon &)
 {
   #warning "not implemented: TPen::fillPolyBezier(const TDPolygon &)"
 }

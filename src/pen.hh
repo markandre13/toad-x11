@@ -129,117 +129,117 @@ class TPenBase:
 
     // point
     //-----------------------
-    virtual void drawPoint(int x,int y) const = 0;
-    virtual void drawPoint(const TPoint &p) const { drawPoint(p.x, p.y); }
+    virtual void drawPoint(int x,int y) = 0;
+    virtual void drawPoint(const TPoint &p) { drawPoint(p.x, p.y); }
     
     // line
     //-----------------------
-    virtual void vdrawLine(int x1,int y1,int x2,int y2) const = 0;
+    virtual void vdrawLine(int x1,int y1,int x2,int y2) = 0;
 
-    void drawLine(int x1,int y1,int x2,int y2) const { vdrawLine(x1, y1, x2, y2); }
-    void drawLine(const TPoint &a, const TPoint &b) const { vdrawLine(a.x, a.y, b.x, b.y); }
+    void drawLine(int x1,int y1,int x2,int y2) { vdrawLine(x1, y1, x2, y2); }
+    void drawLine(const TPoint &a, const TPoint &b) { vdrawLine(a.x, a.y, b.x, b.y); }
 
-    virtual void drawLines(const TPoint *points, int n) const = 0;
-    virtual void drawLines(const TPolygon&) const = 0;
+    virtual void drawLines(const TPoint *points, int n) = 0;
+    virtual void drawLines(const TPolygon&) = 0;
 
     // rectangle
     //-----------------------
-    virtual void vdrawRectangle(int x,int y,int w,int h) const = 0;
-    virtual void vfillRectangle(int x,int y,int w,int h) const = 0;
+    virtual void vdrawRectangle(int x,int y,int w,int h) = 0;
+    virtual void vfillRectangle(int x,int y,int w,int h) = 0;
 
-    void drawRectangle(int x,int y,int w,int h) const { vdrawRectangle(x, y, w, h); }
-    void drawRectangle(const TRectangle &r) const { vdrawRectangle(r.x,r.y,r.w,r.h); }
-    void drawRectangle(const TRectangle *r) const { vdrawRectangle(r->x,r->y,r->w,r->h); }
-    void drawRectangle(const TPoint &a, const TPoint &b) const { vdrawRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void drawRectangle(int x,int y,int w,int h) { vdrawRectangle(x, y, w, h); }
+    void drawRectangle(const TRectangle &r) { vdrawRectangle(r.x,r.y,r.w,r.h); }
+    void drawRectangle(const TRectangle *r) { vdrawRectangle(r->x,r->y,r->w,r->h); }
+    void drawRectangle(const TPoint &a, const TPoint &b) { vdrawRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
-    void drawRectanglePC(int x,int y,int w,int h) const;
-    void drawRectanglePC(const TRectangle &r) const { drawRectanglePC(r.x,r.y,r.w,r.h); }
-    void drawRectanglePC(const TRectangle *r) const { drawRectanglePC(r->x,r->y,r->w,r->h); }
-    void drawRectanglePC(const TPoint &a, const TPoint &b) const { vdrawRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void drawRectanglePC(int x,int y,int w,int h);
+    void drawRectanglePC(const TRectangle &r) { drawRectanglePC(r.x,r.y,r.w,r.h); }
+    void drawRectanglePC(const TRectangle *r) { drawRectanglePC(r->x,r->y,r->w,r->h); }
+    void drawRectanglePC(const TPoint &a, const TPoint &b) { vdrawRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
-    void fillRectangle(int x,int y,int w,int h) const { vfillRectangle(x, y, w, h); }
-    void fillRectangle(const TRectangle &r) const { vfillRectangle(r.x,r.y,r.w,r.h); }
-    void fillRectangle(const TRectangle *r) const { vfillRectangle(r->x,r->y,r->w,r->h); }
-    void fillRectangle(const TPoint &a, const TPoint &b) const { vfillRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void fillRectangle(int x,int y,int w,int h) { vfillRectangle(x, y, w, h); }
+    void fillRectangle(const TRectangle &r) { vfillRectangle(r.x,r.y,r.w,r.h); }
+    void fillRectangle(const TRectangle *r) { vfillRectangle(r->x,r->y,r->w,r->h); }
+    void fillRectangle(const TPoint &a, const TPoint &b) { vfillRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
-    void fillRectanglePC(int x,int y,int w,int h) const;
-    void fillRectanglePC(const TRectangle &r) const { fillRectanglePC(r.x,r.y,r.w,r.h); }
-    void fillRectanglePC(const TRectangle *r) const { fillRectanglePC(r->x,r->y,r->w,r->h); }
-    void fillRectanglePC(const TPoint &a, const TPoint &b) const { vfillRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void fillRectanglePC(int x,int y,int w,int h);
+    void fillRectanglePC(const TRectangle &r) { fillRectanglePC(r.x,r.y,r.w,r.h); }
+    void fillRectanglePC(const TRectangle *r) { fillRectanglePC(r->x,r->y,r->w,r->h); }
+    void fillRectanglePC(const TPoint &a, const TPoint &b) { vfillRectangle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
     // circle
     //-----------------------
-    virtual void vdrawCircle(int x,int y,int w,int h) const = 0;
-    virtual void vfillCircle(int x,int y,int w,int h) const = 0;
+    virtual void vdrawCircle(int x,int y,int w,int h) = 0;
+    virtual void vfillCircle(int x,int y,int w,int h) = 0;
     
-    void drawCircle(int x,int y,int w,int h) const { vdrawCircle(x, y, w, h); }
-    void drawCircle(const TRectangle &r) const { vdrawCircle(r.x,r.y,r.w,r.h); }
-    void drawCircle(const TRectangle *r) const { vdrawCircle(r->x,r->y,r->w,r->h); }
-    void drawCircle(const TPoint &a, const TPoint &b) const { vdrawCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void drawCircle(int x,int y,int w,int h) { vdrawCircle(x, y, w, h); }
+    void drawCircle(const TRectangle &r) { vdrawCircle(r.x,r.y,r.w,r.h); }
+    void drawCircle(const TRectangle *r) { vdrawCircle(r->x,r->y,r->w,r->h); }
+    void drawCircle(const TPoint &a, const TPoint &b) { vdrawCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
-    void drawCirclePC(int x,int y,int w,int h) const;
-    void drawCirclePC(const TRectangle &r) const { drawCirclePC(r.x,r.y,r.w,r.h); }
-    void drawCirclePC(const TRectangle *r) const { drawCirclePC(r->x,r->y,r->w,r->h); }
-    void drawCirclePC(const TPoint &a, const TPoint &b) const { vdrawCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void drawCirclePC(int x,int y,int w,int h);
+    void drawCirclePC(const TRectangle &r) { drawCirclePC(r.x,r.y,r.w,r.h); }
+    void drawCirclePC(const TRectangle *r) { drawCirclePC(r->x,r->y,r->w,r->h); }
+    void drawCirclePC(const TPoint &a, const TPoint &b) { vdrawCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
-    void fillCircle(int x,int y,int w,int h) const { vfillCircle(x, y, w, h); }
-    void fillCircle(const TRectangle &r) const { vfillCircle(r.x,r.y,r.w,r.h); }
-    void fillCircle(const TRectangle *r) const { vfillCircle(r->x,r->y,r->w,r->h); }
-    void fillCircle(const TPoint &a, const TPoint &b) const { vfillCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void fillCircle(int x,int y,int w,int h) { vfillCircle(x, y, w, h); }
+    void fillCircle(const TRectangle &r) { vfillCircle(r.x,r.y,r.w,r.h); }
+    void fillCircle(const TRectangle *r) { vfillCircle(r->x,r->y,r->w,r->h); }
+    void fillCircle(const TPoint &a, const TPoint &b) { vfillCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
-    void fillCirclePC(int x,int y,int w,int h) const;
-    void fillCirclePC(const TRectangle &r) const { fillCirclePC(r.x,r.y,r.w,r.h); }
-    void fillCirclePC(const TRectangle *r) const { fillCirclePC(r->x,r->y,r->w,r->h); }
-    void fillCirclePC(const TPoint &a, const TPoint &b) const { vfillCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
+    void fillCirclePC(int x,int y,int w,int h);
+    void fillCirclePC(const TRectangle &r) { fillCirclePC(r.x,r.y,r.w,r.h); }
+    void fillCirclePC(const TRectangle *r) { fillCirclePC(r->x,r->y,r->w,r->h); }
+    void fillCirclePC(const TPoint &a, const TPoint &b) { vfillCircle(a.x, a.y, b.x-a.x, b.y-a.y); }
 
     // arc
     //-----------------------
-    virtual void vdrawArc(int x,int y,int w,int h, double r1, double r2) const = 0;
-    virtual void vfillArc(int x,int y,int w,int h, double r1, double r2) const = 0;
+    virtual void vdrawArc(int x,int y,int w,int h, double r1, double r2) = 0;
+    virtual void vfillArc(int x,int y,int w,int h, double r1, double r2) = 0;
     
-    void drawArc(int x,int y,int w,int h, double r1, double r2) const { vdrawArc(x, y, w, h, r1, r2); }
-    void drawArc(const TRectangle &r, double r1, double r2) const { vdrawArc(r.x,r.y,r.w,r.h, r1, r2); }
-    void drawArc(const TRectangle *r, double r1, double r2) const { vdrawArc(r->x,r->y,r->w,r->h, r1, r2); }
-    void drawArc(const TPoint &a, const TPoint &b, double r1, double r2) const { vdrawArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
+    void drawArc(int x,int y,int w,int h, double r1, double r2) { vdrawArc(x, y, w, h, r1, r2); }
+    void drawArc(const TRectangle &r, double r1, double r2) { vdrawArc(r.x,r.y,r.w,r.h, r1, r2); }
+    void drawArc(const TRectangle *r, double r1, double r2) { vdrawArc(r->x,r->y,r->w,r->h, r1, r2); }
+    void drawArc(const TPoint &a, const TPoint &b, double r1, double r2) { vdrawArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
 
-    void drawArcPC(int x,int y,int w,int h, double r1, double r2) const;
-    void drawArcPC(const TRectangle &r, double r1, double r2) const { drawArcPC(r.x,r.y,r.w,r.h, r1, r2); }
-    void drawArcPC(const TRectangle *r, double r1, double r2) const { drawArcPC(r->x,r->y,r->w,r->h, r1, r2); }
-    void drawArcPC(const TPoint &a, const TPoint &b, double r1, double r2) const { vdrawArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
+    void drawArcPC(int x,int y,int w,int h, double r1, double r2);
+    void drawArcPC(const TRectangle &r, double r1, double r2) { drawArcPC(r.x,r.y,r.w,r.h, r1, r2); }
+    void drawArcPC(const TRectangle *r, double r1, double r2) { drawArcPC(r->x,r->y,r->w,r->h, r1, r2); }
+    void drawArcPC(const TPoint &a, const TPoint &b, double r1, double r2) { vdrawArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
 
-    void fillArc(int x,int y,int w,int h, double r1, double r2) const { vfillArc(x, y, w, h, r1, r2); }
-    void fillArc(const TRectangle &r, double r1, double r2) const { vfillArc(r.x,r.y,r.w,r.h, r1, r2); }
-    void fillArc(const TRectangle *r, double r1, double r2) const { vfillArc(r->x,r->y,r->w,r->h, r1, r2); }
-    void fillArc(const TPoint &a, const TPoint &b, double r1, double r2) const { vfillArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
+    void fillArc(int x,int y,int w,int h, double r1, double r2) { vfillArc(x, y, w, h, r1, r2); }
+    void fillArc(const TRectangle &r, double r1, double r2) { vfillArc(r.x,r.y,r.w,r.h, r1, r2); }
+    void fillArc(const TRectangle *r, double r1, double r2) { vfillArc(r->x,r->y,r->w,r->h, r1, r2); }
+    void fillArc(const TPoint &a, const TPoint &b, double r1, double r2) { vfillArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
 
-    void fillArcPC(int x,int y,int w,int h, double r1, double r2) const;
-    void fillArcPC(const TRectangle &r, double r1, double r2) const { fillArcPC(r.x,r.y,r.w,r.h, r1, r2); }
-    void fillArcPC(const TRectangle *r, double r1, double r2) const { fillArcPC(r->x,r->y,r->w,r->h, r1, r2); }
-    void fillArcPC(const TPoint &a, const TPoint &b, double r1, double r2) const { vfillArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
+    void fillArcPC(int x,int y,int w,int h, double r1, double r2);
+    void fillArcPC(const TRectangle &r, double r1, double r2) { fillArcPC(r.x,r.y,r.w,r.h, r1, r2); }
+    void fillArcPC(const TRectangle *r, double r1, double r2) { fillArcPC(r->x,r->y,r->w,r->h, r1, r2); }
+    void fillArcPC(const TPoint &a, const TPoint &b, double r1, double r2) { vfillArc(a.x, a.y, b.x-a.x, b.y-a.y, r1, r2); }
 
     // polygon
     //-----------------------
-    virtual void fillPolygon(const TPoint *points, int n) const = 0;
-    virtual void drawPolygon(const TPoint *points, int n) const = 0;
-    virtual void fillPolygon(const TPolygon &polygon) const = 0;
-    virtual void drawPolygon(const TPolygon &polygon) const = 0;
+    virtual void fillPolygon(const TPoint *points, int n) = 0;
+    virtual void drawPolygon(const TPoint *points, int n) = 0;
+    virtual void fillPolygon(const TPolygon &polygon) = 0;
+    virtual void drawPolygon(const TPolygon &polygon) = 0;
 
     // bezier curves
     //-----------------------
-    virtual void drawBezier(int x1,int y1, int x2,int y2, int x3,int y3, int x4,int y4) const = 0;
-    virtual void drawBezier(double x1,double y1, double x2,double y2, double x3,double y3, double x4,double y4) const = 0;
-    virtual void drawBezier(const TPoint *points) const { drawPolyBezier(points,4); }
-    virtual void drawBezier(const TDPoint *points) const { drawPolyBezier(points,4); }
+    virtual void drawBezier(int x1,int y1, int x2,int y2, int x3,int y3, int x4,int y4) = 0;
+    virtual void drawBezier(double x1,double y1, double x2,double y2, double x3,double y3, double x4,double y4) = 0;
+    virtual void drawBezier(const TPoint *points) { drawPolyBezier(points,4); }
+    virtual void drawBezier(const TDPoint *points) { drawPolyBezier(points,4); }
 
-    virtual void drawPolyBezier(const TPoint *points, int n) const = 0;
-    virtual void drawPolyBezier(const TPolygon &p) const = 0;
-    virtual void drawPolyBezier(const TDPoint *points, int n) const = 0;
-    virtual void drawPolyBezier(const TDPolygon &p) const = 0;
+    virtual void drawPolyBezier(const TPoint *points, int n) = 0;
+    virtual void drawPolyBezier(const TPolygon &p) = 0;
+    virtual void drawPolyBezier(const TDPoint *points, int n) = 0;
+    virtual void drawPolyBezier(const TDPolygon &p) = 0;
 
-    virtual void fillPolyBezier(const TPoint *points, int n) const = 0;
-    virtual void fillPolyBezier(const TPolygon &p) const = 0;
-    virtual void fillPolyBezier(const TDPoint *points, int n) const = 0;
-    virtual void fillPolyBezier(const TDPolygon &p) const = 0;
+    virtual void fillPolyBezier(const TPoint *points, int n) = 0;
+    virtual void fillPolyBezier(const TPolygon &p) = 0;
+    virtual void fillPolyBezier(const TDPoint *points, int n) = 0;
+    virtual void fillPolyBezier(const TDPolygon &p) = 0;
 
     static void poly2Bezier(const TPoint *src, int n, TPolygon &dst);
     static void poly2Bezier(const TPolygon &p, TPolygon &d);
@@ -248,17 +248,17 @@ class TPenBase:
 
     // 3D rectangle
     //-----------------------
-    virtual void vdraw3DRectangle(int x, int y, int w, int h, bool inset=true) const = 0;
+    virtual void vdraw3DRectangle(int x, int y, int w, int h, bool inset=true) = 0;
 
-    void draw3DRectangle(int x, int y, int w, int h, bool inset=true) const { vdraw3DRectangle(x,y,w,h,inset); }
-    void draw3DRectangle(const TRectangle &r, bool inset=true) const { vdraw3DRectangle(r.x,r.y,r.w,r.h,inset); }
-    void draw3DRectangle(const TRectangle *r, bool inset=true) const { vdraw3DRectangle(r->x,r->y,r->w,r->h,inset); }
-    void draw3DRectangle(const TPoint &a, const TPoint &b, double r1, double r2, bool inset=true) const { vdraw3DRectangle(a.x, a.y, b.x-a.x, b.y-a.y, inset); }
+    void draw3DRectangle(int x, int y, int w, int h, bool inset=true) { vdraw3DRectangle(x,y,w,h,inset); }
+    void draw3DRectangle(const TRectangle &r, bool inset=true) { vdraw3DRectangle(r.x,r.y,r.w,r.h,inset); }
+    void draw3DRectangle(const TRectangle *r, bool inset=true) { vdraw3DRectangle(r->x,r->y,r->w,r->h,inset); }
+    void draw3DRectangle(const TPoint &a, const TPoint &b, double r1, double r2, bool inset=true) { vdraw3DRectangle(a.x, a.y, b.x-a.x, b.y-a.y, inset); }
 
-    void draw3DRectanglePC(int x, int y, int w, int h, bool inset=true) const;
-    void draw3DRectanglePC(const TRectangle &r, bool inset=true) const { draw3DRectanglePC(r.x,r.y,r.w,r.h,inset); }
-    void draw3DRectanglePC(const TRectangle *r, bool inset=true) const { draw3DRectanglePC(r->x,r->y,r->w,r->h,inset); }
-    void draw3DRectanglePC(const TPoint &a, const TPoint &b, double r1, double r2, bool inset=true) const { vdraw3DRectangle(a.x, a.y, b.x-a.x, b.y-a.y, inset); }
+    void draw3DRectanglePC(int x, int y, int w, int h, bool inset=true);
+    void draw3DRectanglePC(const TRectangle &r, bool inset=true) { draw3DRectanglePC(r.x,r.y,r.w,r.h,inset); }
+    void draw3DRectanglePC(const TRectangle *r, bool inset=true) { draw3DRectanglePC(r->x,r->y,r->w,r->h,inset); }
+    void draw3DRectanglePC(const TPoint &a, const TPoint &b, double r1, double r2, bool inset=true) { vdraw3DRectangle(a.x, a.y, b.x-a.x, b.y-a.y, inset); }
 
     // text string
     //-----------------------
@@ -268,19 +268,19 @@ class TPenBase:
     virtual int getAscent() const = 0;
     virtual int getDescent() const = 0;
     virtual int getHeight() const = 0;
-    virtual void drawString(int x, int y, const char*, int len) const = 0;
-    virtual void drawString(int x, int y, const string&) const = 0;
-    virtual void fillString(int x, int y, const char*, int len) const = 0;
-    virtual void fillString(int x, int y, const string&) const = 0;
-    virtual int drawTextWidth(int x, int y, const string &text, unsigned width) const = 0;
+    virtual void drawString(int x, int y, const char*, int len) = 0;
+    virtual void drawString(int x, int y, const string&) = 0;
+    virtual void fillString(int x, int y, const char*, int len) = 0;
+    virtual void fillString(int x, int y, const string&) = 0;
+    virtual int drawTextWidth(int x, int y, const string &text, unsigned width) = 0;
     // void drawTextAspect(int x,int y,const char* text,double xa,double ya);
 
     // bitmap
     //-----------------------
-    virtual void drawBitmap(int x,int y, const TBitmap*) const = 0;
-    virtual void drawBitmap(int x,int y, const TBitmap&) const = 0;
-    virtual void drawBitmap(int,int,const TBitmap*, int,int,int,int) const = 0;
-    virtual void drawBitmap(int,int,const TBitmap&, int,int,int,int) const = 0;
+    virtual void drawBitmap(int x,int y, const TBitmap*) = 0;
+    virtual void drawBitmap(int x,int y, const TBitmap&) = 0;
+    virtual void drawBitmap(int,int,const TBitmap*, int,int,int,int) = 0;
+    virtual void drawBitmap(int,int,const TBitmap&, int,int,int,int) = 0;
 
     // ops with cursor
     //-----------------------
@@ -304,9 +304,7 @@ class TPen:
     TPen(TBitmap*);
     TPen(TWindow*);
     virtual ~TPen();
-/*
-    void translate(int dx,int dy);
-*/
+
     void identity();
     void translate(double dx, double dy);
     void rotate(double);
@@ -370,57 +368,57 @@ class TPen:
 
     // point
     //-----------------------
-    void drawPoint(int x,int y) const;
-    void drawPoint(const TPoint &p) const { drawPoint(p.x, p.y); }
+    void drawPoint(int x,int y);
+    void drawPoint(const TPoint &p) { drawPoint(p.x, p.y); }
     
     // line
     //-----------------------
-    void vdrawLine(int x1,int y1,int x2,int y2) const;
-    void drawLines(const TPoint *points, int n) const;
-    void drawLines(const TPolygon&) const;
+    void vdrawLine(int x1,int y1,int x2,int y2);
+    void drawLines(const TPoint *points, int n);
+    void drawLines(const TPolygon&);
 
     // rectangle
     //-----------------------
-    void vdrawRectangle(int x,int y,int w,int h) const;
-    void vfillRectangle(int x,int y,int w,int h) const;
+    void vdrawRectangle(int x,int y,int w,int h);
+    void vfillRectangle(int x,int y,int w,int h);
 
     // circle
     //-----------------------
-    void vdrawCircle(int x,int y,int w,int h) const;
-    void vfillCircle(int x,int y,int w,int h) const;
+    void vdrawCircle(int x,int y,int w,int h);
+    void vfillCircle(int x,int y,int w,int h);
 
     // arc
     //-----------------------   
-    void vdrawArc(int x,int y,int w,int h, double r1, double r2) const;
-    void vfillArc(int x,int y,int w,int h, double r1, double r2) const;
+    void vdrawArc(int x,int y,int w,int h, double r1, double r2);
+    void vfillArc(int x,int y,int w,int h, double r1, double r2);
 
     // polygon
     //-----------------------
-    void fillPolygon(const TPoint *points, int n) const;
-    void drawPolygon(const TPoint *points, int n) const;
-    void fillPolygon(const TPolygon &polygon) const;
-    void drawPolygon(const TPolygon &polygon) const;
+    void fillPolygon(const TPoint *points, int n);
+    void drawPolygon(const TPoint *points, int n);
+    void fillPolygon(const TPolygon &polygon);
+    void drawPolygon(const TPolygon &polygon);
 
     // bezier curves
     //-----------------------
-    void drawBezier(int x1,int y1, int x2,int y2, int x3,int y3, int x4,int y4) const;
-    void drawBezier(double x1,double y1, double x2,double y2, double x3,double y3, double x4,double y4) const;
-    void drawBezier(const TPoint *points) const { drawPolyBezier(points,4); }
-    void drawBezier(const TDPoint *points) const { drawPolyBezier(points,4); }
+    void drawBezier(int x1,int y1, int x2,int y2, int x3,int y3, int x4,int y4);
+    void drawBezier(double x1,double y1, double x2,double y2, double x3,double y3, double x4,double y4);
+    void drawBezier(const TPoint *points) { drawPolyBezier(points,4); }
+    void drawBezier(const TDPoint *points) { drawPolyBezier(points,4); }
 
-    void drawPolyBezier(const TPoint *points, int n) const ;
-    void drawPolyBezier(const TPolygon &p) const; // { drawPolyBezier(p.begin(), p.size()); }
-    void drawPolyBezier(const TDPoint *points, int n) const;
-    void drawPolyBezier(const TDPolygon &p) const ; // { drawPolyBezier(p.begin(), p.size()); }
+    void drawPolyBezier(const TPoint *points, int n);
+    void drawPolyBezier(const TPolygon &p); // { drawPolyBezier(p.begin(), p.size()); }
+    void drawPolyBezier(const TDPoint *points, int n);
+    void drawPolyBezier(const TDPolygon &p); // { drawPolyBezier(p.begin(), p.size()); }
 
-    void fillPolyBezier(const TPoint *points, int n) const;
-    void fillPolyBezier(const TPolygon &p) const; // { fillPolyBezier(p.begin(), p.size()); }
-    void fillPolyBezier(const TDPoint *points, int n) const;
-    void fillPolyBezier(const TDPolygon &p) const; // { fillPolyBezier(p.begin(), p.size()); }
+    void fillPolyBezier(const TPoint *points, int n);
+    void fillPolyBezier(const TPolygon &p); // { fillPolyBezier(p.begin(), p.size()); }
+    void fillPolyBezier(const TDPoint *points, int n);
+    void fillPolyBezier(const TDPolygon &p); // { fillPolyBezier(p.begin(), p.size()); }
 
     // 3D rectangle
     //-----------------------
-    void vdraw3DRectangle(int x, int y, int w, int h, bool inset=true) const;
+    void vdraw3DRectangle(int x, int y, int w, int h, bool inset=true);
 
     // text string
     //-----------------------
@@ -430,19 +428,19 @@ class TPen:
     int getAscent() const;
     int getDescent() const;
     int getHeight() const;
-    void drawString(int x, int y, const char*, int len) const;
-    void drawString(int x, int y, const string&) const;
-    void fillString(int x, int y, const char*, int len) const;
-    void fillString(int x, int y, const string&) const;
-    int drawTextWidth(int x, int y, const string &text, unsigned width) const;
+    void drawString(int x, int y, const char*, int len);
+    void drawString(int x, int y, const string&);
+    void fillString(int x, int y, const char*, int len);
+    void fillString(int x, int y, const string&);
+    int drawTextWidth(int x, int y, const string &text, unsigned width);
     // void drawTextAspect(int x,int y,const char* text,double xa,double ya);
 
     // bitmap
     //-----------------------
-    void drawBitmap(int x,int y, const TBitmap*) const;
-    void drawBitmap(int x,int y, const TBitmap&) const;
-    void drawBitmap(int,int,const TBitmap*, int,int,int,int) const;
-    void drawBitmap(int,int,const TBitmap&, int,int,int,int) const;
+    void drawBitmap(int x,int y, const TBitmap*);
+    void drawBitmap(int x,int y, const TBitmap&);
+    void drawBitmap(int,int,const TBitmap*, int,int,int,int);
+    void drawBitmap(int,int,const TBitmap&, int,int,int,int);
 
     // ops with cursor
     //-----------------------
