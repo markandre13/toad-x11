@@ -120,6 +120,14 @@ class TFigurePreferences:
       reason = UNSETFILLCOLOR;
       sigChanged();
     }
+    void setFont(const string &font) {
+      fontname = font;
+      reason = FONTNAME;
+      sigChanged();
+    }
+    const string& getFont() const {
+      return fontname;
+    }
 
     TBoolModel filled;
     TRGB linecolor;
