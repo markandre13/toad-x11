@@ -192,7 +192,7 @@ TBitmap::TBitmap(int w,int h, EBitmapType type)
       pixmap = XCreatePixmap(
           x11display,
           RootWindow(x11display, x11screen),
-          width,height,
+          width?width:1,height?height:1,
           DefaultDepth(x11display, x11screen)
       );
 #endif
