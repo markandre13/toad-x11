@@ -35,6 +35,7 @@
 #define MK_CONTROL (1<<2)
 #define MK_MOD1    (1<<3)
 #define MK_MOD2    (1<<4)
+#define MK_APPLE   (1<<4)
 #define MK_MOD3    (1<<5)
 #define MK_MOD4    (1<<6)
 #define MK_MOD5    (1<<7)
@@ -43,6 +44,7 @@
 #define MK_RBUTTON (1<<10)
 #define MK_ROLLUP  (1<<11)
 #define MK_ROLLDN  (1<<12)
+#define MK_ALT     (1<<13)
 //#define MK_ANY     (1<<15)
 
 // a special TOAD modifier for double click events

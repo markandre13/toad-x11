@@ -38,20 +38,32 @@ using namespace toad;
  * \ingroup control
  * \class toad::TMenuBar
  *
+ * A horizontal menubar.
+ *
+ * The menubar uses a TMenuLayout for its layout definition.
+ *
+ * TMenuBar also installs a keyboard filter to handle keyboard shortcuts as
+ * defined within the layout. Keyboard shortcuts can be defined as one
+ * or more names connected with the '+' sign. For example 'Alt+F4'.
+ *
+ * Known names are case insensitive and can be one of the common keyboard
+ * symbols or 'Alt', 'Ctrl', 'Strg' or 'F1' to 'F20'.
+ *
+ * \note The name 'Shift' isn't implemented because the symbol which can
+ * be typed with 'Shift' is usually already seen on the keyboard. It would
+ * also have complicated the implementation of the shortcut code.
  */
-
 static bool
-iterate(TMenuBar::TNode *node, TKeyEvent &ke, unsigned indent=0)
+iterate(TMenuBar::TNode *node, const string &str, TKey key, unsigned modifier, unsigned indent=0)
 {
   TMenuBar::TNode *p = node;
   while(p) {
-//    for(unsigned i=0; i<indent; ++i) cout << "  ";
-//    cout << "'" << p->getLabel(0) << "', '" << p->getShortcut() << "'\n";
     string s = p->getShortcut();    
     int state = 0;
-    unsigned pos = 0;
+    size_t pos = 0;
     string pattern;
     bool match = true;
+    unsigned m = 0;
     while(state!=3) {
       string c;
       if (pos<s.size()) {
@@ -74,29 +86,96 @@ iterate(TMenuBar::TNode *node, TKeyEvent &ke, unsigned indent=0)
       }
       
       if (state>=2) {
-//        for(unsigned i=0; i<indent; ++i) cout << "  ";
-//        cout << "  >>" << pattern << "<<\n";
         if (strcasecmp(pattern.c_str(), "strg")==0 ||
             strcasecmp(pattern.c_str(), "ctrl")==0 )
         {
-//cout << "compare for control...\n";
-          if (!(ke.getModifier() &  MK_CONTROL)) {
-//cout << "  no match\n";
-            match = false;
-          }
+          m |= MK_CONTROL;
         } else
-        if (strcasecmp(pattern.c_str(), "shift")==0)
+        if (strcasecmp(pattern.c_str(), "alt")==0)
         {
-          if (!(ke.getModifier() &  MK_SHIFT))
+          m |= MK_ALT;
+        } else
+        if (strcasecmp(pattern.c_str(), "f1")==0) {
+          if (key!=TK_F1)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f2")==0) {
+          if (key!=TK_F2)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f3")==0) {
+          if (key!=TK_F3)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f4")==0) {
+          if (key!=TK_F4)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f5")==0) {
+          if (key!=TK_F5)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f6")==0) {
+          if (key!=TK_F6)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f7")==0) {
+          if (key!=TK_F7)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f8")==0) {
+          if (key!=TK_F8)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f9")==0) {
+          if (key!=TK_F9)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f10")==0) {
+          if (key!=TK_F10)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f11")==0) {
+          if (key!=TK_F11)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f12")==0) {
+          if (key!=TK_F12)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f13")==0) {
+          if (key!=TK_F13)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f14")==0) {
+          if (key!=TK_F14)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f15")==0) {
+          if (key!=TK_F15)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f16")==0) {
+          if (key!=TK_F16)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f17")==0) {
+          if (key!=TK_F17)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f18")==0) {
+          if (key!=TK_F18)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f19")==0) {
+          if (key!=TK_F19)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "f20")==0) {
+          if (key!=TK_F20)
             match = false;
         } else {
-#warning "crude way to convert key code into string"
-          char buffer[2];
-          buffer[0]=ke.getKey();
-          buffer[1]=0;
-//cout << "compare '" << pattern << "' with '" << buffer << "'\n";
-          if (strcasecmp(pattern.c_str(), buffer)!=0) {
-//cout << "  no match\n";
+          if (strcasecmp(pattern.c_str(), str.c_str())!=0) {
             match = false;
           }
         }
@@ -105,14 +184,14 @@ iterate(TMenuBar::TNode *node, TKeyEvent &ke, unsigned indent=0)
         pattern.clear();
       }
     }
-    if (!s.empty() && match) {
+    if (!s.empty() && match && m==modifier) {
 //      cout << "found match " << p->getLabel(0) << endl;
       p->trigger(0);
       return true;
     }
     
     if (p->down) {
-      if (iterate(p->down, ke, indent+1))
+      if (iterate(p->down, str, key, modifier, indent+1))
         return true;
     }
     p = p->next;
@@ -130,8 +209,16 @@ class TMenuBar::TMyKeyFilter:
     protected:
       TMenuBar *menubar;
       bool keyEvent(TKeyEvent &ke) {
-//        cout << "TMenuBar keyboard filter: found key event" << endl;
-        return iterate(&menubar->root, ke);
+        unsigned m = ke.getModifier();
+        unsigned modifier = 0;
+        if (m & MK_CONTROL)
+          modifier|=MK_CONTROL;
+        if (m & MK_ALT)
+          modifier|=MK_ALT;
+        m &= ~(MK_CONTROL|MK_ALT);
+        ke.setModifier(m);
+        string str = ke.getString();
+        return iterate(&menubar->root, str, ke.getKey(), modifier);
       }
 };
 
