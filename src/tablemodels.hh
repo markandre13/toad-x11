@@ -96,6 +96,9 @@ class TTableCellRenderer_CString:
     TTableCellRenderer_CString(const char **l, int s) {
       setModel(new TTableModel_CString(l, s));
     }
+    ~TTableCellRenderer_CString() {
+      setModel(0);
+    }
     void setModel(TTableModel_CString *m) {
       if (model)
         disconnect(model->sigChanged, this);
@@ -344,11 +347,11 @@ class GTableCellRenderer_String:
     typedef GTableCellRenderer_String<T> This;
     
   public:
-    GTableCellRenderer_String(T *m)
-    {
+    GTableCellRenderer_String(T *m) {
       setModel(m);
     }
     ~GTableCellRenderer_String() {
+      setModel(0);
     }
     // implements 'virtual TAbstractTableModel * getModel() = 0;'
     T * getModel() {
@@ -422,11 +425,11 @@ class GTableCellRenderer_Text:
     typedef GTableCellRenderer_String<T> This;
     
   public:
-    GTableCellRenderer_Text(T *m)
-    {
+    GTableCellRenderer_Text(T *m) {
       setModel(m);
     }
     ~GTableCellRenderer_Text() {
+      setModel(0);
     }
     // implements 'virtual TAbstractTableModel * getModel() = 0;'
     T * getModel() {
@@ -496,11 +499,11 @@ class GTableCellRenderer_PText:
     typedef GTableCellRenderer_String<T> This;
     
   public:
-    GTableCellRenderer_PText(T *m)
-    {
+    GTableCellRenderer_PText(T *m) {
       setModel(m);
     }
     ~GTableCellRenderer_PText() {
+      setModel(0);
     }
     // implements 'virtual TAbstractTableModel * getModel() = 0;'
     T * getModel() {
@@ -569,7 +572,9 @@ class GTableRowRenderer:
       setModel(m);
       per_row = true;
     }
-    ~GTableRowRenderer() { }
+    ~GTableRowRenderer() {
+      setModel(0);
+    }
     // implements 'virtual TAbstractTableModel * getModel() = 0;'
     T * getModel() {
       return model;
