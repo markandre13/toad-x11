@@ -42,6 +42,7 @@ class TFigure:
 {
   public:
     TFigure();
+    TFigure(const TFigure &);
     virtual ~TFigure();
     enum EPaintType {
       NORMAL,

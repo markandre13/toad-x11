@@ -105,8 +105,18 @@ TFigure::TFigure()
   mat = 0;
 }
 
+TFigure::TFigure(const TFigure &f)
+{
+  removeable = f.removeable;
+  mat = 0;
+  if (f.mat)
+    mat = new TMatrix2D(*f.mat);
+}
+
 TFigure::~TFigure()
 {
+  if (mat)
+    delete mat;
 }
 
 TColoredFigure::TColoredFigure()
