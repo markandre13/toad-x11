@@ -153,7 +153,7 @@ TFigure::paintSelection(TPenBase &pen)
   }
   if (h==0) {
     TRectangle r;
-    getShape(r);
+    getShape(&r);
     int x, y;
     for(int i=0; i<4; ++i) {
       switch(i) {

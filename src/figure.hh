@@ -77,7 +77,7 @@ class TFigure:
      * \li
      *    paint a marker with the default implementation of 'paintSelection'
      */
-    virtual void getShape(TRectangle&) = 0;
+    virtual void getShape(TRectangle*) = 0;
 
   protected:
     TSerializableRGB line_color;
@@ -174,7 +174,7 @@ class TFRectangle:
       p2.y = y+h-1;
     }
     void paint(TPenBase &, EPaintType);
-    void getShape(TRectangle&);
+    void getShape(TRectangle*);
 
     double distance(int x, int y);
     void translate(int dx, int dy);
@@ -210,7 +210,7 @@ class TFPolygon:
     
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
-    void getShape(TRectangle&);
+    void getShape(TRectangle*);
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint &p);
     void translateHandle(unsigned handle, int mx, int my);
@@ -402,7 +402,7 @@ class TFFrame:
     };
     void paint(TPenBase &, EPaintType);
 
-    void getShape(TRectangle&);
+    void getShape(TRectangle*);
     double distance(int x, int y);
     unsigned stop(TFigureEditor*);
     unsigned keyDown(TFigureEditor*, TKey, char*, unsigned);

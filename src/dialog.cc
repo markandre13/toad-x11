@@ -219,7 +219,7 @@ arrangeHelper(TFigureModel::iterator p,
       if (pm!=wmap.end()) {
         gw->window = (*pm).second;
         TRectangle r;
-        gw->getShape(r);
+        gw->getShape(&r);
         gw->window->setShape(r.x,r.y,r.w,r.h);
         TLabelOwner *lo = dynamic_cast<TLabelOwner*>(gw->window);
         if (lo) {

@@ -24,7 +24,7 @@
 using namespace toad;
 
 void
-TFPolygon::getShape(TRectangle &r)
+TFPolygon::getShape(TRectangle *r)
 {
   TPoint p1, p2;
 
@@ -49,7 +49,7 @@ TFPolygon::getShape(TRectangle &r)
     ++p;
   }
 
-  r.set(p1,p2);
+  r->set(p1,p2);
 }
 
 void 

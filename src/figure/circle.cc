@@ -49,7 +49,7 @@ double
 TFCircle::distance(int mx, int my)
 {
   TRectangle r;
-  getShape(r);
+  getShape(&r);
   double rx = 0.5*(r.w);
   double ry = 0.5*(r.h);
   double cx = (double)r.x+rx;

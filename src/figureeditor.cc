@@ -583,7 +583,7 @@ TFigureEditor::paint()
       pen.multiply(gadget->mat);
 
     TRectangle r;
-    gadget->getShape(r);
+    gadget->getShape(&r);
     for(int i=0; i<=4; ++i) {
       switch(i) {
         case 0: x = r.x;       y = r.y;       break;
@@ -1485,7 +1485,7 @@ redo:
           if (g) {
             state = STATE_ROTATE;
             TRectangle r;
-            g->getShape(r);
+            g->getShape(&r);
             if (gadget!=g) {
               rotx = r.x + r.w/2;
               roty = r.y + r.h/2;
@@ -1816,7 +1816,7 @@ redo:
         TRectangle r1(TPoint(down_x,down_y), TPoint(x,y));
         TRectangle r2;
         while(p!=e) {
-          (*p)->getShape(r2);
+          (*p)->getShape(&r2);
           if (r1.isInside( r2.x, r2.y ) &&
               r1.isInside( r2.x+r2.w, r2.y+r2.h ) )
           {
@@ -1888,7 +1888,7 @@ TFigureEditor::invalidateFigure(TFigure* figure)
     return;
 
   TRectangle r;
-  figure->getShape(r);
+  figure->getShape(&r);
   if (mat || figure->mat) {
     TMatrix2D m;
     if (mat) {
@@ -2038,7 +2038,7 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
   if (p==e) {
     x1 = x2 = y1 = y2 = 0;
   } else {
-    (*p)->getShape(r);
+    (*p)->getShape(&r);
     x1=r.x;
     y1=r.y;
     x2=r.x+r.w-1;
@@ -2048,7 +2048,7 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
   
   while(p!=e) {
     int a;
-    (*p)->getShape(r);
+    (*p)->getShape(&r);
     if (r.x<x1)
       x1=r.x;
     a = r.x+r.w-1;

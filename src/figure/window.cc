@@ -57,7 +57,7 @@ TFWindow::translate(int dx, int dy)
   }
   super::translate(dx, dy);
   TRectangle r;
-  getShape(r);
+  getShape(&r);
   window->setShape(r);
 }
 
@@ -70,7 +70,7 @@ TFWindow::translateHandle(unsigned handle, int mx, int my)
   }
   super::translateHandle(handle, mx, my);
   TRectangle r;
-  getShape(r);
+  getShape(&r);
   window->setShape(r);
 }
 

@@ -23,9 +23,9 @@
 
 using namespace toad;
 
-void TFRectangle::getShape(TRectangle &r)
+void TFRectangle::getShape(TRectangle *r)
 {
-  r.set(p1,p2);
+  r->set(p1,p2);
 }
 
 void 

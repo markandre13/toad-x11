@@ -61,13 +61,13 @@ TFFrame::paint(TPenBase &pen, EPaintType type)
 }
 
 void
-TFFrame::getShape(TRectangle &r)
+TFFrame::getShape(TRectangle *r)
 {
   PFont font = TPen::lookupFont(fontname);
   int a = font->getHeight()/2;
   TFRectangle::getShape(r);
-  r.y-=a;
-  r.h+=a;
+  r->y-=a;
+  r->h+=a;
 }
 
 double
