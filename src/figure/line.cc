@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de> 
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,136 +18,149 @@
  * MA  02111-1307,  USA
  */
 
-#include <toad/figure/line.hh>
+#include <math.h>
+#include <toad/figure.hh>
 #include <toad/figureeditor.hh>
 
 using namespace toad;
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846  /* pi */
+#endif
+
 TFLine::TFLine()
 {
-  p1.x = p1.y = p2.x = p1.y = 0;
+  arrowmode = NONE;
+  arrowtype = SIMPLE;
+  arrowheight = 8 * 96;
+  arrowwidth = 4 * 96;
 }
 
-TFLine::TFLine(int x1, int y1, int x2, int y2)
+void
+TFLine::drawArrow(TPenBase &pen, 
+                  const TPoint &p1, const TPoint &p2,
+                  const TRGB &line, const TRGB &fill,
+                  int w, int h,
+                  EArrowType type)
 {
-  p1.x = x1; p1.y = y1;
-  p2.x = x2; p2.y = y2;
+  double d = atan2((double)p2.y - p1.y, 
+                   (double)p2.x - p1.x);
+  
+  double height = h;
+  double width  = 0.5 * w;
+  
+  TPoint p0;
+  
+  TPoint p[4];
+  
+  p[0] = p1;
+  
+  p0.x = static_cast<int>(cos(d) * height + p1.x);
+  p0.y = static_cast<int>(sin(d) * height + p1.y);
+
+  double r = 90.0 / 360.0 * (2.0 * M_PI);
+  p[1].x = p0.x + static_cast<int>(cos(d-r) * width);
+  p[1].y = p0.y + static_cast<int>(sin(d-r) * width);
+  p[3].x = p0.x + static_cast<int>(cos(d+r) * width);
+  p[3].y = p0.y + static_cast<int>(sin(d+r) * width);
+  
+  pen.setLineColor(line);
+  switch(type) {
+    case SIMPLE:
+      pen.drawLine(p[0], p[1]);
+      pen.drawLine(p[0], p[3]);
+      break;
+    case EMPTY:
+      p[2] = p0;
+      pen.setFillColor(fill);
+      pen.fillPolygon(p, 4);
+      break;
+    case FILLED:
+      p[2] = p0;
+      pen.setFillColor(line);
+      pen.fillPolygon(p, 4);
+      break;
+    case EMPTY_CONCAVE:
+      height -= height / 4;
+      p[2].x = static_cast<int>(cos(d) * height + p1.x);
+      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      pen.setFillColor(fill);
+      pen.fillPolygon(p, 4);
+      break;
+    case FILLED_CONCAVE:
+      height -= height / 4;
+      p[2].x = static_cast<int>(cos(d) * height + p1.x);
+      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      pen.setFillColor(line);
+      pen.fillPolygon(p, 4);
+      break;
+    case EMPTY_CONVEX:
+      height += height / 4;
+      p[2].x = static_cast<int>(cos(d) * height + p1.x);
+      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      pen.setFillColor(fill);
+      pen.fillPolygon(p, 4);
+      break;
+    case FILLED_CONVEX:
+      height += height / 4;
+      p[2].x = static_cast<int>(cos(d) * height + p1.x);
+      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      pen.setFillColor(line);
+      pen.fillPolygon(p, 4);
+      break;
+  }
 }
 
 void 
 TFLine::paint(TPenBase &pen, EPaintType)
 {
-  pen.setLineColor(line_color);
-  pen.drawLine(p1, p2);
-}
+  pen.drawLines(polygon);
 
-void 
-TFLine::getShape(TRectangle &r)
-{
-  r.set(p1, p2);
+  if (arrowmode == HEAD || arrowmode == BOTH)
+    drawArrow(pen, polygon[0], polygon[1], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
+  if (arrowmode == TAIL || arrowmode == BOTH)
+    drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
 }
 
 double 
 TFLine::distance(int mx, int my)
 {
-  return distance2Line(mx, my, p1.x, p1.y, p2.x, p2.y);
-}
+  TPolygon::const_iterator p(polygon.begin()), e(polygon.end());
+  int x1,y1,x2,y2;
+  double min = OUT_OF_RANGE, d;
 
-bool
-TFLine::getHandle(unsigned handle, TPoint& p)
-{
-  switch(handle) {
-    case 0:
-      p=p1;
-      return true;
-    case 1:
-      p=p2;
-      return true;
+  assert(p!=e);
+  x2=p->x;
+  y2=p->y;
+  ++p;
+  assert(p!=e);
+  while(p!=e) {
+    x1=x2;
+    y1=y2;
+    x2=p->x;
+    y2=p->y;
+    d = distance2Line(mx,my, x1,y1, x2,y2);
+    if (d<min)
+      min = d;
+    ++p;
   }
-  return false;
+  return min;
 }
 
-void 
-TFLine::translate(int dx, int dy)
+/**
+ * A variation of our super class mouseLDown, which accepts a minimum of
+ * 2 points instead of 3.
+ */
+unsigned 
+TFLine::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
 {
-  p1.x+=dx;
-  p1.y+=dy;
-  
-  p2.x+=dx;
-  p2.y+=dy;
-}
-
-void 
-TFLine::translateHandle(unsigned h, int x, int y)
-{
-  switch(h) {
-    case 0:
-      p1.set(x,y);
-      break;
-    case 1:
-      p2.set(x,y);
-      break;
-  }
-}
-
-unsigned
-TFLine::mouseLDown(TFigureEditor *e, int x, int y, unsigned)
-{
-  if (e->state == TFigureEditor::STATE_START_CREATE) {
-    e->invalidateFigure(this);
-    p1.set(x,y);
-    p2.set(x,y);
-    e->invalidateFigure(this);
-    return CONTINUE;
-  }
-  return NOTHING;
-}
-
-unsigned
-TFLine::mouseMove(TFigureEditor *e, int x, int y, unsigned)
-{
-  if (e->state == TFigureEditor::STATE_CREATE) {
-    e->invalidateFigure(this);
-    p2.set(x,y);
-    e->invalidateFigure(this);
-    return CONTINUE;
-  }
-  return NOTHING;
-}
-
-unsigned
-TFLine::mouseLUp(TFigureEditor *e, int x, int y, unsigned)
-{
-  if (e->state == TFigureEditor::STATE_CREATE) {
-    p2.set(x,y);
-    if (p1.x==p2.x && p1.y==p2.y)
+  if (editor->state == TFigureEditor::STATE_CREATE &&
+      m & MK_DOUBLE) 
+  {
+    if (polygon.size()<3)
       return STOP|DELETE;
+    polygon.erase(--polygon.end());
     return STOP;
   }
-  return NOTHING;
-}
-
-void 
-TFLine::store(TOutObjectStream &out) const
-{
-  ::store(out, "x1", p1.x);
-  ::store(out, "y1", p1.y);
-  ::store(out, "x2", p2.x);
-  ::store(out, "y2", p2.y);
-  ::store(out, "linecolor", line_color);
-}
-
-bool 
-TFLine::restore(TInObjectStream &in)
-{
-  if (
-    ::restore(in, "linecolor", &line_color) ||
-    ::restore(in, "x1", &p1.x) ||
-    ::restore(in, "y1", &p1.y) ||
-    ::restore(in, "x2", &p2.x) ||
-    ::restore(in, "y2", &p2.y) ||
-    super::restore(in)
-  ) return true;
-  ATV_FAILED(in)
-  return false;
+  return super::mouseLDown(editor, mx, my, m);
 }

@@ -559,7 +559,7 @@ TTable::setSelectionModel(TAbstractTableSelectionModel *m)
   if (selection) {
     // stupid hack just in case someone is using sx and sy...
     // i'm going to remove this along with the getLast...
-    // methods
+    // methods?
     sx = sy = 0;
     for(int y=0; y<rows; ++y) {
       for(int x=0; x<cols; ++x) {

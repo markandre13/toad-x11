@@ -139,6 +139,8 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t):
 
 TFigureEditor::~TFigureEditor()
 {
+  setPreferences(0);
+
 //  SetMode(MODE_SELECT);
 //  cout << "gadgets total: " << gadgets.size() << endl;
   if (mat)
@@ -194,18 +196,86 @@ class THistoryAction:
     }
 };
 
+TFigurePreferences::TFigurePreferences()
+{
+  linecolor.set(0,0,0);
+  fillcolor.set(255,255,255);
+  filled = false;
+  fontname = "arial,helvetica,sans-serif:size=12";
+
+  drawgrid = true;
+  gridsize = 4;
+  
+  linewidth = 0;
+  linestyle = TPen::SOLID;
+  arrowmode = TFLine::NONE;
+  arrowtype = TFLine::EMPTY;
+  
+  current = 0;
+}
+
+TFigurePreferences::~TFigurePreferences()
+{
+}
+
+void
+TFigurePreferences::setOperation(unsigned op)
+{
+  if (current) current->setOperation(op);
+}
+
+void
+TFigurePreferences::setCreate(TFigure *figure)
+{
+  if (current) current->setCreate(figure);
+}
+
+void
+TFigurePreferences::group()
+{
+  if (current) current->group();
+}
+
+void
+TFigurePreferences::ungroup()
+{
+  if (current) current->ungroup();
+}
+
+void
+TFigurePreferences::selectionDown()
+{
+  if (current) current->selectionDown();
+}
+
+void
+TFigurePreferences::selection2Bottom()
+{
+  if (current) current->selection2Bottom();
+}
+
+void
+TFigurePreferences::selectionUp()
+{
+  if (current) current->selectionUp();
+}
+
+void
+TFigurePreferences::selection2Top()
+{
+  if (current) current->selection2Top();
+}
+
+
+
 void
 TFigureEditor::init()
 {
-  line_color.set(0,0,0);
-  fill_color.set(255,255,255);
-  filled = false;
+  preferences = 0;
+  setPreferences(new TFigurePreferences);
   background_color.set(192,192,192);
-  fontname = "arial,helvetica,sans-serif:size=12";
-
-  gridx = gridy = 4;
-  draw_grid = true;
   fuzziness = 2;
+
   handle = -1;
   gadget = gtemplate = NULL;
   operation = OP_SELECT;
@@ -303,7 +373,7 @@ void TFigureEditor::scale(double sx, double sy)
 
 // better: create 2 points, transform 'em and calculate the
 // distance
-fuzziness = 2.0 / sx;
+  fuzziness = static_cast<int>(2.0 / sx);
   
   updateScrollbars();
   invalidateWindow();
@@ -340,20 +410,17 @@ TFigureEditor::enableScroll(bool b)
 void
 TFigureEditor::enableGrid(bool b)
 {
-  draw_grid = b;
+  preferences->drawgrid = b;
 }
 
 /**
  * Set the size of the grid.
  */
 void
-TFigureEditor::setGrid(int gx, int gy) {
-  if (gx<0)
-    gx=0;
-  if (gy<0)
-    gy=0;
-  gridx = gx;
-  gridy = gy;
+TFigureEditor::setGrid(int gridsize) {
+  if (gridsize<0)
+    gridsize=0;
+  preferences->gridsize = gridsize;
   if (window)
     window->invalidateWindow(visible);
 }
@@ -410,7 +477,7 @@ TFigureEditor::paint()
     background_color.b > 128 ? background_color.b-128 : background_color.b+128
   );
 
-  if (draw_grid && gridx && gridy) {
+  if (preferences->drawgrid && preferences->gridsize) {
     int x1, x2, y1, y2;
     
     getPanePos(&x1, &y1, true);
@@ -419,7 +486,7 @@ TFigureEditor::paint()
     
     if (mat) {
       int gx, gy;
-      mat->map(gridx, gridy, &gx, &gy);
+      mat->map(preferences->gridsize, preferences->gridsize, &gx, &gy);
       if (gx<2 || gy<2) {
 //        cerr << "don't draw grid, it's too small" << endl;
         x1=y1=1;
@@ -440,14 +507,15 @@ TFigureEditor::paint()
     }
 
     // justify to grid
-    x1 -= x1 % gridx;
-    y1 -= y1 % gridy;
+    int g = preferences->gridsize;
+    x1 -= x1 % g;
+    y1 -= y1 % g;
 
 //    cerr << "draw grid from (" << x1 << ", " << y1 << ") to ("
 //         << x2 << ", " << y2 << ")" << endl;
 
-    for(int y=y1; y<=y2; y+=gridy) {
-      for(int x=x1; x<=x2; x+=gridx) {
+    for(int y=y1; y<=y2; y+=g) {
+      for(int x=x1; x<=x2; x+=g) {
         pen.drawPoint(x, y);
       }
     }
@@ -585,40 +653,85 @@ TFigureEditor::print(TPenBase &pen)
 void
 TFigureEditor::setLineColor(const TRGB &rgb)
 {
-  line_color = rgb;
+  preferences->linecolor = rgb;
   TFigureSet::iterator p,e;
   p = selection.begin();
   e = selection.end();
   while(p!=e) {
-    (*p)->setLineColor(line_color);
+    (*p)->setLineColor(preferences->linecolor);
     p++;
   }
   if (gtemplate)
-    gtemplate->setLineColor(line_color);
+    gtemplate->setLineColor(preferences->linecolor);
   window->invalidateWindow();
 }
 
 void
 TFigureEditor::setFillColor(const TRGB &rgb)
 {
-  fill_color = rgb;
-  filled = true;
-  TFigureSet::iterator p,e;
-  p = selection.begin();
-  e = selection.end();
-  while(p!=e) {
-    (*p)->setFillColor(fill_color);
-    p++;
+  preferences->setFillColor(rgb);
+}
+
+void 
+TFigureEditor::setPreferences(TFigurePreferences *p) {
+  if (preferences) {
+    disconnect(preferences->sigChanged, this);
+    if (preferences->getCurrent() == this)
+      preferences->setCurrent(0);
   }
-  if (gtemplate)
-    gtemplate->setFillColor(fill_color);
-  window->invalidateWindow();
+  preferences = p;
+  if (preferences) {
+    preferences->setCurrent(this);
+    connect(preferences->sigChanged, this, &TThis::modelChanged);
+  }
+}
+
+void
+TFigureEditor::modelChanged()
+{
+  if (!preferences)
+    return;
+  switch(preferences->reason) {
+    case TFigurePreferences::LINECOLOR:
+      for(TFigureSet::iterator p = selection.begin();
+          p != selection.end();
+          ++p)
+      {
+        (*p)->setLineColor(preferences->linecolor);
+      }
+      if (gtemplate)
+        gtemplate->setLineColor(preferences->linecolor);
+      window->invalidateWindow();
+      break;
+    case TFigurePreferences::FILLCOLOR:
+      for(TFigureSet::iterator p = selection.begin();
+          p != selection.end();
+          ++p)
+      {
+        (*p)->setFillColor(preferences->fillcolor);
+      }
+      if (gtemplate)
+        gtemplate->setFillColor(preferences->fillcolor);
+      window->invalidateWindow();
+      break;
+    case TFigurePreferences::UNSETFILLCOLOR:
+      for(TFigureSet::iterator p = selection.begin();
+          p != selection.end();
+          ++p)
+      {
+        (*p)->unsetFillColor();
+      }
+      if (gtemplate)
+        gtemplate->unsetFillColor();
+      window->invalidateWindow();
+      break;
+  }
 }
 
 void
 TFigureEditor::unsetFillColor()
 {
-  filled = false;
+  preferences->filled = false;
   TFigureSet::iterator p,e;
   p = selection.begin();
   e = selection.end();
@@ -634,7 +747,7 @@ TFigureEditor::unsetFillColor()
 void
 TFigureEditor::setFont(const string &fontname)
 {
-  this->fontname = fontname;
+  preferences->fontname = fontname;
   TFigureSet::iterator p,e;
   p = selection.begin();
   e = selection.end();
@@ -957,12 +1070,12 @@ TFigureEditor::setCreate(TFigure *t)
     delete clone;
     return;
   }
-  gtemplate->setLineColor(line_color);
-  if (filled)
-    gtemplate->setFillColor(fill_color);
+  gtemplate->setLineColor(preferences->linecolor);
+  if (preferences->filled)
+    gtemplate->setFillColor(preferences->fillcolor);
   else
     gtemplate->unsetFillColor();
-  gtemplate->setFont(fontname);
+  gtemplate->setFont(preferences->fontname);
   gtemplate->removeable = true;
   
   clearSelection();
@@ -1084,6 +1197,21 @@ TFigureEditorHeaderRenderer::mouseEvent(TMouseEvent &me)
 }
 
 void
+TFigureEditor::sheet2grid(int sx, int sy, int *gx, int *gy)
+{
+  if (!preferences->drawgrid)
+    return;
+  if (state!=STATE_ROTATE) {
+    int g = preferences->gridsize;
+    *gx = ((sx+g/2)/g)*g;
+    *gy = ((sy+g/2)/g)*g;
+  } else {
+    *gx = sx;
+    *gy = sy;
+  }
+}
+
+void
 TFigureEditor::mouseLDown(int mx,int my, unsigned m)
 {
   #if VERBOSE
@@ -1093,10 +1221,13 @@ TFigureEditor::mouseLDown(int mx,int my, unsigned m)
   if (!window)
     return;
 
-  mouse2sheet(mx, my, &mx, &my);
+  if (preferences)
+    preferences->setCurrent(this);
 
-  int x = ((mx+gridx/2)/gridx)*gridx;
-  int y = ((my+gridy/2)/gridy)*gridy;
+  mouse2sheet(mx, my, &mx, &my);
+  int x, y;
+  sheet2grid(mx, my, &x, &y);
+
 //cerr << "mouse down at " << mx << ", " << my << endl;
 //cerr << " with grid at " << x << ", " << y << endl;
 
@@ -1345,9 +1476,8 @@ redo:
   }
 }
 
-
 void
-TFigureEditor::mouseMove(int x, int y, unsigned m)
+TFigureEditor::mouseMove(int mx, int my, unsigned m)
 {
 
   #if VERBOSE
@@ -1357,10 +1487,9 @@ TFigureEditor::mouseMove(int x, int y, unsigned m)
   if (!window)
     return;
 
-  mouse2sheet(x, y, &x, &y);
-
-  x = ((x+gridx/2)/gridx)*gridx;
-  y = ((y+gridy/2)/gridy)*gridy;
+  mouse2sheet(mx, my, &mx, &my);
+  int x, y;
+  sheet2grid(mx, my, &x, &y);
 
 redo:
 
@@ -1484,7 +1613,7 @@ redo:
 }
 
 void
-TFigureEditor::mouseLUp(int x, int y, unsigned m)
+TFigureEditor::mouseLUp(int mx, int my, unsigned m)
 {
 #if VERBOSE
   cout << __PRETTY_FUNCTION__ << endl;
@@ -1493,10 +1622,9 @@ TFigureEditor::mouseLUp(int x, int y, unsigned m)
   if (!window)
     return;
 
-  mouse2sheet(x, y, &x, &y);
-
-  x = ((x+gridx/2)/gridx)*gridx;
-  y = ((y+gridy/2)/gridy)*gridy;
+  mouse2sheet(mx, my, &mx, &my);
+  int x, y;
+  sheet2grid(mx, my, &x, &y);
 
 redo:
 
@@ -1827,10 +1955,10 @@ DBM(cout << "area size: (" << x1 << ", " << y1 << ") - ("
     double dx1, dy1, dx2, dy2;
     mat->map(x1, y1, &dx1, &dy1);
     mat->map(x2+1, y2+1, &dx2, &dy2);
-    pane.x = dx1;
-    pane.y = dy1;
-    pane.w = dx2-dx1;
-    pane.h = dy2-dy1;
+    pane.x = static_cast<int>(dx1);
+    pane.y = static_cast<int>(dy1);
+    pane.w = static_cast<int>(dx2-dx1);
+    pane.h = static_cast<int>(dy2-dy1);
     
   }
   doLayout();

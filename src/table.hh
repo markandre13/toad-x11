@@ -283,10 +283,10 @@ class TTable:
     int getCursorCol() const { return cx; }
     int getCursorRow() const { return cy; }
     void selectAtCursor();
-    
+
     int getLastSelectionCol() const { return sx; }
     int getLastSelectionRow() const { return sy; }
-    
+
     //! the cursor was moved
     TSignal sigCursor;
     

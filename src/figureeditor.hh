@@ -21,16 +21,22 @@
 #ifndef _TOAD_FIGUREEDITOR
 #define _TOAD_FIGUREEDITOR
 
+#include <toad/figure.hh>
 #include <toad/figuremodel.hh>
 #include <toad/scrollpane.hh>
 #include <toad/undoable.hh>
 #include <toad/util/history.hh>
 
+#include <toad/boolmodel.hh>
+#include <toad/textmodel.hh>
+#include <toad/boundedrangemodel.hh>
+
 #include <set>
 
 namespace toad {
 
-class TFigure;
+// class TFigure;
+class TFigureEditor;
 class TScrollBar;
 
 class TFigureEditorHeaderRenderer
@@ -41,6 +47,95 @@ class TFigureEditorHeaderRenderer
     virtual void mouseEvent(TMouseEvent&);
 };
 
+class TFigurePreferences:
+  public TModel
+{
+    TFigureEditor *current;
+  public:
+    TFigurePreferences();
+    ~TFigurePreferences();
+
+    void setCurrent(TFigureEditor *current) {
+      if (this->current == current)
+        return;
+      this->current = current;
+      reason = CURRENTCHANGED;
+      sigChanged();
+    }
+    
+    TFigureEditor* getCurrent() const {
+      return current;
+    }
+
+    // These methods delegate to the current TFigureEditor.
+    void setOperation(unsigned);
+    void setCreate(TFigure*);
+    void group();
+    void ungroup();
+    void selectionDown();
+    void selection2Bottom();
+    void selectionUp();
+    void selection2Top();
+    
+    // additional information on why sigChanged was triggered
+    enum EReason {
+      /**
+       * All parameters have changed or, apply all parameters.
+       */
+      ALLCHANGED,
+      /**
+       * Where going to edit another object.
+       */
+      CURRENTCHANGED,
+      /**
+       * Drawing properties have changed.
+       */
+      LINECOLOR,
+      FILLCOLOR,
+      UNSETFILLCOLOR,
+      /**
+       * This TPreferences was subclassed. Try dynamic_cast to get
+       * more information.
+       */
+      EXTENDED
+    } reason;
+    
+    void setLineColor(const TRGB &rgb) { 
+      linecolor = rgb;
+      reason = LINECOLOR;
+      sigChanged();
+    }
+    void setFillColor(const TRGB &rgb) { 
+      fillcolor = rgb; 
+      filled = true; 
+      reason = FILLCOLOR;
+      sigChanged();
+    }
+    void unsetFillColor() { 
+      filled = false; 
+      reason = UNSETFILLCOLOR;
+      sigChanged();
+    }
+
+    TBoolModel filled;
+    TRGB linecolor;
+    TRGB fillcolor;
+    TTextModel fontname;
+    TRGB background_color;
+    TBoolModel drawgrid;
+    // TBoolModel use_grid;
+    TBoundedRangeModel gridsize;
+    
+    unsigned linewidth;
+    TPen::ELineStyle linestyle;
+    
+    TFLine::EArrowMode arrowmode;
+    TFLine::EArrowType arrowtype;
+    unsigned arrowwidth;
+    unsigned arrowheight;
+};
+typedef GSmartPointer<TFigurePreferences> PFigurePreferences;
+
 /**
  * \ingroup figure
  */
@@ -48,6 +143,7 @@ class TFigureEditor:
   public TScrollPane
 {
     typedef TScrollPane super;
+    typedef TFigureEditor TThis;
     PFigureModel model;    
   public:
     
@@ -57,10 +153,16 @@ class TFigureEditor:
 
     TFigureEditor(TWindow*, const string &title);
     ~TFigureEditor();
+    
+    void setPreferences(TFigurePreferences *p);
+    TFigurePreferences* getPreferences() const {
+      return preferences;
+    }
+    void modelChanged();
 
     void enableScroll(bool);
     void enableGrid(bool);
-    void setGrid(int x, int y);
+    void setGrid(int gridsize);
     void setBackground(int,int,int);
 
     void setRowHeaderRenderer(TFigureEditorHeaderRenderer *r) {
@@ -88,9 +190,10 @@ class TFigureEditor:
     }
 
   protected:
+    PFigurePreferences preferences;
+  
     TWindow *window;            // current window
     TMatrix2D *mat;             // transformation for the editor
-    int fuzziness;              // fuzziness to catch handles
     
     TFigureEditorHeaderRenderer *row_header_renderer;
     TFigureEditorHeaderRenderer *col_header_renderer;
@@ -168,6 +271,7 @@ class TFigureEditor:
     static const unsigned STATE_START_CREATE = 5;   // set during `startCreate' and first `mouseLDown'
     static const unsigned STATE_CREATE = 6;
     
+    int fuzziness; // fuzziness to catch handles
     unsigned state;
     
     int down_x, down_y;                             // last mouseXDown postion
@@ -192,27 +296,21 @@ class TFigureEditor:
     void mouseLUp(int,int,unsigned);
     void keyDown(TKey, char*, unsigned);
 
-    void mouse2sheet(int mx, int my, int *sx, int *sy);
-
+    virtual void mouse2sheet(int mx, int my, int *sx, int *sy);
+    virtual void sheet2grid(int sx, int sy, int *gx, int *gy);
+    
     bool restore(TInObjectStream&);
     void store(TOutObjectStream&) const;
 
   protected:
     void init();
-  
-    bool filled;
-    TRGB line_color;
-    TRGB fill_color;
-    string fontname;
     
     TRGB background_color;
-    bool draw_grid;
     
     unsigned operation;
     
     TFigure* gadget;        // the current gadget during create & edit
     TFigure* gtemplate;     // the gadget template during create
-    unsigned gridx, gridy;
     
     int handle;             // the current handle or -1 during select
     

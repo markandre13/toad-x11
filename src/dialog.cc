@@ -36,7 +36,6 @@
 #include <toad/textfield.hh>
 #include <toad/figureeditor.hh>
 #include <toad/colorselector.hh>
-#include <toad/figure/line.hh>
 
 namespace toad {
 
@@ -463,7 +462,10 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
   x += w+5;
   y = 5;
   
-  TColorSelector *cs = new TColorSelector(this, "colorselector", &gedit);
+  TColorSelector *cs = new TColorSelector(this, 
+                                          "colorselector", 
+                                          gedit.getPreferences());
+  cs->dialogeditorhack = true;
   cs->setShape(x,y,64,32);
   
   y=80;

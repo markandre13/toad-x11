@@ -1,3 +1,23 @@
+/*
+ * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,   
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with this library; if not, write to the Free
+ * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+ * MA  02111-1307,  USA
+ */
+
 #include <toad/colorselector.hh>
 #include <toad/figureeditor.hh>
 #include <toad/colordialog.hh>
@@ -5,25 +25,12 @@
 
 using namespace toad;
 
-#if 0
-int
-main(int argc, char **argv, char **envv)
-{
-  toad::initialize(argc, argv, envv);
-  {
-    TColorSelector window(0, "colorselector");
-    toad::mainLoop();
-  }
-  toad::terminate();
-  return 0;
-}
-#endif
-
 TColorSelector::TColorSelector(TWindow *parent,
                                const string &title,
-                               TFigureEditor *gedit):
+                               TFigurePreferences *gedit):
   super(parent, title)
 {
+  dialogeditorhack = false;
   this->gedit = gedit;
   setSize(64, 32);
 
@@ -72,8 +79,10 @@ TColorSelector::paint()
 {
   TPen pen(this);
   
+  pen.draw3DRectanglePC(0, 0, w2, h, false);
+
   pen.setColor(linecolor);
-  pen.fillRectanglePC(0, 0, w2, h);
+  pen.fillRectanglePC(2, 2, w2-4, h-4);
 
   if (filled) {
     pen.setColor(fillcolor);
@@ -81,11 +90,18 @@ TColorSelector::paint()
   } else {
     pen.setColor(255,255,255);
     pen.fillRectanglePC(border, border, w2-border*2, h-border*2);
+#if 0
     pen.setColor(0,0,0);
     pen.drawLine(border+2, border+2, w2-border-2, h-border-2);
     pen.drawLine(border+2, h-border-2, w2-border-2, border+2);
+#else
+    pen.setColor(255,0,0);
+    pen.drawLine(border+2, h-border-2-2, w2-border-4, border+2);
+    pen.drawLine(border+2, h-border-2-1, w2-border-3, border+2);
+    pen.drawLine(border+3, h-border-3, w2-border-2, border+2);
+#endif
   }
-  pen.draw3DRectangle(border, border, w2-border*2, h-border*2, filled);
+  pen.draw3DRectanglePC(border, border, w2-border*2, h-border*2, filled);
 }  
    
 void
@@ -141,37 +157,32 @@ TColorSelector::mouseMDown(int x, int y, unsigned modifier)
 void
 TColorSelector::dropColor(const PDnDColor &drop)
 {
+  if (!gedit) {
+    return;
+  }
+
   if (drop->x<border ||
       drop->y<border ||
       drop->x>w2-border ||
       drop->y>h-border)  
   {
     linecolor.set(drop->rgb.r, drop->rgb.g, drop->rgb.b);
+    if (gedit)
+      gedit->setLineColor(linecolor);
   } else {
     fillcolor.set(drop->rgb.r, drop->rgb.g, drop->rgb.b);
+    if (gedit && filled)
+      gedit->setFillColor(fillcolor);
   }
   invalidateWindow();
-
-  if (!gedit)
-    return;
-  gedit->setLineColor(linecolor);
-  if (filled)
-    gedit->setFillColor(fillcolor);
-  else
-    gedit->unsetFillColor();
-  
 }
 
 void
 TColorSelector::openColorDialog()
 {
-#if 0
-  TColorDialog dlg(this, "Color Editor");
-  dlg.doModalLoop();
-#else
-  TWindow *dlg = new TColorDialog(0, "Color Editor");
+  TWindow *dlg = new TColorDialog(dialogeditorhack ? this : 0,
+                                  "Color Editor");
   dlg->createWindow();
-#endif
 }
 
 void

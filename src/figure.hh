@@ -23,12 +23,13 @@
 
 #include <math.h>
 #include <toad/toad.hh>
-#include <toad/figurewindow.hh>
+#include <toad/figuremodel.hh>
 #include <toad/io/serializable.hh>
 
 namespace toad {
 
 class TFigureEditor;
+class TFigurePreferences;
 class TMatrix2D;
 
 /**
@@ -57,6 +58,7 @@ class TFigure:
       filled = false;
     }
     virtual void setFont(const string&);
+    virtual void setFromPreferences(TFigurePreferences*);
     
     //! Called to paint the gadget.
     virtual void paint(TPenBase& pen, EPaintType) = 0;
@@ -229,18 +231,49 @@ class TFPolygon:
 /**
  * \ingroup figure
  */
-class TFPolyline:
+class TFLine:
   public TFPolygon
 {
     typedef TFPolygon super;
   public:
+    enum EArrowMode {
+      NONE, HEAD, TAIL, BOTH
+    } arrowmode;
+    
+    enum EArrowType {
+      SIMPLE,
+      EMPTY,
+      FILLED,
+      EMPTY_CONCAVE,
+      FILLED_CONCAVE,
+      EMPTY_CONVEX,
+      FILLED_CONVEX
+    } arrowtype;
+    
+    unsigned arrowheight;
+    unsigned arrowwidth;
+
+    TFLine();
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
-    TCloneable* clone() const { return new TFPolyline(*this); }
-    const char * name() const { return "toad::TFPolyline"; }
+    TCloneable* clone() const { return new TFLine(*this); }
+    const char * name() const { return "toad::TFLine"; }
+    
+    static void drawArrow(TPenBase &pen,
+                          const TPoint &p1, const TPoint &p1, 
+                          const TRGB &line, const TRGB &fill,
+                          int w, int h,
+                          EArrowType type);
     
   protected:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
+};
+
+class TFPolyline:
+  public TFLine
+{
+  public:
+    const char * name() const { return "toad::TFPolyline"; }
 };
 
 /**

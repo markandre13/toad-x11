@@ -19,7 +19,6 @@
  */
 
 #include <toad/figure.hh>
-#include <toad/figure/line.hh>
 #include <toad/figuremodel.hh>
 #include <cmath>
 
@@ -112,6 +111,11 @@ TFigure::~TFigure()
 
 void
 TFigure::setFont(const string&)
+{
+}
+
+void
+TFigure::setFromPreferences(TFigurePreferences*)
 {
 }
 

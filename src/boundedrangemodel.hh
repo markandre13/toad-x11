@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,10 +18,10 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef _TOAD_TBoundedRangeModel
-#define _TOAD_TBoundedRangeModel
+#ifndef _TOAD_BOUNDEDRANGEMODEL_HH
+#define _TOAD_BOUNDEDRANGEMODEL_HH
 
-#include <toad/model.hh>
+#include <toad/textmodel.hh>
 #include <iostream>
 
 namespace toad {
@@ -77,9 +77,10 @@ class TBoundedRangeModel:
 inline ostream& operator<<(ostream &s, const TBoundedRangeModel &m) {
   return s<<m.getValue();
 }
-  
 
 typedef GSmartPointer<TBoundedRangeModel> PBoundedRangeModel;
+
+TTextModel * createTextModel(TBoundedRangeModel *);
 
 } // namespace toad
 
