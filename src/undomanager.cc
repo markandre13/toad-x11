@@ -38,6 +38,8 @@ using namespace toad;
  *   \li document how to use the undomanager (reference and manual)
  *   \li static method to disable undo/redo for a model when it's
  *       registered
+ *   \li static methods which allow a window to call undo/redo
+ *   \li static methods which allow a model to call undo/redo
  *   \li handle overflow of TUndo::serial counter
  *   \li limit number of stored undo event to a given maximum
  *   \li grouping of undo events
@@ -216,6 +218,7 @@ TUndoManager::doUndo()
   
   TModelStore::iterator pms;
   TUndo *undo = 0;
+  unsigned undocount = 0;
   for(TModelSet::iterator p=mmodels.begin();
       p!=mmodels.end();
       ++p)
@@ -223,6 +226,7 @@ TUndoManager::doUndo()
     TModelStore::iterator q = models.find(*p);
     assert(q!=models.end());
     if (!q->second.undostack.empty()) {
+      undocount += q->second.undostack.size();
       TUndo *u = q->second.undostack.back();
       if (!undo) {
         undo = u; 
@@ -241,6 +245,9 @@ TUndoManager::doUndo()
   } else {
     pms->second.undostack.pop_back();
     undo->undo();
+  }
+  if (undocount<=1) {
+    this->undo->setEnabled(false);
   }
    
   undoing = false;
@@ -263,6 +270,7 @@ TUndoManager::doRedo()
   
   TModelStore::iterator pms;
   TUndo *undo = 0;
+  unsigned redocount = 0;
   for(TModelSet::iterator p=mmodels.begin();
       p!=mmodels.end();
       ++p)
@@ -271,6 +279,7 @@ TUndoManager::doRedo()
     assert(q!=models.end());
     DBM(cerr << "  check model " << *p << endl;)
     if (!q->second.redostack.empty()) {
+      redocount += q->second.redostack.size();
       DBM(cerr << "    it's not empty" << endl;)
       TUndo *u = q->second.redostack.back();
       if (!undo) {
@@ -292,6 +301,9 @@ TUndoManager::doRedo()
   } else {
     pms->second.redostack.pop_back();
     undo->undo();
+  }
+  if (redocount<=1) {
+    this->redo->setEnabled(false);
   }
    
   redoing = false;
@@ -422,6 +434,9 @@ TModelUndoStore::addUndo(TModel *model, TUndo *undo)
     {
       DBM(cerr << "enabled undo for undomanager " << *p << endl;)
       (*p)->undo->setEnabled(true);
+      if (!(*p)->canRedo()) {
+        (*p)->redo->setEnabled(false);
+      }
     }
   } else {
     DBM(cerr << "add undo to models redostack" << endl;)
