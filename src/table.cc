@@ -35,24 +35,24 @@ using namespace toad;
  * This group contains a set of classes to display data in a table.
  *
  * @verbatim
- * TAbstractTableModel
- *   GAbstractTableModel<T>
- *    TTableModel_CString
- * TAbstractTableCellRenderer
- *   TTableCellRenderer_CString
- * TTableSelectionModel
- * TTable
- *
- *  mi(si)
- *       1 n             1 1
- *  model---cell_renderer---+
- *                          +--table
- *         selectionmodel---+
- *               si      1 1
- *
- * mi : model iterator
- * si : selection iterator
- * @endverbatim
+   TAbstractTableModel
+     GAbstractTableModel<T>
+      TTableModel_CString
+   TAbstractTableCellRenderer
+     TTableCellRenderer_CString
+   TTableSelectionModel
+   TTable
+  
+   mi(si)
+         1 n             1 1
+    model---cell_renderer---+
+                            +--table
+           selectionmodel---+
+                 si      1 1
+ 
+   mi : model iterator
+   si : selection iterator
+   @endverbatim
  *
  * \code
  * class TMyTable:
@@ -364,7 +364,13 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, int idx, int w, int h)
 
 /**
  * @ingroup table
- * @class toad:TTable
+ * @class toad::TTable
+ *
+ * This class is a widget to display tables and is also used for listboxes
+ * and comboboxes.
+ *
+ * It uses TAbstractTableCellRenderer to render the table items and 
+ * TTableSelectionModel to manage the selections.
  */
 
 TTable::TTable(TWindow *p, const string &t): 
@@ -640,11 +646,14 @@ DBSCROLL({
 
   if (!renderer)
     return;
-  if (!renderer->getModel())
-    return;
 
-  bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
-  bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
+  bool perRow, perCol; // true when to select whole row/column
+  perRow = perCol = false;
+  if (renderer->getModel()) { // this looks like a stupid hack to me...
+    perRow = renderer->getCols()!=renderer->getModel()->getCols();
+    perCol = renderer->getRows()!=renderer->getModel()->getRows();
+  }
+  
   xp = fpx + visible.x;
   for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
     yp = fpy + visible.y;
@@ -735,9 +744,13 @@ TTable::mouseLDown(int mx, int my, unsigned)
     pos1 = pos2;
   }
 
-  cx = x; cy = y;  
-  bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
-  bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
+  cx = x; cy = y;
+  bool perRow, perCol; // true when to select whole row/column
+  perRow = perCol = false;
+  if (renderer->getModel()) { // this looks like a stupid hack to me...
+    perRow = renderer->getCols()!=renderer->getModel()->getCols();
+    perCol = renderer->getRows()!=renderer->getModel()->getRows();
+  }
   selection->toggleSelection(perRow?0:x, perCol?0:y);
   DBM(cout << "click on item " << x << ", " << y << endl;)
   sigCursor();

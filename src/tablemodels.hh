@@ -41,6 +41,12 @@
 
 namespace toad {
 
+/**
+ * \ingroup table
+ * \class toad::TTableModel_CString
+ * 
+ * This class may be obsoleted by GArrayWrap
+ */
 class TTableModel_CString:
   public GAbstractTableModel<const char *>
 {
@@ -69,6 +75,12 @@ class TTableModel_CString:
 typedef GSmartPointer<TTableModel_CString> PTableModel_CString;
 typedef GTableSelectionModel<TTableModel_CString> TCStringSelectionModel;
 
+/**
+ * \ingroup table
+ * \class TTableCellRenderer_CString
+ * 
+ * This class may be obsoleted by TTableModel_String
+ */
 class TTableCellRenderer_CString:
   public TAbstractTableCellRenderer
 {
@@ -115,14 +127,14 @@ class TTableCellRenderer_CString:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int, int index, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
         pen.setColor(TColor::SELECTED);
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
       pen.drawString(
-        1, 1, model->getElementAt(0, index)
+        1, 1, model->getElementAt(x, y)
       );
       if (selected) {
         pen.setColor(TColor::BLACK);
@@ -133,6 +145,12 @@ class TTableCellRenderer_CString:
     }
 };
 
+/**
+ * \ingroup table
+ * \class toad::TStringVector
+ * 
+ * The class should be made obsolete by a GSTLVector template.
+ */
 class TStringVector:
   public vector<string>,
   public GAbstractTableModel<string>
@@ -157,8 +175,72 @@ class TStringVector:
 typedef GSmartPointer<TStringVector> PStringVector;
 typedef GTableSelectionModel<TStringVector> TStringVectorSelectionModel;
 
+/**
+ * \ingroup table
+ * \class toad::GArrayWrap
+ * 
+ * This template wraps a C array of a fixed size.
+ *
+ * \code
+   struct TZoom {
+     const char *text;
+     double factor;
+     const char * toText(unsigned) const { return text; }
+   };
+   
+   TZoom zoom[13] = { ... };
+ 
+   TComboBox *cb = new TComboBox(this, "zoom");
+   cb->setRenderer(
+     new GTableCellRenderer_Text<GArrayWrap<TZoom>, 1>(
+       new GArrayWrap<TZoom>(zoom, 13)
+     );
+   );
+   \endcode
+ */
+template <class D>
+class GArrayWrap:
+  public GAbstractTableModel<D>
+{
+    typedef GAbstractTableModel<D> TParent;
+    typedef typename TParent::TElement TElement;
+    TElement *array;
+    unsigned size;
+    
+  public:
+    GArrayWrap(TElement *array, unsigned size) {
+      this->array = array;
+      this->size  = size;
+    }
+    int getRows() {
+      return size;
+    }
+    const D& getElementAt(int, int index) {
+      if (index<0 || index>=size) {
+#if 0
+        throw TException("index is out of bounds");
+#else
+        cerr << "GArrayWrap::getElementAt: index>=size (" << index << ">=" << size << endl;
+        printStackTrace();
+        abort();
+#endif
+      }
+      return array[index];
+    }
+};
+
+
 typedef less<string> less_string;
 
+/**
+ * \ingroup table
+ * \class toad::GSTLSet
+ * 
+ * This template wraps the STL's set template.
+ *
+ * \todo
+ *   Wrap more member functions.
+ */
 template <class C, class D>
 class GSTLSet:
   public C,
@@ -194,6 +276,15 @@ class GSTLSet:
     }
 };
 
+/**
+ * \ingroup table
+ * \class toad::GSTLMap
+ * 
+ * This template wraps the STL's map template.
+ *
+ * \todo
+ *   Wrap more member functions.
+ */
 template <class C, class K, class D>
 class GSTLMap:
   public C,
@@ -240,6 +331,8 @@ class GSTLMap:
 typedef GSTLSet<set<string>, string> TStringSet;
 
 /**
+ * \ingroup table
+ *
  * Render items by printing them as a 'string'.
  */
 template <class T>
@@ -295,14 +388,14 @@ class GTableCellRenderer_String:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int, int index, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
         pen.setColor(TColor::SELECTED);
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
       pen.drawString(
-        1, 1, model->getElementAt(0, index)
+        1, 1, model->getElementAt(x, y)
       );
       if (selected) {
         pen.setColor(TColor::BLACK);
@@ -317,9 +410,10 @@ typedef GTableCellRenderer_String<TStringVector> TTableCellRenderer_StringVector
 typedef GTableCellRenderer_String<TStringSet> TTableCellRenderer_StringSet;
 
 /**
+ * \ingroup table
  * Render items by printing the result of their 'toText(int)' method.
  */
-template <class T>
+template <class T, unsigned COLS>
 class GTableCellRenderer_Text:
   public TAbstractTableCellRenderer
 {
@@ -349,7 +443,7 @@ class GTableCellRenderer_Text:
       return model->getRows();
     }
     int getCols() {
-      return model->getCols();
+      return COLS;
     }
     int getRowHeight(int) {
       return TOADBase::getDefaultFont().getHeight()+2;
@@ -366,14 +460,14 @@ class GTableCellRenderer_Text:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int, int index, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
         pen.setColor(TColor::SELECTED);
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
       pen.drawString(
-        1, 1, model->getElementAt(0, index).toText(index)
+        1, 1, model->getElementAt(0, y).toText(x)
       );
       if (selected) {
         pen.setColor(TColor::BLACK);

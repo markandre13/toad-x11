@@ -176,7 +176,15 @@ class TAbstractTableCellRenderer:
     virtual int getCols() = 0;
     virtual int getRowHeight(int row) = 0;
     virtual int getColWidth(int col) = 0;
-    virtual TAbstractTableModel * getModel() = 0;
+    /**
+     * Return the model associated with this renderer.
+     *
+     * This method isn't required for rendering and may return NULL.
+     *
+     * The purpose of this method is to use it combination with
+     * GTableSelectionModel?
+     */
+    virtual TAbstractTableModel * getModel() { return 0; }
     virtual void renderItem(TPen&, int xindex, int yindex, int w, int h, bool selected, bool focus) = 0;
 
     void modelChanged() {
