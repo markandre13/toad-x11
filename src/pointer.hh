@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2002 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -114,45 +114,10 @@ class TSmartObject
 {
     static const unsigned nodelete = (unsigned)-1;
   public:
-    static void* heap_start;
-    static void* heap_end;
-  
-    TSmartObject() {
-      // we do a range check because this object might to have
-      // been this first one in the list of super classes
-      if (heap_start && heap_start<=this && this<=heap_end) {
-        heap_start = 0;
-        _toad_ref_cntr = 0;
-      } else {
-        _toad_ref_cntr = nodelete;
-      }
-    }
-    
-    /**
-     * This method is called, when a smart object is created
-     * with new, which means that a smart pointer is allowed to
-     * delete the object.
-     */
-    void * operator new(std::size_t size) {
-      assert(heap_start == 0);
-      char * ptr = new char[size];
-      heap_start = ptr;
-      heap_end   = ptr+size;
-      return ptr;
-    }
-
-    void * operator new(std::size_t n, void* p) {
-      cout << "new2 TSmartObject" << endl;
-      return p;
-    }
-    
-    virtual ~TSmartObject() {
-      if (_toad_ref_cntr!=0 && _toad_ref_cntr!=nodelete) {
-        cerr << "warning: object with pending references destroyed" << endl;
-        // Another idea would be to find all associated smart pointers
-        // and set 'em to NULL or to throw an exception
-      }
-    }
+    TSmartObject();
+    void * operator new(std::size_t size);
+    void * operator new(std::size_t n, void* p);
+    virtual ~TSmartObject();
 //  private:
     unsigned _toad_ref_cntr;
 };
