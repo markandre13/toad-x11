@@ -1080,6 +1080,10 @@ TFigureEditor::stopOperation()
       clearSelection();
       if (gadget) {
         selection.insert(gadget);
+        model->figures.clear();
+        model->figures.insert(gadget);
+        model->type = TFigureModel::MODIFIED;
+        model->sigChanged();
       }
       setMouseMoveMessages(TMMM_ANYBUTTON);
       break;
