@@ -825,8 +825,7 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap* bmp)
 {
   if (mat) {
-    x+=static_cast<int>(mat->tx);
-    y+=static_cast<int>(mat->ty);
+    mat->map(x, y, &x, &y);
   }
   bmp->drawBitmap(this, x, y);
 }
@@ -835,8 +834,7 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap& bmp)
 {
   if (mat) {
-    x+=static_cast<int>(mat->tx);
-    y+=static_cast<int>(mat->ty);
+    mat->map(x, y, &x, &y);
   }
   bmp.drawBitmap(this, x, y);
 }
@@ -845,10 +843,8 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int ah)
 {
   if (mat) {
-    x+=static_cast<int>(mat->tx);
-    y+=static_cast<int>(mat->ty);
-    ax+=static_cast<int>(mat->tx);
-    ay+=static_cast<int>(mat->ty);
+    mat->map(x, y, &x, &y);
+    mat->map(ax, ay, &ax, &ay);
   }
   bmp->drawBitmap(this, x, y, ax,ay,aw,ah);
 }
@@ -857,10 +853,8 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int ah)
 {
   if (mat) {
-    x+=static_cast<int>(mat->tx);
-    y+=static_cast<int>(mat->ty);
-    ax+=static_cast<int>(mat->tx);
-    ay+=static_cast<int>(mat->ty);
+    mat->map(x, y, &x, &y);
+    mat->map(ax, ay, &ax, &ay);
   }
   bmp.drawBitmap(this, x, y, ax,ay,aw,ah);
 }
