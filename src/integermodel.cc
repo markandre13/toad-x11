@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
  * MA  02111-1307,  USA
  */
 
-#include <toad/boundedrangemodel.hh>
+#include <toad/integermodel.hh>
 #include <toad/textmodel.hh>
 #include <limits.h>
 
@@ -27,18 +27,18 @@ using namespace toad;
 #define DBM(CMD)
 
 /**
- * \class TBoundedRangeModel
+ * \class TIntegerModel
  *
  * Defines the data model used by controls like TScrollBar.
  */
 
-TBoundedRangeModel::TBoundedRangeModel():
+TIntegerModel::TIntegerModel():
   minimum(INT_MIN), maximum(INT_MAX), value(0), extent(1), 
   adjusting(false) 
 {}
 
 void
-TBoundedRangeModel::setExtent(int extent)
+TIntegerModel::setExtent(int extent)
 {
   if (extent<1)
     extent = 1;
@@ -55,7 +55,7 @@ TBoundedRangeModel::setExtent(int extent)
 }
 
 void
-TBoundedRangeModel::setMaximum(int max)
+TIntegerModel::setMaximum(int max)
 {
   if (maximum == max)
     return;
@@ -69,7 +69,7 @@ TBoundedRangeModel::setMaximum(int max)
 }
 
 void
-TBoundedRangeModel::setMinimum(int min)
+TIntegerModel::setMinimum(int min)
 {
   if (minimum == min)
     return;
@@ -81,7 +81,7 @@ TBoundedRangeModel::setMinimum(int min)
 }
 
 void
-TBoundedRangeModel::setRangeProperties(int value, int extent, int min, int max, bool adjusting)
+TIntegerModel::setRangeProperties(int value, int extent, int min, int max, bool adjusting)
 {
   if (extent<1)
     extent = 1;
@@ -109,9 +109,9 @@ TBoundedRangeModel::setRangeProperties(int value, int extent, int min, int max, 
 }
 
 void
-TBoundedRangeModel::setValue(int value) 
+TIntegerModel::setValue(int value) 
 {
-DBM(cerr << "TBoundedRangeModel::setValue(" << value << ")\n";)
+DBM(cerr << "TIntegerModel::setValue(" << value << ")\n";)
   if (this->value == value) {
 DBM(cerr << "-> not changed" << endl;)
     return;
@@ -136,7 +136,7 @@ DBM(cerr << "-> not changed" << endl;)
 }
 
 void
-TBoundedRangeModel::setValueIsAdjusting(bool b) 
+TIntegerModel::setValueIsAdjusting(bool b) 
 {
   if (adjusting == b)
     return;
@@ -148,10 +148,10 @@ TBoundedRangeModel::setValueIsAdjusting(bool b)
 class TBoundedRangeTextModel:
   public TTextModel
 {
-    TBoundedRangeModel * model;
+    TIntegerModel * model;
     bool lock;
   public:
-    TBoundedRangeTextModel(TBoundedRangeModel *m) {
+    TBoundedRangeTextModel(TIntegerModel *m) {
       model = m;
       lock = false;
       if (model) {
@@ -225,13 +225,13 @@ DBM(cerr << "  not locked => getValue\n";)
 };
 
 TTextModel *
-toad::createTextModel(TBoundedRangeModel * m)
+toad::createTextModel(TIntegerModel * m)
 {
   return new TBoundedRangeTextModel(m);
 }
 
 bool
-restore(atv::TInObjectStream &in, toad::TBoundedRangeModel *value)
+restore(atv::TInObjectStream &in, toad::TIntegerModel *value)
 {
   if (in.what != ATV_VALUE)
     return false;
