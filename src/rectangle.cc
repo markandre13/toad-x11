@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,4 +54,61 @@ void TRectangle::set(const TPoint &p1, const TPoint &p2)
   }
   w++;
   h++;    
+}
+
+// based on Dan Cohen and Ivan Sutherlands clipping algorithm
+bool
+TRectangle::intersects(const TRectangle &r) const
+{
+  unsigned f0, f1;
+  int a;
+  int x00, x01, x10, x11;
+  int y00, y01, y10, y11;
+  
+  x00=x;
+  x01=x+w-1;
+  if (x00>x01) {
+    a=x00; x00=x01; x01=a;
+  }
+
+  x10=r.x;
+  x11=r.x+r.w-1;
+  if (x10>x11) {
+    a=x10; x10=x11; x11=a;
+  }
+
+  y00=y;
+  y01=y+h-1;
+  if (y00>y01) {
+    a=y00; y00=y01; y01=a;
+  }
+
+  y10=r.y;
+  y11=r.y+r.h-1;
+  if (y10>y11) {
+    a=y10; y10=y11; y11=a;
+  }
+//cout << "check x:"<<x00<<","<<x01<<" and "<<x10<<","<<x11<<endl;
+//cout << "check y:"<<y00<<","<<y01<<" and "<<y10<<","<<y11<<endl;
+  f0 = 0;
+  if (x00 < x10)
+    f0 |= 1;
+  if (x00 > x11)
+    f0 |= 2;
+  if (y00 < y10)
+    f0 |= 4;
+  if (y00 > y11)
+    f0 |= 8;
+
+  f1 = 0;
+  if (x01 < x10)
+    f1 |= 1;
+  if (x01 > x11)
+    f1 |= 2;
+  if (y01 < y10)
+    f1 |= 4;
+  if (y01 > y11)
+    f1 |= 8;
+//cout << "f0="<<f0<<", f1="<<f1<<", f0&f1="<<(f0&f1)<<endl;    
+  return (f0 & f1)==0;
 }
