@@ -751,11 +751,11 @@ TPen::drawString(int x,int y, const char *str, int strlen) const
 {
   if (!str)
     return;
+  y+=getAscent();
   if (mat) {
-    x+=mat->tx;
-    y+=mat->ty;
+    mat->map(x, y, &x, &y);
   }
-  XDrawString(x11display, x11drawable, o_gc, x,y+getAscent(), str, strlen);
+  XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
 }
 
 /**
