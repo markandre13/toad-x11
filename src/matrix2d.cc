@@ -209,8 +209,25 @@ TMatrix2D::map(int inX, int inY, short int *outX, short int *outY) const
 {
   double x, y;
   x = inX; y=inY;
-  *outX = static_cast<short>(a11 * x + a12 * y + tx);
-  *outY = static_cast<short>(a21 * x + a22 * y + ty);
+  *outX = static_cast<short int>(a11 * x + a12 * y + tx);
+  *outY = static_cast<short int>(a21 * x + a22 * y + ty);
+}
+
+void
+TMatrix2D::map(int inX, int inY, int *outX, int *outY) const
+{
+  double x, y;
+  x = inX; y=inY;
+  *outX = static_cast<int>(a11 * x + a12 * y + tx);
+  *outY = static_cast<int>(a21 * x + a22 * y + ty);
+}
+void
+TMatrix2D::map(int inX, int inY, double *outX, double *outY) const
+{
+  double x, y;
+  x = inX; y=inY;
+  *outX = a11 * x + a12 * y + tx;
+  *outY = a21 * x + a22 * y + ty;
 }
 
 /**
@@ -224,7 +241,7 @@ TMatrix2D::map(int inX, int inY, short int *outX, short int *outY) const
 void
 TMatrix2D::invert()
 {
-  double d = a11 * a22 - a12 * a21;
+  double d = 1.0 / (a11 * a22 - a12 * a21);
   double n11 = d * a22;
   double n21 = d * -a21;
   double n12 = d * -a12;

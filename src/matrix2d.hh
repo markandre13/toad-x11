@@ -63,6 +63,8 @@ class TMatrix2D:
     }
     
     void map(int inX, int inY, short int *outX, short int *outY) const;
+    void map(int inX, int inY, int *outX, int *outY) const;
+    void map(int inX, int inY, double *outX, double *outY) const;
  
     TMatrix2D *next;
     
