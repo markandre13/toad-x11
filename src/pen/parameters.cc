@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-Andr? Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,7 +111,8 @@ TPen::TPen(TBitmap *bmp)
 TPen::TPen(TWindow *wnd)
 {
 #ifdef __X11__
-  assert(wnd!=0 && wnd->x11window!=0);
+  assert(wnd!=0);
+  assert(wnd->x11window!=0);
   
   if (wnd->bDoubleBuffer) {
     bmp = new TBitmap(wnd->getWidth(), wnd->getHeight(), TBITMAP_SERVER);
@@ -300,6 +301,7 @@ TPen::lookupFont(const string &fontname)
   }
   TFont *newfont = new TFont(fontname);
   fontmap[fontname] = newfont;
+#warning "fontmap isn't limited in its size"
   return newfont;
 }
 

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2004 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -147,8 +147,11 @@ TFLine::paint(TPenBase &pen, EPaintType)
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
   pen.drawLines(polygon);
+  
+  if (arrowmode == NONE)
+    return;
   pen.setLineStyle(TPen::SOLID);
-  pen.setLineWidth(0);
+  pen.setLineWidth(1);
 
   if (arrowmode == HEAD || arrowmode == BOTH)
     drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, arrowwidth, arrowheight, arrowtype);

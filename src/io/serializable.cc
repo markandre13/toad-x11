@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 2001-2004 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -736,9 +736,7 @@ restoreRaw(TInObjectStream &in, char **value, unsigned *n)
 bool
 finished(TInObjectStream &in)
 {
-  if (in.what != ATV_FINISHED)
-    return false;
-  return true;
+  return in.what == ATV_FINISHED;
 }
 
 TATVNullInterpreter atv::null;
