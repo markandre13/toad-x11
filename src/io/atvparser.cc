@@ -523,6 +523,9 @@ TATVParser::endGroup()
     cout << "}" << endl;
   }
   if (interpreter) {
+    attribute.clear();
+    type.clear();
+    value.clear();
     what = ATV_FINISHED;
     if (!interpreter->interpret(*this)) {
       semanticError();
