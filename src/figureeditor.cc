@@ -1482,6 +1482,7 @@ TFigureEditor::findGadgetAt(int mx, int my)
   cerr << "TFigureEditor::findGadgetAt(" << mx << ", " << my << ")\n";
 #endif
   double distance = TFigure::OUT_OF_RANGE;
+//double distance = 0.5*fuzziness*TFigure::OUT_OF_RANGE;
   TFigureModel::iterator p,b,found;
   p = found = model->end();
   b = model->begin();
@@ -1588,11 +1589,21 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
 DBM(cout << "area size: (" << x1 << ", " << y1 << ") - ("
          << x2 << ", " << y2 << ")\n";)
 
-
-  pane.x = x1;
-  pane.y = y1;
-  pane.w = x2-x1+1;
-  pane.h = y2-y1+1;
+  if (!mat) {
+    pane.x = x1;
+    pane.y = y1;
+    pane.w = x2-x1+1;
+    pane.h = y2-y1+1;
+  } else {
+    double dx1, dy1, dx2, dy2;
+    mat->map(x1, y1, &dx1, &dy1);
+    mat->map(x2+1, y2+1, &dx2, &dy2);
+    pane.x = dx1;
+    pane.y = dy1;
+    pane.w = dx2-dx1;
+    pane.h = dy2-dy1;
+    
+  }
   doLayout();
 DBM(cout << __PRETTY_FUNCTION__ << ": exit" << endl << endl;)
 }
