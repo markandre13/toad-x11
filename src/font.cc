@@ -55,6 +55,9 @@
 
 using namespace toad;
 
+TFont::ERenderType TFont::default_rendertype = TFont::RENDER_X11;
+string TFont::default_font("arial,helvetica,sans-serif");
+
 // X Logical Font Description
 struct TX11FontName {
   
@@ -132,9 +135,8 @@ TFont::init()
   xftfont = 0;
 #endif
 
-  fontname = "arial,helvetica,sans-serif";
-  setRenderType(RENDER_X11);
-//  setRenderType(RENDER_FREETYPE);
+  fontname = default_font;
+  setRenderType(default_rendertype);
 }
 
 void

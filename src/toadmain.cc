@@ -35,6 +35,7 @@
 #include <toad/toad.hh>
 #include <toad/debug.hh>
 #include <toad/dialogeditor.hh>
+#include <toad/font.hh>
 
 using namespace toad;
 
@@ -89,9 +90,24 @@ toad::initialize(int argc, char **&argv, char **envv)
       cerr << "  LIKE_ELECTRIC_FENCE" << endl;
 #endif
     } else
-    if (strcmp(argv[i], "--layout-editor")==0 ||
-        strcmp(argv[i], "--dialog-editor")==0) {
+    if (strcmp(argv[i], "--layout-editor")==0) {
       layouteditor = true;
+    } else 
+    if (strcmp(argv[i], "--font-engine")==0) {
+      if (i+1>=argc) {
+        cerr << "error: missing option for argument " << argv[i] << endl;
+        exit(1);
+      }
+      ++i;
+      if (strcmp(argv[i], "x11")==0) {
+        TFont::default_rendertype = TFont::RENDER_X11;
+      } else
+      if (strcmp(argv[i], "freetype")==0) {
+        TFont::default_rendertype = TFont::RENDER_FREETYPE;
+      } else {
+        cerr << "error: unknown font engine, try x11 or freetype" << endl;
+        exit(1);
+      }
     } else {
       cerr << "unknown option " << argv[i] << endl;
     }
