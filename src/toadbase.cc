@@ -742,22 +742,22 @@ handle_event:
       break;
       
     case SelectionClear:
-      cout << "SelectionClear" << endl;
+//      cout << "SelectionClear" << endl;
       selection_kludge_owner = false;
       if (DnDSelectionClear(x11event));
         return bAppIsRunning;
       if (x11event.xselectionclear.selection==XA_PRIMARY) {
-cout << "XA_PRIMARY clear" << endl;
+//cout << "XA_PRIMARY clear" << endl;
         selection_kludge_owner = false;
       }
       break;
 
     case SelectionNotify: {
-      cout << "SelectionNotify" << endl;
+//      cout << "SelectionNotify" << endl;
       if (DnDSelectionNotify(x11event))
         return bAppIsRunning;
 // start of hack
-#if 1
+#if 0
       cout << "got SelectionNotify" << endl;
       cout << "  requestor: " << x11event.xselection.requestor << endl;
       cout << "  selection: " << AtomName(x11event.xselection.selection) << endl;
@@ -781,10 +781,10 @@ cout << "XA_PRIMARY clear" << endl;
     } break;
 
     case SelectionRequest:
-      cout << "SelectionRequest" << endl;
+//      cout << "SelectionRequest" << endl;
       if (DnDSelectionRequest(x11event))
         return bAppIsRunning;
-#if 1
+#if 0
       cout << "got SelectionRequest" << endl;
       cout << "  requestor: " << x11event.xselection.requestor << endl;
       cout << "  selection: " << AtomName(x11event.xselectionrequest.selection) << endl;
@@ -793,14 +793,14 @@ cout << "XA_PRIMARY clear" << endl;
       cout << "  time     : " << x11event.xselectionrequest.time << endl;
 #endif
       if (x11event.xselectionrequest.selection==XA_PRIMARY) {
-        cout << "XA_PRIMARY request" << endl;
+//        cout << "XA_PRIMARY request" << endl;
         if (x11event.xselectionrequest.target==XA_STRING ||
             x11event.xselectionrequest.target==xaUTF8_STRING ||
             x11event.xselectionrequest.target==xaTEXT /* ||
             x11event.xselectionrequest.target==xa_COMPOUND_TEXT */
            ) 
         {
-cout << "change property..." << endl;
+//cout << "change property..." << endl;
           XChangeProperty(x11display,
             x11event.xselectionrequest.requestor,
             x11event.xselectionrequest.property,
@@ -808,7 +808,7 @@ cout << "change property..." << endl;
             PropModeReplace,
             (ubyte*)selection_kludge_data.c_str(),
             selection_kludge_data.size());
-cout << "send selection notify..." << endl;        
+//cout << "send selection notify..." << endl;        
           XEvent sevent;
           sevent.xselection.type      = SelectionNotify;
           sevent.xselection.serial    = 0;
@@ -817,7 +817,7 @@ cout << "send selection notify..." << endl;
           sevent.xselection.requestor = x11event.xselectionrequest.requestor;
           sevent.xselection.selection = x11event.xselectionrequest.selection;
           sevent.xselection.target    = x11event.xselectionrequest.target;
-          sevent.xselection.property  = None;
+          sevent.xselection.property  = x11event.xselectionrequest.property;
           sevent.xselection.time      = x11event.xselectionrequest.time;
           if (XSendEvent(x11display, 
                          x11event.xselectionrequest.requestor,
@@ -828,7 +828,7 @@ cout << "send selection notify..." << endl;
              cerr << __FILE__ << ":" << __LINE__ << ": XSendEvent failed\n";
           }
         } else {
-          cout << "  not supported target " << XGetAtomName(x11display, x11event.xselectionrequest.target) << endl;
+          cout << "  unsupported target " << XGetAtomName(x11display, x11event.xselectionrequest.target) << endl;
         }
       }
       break;
@@ -1703,8 +1703,9 @@ GetWindowProperty(Window source, Atom property, Atom type)
                            &remaining,
                            &buffer) == Success )
     {
-      data.append((char*)buffer, received);
-      position+=received/4L;
+      unsigned long n = received * (format/8);
+      data.append((char*)buffer, n);
+      position+=n/4L;
       XFree(buffer);
     } else {
       break;
