@@ -386,6 +386,8 @@ TPen::operator&=(const TRectangle &rect)
   if (!region) return;
   *region&=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+  if (f_gc)
+    XSetRegion(x11display, f_gc, region->x11region);
 #endif
 }
 
@@ -396,6 +398,8 @@ TPen::operator&=(const TRegion &rect)
   if (!region) return;
   *region&=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+  if (f_gc)
+    XSetRegion(x11display, f_gc, region->x11region);
 #endif
 }
 
@@ -415,6 +419,8 @@ TPen::operator|=(const TRectangle &rect)
   if (!region) return;
   *region|=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+  if (f_gc)
+    XSetRegion(x11display, f_gc, region->x11region);
 #endif
 }
 
@@ -425,6 +431,8 @@ TPen::operator|=(const TRegion &rect)
   if (!region) return;
   *region|=rect;
   XSetRegion(x11display, o_gc, region->x11region);
+  if (f_gc)
+    XSetRegion(x11display, f_gc, region->x11region);
 #endif
 }
 
@@ -441,6 +449,8 @@ void TPen::clrClipBox()
     return;
   region->clear();
   XSetClipMask(x11display,o_gc,None);
+  if (f_gc)
+    XSetClipMask(x11display,f_gc,None);
 #endif
 }
 
