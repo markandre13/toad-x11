@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,24 +57,32 @@ TArrowButton::paint()
       p[2].set(n+d-1+2      , n+_h-d);
       break;
   }
-  pen.setColor(TColor::BTNTEXT);
+  if (isEnabled()) {
+    pen.setColor(TColor::BTNTEXT);
+  } else {
+    pen.setColor(TColor::BTNSHADOW);
+  }
   pen.fillPolygon(p,3);
 }
 
 void
 TArrowButton::mouseLDown(int,int,unsigned)
 {
+  if (!isEnabled())
+    return;
   bDown=true;
   invalidateWindow();
   sigArm();
   sigClicked();
   delay = 0;
-  startTimer(0, 1000000/12);
+  startTimer(0, 1000000/48);
 }
 
 void
 TArrowButton::mouseLUp(int,int,unsigned)
 {
+  if (!bDown)
+    return;
   bDown=false;
   invalidateWindow();
   sigDisarm();
@@ -84,8 +92,9 @@ TArrowButton::mouseLUp(int,int,unsigned)
 void
 TArrowButton::tick()
 {
-  if(delay<3)
-    delay++;
-  else if (bInside)
+  delay++;
+  if(delay<12)
+    return;
+  if (bInside)
     sigClicked();
 }
