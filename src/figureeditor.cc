@@ -688,28 +688,6 @@ TFigureEditor::print(TPenBase &pen)
   }
 }
 
-void
-TFigureEditor::setLineColor(const TRGB &rgb)
-{
-  preferences->linecolor = rgb;
-  TFigureSet::iterator p,e;
-  p = selection.begin();
-  e = selection.end();
-  while(p!=e) {
-    (*p)->setLineColor(preferences->linecolor);
-    p++;
-  }
-  if (gtemplate)
-    gtemplate->setLineColor(preferences->linecolor);
-  window->invalidateWindow();
-}
-
-void
-TFigureEditor::setFillColor(const TRGB &rgb)
-{
-  preferences->setFillColor(rgb);
-}
-
 void 
 TFigureEditor::setPreferences(TFigurePreferences *p) {
   if (preferences) {
@@ -729,89 +707,50 @@ TFigureEditor::preferencesChanged()
 {
   if (!preferences)
     return;
-  switch(preferences->reason) {
-    case TFigurePreferences::LINECOLOR:
-      for(TFigureSet::iterator p = selection.begin();
-          p != selection.end();
-          ++p)
-      {
-        (*p)->setLineColor(preferences->linecolor);
-      }
-      if (gtemplate)
-        gtemplate->setLineColor(preferences->linecolor);
-      window->invalidateWindow();
-      break;
-    case TFigurePreferences::FILLCOLOR:
-      for(TFigureSet::iterator p = selection.begin();
-          p != selection.end();
-          ++p)
-      {
-        (*p)->setFillColor(preferences->fillcolor);
-      }
-      if (gtemplate)
-        gtemplate->setFillColor(preferences->fillcolor);
-      window->invalidateWindow();
-      break;
-    case TFigurePreferences::UNSETFILLCOLOR:
-      for(TFigureSet::iterator p = selection.begin();
-          p != selection.end();
-          ++p)
-      {
-        (*p)->unsetFillColor();
-      }
-      if (gtemplate)
-        gtemplate->unsetFillColor();
-      window->invalidateWindow();
-      break;
-    case TFigurePreferences::LINEWIDTH:
-    case TFigurePreferences::LINESTYLE:
-    case TFigurePreferences::ARROWMODE:
-    case TFigurePreferences::ARROWSTYLE:
-      for(TFigureSet::iterator p = selection.begin();
-          p != selection.end();
-          ++p)
-      {
-        (*p)->setFromPreferences(preferences);
-      }
-      if (gtemplate)
-        gtemplate->setFromPreferences(preferences);
-      window->invalidateWindow();
-      break;
-    default:
-      window->invalidateWindow();
+  for(TFigureSet::iterator p = selection.begin();
+      p != selection.end();
+      ++p)
+  {
+    (*p)->setFromPreferences(preferences);
   }
+  if (gtemplate)
+    gtemplate->setFromPreferences(preferences);
+
+  for(TFigureSet::iterator sp = selection.begin();
+      sp != selection.end();
+      ++sp)
+  {
+    (*sp)->setFromPreferences(preferences);
+  }
+  window->invalidateWindow();
+}
+
+void
+TFigureEditor::setLineColor(const TRGB &rgb)
+{
+  preferences->linecolor = rgb;
+  preferencesChanged();
+}
+
+void
+TFigureEditor::setFillColor(const TRGB &rgb)
+{
+cerr << __PRETTY_FUNCTION__ << endl;
+  preferences->setFillColor(rgb);
 }
 
 void
 TFigureEditor::unsetFillColor()
 {
   preferences->filled = false;
-  TFigureSet::iterator p,e;
-  p = selection.begin();
-  e = selection.end();
-  while(p!=e) {
-    (*p)->unsetFillColor();
-    p++;
-  }
-  if (gtemplate)
-    gtemplate->unsetFillColor();
-  window->invalidateWindow();
+  preferencesChanged();
 }
 
 void
 TFigureEditor::setFont(const string &fontname)
 {
   preferences->fontname = fontname;
-  TFigureSet::iterator p,e;
-  p = selection.begin();
-  e = selection.end();
-  while(p!=e) {
-    (*p)->setFont(fontname);
-    p++;
-  }
-  if (gtemplate)
-    gtemplate->setFont(fontname);
-  window->invalidateWindow();
+  preferencesChanged();
 }
 
 void
@@ -1178,14 +1117,8 @@ TFigureEditor::setCreate(TFigure *t)
     delete clone;
     return;
   }
-  gtemplate->setLineColor(preferences->linecolor);
-  if (preferences->filled)
-    gtemplate->setFillColor(preferences->fillcolor);
-  else
-    gtemplate->unsetFillColor();
-  gtemplate->setFont(preferences->fontname);
   gtemplate->removeable = true;
-preferences->reason = TFigurePreferences::ALLCHANGED;
+  preferences->reason = TFigurePreferences::ALLCHANGED;
   gtemplate->setFromPreferences(preferences);
   setOperation(OP_CREATE);
 }
@@ -2182,29 +2115,3 @@ TFigureEditor::scrolled(int dx, int dy)
   // window->scrollTo(-x, -y);
   window->setOrigin(-x, -y);
 }
-
-#if 0
-void
-TFigureEditor::undo()
-{
-  clearSelection();
-  if (history.getBackSize()>0) {
-    history.getCurrent()->undo();
-    history.goBack();
-    window->invalidateWindow();
-    updateScrollbars();
-  }
-}
-
-void
-TFigureEditor::redo()
-{
-  clearSelection();
-  if (history.getForwardSize()>0) {
-    history.goForward();
-    history.getCurrent()->redo();
-    window->invalidateWindow();
-    updateScrollbars();
-  }
-}
-#endif

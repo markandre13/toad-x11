@@ -34,6 +34,8 @@ class TMatrix2D;
 
 /**
  * \ingroup figure
+ *
+ * To be renamed into 'TPlainFigure' or 'TVerbatimFigure' or ...
  */
 class TFigure:
   public TSerializable
@@ -46,7 +48,7 @@ class TFigure:
       SELECT,
       EDIT
     };
-    
+#if 0    
     void setLineColor(const TRGB &color) {
       line_color = color;
     }
@@ -58,6 +60,7 @@ class TFigure:
       filled = false;
     }
     virtual void setFont(const string&);
+#endif
     virtual void setFromPreferences(TFigurePreferences*);
     
     //! Called to paint the gadget.
@@ -78,14 +81,9 @@ class TFigure:
      *    paint a marker with the default implementation of 'paintSelection'
      */
     virtual void getShape(TRectangle*) = 0;
-
+#if 0
   protected:
-    TSerializableRGB line_color;
-    TSerializableRGB fill_color;
-    bool filled:1;        // true when filled
-    TPen::ELineStyle line_style;
-    unsigned line_width;
-  
+#endif  
   public:    
     /**
      * 'true' when TFigureEditor is allowed to delete this object.
@@ -151,22 +149,39 @@ class TFigure:
     bool restore(TInObjectStream &in);
 };
 
+//! To be renamed into 'TFigure'
+//! what about *mat ?
+class TColoredFigure:
+  public TFigure
+{
+    typedef TFigure super;
+  protected:
+    TColoredFigure();
+    TSerializableRGB line_color;
+    TSerializableRGB fill_color;
+    bool filled:1;        // true when filled
+    TPen::ELineStyle line_style;
+    unsigned line_width;
+
+    void store(TOutObjectStream &out) const;
+    bool restore(TInObjectStream &in);
+
+  public:
+    virtual void setFromPreferences(TFigurePreferences*);
+};
+
+
 /**
  * \ingroup figure
  */
 class TFRectangle:
-  public TFigure
+  public TColoredFigure
 {
-    typedef TFigure super;
+    typedef TColoredFigure super;
   public:
-    TFRectangle() {
-      filled = false;
-      line_color.set(0,0,0);
-      fill_color.set(0,0,0);
-    }
+    TFRectangle() {}
     TFRectangle(int x,int y,int w, int h) {
       setShape(x, y, w, h);
-      filled = false;
     };
     void setShape(int x, int y, int w, int h) {
       p1.x = x;
@@ -196,16 +211,10 @@ class TFRectangle:
  * \ingroup figure
  */
 class TFPolygon:
-  public TFigure
+  public TColoredFigure
 {
-    typedef TFigure super;
+    typedef TColoredFigure super;
   public:
-    TFPolygon() {
-      filled = false;
-      line_color.set(0,0,0);
-      fill_color.set(0,0,0);
-    }
-    
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
     void getShape(TRectangle*);

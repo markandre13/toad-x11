@@ -101,9 +101,6 @@ TInObjectStream TFigure::serialize;
 
 TFigure::TFigure()
 {
-  filled = false;
-  line_style = TPen::SOLID;
-  line_width = 0;
   removeable = true;
   mat = 0;
 }
@@ -112,13 +109,22 @@ TFigure::~TFigure()
 {
 }
 
-void
-TFigure::setFont(const string&)
+TColoredFigure::TColoredFigure()
 {
+  filled = false;
+  line_color.set(0,0,0);
+  fill_color.set(0,0,0);
+  line_style = TPen::SOLID;
+  line_width = 0;
 }
 
 void
 TFigure::setFromPreferences(TFigurePreferences *preferences)
+{
+}
+
+void
+TColoredFigure::setFromPreferences(TFigurePreferences *preferences)
 {
   switch(preferences->reason) {
     case TFigurePreferences::ALLCHANGED:
@@ -126,6 +132,16 @@ TFigure::setFromPreferences(TFigurePreferences *preferences)
       line_style = preferences->linestyle;
       line_color = preferences->linecolor;
       fill_color = preferences->fillcolor;
+      filled     = preferences->filled;
+      break;
+    case TFigurePreferences::LINECOLOR:
+      line_color = preferences->linecolor;
+      break;
+    case TFigurePreferences::FILLCOLOR:
+      fill_color = preferences->fillcolor;
+      filled     = preferences->filled;
+      break;
+    case TFigurePreferences::UNSETFILLCOLOR:
       filled     = preferences->filled;
       break;
     case TFigurePreferences::LINEWIDTH:
@@ -282,6 +298,12 @@ TFigure::store(TOutObjectStream &out) const
   if (mat) {
     ::store(out, "trans", mat);
   }
+}
+
+void
+TColoredFigure::store(TOutObjectStream &out) const
+{
+  super::store(out);
   ::store(out, "linecolor", line_color);
   if (filled) {
     ::store(out, "fillcolor", fill_color);
@@ -301,6 +323,17 @@ TFigure::store(TOutObjectStream &out) const
 
 bool
 TFigure::restore(TInObjectStream &in)
+{
+  if (
+    ::restorePtr(in, "trans", &mat) ||
+    finished(in)
+  ) return true;
+  ATV_FAILED(in)
+  return false;
+}
+
+bool
+TColoredFigure::restore(TInObjectStream &in)
 {
   bool b;
   if (in.what==ATV_START) {
@@ -325,10 +358,9 @@ TFigure::restore(TInObjectStream &in)
   }
   
   if (
-    ::restorePtr(in, "trans", &mat) ||
     ::restore(in, "linecolor", &line_color) ||
     ::restore(in, "linewidth", &line_width) ||
-    finished(in)
+    super::restore(in)
   ) return true;
   ATV_FAILED(in)
   return false;
