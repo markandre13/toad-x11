@@ -81,6 +81,18 @@ sub node
       $mp = "_p1, _p2";
       $bp = ", p1, p2";
       last SWITCH; };
+    $_[6]==3 && do {
+      $tp = ", class U1, class U2, class U3";
+      $ap = ", class V1, class V2, class V3";
+      $vp = "  U1 _p1; U2 _p2; U3 _p3;\n  ";
+      $dp = "U1, U2, U3";
+      $ep = ", U1, U2, U3";
+      $cp1= ", U1 p1, U2 p2, U3 p3";
+      $ap1= ", V1 p1, V2 p2, V3 p3";
+      $cp2= ", _p1(p1), _p2(p2), _p3(p3)";
+      $mp = "_p1, _p2, _p3";
+      $bp = ", p1, p2, p3";
+      last SWITCH; };
   }
 
   print <<EOT;
@@ -471,7 +483,7 @@ extern const TNone *NONE;
  * various signal nodes & connect's
  */
 EOT
-  for($i=0; $i<=2; $i++) {
+  for($i=0; $i<=3; $i++) {
     fnode("GSignalLinkF$i", $i);
     onode("GSignalLinkO$i", $i);
   }
