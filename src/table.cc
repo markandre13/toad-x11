@@ -27,7 +27,7 @@
 using namespace toad;
 
 #define DBM(M)
-#define DBM2(M)
+#define DBM2(M) M
 #define DBSCROLL(M)
 
 /**
@@ -842,8 +842,8 @@ DBSCROLL({
         } else {
           // no selection model, assume usage of simplified selection
           // with getLastSelectionRow() and getLastSelectionCol()
-          DBM2(selected = (per_row?0:x == sx) && (per_col?0:y == sy);)
-          cerr << "  render " << x << ", " << y << ": no sm: selected=" << selected << endl;
+          selected = (per_row?0:x == sx) && (per_col?0:y == sy);
+          DBM2(cerr << "  render " << x << ", " << y << ": no sm: selected=" << selected << endl;)
         }
         if (selecting) {
 DBM2(cerr << "  selecting is enabled, fake selected" << endl;)
@@ -1023,7 +1023,10 @@ DBM2(cerr << "enter mouseLDown" << endl;)
 
   sigPressed();
 
-  if (!(modifier&MK_CONTROL) && selection && !selection->isEmpty()) {
+  if (selection && !selection->isEmpty() &&
+       ( !(modifier&MK_CONTROL) || 
+         selection->getSelectionMode() == TAbstractTableSelectionModel::SINGLE ))
+  {
     DBM2(cerr << "  clear the whole selection" << endl;)
     selection->clearSelection();
   }
@@ -1035,9 +1038,9 @@ DBM2(cerr << "enter mouseLDown" << endl;)
   }  
 
   selecting = false;
-  if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::SINGLE) {
+  if (selection) {
     selecting=true;
-    if (modifier&MK_SHIFT) {
+    if (modifier&MK_SHIFT && selection->getSelectionMode() != TAbstractTableSelectionModel::SINGLE) {
       // shift was hold, start selecting from the previous cursor position
       sx = cx; sy = cy;
       invalidateWindow();
@@ -1085,8 +1088,12 @@ DBM2(cerr << "enter mouseMove" << endl;)
 
   invalidateChangedArea(sx,sy,cx,cy,cx,cy);
   cx = x; cy = y;
-  invalidateChangedArea(sx,sy,cx,cy,cx,cy);
-
+  if (selection && selection->getSelectionMode() == TAbstractTableSelectionModel::SINGLE) {
+    sx = cx; sy = cy;
+    invalidateCursor();
+  } else {
+    invalidateChangedArea(sx,sy,cx,cy,cx,cy);
+  }
 //  selectAtCursor();
   sigCursor();
   DBM2(cerr << "leave mouseMove" << endl << endl;)
@@ -1118,6 +1125,10 @@ DBM2(cerr << "enter mouseLUp" << endl;)
       y2 = max(sy, cy);
       selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
     }
+  } else {
+    DBM2(
+      cerr << "  not selecting or no selection" << endl;
+    )
   }
   selecting = false;
   sigClicked();
