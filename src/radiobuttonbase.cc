@@ -28,10 +28,8 @@ using namespace toad;
 /**
  * \class toad::TRadioStateModel
  * Coordinates several radio buttons.
- * <P>
- * A method being connected to <CODE>sigValueChanged</CODE> should use
- * a pointer to the radio state to distinguish between different buttons.<BR>
- * E.g.:
+ *
+ * A fine variant to use this class is the following one:
  * 
  * \code
  * TMyWindow::TMyWindow() {
@@ -69,12 +67,13 @@ TRadioStateModel::remove(TRadioButtonBase *rb)
 {
   TListenerBuffer::iterator p,e;
   p = listener.begin();
+  e = listener.end();
   while(p!=e) {
     if (*p==rb) {
       listener.erase(p);
       break;
     }
-    p++;
+    ++p;
   }  
 
   disconnect(rb->sigActivate, this);
