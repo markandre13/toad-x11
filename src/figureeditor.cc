@@ -430,7 +430,7 @@ TFigureEditor::paint()
     update_scrollbars = false;
   }
 
-  TPen scr(this);
+  TPen scr(window);
   scr.identity();
   TRectangle r;
   scr.getClipBox(&r);
