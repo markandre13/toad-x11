@@ -20,6 +20,7 @@
 
 #include <toad/toadbase.hh>
 #include <toad/debug.hh>
+#include <toad/stacktrace.hh>
 
 using namespace toad;
 

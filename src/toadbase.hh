@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TOADBase
-#define TOADBase TOADBase
+#ifndef _TOAD_TOADBASE_HH
+#define _TOAD_TOADBASE_HH
 
 // TOAD version codes
 //-----------------------------------------------
@@ -86,6 +86,9 @@ void debug_mem_start();
 void debug_mem_end();
   
 extern char ** argv;
+extern int argc;
+extern char ** envv;
+
 extern void* top_address;
   
 
@@ -101,17 +104,6 @@ void initialize(int argc, char **&argv, char **envv);
 int mainLoop();
 void terminate();
 
-class TStackTrace
-{
-  public:
-    TStackTrace();
-    void print();
-  protected:
-    unsigned *addr;
-    unsigned size;
-};
-
-void printStackTrace();
 
 enum EEventFilterPos {
   KF_GLOBAL,
@@ -174,8 +166,6 @@ class TOADBase
 
   public:
     virtual ~TOADBase();
-    static int argc;
-    static char **argv, **envv;
   
     static bool bAppIsRunning;
     static TWindow* wndTopPopup;
@@ -188,7 +178,7 @@ class TOADBase
 
     // `class constructor/destructor'
     //-------------------------------
-    static bool initTOAD(int argc,char *argv[],char *envv[]);
+    static bool initTOAD();
     static void closeTOAD();
     static void initColor();
     static void initIO(int);

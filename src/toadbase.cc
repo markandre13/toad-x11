@@ -138,10 +138,6 @@ TWindow*  TOADBase::wndTopPopup;
 bool      TOADBase::bSimulatedAutomaticGrab;
 bool      TOADBase::lock_paint_queue = false;
 
-int       TOADBase::argc;
-char**    TOADBase::argv;
-char**    TOADBase::envv;
-
 namespace {
 struct TModalNode {
   TWindow *wnd;
@@ -214,12 +210,8 @@ TOADBase::~TOADBase()
 }
 
 bool
-TOADBase::initTOAD(int argc,char** argv,char** envv)
+TOADBase::initTOAD()
 {
-  TOADBase::argc = argc;
-  TOADBase::argv = argv;
-  TOADBase::envv = envv;
-
   bool x11sync = false;
   string x11displayname;
 

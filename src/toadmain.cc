@@ -44,6 +44,9 @@ namespace toad {
 }
 
 char** toad::argv;
+int toad::argc;
+char** toad::envv;
+
 void* toad::top_address;
 
 /**
@@ -92,12 +95,14 @@ toad::initialize(int argc, char **&argv, char **envv)
     }
   }
   toad::argv = argv;
+  toad::argc = argc;
+  toad::envv = envv;
 
   // initialize stacktrace.cc
   toad::top_address = __builtin_return_address(1);
 
   // this is something other OO languages call class initialisation
-  TOADBase::initTOAD(argc,argv,envv);
+  TOADBase::initTOAD();
 
   if (layouteditor)
     new TDialogEditor();

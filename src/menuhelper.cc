@@ -23,6 +23,7 @@
 #include <toad/toad.hh>
 #include <toad/io/urlstream.hh>
 #include <toad/action.hh>
+#include <toad/stacktrace.hh>
 #include <fstream>
 
 #include <stack>

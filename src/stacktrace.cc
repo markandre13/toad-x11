@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <toad/toad.hh>
+#include <toad/stacktrace.hh>
 
 /**
  * @defgroup debug Debugging
@@ -164,7 +165,7 @@ TStackTrace::TStackTrace()
 }
 
 void
-TStackTrace::print()
+TStackTrace::print() const
 {
   char buffer[4096];
   sprintf(buffer, "toadtrace %s ", toad::argv[0]);
