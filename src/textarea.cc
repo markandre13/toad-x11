@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -233,6 +233,8 @@ TTextArea::~TTextArea()
 void
 TTextArea::keyDown(TKey key, char* str, unsigned modifier)
 {
+  if (!model)
+    return;
 DBM(cout << "ENTER keyDown '" << str << "'" << endl;
     cout << "  _cx, _cy        : " << _cx << ", " << _cy << endl;
     cout << "  _tx, _ty        : " << _tx << ", " << _ty << endl;
@@ -441,6 +443,8 @@ DBM(cout << "LEAVE keyDown" << endl;
 void
 TTextArea::mouseLDown(int x, int y, unsigned)
 {
+  if (!model)
+    return;
   TFont *font = TPen::lookupFont(preferences->getFont());
   int h = font->getHeight();
   int w = font->getTextWidth("x");
@@ -454,6 +458,8 @@ TTextArea::mouseLDown(int x, int y, unsigned)
 void
 TTextArea::focus(bool b)
 {
+  if (!model)
+    return;
   model->focus(b);
 //cout << getTitle() << ".focus "<<isFocus()<<endl;
   _invalidate_line(_cy);
@@ -474,15 +480,16 @@ TTextArea::_set_model(TTextModel *m)
   if (model)
     disconnect(model->sigTextArea, this);
   model = m;
-  if (model)
-    connect(model->sigTextArea, this, &TTextArea::modelChanged);
   _cx = 0;
   _cy = 0;
   _tx = 0;
   _ty = 0;
   _bol = 0;
   _pos = 0;
-  _eol_from_bol();
+  if (model) {
+    connect(model->sigTextArea, this, &TTextArea::modelChanged);
+    _eol_from_bol();
+  }
   _bos = _eos = 0;
   if (vscroll)
     vscroll->setValue(_ty);
@@ -745,14 +752,15 @@ TTextArea::scrolled()
 void
 TTextArea::paint()
 {
-  if (!model) {
-    return;
-  }
-
   TPen pen(this);
   pen.draw3DRectangle(
     visible.x-2, visible.y-2,
     visible.w+4-1, visible.h+4-1);
+  if (!model) {
+    pen.setColor(TColor::DIALOG);
+    pen.fillRectanglePC(visible);
+    return;
+  }
 
   TRectangle clipbox;
   pen.getClipBox(&clipbox);
@@ -1010,6 +1018,8 @@ TTextArea::_redo()
 void
 TTextArea::mouseMDown(int,int,unsigned)
 {
+  if (!model)
+    return;
   _insert(getSelection());
 }
 

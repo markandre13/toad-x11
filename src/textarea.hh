@@ -348,6 +348,10 @@ class TTextArea:
     void _set_model(TTextModel*);
 
   public:
+    void setModel(int) {
+      _set_model(0);
+    }
+  
     template <class T>
     void setModel(T * m) {
       TTextModel *mo = 0;
