@@ -61,13 +61,13 @@ using namespace toad;
  *
  * Selection Mode
  *
- * The following is subject to change, the new behaviour will match
- * TTable:
+ * The following keys control the selection mode and are choosen to match
+ * the behaviour of selecting objects in TTable:
  *
- * \li click           : select and move object
- * \li CTRL+click      : only select object
- * \li SHIFT+click     : add single object to selection
- * \li SHIFT+CTRL+click: remove single object from selection
+ * \li click           : select and move object and its handles
+ * \li SHIFT+click     : select area
+ * \li CTRL+click      : select/deselect single object
+ * \li SHIFT+CTRL+click: select additional area
  *
  * \todo
  *   \li
@@ -1176,8 +1176,13 @@ TFigureEditor::keyDown(TKey key, char *s, unsigned m)
     return;
     
   if (key == TK_ESCAPE) {
-    stopOperation();
-    deleteSelection();
+    if (operation==OP_CREATE) {
+      stopOperation();
+      deleteSelection();
+    } else {
+      stopOperation();
+      clearSelection();
+    }
     return;
   }
 
@@ -1303,6 +1308,9 @@ TFigureEditor::sheet2grid(int sx, int sy, int *gx, int *gy)
   }
 }
 
+
+static bool mouseMoved;
+
 void
 TFigureEditor::mouseLDown(int mx,int my, unsigned m)
 {
@@ -1379,6 +1387,7 @@ redo:
                   cout << "      handle " << h << " @ " << memo_pt.x << ", " << memo_pt.y << endl;
                   #endif
                   state = STATE_MOVE_HANDLE;
+                  mouseMoved = false;
                   if (selection.size()>1) {
                     clearSelection();
                     selection.insert(gadget);
@@ -1420,22 +1429,22 @@ redo:
               #endif
             } else 
             
-            if (m & MK_SHIFT) {
+            if (m & MK_CONTROL) {
               #if VERBOSE
-                cout << ", shift => ";
+                cout << ", control => ";
               #endif
-              if (! (m&MK_CONTROL)) {
+              if (! (m&MK_SHIFT)) {
                 #if VERBOSE
                   cout << "  adding object to selection" << endl;
                 #endif
                 if (gi==selection.end())
                   selection.insert(g);
-              } else {
-                #if VERBOSE
-                  cout << " removing object from selection" << endl;
-                #endif
-                if (gi!=selection.end())
+                else
                   selection.erase(gi);
+              } else {
+                state =  STATE_SELECT_RECT;
+                select_x = x;
+                select_y = y;
               }
               sigSelectionChanged();
               window->invalidateWindow();
@@ -1447,7 +1456,7 @@ redo:
                 clearSelection();
                 selection.insert(g);
                 sigSelectionChanged();
-                if (m&MK_CONTROL) {
+                if (m&MK_SHIFT) {
                   state =  STATE_SELECT_RECT;
                   select_x = x;
                   select_y = y;
@@ -1456,7 +1465,7 @@ redo:
                   state = STATE_MOVE;
                 }
               } else {
-                if (m&MK_CONTROL) {
+                if (m&MK_SHIFT) {
                   clearSelection();
                   selection.insert(g);
                   sigSelectionChanged();
@@ -1478,7 +1487,7 @@ redo:
             #if VERBOSE
               cout << "      nothing at cursor => STATE_SELECT_RECT" << endl;
             #endif
-            if (!(m & MK_SHIFT)) {
+            if (!(m & MK_CONTROL)) {
               clearSelection();
               sigSelectionChanged();
             }
@@ -1661,21 +1670,28 @@ redo:
       #if VERBOSE
         cout << "  STATE_MOVE_HANDLE => moving handle" << endl;
       #endif
-
-      /* copied from findFigureAt */
-      int x2, y2;
-      if (gadget->mat) {
-        TMatrix2D m(*gadget->mat);
-        m.invert();
-        m.map(x, y, &x2, &y2);
-      } else {
-        x2 = x;
-        y2 = y;
+      
+      if (!mouseMoved) {
+        if (down_x!=x || down_y != y)
+          mouseMoved = true;
       }
 
-      invalidateFigure(gadget);
-      gadget->translateHandle(handle, x2, y2);
-      invalidateFigure(gadget);
+      if (mouseMoved) {
+        /* copied from findFigureAt */
+        int x2, y2;
+        if (gadget->mat) {
+          TMatrix2D m(*gadget->mat);
+          m.invert();
+          m.map(x, y, &x2, &y2);
+        } else {
+          x2 = x;
+          y2 = y;
+        }
+
+        invalidateFigure(gadget);
+        gadget->translateHandle(handle, x2, y2);
+        invalidateFigure(gadget);
+      }
     } break;
 
     case STATE_SELECT_RECT: {
@@ -1689,8 +1705,10 @@ redo:
         if (dy<0) dy=-dy;
         if (dx<2 || dy<2)
           break;
-        clearSelection();
-        sigSelectionChanged();
+        if (!(m&MK_CONTROL)) {
+          clearSelection();
+          sigSelectionChanged();
+        }
       }
       #if VERBOSE
         cout << "  STATE_SELECT_RECT => redrawing rectangle" << endl;
@@ -1803,29 +1821,32 @@ redo:
         cout << "  STATE_MOVE_HANDLE => updating scrollbars, STATE_NONE" << endl;
       #endif
 
-      /* copied from findFigureAt */            
-      int x2, y2;
-      if (gadget->mat) {
-        TMatrix2D m(*gadget->mat);
-        m.invert();
-        m.map(x, y, &x2, &y2);
-      } else {
-        x2 = x;
-        y2 = y;
-      }
+      if (mouseMoved) {      
+        /* copied from findFigureAt */            
+        int x2, y2;
+        if (gadget->mat) {
+          TMatrix2D m(*gadget->mat);
+          m.invert();
+          m.map(x, y, &x2, &y2);
+        } else {
+          x2 = x;
+          y2 = y;
+        }
 
+        invalidateFigure(gadget);
+        gadget->translateHandle(handle, x2, y2);
+      }
       invalidateFigure(gadget);
-      gadget->translateHandle(handle, x2, y2);
-      invalidateFigure(gadget);
+
       state = STATE_NONE;
       gadget = 0;
       handle = -1;
       updateScrollbars();
       
-      TPoint pt(x,y);
 #if 1
 //      cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
 #else
+      TPoint pt(x,y);
       history.add(new TUndoableHandleMove(*selection.begin(), handle, memo_pt, pt));
 #endif
     } break;
