@@ -377,8 +377,10 @@ TTable::TTable(TWindow *p, const string &t):
   ffx = ffy = 0;
   fpx = fpy = 0;
   row_info = col_info = NULL;
+  rows = cols = 0;
   row_header_renderer = col_header_renderer = NULL;
   selecting = false;
+  stretchLastColumn = true;
   connect(selection->sigChanged, this, &TTable::selectionChanged);
 }
 
@@ -493,19 +495,43 @@ TTable::invalidateCursor()
 }
 
 /**
- * Invalidate (sx,sy)-(bx,by) and substract (sx,sy)-(ax,ay).
+ * Invalidate (sx,sy)-(bx,by) - (sx,sy)-(ax,ay).
+ *
+ * \todo
+ *   \li implement this method and improve the comment
  */
 void
 TTable::invalidateChangedArea(int sx, int sy,
                               int ax, int ay,
                               int bx, int by)
 {
+#if 1
   invalidateWindow();
+#else
+  TRegion region;
+  
+  /* wrong: the coordinates aren't pixels but fields! */
+  
+  TPoint s(sx, sy);
+  TPoint a(ax, ay);
+  TPoint b(bx, by);
+  
+  TRectangle r;
+  r.set(s, b);
+  region|=r;
+  r.set(s, a);
+  region-=r;
+  invalidateWindow(region);
+#endif
 }
 
 void
 TTable::paint()
 {
+  // 'dummy' is only used until the clipping methods in
+  // TPen are improved.
+  TRectangle dummy(0,0,getWidth(), getHeight());
+
   TPen pen(this);
 
 DBSCROLL({
@@ -526,19 +552,22 @@ DBSCROLL({
 
   if (col_header_renderer) {
     TRectangle clip(visible.x, 0, visible.w, visible.y);
-    pen.setClipRect(clip);
-    if (getUpdateRegion())
-      pen&=*getUpdateRegion();
+    pen|=dummy;
+    pen&=clip;
+    pen&=*getUpdateRegion();
     xp = fpx + visible.x;
     int h = col_header_renderer->getHeight();
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
       pen.identity();
       pen.translate(xp+1,0);
-      col_header_renderer->renderItem(pen, x, col_info[x].size-2, h);
+      int size = col_info[x].size;
+      if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
+        size = visible.x+visible.w-xp;
+      col_header_renderer->renderItem(pen, x, size-2, h);
       xp+=col_info[x].size;
       if (border) {
         pen.setColor(0,0,0);
-        pen.fillRectanglePC(col_info[x].size, 0, border, h);
+        pen.fillRectanglePC(size, 0, border, h);
         xp+=border;
       }
     }
@@ -546,11 +575,11 @@ DBSCROLL({
 
   if (row_header_renderer) {
     TRectangle clip(0, visible.y, visible.x, visible.h);
-    pen.setClipRect(clip);
-    if (getUpdateRegion())
-      pen&=*getUpdateRegion();
+    pen|=dummy;
+    pen&=clip;
+    pen&=*getUpdateRegion();
     yp = fpy + visible.y;
-    int w = col_header_renderer->getWidth();
+    int w = row_header_renderer->getWidth();
     for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
       pen.identity();
       pen.translate(0,yp);
@@ -572,12 +601,10 @@ DBSCROLL({
     y2 = max(sy, cy);
   }
 
-  bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
-  bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
+  pen|=dummy;
+  pen&=visible;
+  pen&=*getUpdateRegion();
 
-  pen.setClipRect(visible);
-  if (getUpdateRegion())
-    pen&=*getUpdateRegion();
   if (border) {
     int panex, paney;
     getPanePos(&panex, &paney);
@@ -604,7 +631,11 @@ DBSCROLL({
     
     pen.setLineStyle(TPen::SOLID);
   }
-  
+
+  if (!renderer)
+    return;
+  bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
+  bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
   xp = fpx + visible.x;
   for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
     yp = fpy + visible.y;
@@ -620,6 +651,9 @@ DBSCROLL({
           if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
             selected = true;
         }
+        int size = col_info[x].size;
+        if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
+          size = visible.x+visible.w-xp-1;
 
 DBSCROLL(
   pen.setColor(255,255,255);
@@ -629,7 +663,7 @@ DBSCROLL(
         renderer->renderItem(
             pen,
             x, y,
-            col_info[x].size, row_info[y].size,
+            size, row_info[y].size,
             selected,
             cx == x && cy == y && isFocus()
         );
@@ -671,7 +705,10 @@ TTable::mouseLDown(int mx, int my, unsigned)
   for(x=ffx; ; x++) {
     if (x>=cols || pos1>visible.x+visible.w)
       return;
+    int size = col_info[x].size;
     pos2 = pos1 + col_info[x].size;
+    if (stretchLastColumn && x==cols-1)
+      pos2 = visible.x+visible.w;
     if (pos1 <= mx && mx < pos2) {
       break;
     }
@@ -703,11 +740,13 @@ TTable::mouseLDown(int mx, int my, unsigned)
 void
 TTable::center(int how)
 {
+  if (cols==0 || rows==0)
+    return;
+
   int panex, paney;
   panex = paney = -1;
   getPanePos(&panex, &paney, false);
 
-  assert(cols!=0 && rows!=0);
   if (paney!=-1 && how&CENTER_VERT) {
     int yp = 0;
     int y;
