@@ -251,10 +251,10 @@ TFont::getTextWidth(const char *str, int len) const
 #ifdef HAVE_LIBXFT
   if (xftfont) {
     XGlyphInfo gi;
-    XftTextExtentsUtf8(x11display, xftfont, (const XftChar8*)str, len, &gi);
+    XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
     if (str[len-1]==' ') {
       XGlyphInfo gi2;
-      XftTextExtentsUtf8(x11display, xftfont, (const XftChar8*)"  ", 2, &gi2);
+      XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)"  ", 2, &gi2);
       return (gi.width+gi2.width)*x11scale;
     }
     return gi.width*x11scale;
@@ -308,7 +308,7 @@ TFont::createX11Font(TMatrix2D *mat)
   string newid;
   if (mat && !mat->isIdentity()) {
     double d = 12.0;
-    pattern = XftNameParse(fontname.c_str());
+    pattern = FcNameParse((FcChar8*)fontname.c_str());
     FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
     newid = "[";
     newid += d2s(mat->a11 * d);
@@ -369,7 +369,7 @@ TFont::createX11Font(TMatrix2D *mat)
       return;
     }
 #endif
-    pattern = XftNameParse(fontname.c_str());
+    pattern = FcNameParse((FcChar8*)fontname.c_str());
   }
 
   // Execute substitutions
@@ -518,7 +518,7 @@ TFont::createXftFont(TMatrix2D *mat)
   if (mat && !mat->isIdentity()) {
     double d=12.0;
     pattern = XftNameParse(fontname.c_str());
-    FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
+    XftPatternGetDouble(pattern, FC_SIZE, 0, &d);
     newid = "[";
     newid += d2s(mat->a11 * d);
     newid += d2s(mat->a12 * d);
@@ -532,7 +532,7 @@ TFont::createXftFont(TMatrix2D *mat)
       }
       id = newid;
     } else {
-      FcPatternDestroy(pattern);
+      XftPatternDestroy(pattern);
       return;
     }
   } else {
