@@ -1123,8 +1123,6 @@ TTable::handleNewModel()
 void
 TTable::adjustPane()
 {
-  visible.set(0,0,getWidth(),getHeight());
-
   DBM(cout << "pane.h: " << pane.h << endl;)
 
   if (row_header_renderer) {

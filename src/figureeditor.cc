@@ -1697,8 +1697,6 @@ TFigureEditor::findGadgetAt(int mx, int my)
 void
 TFigureEditor::adjustPane()
 {
-  visible.set(0,0,getWidth(),getHeight());
-
   if (row_header_renderer) {
     visible.x = row_header_renderer->getSize();
     visible.w -= visible.x;
