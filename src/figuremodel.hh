@@ -51,7 +51,10 @@ class TFigureModel:
      * Kind of modification that took place.
      */
     enum { MODIFIED, DELETE, 
-           ADD, REMOVE
+           ADD, REMOVE,
+           GROUP, UNGROUP,
+           TRANSLATE,
+           ROTATE,
     } type;
     TFigureSet figures;
     
@@ -105,7 +108,7 @@ class TFigureModel:
     void erase(TFigureSet&);
     
     TFigure* group(TFigureSet &);
-    void ungroup(TFigureSet*, TFigure*);
+    void ungroup(TFigureSet &grouped, TFigureSet *ungrouped);
     
     void erase(const iterator&);
     void erase(const iterator&, const iterator&);

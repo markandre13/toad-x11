@@ -781,6 +781,14 @@ TFigureEditor::modelChanged()
         }
       }
       break;
+    case TFigureModel::GROUP:
+      #warning "not removing figure from selection"
+      invalidateFigure(*model->figures.begin());
+      break;
+    case TFigureModel::UNGROUP:
+      #warning "not removing figure (group) from selection"
+      invalidateWindow();
+      break;
   }
 }
 
@@ -980,74 +988,18 @@ TFigureEditor::selectionDown()
 void
 TFigureEditor::group()
 {
-#if 1
   TFigure *group = model->group(selection);
   if (group) {
     clearSelection();
     selection.insert(group);
   }
-#else
-  if (selection.size()<2)
-    return;
-  TFGroup *group = new TFGroup();
-  TFigureModel::iterator p,e;
-
-  p = model->begin();
-  e = model->end();
-  while(p!=e) {
-    if (selection.find(*p)!=selection.end()) {
-      group->gadgets.add(*p);
-      TFigureModel::iterator del = p;
-      ++p;
-      model->erase(del);
-    } else {
-      ++p;
-    }
-  }
-
-  clearSelection();
-  group->calcSize();
-  model->insert(p, group);
-  selection.insert(group);
-#endif
 }
 
 void
 TFigureEditor::ungroup()
 {
-  TFigureModel::iterator p,e;
-  p = model->begin();
-  e = model->end();
-  while(p!=e) {
-    if (selection.find(*p)!=selection.end()) {
-      TFGroup *group = dynamic_cast<TFGroup*>(*p);
-      if (group) {
-        if (group->mat) {
-          TFigureModel::iterator vp,ve;
-          vp = group->gadgets.begin();
-          ve = group->gadgets.end();
-          while(vp!=ve) {
-            TMatrix2D *m = new TMatrix2D(*group->mat);
-            if ((*vp)->mat) {
-              m->multiply((*vp)->mat);
-              delete((*vp)->mat);
-            }
-            (*vp)->mat = m;
-            ++vp;
-          }
-        }
-        model->insert(p, group->gadgets.begin(), group->gadgets.end());
-        group->gadgets.erase(group->gadgets.begin(),group->gadgets.end());
-        delete group;
-        TFigureModel::iterator del = p;
-        ++p;
-        model->erase(del);
-        continue;
-      }
-    }
-    ++p;
-  }
-  clearSelection();
+  if (model)
+    model->ungroup(selection, &selection);
 }
 
 void
