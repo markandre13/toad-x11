@@ -261,3 +261,55 @@ TFBezierline::mouseMove(TFigureEditor *editor, int mx, int my, unsigned m)
   editor->invalidateFigure(this);
   return CONTINUE;
 }
+
+void 
+TFBezierline::translateHandle(unsigned handle, int x, int y)
+{
+  if ((handle%3)==0) {
+    int dx = x - polygon[handle].x;
+    int dy = y - polygon[handle].y;
+    polygon[handle].x = x;
+    polygon[handle].y = y;
+    if (handle>0) {
+      polygon[handle-1].x += dx;
+      polygon[handle-1].y += dy;
+    }
+    if (handle+1<polygon.size()) {
+      polygon[handle+1].x += dx;
+      polygon[handle+1].y += dy;
+    }
+  } else {
+    polygon[handle].x=x;
+    polygon[handle].y=y;
+  }
+}
+
+void 
+TFBezier::translateHandle(unsigned handle, int x, int y)
+{
+  if ((handle%3)==0) {
+    int dx = x - polygon[handle].x;
+    int dy = y - polygon[handle].y;
+    polygon[handle].x = x;
+    polygon[handle].y = y;
+    if (handle>0) {
+      polygon[handle-1].x += dx;
+      polygon[handle-1].y += dy;
+    } else {
+      polygon[polygon.size()-1].x += dx;
+      polygon[polygon.size()-1].y += dy;
+      polygon[polygon.size()-2].x += dx;
+      polygon[polygon.size()-2].y += dy;
+    }
+    if (handle+1<polygon.size()) {
+      polygon[handle+1].x += dx;
+      polygon[handle+1].y += dy;
+    } else {
+      polygon[0].x += dx;
+      polygon[0].y += dy;
+    }
+  } else {
+    polygon[handle].x=x;
+    polygon[handle].y=y;
+  }
+}

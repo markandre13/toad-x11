@@ -34,6 +34,7 @@ TFLine::TFLine()
   arrowtype = SIMPLE;
   arrowheight = 8 * 96;
   arrowwidth = 4 * 96;
+  fill_color.set(255,0,0);
 }
 
 void
@@ -41,6 +42,8 @@ TFLine::setFromPreferences(TFigurePreferences *preferences)
 {
   switch(preferences->reason) {
     case TFigurePreferences::ALLCHANGED:
+      line_color = preferences->linecolor;
+      fill_color = preferences->fillcolor;
       arrowmode = preferences->arrowmode;
       arrowtype = preferences->arrowtype;
       break;
@@ -50,11 +53,15 @@ TFLine::setFromPreferences(TFigurePreferences *preferences)
       break;
     case TFigurePreferences::ARROWMODE:
       arrowmode = preferences->arrowmode;
+      filled = (arrowmode!=NONE);
+      if (filled)
+        fill_color == preferences->fillcolor;
       break;
     case TFigurePreferences::ARROWSTYLE:
       arrowtype = preferences->arrowtype;
       break;
   }
+  filled = (arrowmode!=NONE); // for parents 'store' method
 }
 
 void
@@ -135,6 +142,7 @@ TFLine::drawArrow(TPenBase &pen,
 void 
 TFLine::paint(TPenBase &pen, EPaintType)
 {
+  pen.setLineColor(line_color);
   pen.drawLines(polygon);
 
   if (arrowmode == HEAD || arrowmode == BOTH)
@@ -184,4 +192,81 @@ TFLine::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
     return STOP;
   }
   return super::mouseLDown(editor, mx, my, m);
+}
+
+// storage
+//---------------------------------------------------------------------------
+namespace {
+  const char* arrowmodename[] = {
+    "none",
+    "head",
+    "tail",
+    "both"
+  };
+  
+  const char* arrowtypename[] = {
+    "simple",
+    "empty",
+    "filled",
+    "empty-concave",
+    "filled-concave",
+    "empty-convex",
+    "filled-convec"
+  };
+} // namespace
+
+void
+TFLine::store(TOutObjectStream &out) const
+{
+  super::store(out);
+  if (arrowmode!=NONE) {
+   out.indent();
+   out << "arrowmode = " << arrowmodename[arrowmode];
+   out.indent();
+   out << "arrowtype = " << arrowtypename[arrowtype];
+   out.indent();
+   out << "arrowheight = " << arrowheight;
+   out.indent();
+   out << "arrowwidth = " << arrowwidth;
+  }
+}
+
+bool
+TFLine::restore(TInObjectStream &in)
+{
+  static bool flag;
+  static int x;
+  int y;
+
+  if (in.what == ATV_START)
+    flag = false;
+
+  string s;
+
+  if (::restore(in, "arrowmode", &s)) {
+    for(unsigned i=0; i<sizeof(arrowmodename)/sizeof(char*); ++i) {
+      if (s == arrowmodename[i]) {
+        arrowmode = (EArrowMode)i;
+        return true;
+      }
+    }
+  } else
+  if (::restore(in, "arrowtype", &s)) {
+    for(unsigned i=0; i<sizeof(arrowtypename)/sizeof(char*); ++i) {
+      if (s == arrowtypename[i]) {
+        arrowtype = (EArrowType)i;
+        return true;
+      }
+    }
+  } else
+  if (::restore(in, "arrowheight", &arrowheight) ||
+      ::restore(in, "arrowwidth", &arrowwidth))
+  {
+    return true;
+  }
+
+  if (super::restore(in))
+    return true;
+  ATV_FAILED(in)
+  return false;
 }

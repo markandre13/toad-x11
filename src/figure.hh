@@ -269,6 +269,8 @@ class TFLine:
     
   protected:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
+    void store(TOutObjectStream&) const;
+    bool restore(TInObjectStream&);
 };
 
 class TFPolyline:
@@ -290,6 +292,7 @@ class TFBezierline:
 
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
+    void translateHandle(unsigned handle, int mx, int my);
     
     TCloneable* clone() const { return new TFBezierline(*this); }
     const char * name() const { return "toad::TFBezierline"; }
@@ -307,6 +310,7 @@ class TFBezier:
 
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
+    void translateHandle(unsigned handle, int x, int y);
     
     TCloneable* clone() const { return new TFBezier(*this); }
     const char * name() const { return "toad::TFBezier"; }
