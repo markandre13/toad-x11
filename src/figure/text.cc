@@ -124,8 +124,9 @@ TFText::stop(TFigureEditor*)
 }
 
 unsigned 
-TFText::keyDown(TFigureEditor *editor, TKey key, char*, unsigned)
+TFText::keyDown(TFigureEditor *editor, TKey key, char *str, unsigned)
 {
+cerr << "TFText::keyDown: '" << str << "'\n";
   editor->invalidateFigure(this);
   switch(key) {
     case TK_LEFT:
@@ -167,9 +168,9 @@ TFText::keyDown(TFigureEditor *editor, TKey key, char*, unsigned)
       cx++;
       break;
     default:
-      if (key>=32 && key<=255) {
-        text.insert(cx, 1, key);
-        cx++;
+      if ((unsigned char)str[0]>=32 || str[1]!=0) {
+        text.insert(cx, str);
+        cx+=strlen(str);
       }
   }
   calcSize();
