@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 #
 # This script generates the connect.hh file. This is done to genarate
-# the connection variants with 0, 1 and 2 parameters from the same
+# the connection variants with 0, 1, 2 and 3 parameters from the same
 # definition.
 #
 # The text printed by the license function below is for this Perl 
@@ -15,7 +15,7 @@ print<<EOT;
 /* DO NOT EDIT - THIS IS A GENERATED FILE (EDIT CONNECT.HH.PM!)
  *
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf\@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf\@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -169,26 +169,83 @@ namespace toad {  // connect.hh
 
 /**
  * \\ingroup callback
+ *
+ * A simplified variant of 'connect' which requires a C++ compiler
+ * with a 'typeof' operator like GNU C++.
+ *
+ * Example:
+ * \\code
+   struct MyClass {
+     void print(int a) {
+       cerr << a << endl;
+     }
+   };
+   
+   MyClass *o = new TMyClass();
+   TSignal sig;
+
+   CONNECT(sig, o, print, 1);
+
+   sig();
+   \\endcode
+ * 
+ * \\param S A TSignal object.
+ * \\param O An object which owns a method to be called.
+ * \\param M The objects method to be invoked when the signal is triggered.
+ * \\param ARGS... 
+ *   Zero or more arguments which will be used when the method is
+ *   invoked.
+ * 
  */
 #define CONNECT(S, O, M, ARGS...) { typedef typeof(*O) T; connect(S, O, &T::M , ## ARGS ); }
 
 /**
  * \\ingroup callback
+ *
+ * Remove all connections assigned to a signal.
+ *
+ * \\param S The TSignal.
  */
 #define DISCONNECT_ALL(S) S.remove();
 
 /**
  * \\ingroup callback
+ *
+ * Remove all connections to a certain object from a signal.
+ *
+ * \\param S
+ *   The TSignal.
+ * \\param O
+ *   The object to whose connections shall be removed.
  */
 #define DISCONNECT_OBJ(S, O) S.remove((void*)O);
 
 /**
  * \\ingroup callback
+ *
+ * Remove all connections for a certain function from a signal.
+ *
+ * \\param S
+ *   The TSignal.
+ * \\param O
+ *   A pointer to the function to be removed.
  */
 #define DISCONNECT_FNC(S, O) S.remove((void*)O);
 
 /**
  * \\ingroup callback
+ *
+ * A simplified variant of 'disconnect' which requires a C++ compiler
+ * with a 'typeof' operator like GNU C++.
+ *
+ * Removes a certain method from a signal.
+ *
+ * \\param S
+ *   The TSignal.
+ * \\param O
+ *   The Object.
+ * \\param M
+ *   The objects method to be removed.
  */
 #define DISCONNECT(S, O, M) { typedef typeof(*O) T; S.remove((void*)O, (TSignalLink::TMethod)&T::M); }
   
@@ -439,53 +496,254 @@ struct TNone {
 /**
  * \\ingroup callback
  *
- * This variable can be used as NULL variant as the 2nd and 3rd parameter
- * of the BGN_CONNECT_CODE macro.
+ * This macro provides a substitute for 'closures' known from Smalltalk.
+ *
+ * Example:
+ * \\code
+void foo(int a) {
+  cerr << a << endl;
+}
+
+int main() {
+  TSignal sig;
+
+  CLOSURE(sig, {
+    foo(8);
+  })
+
+  sig();
+}
+\\endcode
+ *
+ * \\param SIG TSignal which will invokes the closure.
+ * \\param DEF A code block which defines the closure.
+ * \\sa TCLOSURE
  */
-extern const TNone *NONE;
+#define CLOSURE(SIG, DEF) \\
+{ struct closure { \\
+  static void __f() DEF \\
+}; \\
+connect(SIG, closure::__f); }
 
 /**
  * \\ingroup callback
  *
- * Code Connection
- * \\li all arguments are executed once, which avoids unexpected
- *   side effects
- * \\li arguments
- *    1st: TSignal
- *    2nd: pointer to destination object or NONE
- *    3rd: pointer to source object or NONE
- *    4th: TSignalCode** or NULL
+ * This macro provides a substitute for 'closures' known from Smalltalk.
+ *
+ * Example:
+ * \\code
+int
+foo(int a) {
+  cerr << a << endl;
+}
+
+int main() {
+  TSignal sig;
+
+  CLOSURE1(sig, 17, (int a) {
+    foo(a);
+  });
+
+  sig();
+}\\endcode
+ *
+ * \\param SIG TSignal which will invoke the closure.
+ * \\param P1 A value used when the closure is invoked.
+ * \\param DEF An argument list with one argument and code block.
+ * \\sa TCLOSURE1
  */
-#define BGN_CONNECT_CODE(SIG,D,S,NR)\\
-	{\\
-		typedef typeof(S) TS;\\
-		typedef typeof(D) TD;\\
-		TS _s = S;\\
-		TD _d = D;\\
-		TSignal *_sig = &SIG;\\
-		TSignalLink **_nr = NR;\\
-		class unnamed:\\
-			public TSignalLink\\
-		{\\
-    		TS src;\\
-    		TD dst;\\
-			public:\\
-				unnamed(TS s, TD d) {\\
-				  src = s;\\
-				  dst = d;\\
-				}\\
-				void execute() {
+#define CLOSURE1(SIG, P1, DEF) \\
+{ struct closure { \\
+  static void __f DEF \\
+}; \\
+connect(SIG, closure::__f, P1); }
 
 /**
  * \\ingroup callback
- */
-#define END_CONNECT_CODE()\\
-				}\\
-		};\\
-		TSignalLink *n = _sig->add(new unnamed(_s,_d));\\
-		if (_nr) *_nr = n;\\
-	}
+ *
+ * This macro provides a substitute for 'closures' known from Smalltalk.
+ *
+ * Example:
+ * \\code
+int bar(int a, int b) {
+  cerr << a << ", " << b << endl;
+}
 
+int main() {
+  TSignal sig;
+
+  CLOSURE2(sig, 20, 25, (int a, int b) {
+    bar(a, b);
+  })
+
+  sig();
+}\\endcode
+ *
+ * \\param SIG TSignal which will invoke the closure.
+ * \\param P1 A 1st value used when the closure is invoked.
+ * \\param P2 A 2nd value used when the closure is invoked.
+ * \\param DEF An argument list with two arguments and code block.
+ * \\sa TCLOSURE2
+ */
+#define CLOSURE2(SIG, P1, P2, DEF) \\
+{ struct closure { \\
+  static void __f DEF \\
+}; \\
+connect(SIG, closure::__f, P1, P2); }
+
+/**
+ * \\ingroup callback
+ *
+ * This macro provides a substitute for 'closures' known from Smalltalk.
+ *
+ * \\param SIG TSignal which will invoke the closure.
+ * \\param P1 A 1st value used when the closure is invoked.
+ * \\param P2 A 2nd value used when the closure is invoked.
+ * \\param P3 A 3rd value used when the closure is invoked.
+ * \\param DEF An argument list with two arguments and code block.
+ * \\sa CLOSURE2
+ */
+#define CLOSURE3(SIG, P1, P2, P3, DEF) \\
+{ struct closure { \\
+  static void __f DEF \\
+}; \\
+connect(SIG, closure::__f, P1, P2, P3); }
+
+/**
+ * \\ingroup callback
+ *
+ * A simplified variant of CLOSURE which requires a C++ compiler
+ * with a 'typeof' operator like GNU C++.
+ *
+ * Example:
+ * \\code
+void foo(int a) {
+  cerr << a << endl;
+}
+
+int main() {
+  TSignal sig;
+
+  TCLOSURE(sig,
+    foo(8);
+  )
+
+  sig();
+}\\endcode
+ *
+ * Code Connection
+ * \\param SIG TSignal which will invokes the closure.
+ * \\param DEF A code block which defines the closure.
+ * \\sa CLOSURE
+ */
+#define TCLOSURE(SIG, DEF) \\
+{ struct closure { \\
+  static void __f() { DEF } \\
+}; \\
+connect(SIG, closure::__f); }
+
+/**
+ * \\ingroup callback
+ *
+ * A simplified variant of CLOSURE1 which requires a C++ compiler
+ * with a 'typeof' operator like GNU C++.
+ *
+ * Example:
+ * \\code
+int foo(int a) {
+  cerr << a << endl;
+}
+
+int main() {
+  TSignal sig;
+
+  TCLOSURE1(sig, a, f(),
+    foo(a);
+  )
+
+  sig();
+
+}\\endcode
+ *
+ * Code Connection
+ * \\param SIG TSignal which will invokes the closure.
+ * \\param P1  Name of variable inside closure.
+ * \\param V1  Value for the variable.
+ * \\param DEF A code block which defines the closure.
+ * \\sa CLOSURE1
+ */
+#define TCLOSURE1(SIG, P1, V1, DEF) \\
+{ struct closure { \\
+  typedef typeof(V1) __t1; \\
+  static void __f(__t1 P1) { DEF } \\
+}; \\
+connect(SIG, closure::__f, V1); }
+
+/**
+ * \\ingroup callback
+ *
+ * A simplified variant of CLOSURE2 which requires a C++ compiler
+ * with a 'typeof' operator like GNU C++.
+ *
+ * Example:
+ * \\code
+int bar(int a, int b) {
+  cerr << a << ", " << b << endl;
+}
+
+int main() {
+  TSignal sig;
+
+  TCLOSURE2(sig, 
+            a, f(),
+            b, g(),
+    bar(a, b);
+  )
+
+  sig();
+}\\endcode
+ *
+ * Code Connection
+ * \\param SIG TSignal which will invokes the closure.
+ * \\param P1  Name of variable inside closure.
+ * \\param V1  Value for the variable.
+ * \\param P2  Name of variable inside closure.
+ * \\param V2  Value for the variable.
+ * \\param DEF A code block which defines the closure.
+ * \\sa CLOSURE2
+ */
+#define TCLOSURE2(SIG, P1, V1, P2, V2, DEF) \\
+{ struct closure { \\
+  typedef typeof(V1) __t1; \\
+  typedef typeof(V2) __t2; \\
+  static void __f(__t1 P1, __t2 P2) { DEF } \\
+}; \\
+connect(SIG, closure::__f, V1, V2); }
+
+/**
+ * \\ingroup callback
+ *
+ * A simplified variant of CLOSURE3 which requires a C++ compiler
+ * with a 'typeof' operator like GNU C++.
+ *
+ * \\param SIG TSignal which will invokes the closure.
+ * \\param P1  Name of variable inside closure.
+ * \\param V1  Value for the variable.
+ * \\param P2  Name of variable inside closure.
+ * \\param V2  Value for the variable.
+ * \\param P3  Name of variable inside closure.
+ * \\param V3  Value for the variable.
+ * \\param DEF A code block which defines the closure.
+ * \\sa TCLOSURE2
+ */
+#define TCLOSURE3(SIG, P1, V1, P2, V2, P3, V3, DEF) \\
+{ struct closure { \\
+  typedef typeof(V1) __t1; \\
+  typedef typeof(V2) __t2; \\
+  typedef typeof(V3) __t3; \\
+  static void __f(__t1 P1, __t2 P2, __t3 P3) { DEF } \\
+}; \\
+connect(SIG, closure::__f, V1, V2); }
 
 /*
  * various signal nodes & connect's
