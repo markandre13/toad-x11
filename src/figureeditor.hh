@@ -68,7 +68,8 @@ class TFigureEditor:
 
   protected:
     TWindow *window;            // current window
-    TMatrix2D *mat;
+    TMatrix2D *mat;             // transformation for the editor
+    int fuzziness;              // fuzziness to catch handles
 
   public:
     static const unsigned OP_SELECT = 0;
@@ -76,6 +77,14 @@ class TFigureEditor:
     static const unsigned OP_ROTATE = 2;
     void setOperation(unsigned);
     void setCreate(TFigure*);
+    
+    void identity();
+    void rotate(double);
+    void rotateAt(double x, double y, double degree);
+    void translate(double, double);
+    void scale(double sx, double sy);
+    void shear(double, double);
+    void multiply(const TMatrix2D*);
 
     void setLineColor(const TRGB&);
     void setFillColor(const TRGB&);

@@ -141,6 +141,13 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t):
   window = this;
 }
 
+TFigureEditor::~TFigureEditor()
+{
+//  SetMode(MODE_SELECT);
+//  cout << "gadgets total: " << gadgets.size() << endl;
+  if (mat)
+    delete mat;
+}
 
 /**
  * Handle events for another window.
@@ -171,6 +178,7 @@ TFigureEditor::init()
 
   gridx = gridy = 4;
   draw_grid = true;
+  fuzziness = 2;
   handle = -1;
   gadget = gtemplate = NULL;
   operation = OP_SELECT;
@@ -202,12 +210,6 @@ TFigureEditor::init()
   CONNECT(action->sigActivate, this, redo);
 }
 
-TFigureEditor::~TFigureEditor()
-{
-//  SetMode(MODE_SELECT);
-//  cout << "gadgets total: " << gadgets.size() << endl;
-}
-
 bool
 TFigureEditor::restore(TInObjectStream &in)
 {
@@ -232,6 +234,32 @@ TFigureEditor::store(TOutObjectStream &out) const
   if (model)
     ::store(out, model);
 }
+
+void 
+TFigureEditor::identity() 
+{ 
+  if (mat) mat->identity();
+}
+
+void TFigureEditor::rotate(double) {}
+void TFigureEditor::rotateAt(double x, double y, double degree) {}
+void TFigureEditor::translate(double, double) {}
+
+void TFigureEditor::scale(double sx, double sy)
+{
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->scale(sx, sy);
+
+// better: create 2 points, transform 'em and calculate the
+// distance
+fuzziness = 2.0 / sx;
+  
+  invalidateWindow();
+}
+
+void TFigureEditor::shear(double, double) {}
+void TFigureEditor::multiply(const TMatrix2D*) {}
 
 /**
  * \param b 'true' if scrollbars shall be used.
@@ -886,7 +914,7 @@ redo:
             #endif
 
 /* copied from findGadgetAt */            
-      short x, y;
+      int x, y;
       if ((*p)->mat) {
         TMatrix2D m(*(*p)->mat);
         m.invert();
@@ -902,8 +930,8 @@ redo:
               while(true) {
                 if (!(*p)->getHandle(h,memo_pt))
                   break;
-                if (memo_pt.x-2<=x && x<=memo_pt.x+2 && 
-                    memo_pt.y-2<=y && y<=memo_pt.y+2) {
+                if (memo_pt.x-fuzziness<=x && x<=memo_pt.x+fuzziness && 
+                    memo_pt.y-fuzziness<=y && y<=memo_pt.y+fuzziness) {
                   #if VERBOSE
                     cout << "      found handle at cursor => STATE_MOVE_HANDLE" << endl;
                   #endif
@@ -1183,7 +1211,7 @@ redo:
       #endif
 
 /* copied from findGadgetAt */
-      short x2, y2;
+      int x2, y2;
       if (f->mat) {
         TMatrix2D m(*f->mat);
         m.invert();
@@ -1316,7 +1344,7 @@ redo:
       TFigure *f = *selection.begin();
 
 /* copied from findGadgetAt */            
-      short x2, y2;
+      int x2, y2;
       if (f->mat) {
         TMatrix2D m(*f->mat);
         m.invert();
@@ -1400,7 +1428,7 @@ TFigureEditor::invalidateFigure(TFigure* figure)
       m.multiply(figure->mat);
       
     int x1, x2, y1, y2;
-    short x, y;
+    int x, y;
     m.map(r.x, r.y, &x, &y);
     x1 = x2 = x;
     y1 = y2 = y;
@@ -1459,7 +1487,7 @@ TFigureEditor::findGadgetAt(int mx, int my)
   while(p!=b) {
     --p;
     if (*p!=gadget) {
-      short x, y;
+      int x, y;
       if ((*p)->mat) {
         stack->multiply((*p)->mat);
         stack->invert();
