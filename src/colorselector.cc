@@ -22,6 +22,7 @@
 #include <toad/figureeditor.hh>
 #include <toad/colordialog.hh>
 #include <toad/pushbutton.hh>
+#include <toad/undomanager.hh>
 
 using namespace toad;
 
@@ -136,11 +137,13 @@ TColorSelector::mouseLDown(int x, int y, unsigned modifier)
     invalidateWindow();
     return;
   }
+  TUndoManager::beginUndoGrouping();
   gedit->setLineColor(linecolor);
   if (!filled)
     gedit->setFillColor(fillcolor);
   else
     gedit->unsetFillColor();
+  TUndoManager::endUndoGrouping();
 }
 
 void

@@ -20,6 +20,7 @@
 
 #include <toad/figure.hh>
 #include <toad/figuremodel.hh>
+#include <toad/figureeditor.hh>
 #include <toad/undo.hh>
 #include <toad/undomanager.hh>
 #include <toad/io/binstream.hh>
@@ -568,6 +569,98 @@ TFigureModel::ungroup(TFigureSet &grouped, TFigureSet *ungrouped)
   type = UNGROUP;
   figures.clear();
   figures.insert(memo.begin(), memo.end());
+  sigChanged();
+}
+
+class TUndoAttributes:
+  public TUndo
+{
+    TFigureModel *model;
+    struct TNode {
+      TFigure *figure;
+      TFigureAttributes attributes;
+      TNode *next;
+    };
+    TNode *list;
+  public:
+    TUndoAttributes(TFigureModel *model) {
+      this->model = model;
+      list = 0;
+    }
+    ~TUndoAttributes() {
+      while(list) {
+        TNode *n = list;
+        list = list->next;
+        delete n;
+      }
+    }
+    void insert(TFigure *f) {
+      TNode *node = new TNode;
+      node->figure = f;
+      f->getAttributes(&node->attributes);
+      node->attributes.reason = TFigureAttributes::ALLCHANGED;
+      node->next = list;
+      list = node;
+    }
+  protected:
+    void undo() {
+      TUndoAttributes *undo = new TUndoAttributes(model);
+      
+      model->figures.clear();
+      TNode *node = list;
+      while(node) {
+        model->figures.insert(node->figure);
+        node = node->next;
+      }
+      model->type = TFigureModel::MODIFY;
+      model->sigChanged();
+      
+      node = list;
+      while(node) {
+        undo->insert(node->figure);
+        node->figure->setAttributes(&node->attributes);
+        node = node->next;
+      }
+      TUndoManager::registerUndo(model, undo);
+
+      model->type = TFigureModel::MODIFIED;
+      model->sigChanged();
+    }
+    bool getUndoName(string *name) const {
+      *name = "Undo: Figure change";
+      return true;
+    }
+    bool getRedoName(string *name) const {
+      *name = "Redo: Figure change";
+      return true;
+    }
+};
+
+void
+TFigureModel::setAttributes(TFigureSet &set, const TFigureAttributes *attributes)
+{
+  if (set.empty())
+    return;
+
+  figures.clear();
+  figures.insert(set.begin(), set.end());
+
+  type = MODIFY;
+  sigChanged();
+  
+  TUndoAttributes *undo = new TUndoAttributes(this);
+
+  for(TFigureSet::iterator p=set.begin();
+      p!=set.end();
+      ++p)
+  {
+    undo->insert(*p);
+    (*p)->setAttributes(attributes);
+  }
+  
+  TUndoManager::registerUndo(this, undo);
+
+  type = MODIFIED;
   sigChanged();
 }
 

@@ -151,7 +151,8 @@ TFigureEditor::setWindow(TWindow *w)
     window->invalidateWindow();
 }
 
-void foobar(TFigureAttributes *p) {
+static void
+foobar(TFigureAttributes *p) {
   p->sigChanged();
 }
 
@@ -708,22 +709,11 @@ TFigureEditor::preferencesChanged()
 {
   if (!preferences)
     return;
-  for(TFigureSet::iterator p = selection.begin();
-      p != selection.end();
-      ++p)
-  {
-    (*p)->setAttributes(preferences);
-  }
+
   if (gtemplate)
     gtemplate->setAttributes(preferences);
-
-  for(TFigureSet::iterator sp = selection.begin();
-      sp != selection.end();
-      ++sp)
-  {
-    (*sp)->setAttributes(preferences);
-  }
-  window->invalidateWindow();
+    
+  model->setAttributes(selection, preferences);
 }
 
 void
@@ -1075,15 +1065,8 @@ TFigureEditor::setCreate(TFigure *t)
 void
 TFigureEditor::applyAll()
 {
-cerr << "apply all" << endl;
   preferences->reason = TFigureAttributes::ALLCHANGED;
-  for(TFigureSet::iterator p=selection.begin();
-      p!=selection.end();
-      ++p)
-  {
-    (*p)->setAttributes(preferences);
-  }
-  window->invalidateWindow();
+  model->setAttributes(selection, preferences);
 }
 
 /**
