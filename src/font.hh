@@ -61,6 +61,7 @@ class TFont:
       RENDER_FREETYPE
     };
     static ERenderType default_rendertype;
+    static FcConfig* getFcConfig();
     static string default_font;
 //  private:
     string id;

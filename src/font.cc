@@ -115,6 +115,12 @@ TFont::~TFont() {
 
 static FcConfig *fc_x11fonts = 0;
 
+FcConfig*
+TFont::getFcConfig()
+{
+  return fc_x11fonts;
+}
+
 void
 TFont::init()
 {
@@ -681,7 +687,7 @@ struct width_t {
   int fc;
 };
 
-width_t widths[] = {
+static width_t widths[] = {
   { "condensed",        FC_WIDTH_CONDENSED },
   { "extended",         FC_WIDTH_EXPANDED },
   { "expanded",         FC_WIDTH_EXPANDED },
