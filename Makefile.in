@@ -1,0 +1,67 @@
+#
+# TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
+# Copyright (C) 1995-2002 by Mark-André Hopf <mhopf@mark13.de>
+#
+# @configure_input@
+
+.PHONY: install doc install-doc debian clean
+
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@
+datadir=@datadir@
+INSTALL=install
+DESTDIR=
+export
+
+all:
+	cd src ; $(MAKE)
+
+# library
+# include
+#   toad/
+# bin
+#   toadtrace
+#   toad-config
+
+install:
+	cd src ; $(MAKE) install DESTDIR=$(DESTDIR)
+	$(INSTALL) -d $(DESTDIR)/$(bindir)
+	$(INSTALL) bin/toadtrace $(DESTDIR)/$(bindir)
+	$(INSTALL) -m 0755 conf/toad-config $(DESTDIR)/$(bindir)
+	
+doc:
+	cd doc ; make
+	
+install-doc:
+	cd doc ; $(MAKE) install DESTDIR=$(DESTDIR)
+
+debian:
+	dpkg-buildpackage -b -rfakeroot
+
+changelog:
+	rcs2log -i 2 -u 'mark	Mark-André Hopf	mhopf@mark13.de' > Changelog
+	
+snapshot: changelog
+	date=`head -c 10 Changelog` && \
+	tar="toad-$${date}" && \
+	cvs -d $${HOME}/cvs export -r HEAD -d $$tar toad && \
+	cd $$tar && \
+	autoconf && \
+	cd .. && \
+	cp Changelog "toad-$${date}" && \
+	tar -cjf "$$tar.tar.bz2" $$tar && \
+	rm -rf $$tar && \
+	cp "$$tar.tar.bz2" ~/public_html/toad/download/snapshot/ && \
+	cp Changelog "$${HOME}/public_html/toad/Changelog-$$date.txt"
+
+clean:
+	cd src ; make clean
+	cd doc ; make clean
+	rm conf/toad-config
+
+distclean: clean
+	rm -rf config.status config.log
+	rm -rf Makefile src/Makefile conf/MakefilePrg testsuite/Makefile

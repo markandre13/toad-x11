@@ -1,0 +1,11 @@
+- Dithern beim Laden von Bitmaps ausschalten können
+- Dialog relativ verschieben lassen
+- Textfelder links- / rechtsbündig
+- Button geht runter, obwohl er das nicht sollte
+  (Bei focus() evtl. den Knopf immer hoch setzen?)
+
+Filedialog
+----------
+- In den Filedialogen die Beschriftungen ändern lassen können
+- Verzeichnisse in Filedialog wählen lassen können
+- Dateinamen & Filter vorgeben

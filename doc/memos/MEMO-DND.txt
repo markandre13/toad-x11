@@ -1,0 +1,123 @@
+
+There seems to be something Xdnd can't handle:
+
+Suppose a drag from a TPaint window would offer:
+
+(a) The image itself: image/png, image/bmp, ...
+    extern: copy, move
+    local : copy, move, link
+(b) The filename: uri/uri-list
+    extern: copy
+    local : copy
+(c) The color at the cursor position: x-application-toad/color
+    extern: copy
+    local : copy
+
+and a drag from the type window in NetEdit
+
+(d) typename: text/plain
+    extern  : copy
+    local   : -
+(e) a pointer to the type: "" (empty type list)
+    extern  : -
+    local   : link
+
+it's so damn complicated, seems I have to check 'em one by one...
+
+Case I:
+^^^^^^^^
+- click into TPaints editor window for move operation
+- the source supports
+    image/png
+    uri/uri-list
+    x-toad-extern/color
+    x-toad-local/object
+  but only
+    image/png
+  can be used for the move operation.
+- target wants `x-toad-extern/color'
+- nothing will happen
+
+=> The typelist depends on the drag action!
+
+Case II:
+^^^^^^^^
+- click into TPaints editor window for move operation
+- the source supports
+    image/png
+    uri/uri-list
+    application/x-toad-color
+    application/x-toad-localptr
+  but only
+    image/png
+  can be used for the move operation.
+- target wants `image/png'
+
+Case III:
+^^^^^^^^^
+- click into TPaints editor window for copy operation
+- the source supports
+    image/png
+    uri/uri-list
+    application/x-toad-color
+    application/x-toad-localptr
+- extern target wants `image/png'
+- source calls flatten and sends the object
+- done
+
+One of three actions must take place after a drop:
+(a) don't do anything
+(b) remove object
+(c) duplicate object
+(d) clear pointer to object, but keep object
+
+Source | Extern Target       | Local Target        |
+-------+---------------------+---------------------+
+copy   | copy            (a) | copy          (a,c) | a: const object
+move   | copy/delete src (b) | pointer move  (d)   |
+link   | special         (-) | pointer copy  (a)   |
+
+=> It's up to the one using `DoDrag' to provide a sane behaviour.
+=> `TDnDObject' could do the `copy' stuff on it's own:
+   - check wether the data is derived from `TCloneable' and use the
+     clone call
+   - flatten and unflatten the object
+
+Rules
+^^^^^
++ when the target can't perform the action (copy,move,link) but offers
+  another type of action, we ignore it
+  the user spend some extra effort to hit a key to select `move' or `link'
+  and we assume that he knew why and we won't confuse him by changing the
+  action
+- the target can change the action during `dropRequest'
+- the TDnD* constructor has to know what kind of action was selected
+  so the current scheme changes from
+    DoDrag(new TDnDTextPlain(...), modifier);
+  to
+    DoDrag(TDnDTextPlain("Hi there!", Modifier2Action(modifier));
+  or to:
+    TDnDTextPlain("Hi there!", Modifier2Action(modifier)).DoDrag();
+  or to:
+    keep the old syntax and use another method instead of the constructor
+    to create the typelist
+  or to:
+    just register the types and a list of allowed actions and to create
+    the real type list later
+- `DoDrag' mustn't start it's own event loop because in Xdnd 2.0 there's
+  no way to decide when the drop is finished; so it's up the the TDnDObject
+  to take care the desired action takes place?
+   Yes, but the action can take place when we've send the first 
+  SelectionNotify. But it's up to the DND code to remove the TDnDObject and
+  all its data.
+- TDnDObject::type==NULL isn't the right thing to do because...?
+- ConvertData should deliver a TDnDObject!
+  
+
+- Decide what kind of operation to perform:
+  - copy
+  - move
+  - link
+- Build type list, depending on the offered operations
+
+  

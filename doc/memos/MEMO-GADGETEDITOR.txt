@@ -1,0 +1,10 @@
+Modes of Operation and their submodes:
+  OP_SELECT
+    STATE_NONE
+    STATE_MOVE
+    STATE_MOVE_HANDLE
+    STATE_SELECT_RECT
+  OP_CREATE
+    STATE_NONE
+    STATE_?
+    

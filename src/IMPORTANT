@@ -1,0 +1,6 @@
+to code before gcc 3.0 release:
+
+pen.hh
+  DrawPolyBezier
+  FillPolyBezier
+  Poly2Bezier

@@ -1,0 +1,1653 @@
+/*
+ * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,   
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with this library; if not, write to the Free
+ * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+ * MA  02111-1307,  USA
+ */
+
+#include <toad/textarea.hh>
+#include <toad/simpletimer.hh>
+#include <toad/action.hh>
+#include <cstdio>
+#include <assert.h>
+
+#if 0
+#define DBM(M) M
+#define MARK { cout << __PRETTY_FUNCTION__ << endl; }
+#else
+#define DBM(M)
+#define MARK
+#endif
+
+using namespace toad;
+
+TTextModel *
+toad::createTextModel(TTextModel *m)
+{
+  return m;
+}
+
+class TBoundedRangeTextModel:
+  public TTextModel
+{
+    TBoundedRangeModel * model;
+  public:
+    TBoundedRangeTextModel(TBoundedRangeModel *m) {
+      model = m;
+      if (model) {
+        connect(model->sigChanged, this, &TBoundedRangeTextModel::slaveChanged);
+        slaveChanged();
+      }
+//      connect(this->sigChanged, this, &TBoundedRangeTextModel::masterChanged);
+    }
+    ~TBoundedRangeTextModel() {
+      if (model)
+        disconnect(model->sigChanged, this);
+    }
+    int filter(int c) {
+      if ( (c<'0' || c>'9') && c!='-') {
+        return 0;
+      }
+      return c;
+    }
+    void focus(bool b) {
+      if (!b) {
+        masterChanged();
+      }
+    }
+    void masterChanged()
+    {
+      int a = atoi(data.c_str());
+      model->setValue(a);
+    }
+    void slaveChanged()
+    {
+      char buffer[16];
+      snprintf(buffer, sizeof(buffer), "%i", model->getValue());
+      setValue(buffer);
+    }
+};
+
+TTextModel *
+toad::createTextModel(TBoundedRangeModel * m)
+{
+  return new TBoundedRangeTextModel(m);
+}
+
+/**
+ * \ingroup control
+ * \class toad::TTextArea
+ *
+ * A widget to edit text in multiple lines.
+ *
+ * Multiple TTextModel's can share one TTextModel.
+ *
+ * @sa TTextModel
+ *
+ * \todo
+ *   \li update scrollbar after setModel
+ *   \li when cursor is at the end of a long line, moves up into a
+ *       shorter line, we're in a broken state
+ *   \li when possible, we should scroll text up from the buttom when
+ *       deleting multiple lines
+ *   \li clear old selection on insert and make inserted text the new
+ *       selection
+ *   \li increment col and row by one before printing 'em
+ *   \li horizontal scrolling starts too late when line contains tabs
+ *   \li remove code to insert a single character
+ *   \li don't clear selection when shift is pressed
+ *   \li infinite loop in a situation when trying to select from bol to
+ *       eol and eol is outside the visible area (fixed?)
+ *   \li 'caught exception in toad::TOADBase::runApp:
+ *       basic_string::substr' when selecting and scrolling (fixed?)
+ *   \li when the whole line is selected, invert the whole line from the
+ *       left to the right side of the window
+ *   \li scrollbars (optional ones)
+ *   \li textfield mode (no scrollbars, one line only)
+ *   \li place cursor with mouse click
+ *   \li selection with mouse
+ *   \li border with shadow as done on the old TTextField widget
+ *   \li non-monospaced characters
+ *   \li later: non-one-byte-per-char texts (ie. UTF8)
+ *   \li later: control characters for multiple colors, fonts, etc.
+ *   \li improve page up & down
+ *   \li improve scrolling
+ *   \li improve screen updates
+ */
+
+// timer for blinking caret
+class TTextArea::TBlink:
+  public TSimpleTimer   
+{
+  public:
+  TBlink() {
+    current = NULL;
+  }
+  TTextArea *current;
+  bool visible;           // true: draw text cursor
+  bool blink;             // blink state (it would be better to sync the timer
+                          // every keyDown & mouseLDown event!)
+  void tick();
+};
+  
+static TTextArea::TBlink blink;
+
+void
+TTextArea::TBlink::tick()
+{
+  if (!current) {      // sanity check, not needed
+    cout << "  no current => " << endl;
+    return;
+  }
+  blink = !blink;
+  if (visible!=blink) {
+    visible = blink;   
+    current->_invalidate_line(current->_cy, false);
+    current->paintNow();
+  } else {
+  }
+}  
+
+TTextArea::TPreferences::TPreferences()
+{
+  mode = NORMAL;
+  autoindent = true;
+  notabs = true;
+  viewtabs = true;
+  tabwidth = 8;
+  singleline = false;
+  password = false;
+  font = new TFont(TFont::TYPEWRITER, TFont::PLAIN, 12);
+}
+
+TTextArea::TPreferences::~TPreferences()
+{
+  if (font)
+    delete font;
+}
+
+void
+TTextArea::init()
+{
+  _bol = 0;
+  if (model)
+    _eol_from_bol();
+  else
+    _eol = 0;
+  _bos = _eos = 0;
+  _cx = _cy = 0;
+  _tx = _ty = 0;
+  _pos = 0;
+  
+  bDoubleBuffer = true;
+  bTabKey = true;
+  setBorder(0);
+  vscroll = hscroll = 0;
+  
+  preferences = new TPreferences();
+  
+  TAction *action;
+
+  action = new TAction(this, "edit|cut");
+  CONNECT(action->sigActivate, this, _selection_cut);
+  action = new TAction(this, "edit|copy");
+  CONNECT(action->sigActivate, this, _selection_copy);
+  action = new TAction(this, "edit|paste");
+  CONNECT(action->sigActivate, this, _selection_paste);
+  action = new TAction(this, "edit|delete");
+  CONNECT(action->sigActivate, this, _selection_erase);
+
+  action = new TAction(this, "edit|undo");
+  CONNECT(action->sigActivate, this, _undo);
+  action = new TAction(this, "edit|redo");
+  CONNECT(action->sigActivate, this, _redo);
+}
+
+TTextArea::~TTextArea()
+{
+  if (blink.current==this) {
+    blink.stopTimer();  
+    blink.current=NULL;
+  }
+  if (model)
+    disconnect(model->sigTextArea, this);
+  if (preferences)
+    delete preferences;
+}
+
+void
+TTextArea::keyDown(TKey key, char* str, unsigned modifier)
+{
+DBM(cout << "ENTER keyDown '" << str << "'" << endl;
+    cout << "  _cx, _cy        : " << _cx << ", " << _cy << endl;
+    cout << "  _tx, _ty        : " << _tx << ", " << _ty << endl;
+    cout << "  _bol, _pos, _eol: " << _bol << ", " << _pos << ", " << _eol << endl;)
+
+  // MacOS alike keybindings
+  if (modifier & MK_CONTROL) {
+    switch(key) {
+      case 'x':
+      case 'X':
+      case TK_DELETE:
+        _selection_cut();
+        return;
+      case 'c':
+      case 'C':
+      case TK_INSERT:
+        _selection_copy();
+        return;
+      case 'v':
+      case 'V':
+        _selection_paste();
+        return;
+      case 'y':case 'Y': // remove current line (wordstar)
+        if (preferences->mode==TPreferences::NORMAL)
+          _selection_clear();
+        _delete_current_line();
+        return;
+      case '_':
+      case 'z':
+      case 'Z':
+        if (preferences->mode==TPreferences::NORMAL)
+          _selection_clear();
+        _undo();
+        return;
+      case 'r':
+      case 'R':
+        if (preferences->mode==TPreferences::NORMAL)
+          _selection_clear();
+        _redo();
+        return;
+      case 'a':
+      case 'A':
+        if (preferences->mode==TPreferences::NORMAL)
+          _selection_clear();
+        _cursor_home();
+        break;
+      case 'e':
+      case 'E':
+        if (preferences->mode==TPreferences::NORMAL)
+          _selection_clear();
+        _cursor_end();
+        break;
+    }
+  }
+  
+  if (modifier & MK_SHIFT) {
+    switch(key) {
+      case TK_INSERT:
+        switch(preferences->mode) {
+          case TPreferences::NORMAL:
+            _selection_clear();
+            _selection_paste();
+            break;
+          case TPreferences::WORDSTAR: {
+            unsigned oldpos = _pos;
+            _selection_paste();
+            unsigned l = _eos - _bos; // _eos and _bos were sorted by 'paste()'
+            _bos = oldpos;
+            _eos = _bos + l;
+            } break;
+        } return;
+      case TK_LEFT:
+      case TK_RIGHT:
+      case TK_UP:
+      case TK_DOWN:
+      case TK_HOME:
+      case TK_END:
+      case TK_PAGEDOWN:
+      case TK_PAGEUP:
+        if (_eos!=_pos) {
+          invalidateWindow();
+          _bos = _eos = _pos;
+cerr << "start selection at _pos = " << _pos << endl;
+        }
+        break;
+    }
+  }
+
+  switch(key) {
+    case TK_LEFT:
+      if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _cursor_left();
+      break;
+    case TK_RIGHT:
+      if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _cursor_right();
+      break;
+    case TK_UP:
+      if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _cursor_up();
+      break;
+    case TK_DOWN:
+      if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _cursor_down();
+      break;
+    case TK_HOME:
+      if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _cursor_home();
+      break;
+    case TK_END:
+      if (!(modifier&MK_SHIFT) && preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _cursor_end();
+      break;
+    case TK_RETURN:
+      if (!preferences->singleline) {
+        if (preferences->mode==TPreferences::NORMAL)
+          _selection_clear();
+          _return();
+      }
+      break;
+    case TK_DELETE:
+      switch(preferences->mode) {
+        case TPreferences::NORMAL:
+          if (_bos != _eos)
+            _selection_erase();
+          else
+            _delete();
+          break;
+        case TPreferences::WORDSTAR:
+          _delete();
+          break;
+      }
+      break;
+    case TK_BACKSPACE:
+      switch(preferences->mode) {
+        case TPreferences::NORMAL:
+          if (_bos != _eos)
+            _selection_erase();
+          else
+            _backspace();
+          break;
+        case TPreferences::WORDSTAR:
+          _backspace();
+          break;
+      }
+      break;
+    case TK_PAGEDOWN:
+      if (preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _page_down();
+      break;
+    case TK_PAGEUP:
+      if (preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      _page_up();
+      break;
+    case TK_TAB:
+      if (preferences->mode==TPreferences::NORMAL)
+        _selection_clear();
+      if (preferences->notabs) {
+        unsigned m = (preferences->tabwidth-_cx-1) % preferences->tabwidth;
+        string s;
+        s.replace(0,1, m+1, ' ');
+        _insert(s);
+      } else {
+        _insert('\t');
+      }
+      break;
+    default:
+      if ((unsigned char)str[0]>=32 && (unsigned char)str[0]<=255 && str[1]==0) {
+        if (preferences->mode==TPreferences::NORMAL)
+          _selection_clear();
+        _insert(str[0]);
+      }
+//      else
+//        printf("unhandled character '%s'\n", str);
+  }
+
+  switch(key) {
+    case TK_LEFT:
+    case TK_RIGHT:
+    case TK_UP:
+    case TK_DOWN:
+    case TK_HOME:
+    case TK_END:
+    case TK_RETURN:
+    case TK_PAGEDOWN:
+    case TK_PAGEUP:
+      if (modifier & MK_SHIFT)
+        _eos = _pos;
+      break;
+  }
+
+DBM(cout << "LEAVE keyDown" << endl;
+    cout << "  _cx, _cy        : " << _cx << ", " << _cy << endl;
+    cout << "  _tx, _ty        : " << _tx << ", " << _ty << endl;
+    cout << "  _bol, _pos, _eol: " << _bol << ", " << _pos << ", " << _eol << endl;)
+}
+
+void
+TTextArea::mouseLDown(int x, int y, unsigned)
+{
+  int h = preferences->getFont()->getHeight();
+  int w = preferences->getFont()->getTextWidth("x");
+  x /= w;
+  y /= h;
+  setCursor(x + _tx, y + _ty);
+  blink.visible=true;
+  setFocus();
+}
+
+void
+TTextArea::focus(bool b)
+{
+  model->focus(b);
+//cout << getTitle() << ".focus "<<isFocus()<<endl;
+  _invalidate_line(_cy);
+  if (isFocus()) {
+    blink.current=this;
+    blink.visible=true;
+    blink.blink=true;
+    blink.startTimer(0,500000);
+  } else {
+    blink.stopTimer(); 
+    blink.current=NULL;
+  }
+}
+
+void
+TTextArea::_set_model(TTextModel *m)
+{
+  if (model)
+    disconnect(model->sigTextArea, this);
+  model = m;
+  if (model)
+    connect(model->sigTextArea, this, &TTextArea::modelChanged);
+  _cx = 0;
+  _cy = 0;
+  _tx = 0;
+  _ty = 0;
+  _bol = 0;
+  _pos = 0;
+  _eol_from_bol();
+  _bos = _eos = 0;
+  if (vscroll)
+    vscroll->setValue(_ty);
+  invalidateWindow(true);
+}
+
+/**
+ * Update view.
+ *
+ * This method is called when the model has changed so that the
+ * text area can update it's view.
+ */
+void
+TTextArea::modelChanged()
+{
+/*
+  if (model->length==0) {
+    adjustScrollbars();
+    invalidateWindow();
+    sigStatus();
+    return;
+  }
+*/
+  // check 'blink.current' before modifing blink.visible
+  // we might not own the cursor
+  if (blink.current==this)
+    blink.visible=true;
+DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
+    cout << "  model->offset=" << model->offset << endl;
+    cout << "  model->length=" << model->length << endl;
+    cout << "  model->lines =" << model->lines << endl;
+    cout << "  _cx, _cy (" << _cx << ", " << _cy << ")" << endl;
+    cout << "  _tx, _ty (" << _tx << ", " << _ty << ")" << endl;
+    cout << "  _bol, _eol   (" << _bol << ", " << _eol << ")" << endl;
+    cout << "  _pos " << _pos << endl;)
+  switch(model->type) {
+    case TTextModel::CHANGE:
+      _cx = 0;
+      _cy = 0;
+      _tx = 0;
+      _ty = 0;
+      _bol = 0;
+      _pos = 0;
+      _eol_from_bol();
+      _bos = _eos = 0;
+      if (vscroll)
+        vscroll->setValue(_ty);
+      break;
+    case TTextModel::INSERT:
+      {
+        bool inside_current_line = false;
+        if (_bol <= model->offset && model->offset <=_eol)
+          inside_current_line=true;
+
+        bool before_current_line = false;
+        if (model->offset+model->length < _bol)
+          before_current_line = true;
+          
+        bool before_cursor = false;
+        if (model->offset <= _pos)
+          before_cursor = true;
+
+        // update _pos, _bol and _eol
+        if (model->offset <= _pos) _pos+=model->length;
+        if (model->offset <  _bol) _bol+=model->length;
+        if (model->offset <= _eol) _eol+=model->length;
+        if (_bos != _eos) {
+          if (model->offset <  _bos) _bos+=model->length;
+          if (model->offset <= _eos) _eos+=model->length;
+        }
+
+        if (before_current_line) {
+          _ty += model->lines;
+          if (vscroll)
+            vscroll->setValue(_ty);
+        } else {
+          if (before_cursor)
+            _cy += model->lines;
+        }
+        
+        if (inside_current_line) {
+          const string s(model->getValue());
+
+          if (_pos > 0) {
+          _bol = s.rfind('\n', _pos-1);
+          if (_bol==string::npos)
+            _bol=0;
+          else
+            _bol++;
+          } else _bol = 0;
+            
+          _eol = s.find('\n', _pos);
+          if (_eol==string::npos)
+            _eol=s.size();
+            
+          _cx = _pos - _bol - _tx;
+         }
+        
+        _catch_cursor();
+      }
+      break;
+
+    case TTextModel::REMOVE:
+      {
+        const string s(model->getValue());
+        _bos = _eos = 0;
+        unsigned m1 = model->offset;
+        unsigned m2 = model->offset+model->length;
+        
+        // update _cy, _ty
+        
+        unsigned n = 0;
+        if (m2 <= _bol) {
+          n = model->lines;
+        } else
+        if (m1 < _bol && _bol < m2) {
+          n = 0;
+          for(unsigned i=m1; i<=_bol; ++i) {
+            if (s[i] == '\n')
+              n++;
+          }
+        }
+        if (n>0) {
+          if (n<=_ty) {
+            _ty -= n;
+          } else {
+            _cy -= n - _ty;
+            _ty = 0;
+          }
+          if (vscroll)
+            vscroll->setValue(_ty);
+        }
+        
+        // update _pos, _bol and _eol
+        
+        // _bol
+        if (m2 < _bol) {               // (A) _bol before sel.
+          _bol -= model->length;
+        } else
+        if (m1 < _bol && _bol <= m2) { // (B) _bol inside sel.
+          _bol = s.rfind('\n', m1);
+          if (_bol==string::npos)
+            _bol=0;
+          else
+            _bol++;
+        }
+        
+        // _pos
+        if (m2 < _pos) {               // (C) _pos before sel.
+          _pos -= model->length;
+        } else
+        if (m1 < _pos && _pos <= m2) { // (D) _pos inside sel.
+          _pos = model->offset;
+        }
+        
+        DBM(cout << "m1, m2 = " << m1 << ", " << m2 << endl;)
+        DBM(cout << "_eol   = " << _eol << endl;)
+        // _eol
+        if (m2 < _eol) {               // (E) _eol before sel.
+          DBM(cout << __FILE__ << ':' << __LINE__ << endl;)
+          _eol -= model->length;
+        } else
+        if (m1 <= _eol && _eol <= m2) { // (F) _eol inside sel.
+          _eol = s.find('\n', m2);
+          if (_eol==string::npos) {
+            _eol = s.size();
+          }
+          DBM(cout << "_eol   = " << _eol << endl;)
+          _eol -= model->length;
+          DBM(cout << "_eol   = " << _eol << endl;)
+        }
+        DBM(cout << "_eol   = " << _eol << endl;)
+
+        _cx = _pos - _bol - _tx;
+
+        _catch_cursor();
+      }
+  }
+DBM(cout << "leave modelChanged (" << getTitle() << ")" << endl;
+    cout << "  _cx, _cy (" << _cx << ", " << _cy << ")" << endl;
+    cout << "  _tx, _ty (" << _tx << ", " << _ty << ")" << endl;
+    cout << "  _bol, _eol (" << _bol << ", " << _eol << ")" << endl;
+    cout << "  _pos " << _pos << endl;
+    cout << "----------------------------------------------------" << endl;)
+
+  adjustScrollbars();
+  invalidateWindow();
+  sigStatus();
+}
+
+void
+TTextArea::adjustScrollbars()
+{
+  visible.set(2,2,getWidth()-4,getHeight()-4);
+//  cerr << "'" << getTitle() << "', adjustScrollbars: visible = " << visible << endl;
+
+  if (preferences->singleline)
+    return;
+
+  bool need_vscroll = false;
+
+  // vertical visible lines
+  int vvl = visible.h/preferences->getFont()->getHeight();
+  if (vvl<model->nlines)
+    need_vscroll = true;
+
+  if (need_vscroll)
+    visible.w -= TScrollBar::getFixedSize();
+    
+  if (need_vscroll) {
+    if (!vscroll) {
+      vscroll = new TScrollBar(this, "vertical");
+      connect(vscroll->getModel()->sigChanged, this, &TTextArea::scrolled);
+      vscroll->createWindow();
+    }
+//    cerr << "  '"  << getTitle() << "', visible = " << visible << endl;
+//    printStackTrace();
+    vscroll->bNoFocus=true;
+    vscroll->setShape(
+      getWidth()-TScrollBar::getFixedSize(), 0,
+      TScrollBar::getFixedSize(), getHeight());
+/*
+    vscroll->setShape(
+      visible.x+visible.w,
+      visible.y,
+      TScrollBar::getFixedSize(), 
+      visible.h);
+*/
+    vscroll->setExtent(vvl);
+    vscroll->setMinimum(0);
+    vscroll->setMaximum(model->nlines);
+    vscroll->setUnitIncrement(1);
+    vscroll->setMapped(true);
+  } else {
+    if (vscroll) {
+      vscroll->setMapped(false);
+      vscroll->setValue(0);
+    }
+  }
+//  cerr << "'" << getTitle() << "', leave" << endl;
+}
+
+void
+TTextArea::scrolled()
+{
+  if (vscroll) {
+    int dy = vscroll->getValue() - _ty;
+    _ty += dy;
+    _cy -= dy;
+    invalidateWindow();
+  }
+}
+
+/**
+ * Paint the screen.
+ * \todo
+ *   Improve speed
+ */
+void
+TTextArea::paint()
+{
+  if (!model) {
+    return;
+  }
+
+  TPen pen(this);
+  pen.draw3DRectangle(
+    visible.x-2, visible.y-2,
+    visible.w+4, visible.h+4);
+
+  TRectangle clipbox;
+  pen.getClipBox(&clipbox);
+
+  pen &= visible;
+
+  pen.translate(2,2);
+  
+  pen.setFont(preferences->getFont());
+  
+  const string &data = model->getValue();
+  
+  // paint the lines
+  //^^^^^^^^^^^^^^^^^
+  unsigned bol = 0;
+  unsigned eol;
+  int y=-_ty * pen.getHeight();
+  int sy, sx;
+  sy = -_ty;
+  
+  while(true) {
+    eol = data.find('\n', bol);
+    unsigned n = eol==string::npos ? eol : eol-bol; // n=characters in line
+    if (y+pen.getHeight()>=clipbox.y) { // loop has reached the visible area
+//cout << "line " << bol << "-" << eol << endl;
+      string line(data.substr(bol, n));
+      
+      // substitute tabs with spaces
+      //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      // line = line with tabs converted to spaces
+      // sx   = cx in line with tabs converted to spaces
+      sx = _tx+_cx;
+      
+      unsigned _bos = this->_bos;
+      unsigned _eos = this->_eos;
+      if (_bos > _eos) {
+        unsigned a = _bos;
+        _bos = _eos;
+        _eos = a;
+      }
+      
+      unsigned bos = _bos;
+      unsigned eos = _eos;
+      for(unsigned i=0; i<line.size(); i++) {
+        if (line[i]=='\t') {
+          unsigned m = (preferences->tabwidth-i-1) % preferences->tabwidth;
+          if (!preferences->viewtabs) {
+            line.replace(i, 1, m+1, ' ');
+          } else {
+            line.replace(i, 1, m+1, '·');
+            line.replace(i, 1, 1  , '¬');
+          }
+          if (sx>i)
+            sx+=m;
+          if (bos > bol && bos-bol > i)
+            bos+=m;
+          if (eos > bol && eos-eol > i)
+            eos+=m;
+          i+=m;
+        }
+      }
+      // draw text
+
+      bool part=false;
+      if (_bos <= bol && eol <= _eos) {
+        // inside selection
+        pen.setColor(255,255,255);
+        pen.setBackColor(0,0,0);
+      } else if (eol < _bos || bol > _eos) {
+        // outside selection
+        pen.setColor(0,0,0);
+        pen.setBackColor(255,255,255);
+      } else {
+        pen.setColor(0,0,0);
+        pen.setBackColor(255,255,255);
+        part = true;
+      }
+      
+      if (_tx==0) {
+        pen.fillString(0,y,line);
+      } else {
+        if (_tx < line.size())
+          pen.fillString(0,y,line.substr(_tx));
+      }
+      
+      if (part) {
+#if 0       
+        cout<<"bol  = "<<bol<<endl
+            <<"_bos = "<<_bos<<endl
+            <<"bos  = "<<bos<<endl
+            <<"eol  = "<<eol<<endl
+            <<"_eos = "<<_eos<<endl
+            <<"eos  = "<<eos<<endl
+            <<endl;
+#endif            
+        int x=0;
+        unsigned pos = 0;
+        unsigned len = string::npos;
+
+        if (bol < _bos) { // start is inside
+//          cout << "start is inside" << endl;
+          pos = bos-bol;
+        }
+        if (_eos < eol) { // end is inside
+//          cout << "end is inside" << endl;
+          len = eos - bol;
+        }
+        if (bol < _bos) { // start is inside
+//          cout << "start is inside" << endl;
+          pos = bos-bol;
+          len-=pos;
+        }
+        // cut pos & len to _tx
+// cout << "pos = " << pos << endl << "_tx = " << _tx << endl;
+        if (pos<_tx) {
+          unsigned d = _tx - pos;
+          pos=_tx;
+          if (len>d) {
+            len-=d;
+          } else {
+            len=0;
+          }
+          x=0;
+        } else {
+          x = pen.getTextWidth(line.substr(_tx,pos-_tx));
+//          cout << "  \"" << line.substr(_tx,pos-_tx) << "\"" << endl;
+        }
+// cout << "x   = " << x << endl << "len = " << len << endl;
+        if (len>0 && pos<line.size()) {
+          pen.setColor(255,255,255);
+          pen.setBackColor(0,0,0);
+          pen.fillString(x, y, line.substr(pos, len));
+        }
+      }
+      
+      // draw cursor
+      if (blink.visible && blink.current==this && sy==_cy) {
+        pen.setColor(0,0,0);
+//        sx = pen.getTextWidth(line.substr(0, sx));
+        sx = pen.getTextWidth("x") * (sx-_tx);
+        pen.setMode(TPen::INVERT);
+        pen.drawLine(sx,y,sx,y+pen.getHeight()-1);
+        pen.setMode(TPen::NORMAL);
+      }
+    }
+    if (eol==string::npos)
+      break;
+    y+=pen.getHeight();
+    if (y>clipbox.y+clipbox.h)
+      break;
+    sy++;
+    bol=eol+1;
+  }
+}
+
+void
+TTextArea::_invalidate_line(unsigned y, bool statusChanged)
+{
+  int h = preferences->getFont()->getHeight();
+  invalidateWindow(visible.x, visible.y+y * h, visible.w, h);
+  if (statusChanged)
+    sigStatus();
+}
+
+void
+TTextArea::_insert(int c)
+{
+  MARK
+  model->insert(_pos, c);
+}
+
+void
+TTextArea::_insert(const string &s)
+{
+  MARK
+  if (preferences->singleline) {
+    unsigned p = s.find('\n');
+    if (p!=string::npos) {
+      string s2(s.substr(0,p));
+      model->insert(_pos, s2);
+      return;
+    }
+  }
+  model->insert(_pos, s);
+}
+
+// dummy clipboard
+static string clipboard;
+
+void
+TTextArea::_selection_erase()
+{
+  MARK
+  if (_bos > _eos) {
+    unsigned a = _bos;
+    _bos = _eos;
+    _eos = a;
+  }
+  model->remove(_bos, _eos-_bos);
+}
+
+void
+TTextArea::_selection_cut()
+{
+  MARK
+  _selection_copy();
+  model->remove(_bos, _eos-_bos);
+}
+
+void
+TTextArea::_selection_copy()
+{
+  MARK
+  if (_bos > _eos) {
+    unsigned a = _bos;
+    _bos = _eos;
+    _eos = a;
+  }
+  clipboard = model->getValue().substr(_bos, _eos-_bos);
+//  cout << "'" << clipboard << "'" << endl;
+}
+
+void
+TTextArea::_selection_paste()
+{
+  MARK
+  _insert(clipboard);
+}
+
+void
+TTextArea::_selection_clear()
+{
+  _bos = _eos = 0;
+}
+void
+TTextArea::_delete_current_line()
+{
+  MARK
+  model->remove(_bol, _eol-_bol+1);
+}
+
+void
+TTextArea::_undo()
+{
+  MARK
+  model->undo();
+}
+
+void
+TTextArea::_redo()
+{
+  MARK
+  model->redo();
+}
+
+void
+TTextArea::mouseMDown(int,int,unsigned)
+{
+  _insert(getSelection());
+}
+
+void
+TTextArea::_cursor_left(unsigned n)
+{
+  MARK
+  for(unsigned i=0; i<n; ++i) {
+    if (_cx+_tx>0) {
+      if (_cx>0) {
+        _cx--;
+        _pos--;
+        _invalidate_line(_cy);
+        _catch_cursor();
+      } else {
+        _tx--;
+        _pos--;
+        invalidateWindow();
+      }
+    } else 
+    if (_cy+_ty>0) {
+      _cursor_up();
+      _cursor_end();
+    }
+  }
+  blink.visible=true;
+}
+
+void
+TTextArea::_cursor_right(unsigned n)
+{
+  MARK
+  for(unsigned i=0; i<n; ++i) {
+    if (_cx+_tx<_eol-_bol) {
+      _cx++;
+      _pos++;
+      _invalidate_line(_cy);
+      _catch_cursor();
+    } else 
+    if (_eol+1<model->getValue().size()) {
+      _cursor_down();
+      _cursor_home();
+    }
+  }
+  blink.visible=true;
+}
+
+void
+TTextArea::_cursor_down(unsigned n)
+{
+  MARK
+  for(unsigned i=0; i<n; ++i) {
+    if(_eol+1<model->getValue().size()) {
+      _bol=_eol+1;
+      _eol_from_bol();
+      _invalidate_line(_cy);
+      _cy++;
+      _invalidate_line(_cy);
+      // _cx recalculation assumes fixed font!
+      if (_cx>_eol-_bol)
+        _cx=_eol-_bol-_tx;
+      _pos = _bol+_cx+_tx;
+    }
+  }
+  _catch_cursor();    
+  blink.visible=true;
+}
+
+void
+TTextArea::_cursor_up(unsigned n)
+{
+  MARK
+  for(unsigned i=0; i<n; ++i) {
+    if (_bol>0) {
+      if (_bol>1) {
+        _bol = model->getValue().rfind('\n', _bol-2);
+        if (_bol==string::npos)
+          _bol=0;
+        else
+          _bol++;
+      } else {
+        _bol=0;
+      }
+      _eol_from_bol();
+      _invalidate_line(_cy);
+      _cy--;
+      _invalidate_line(_cy);
+      // _cx recalculation assumes fixed font!
+      if (_cx>_eol-_bol)
+        _cx=_eol-_bol-_tx;
+      _pos = _bol+_cx+_tx;  // <- we don't need _pos, can calculate it? keep it for now!
+    }
+  }
+  _catch_cursor();
+  blink.visible=true;
+}
+
+void
+TTextArea::_cursor_home()
+{
+  MARK
+  if (_tx+_cx!=0) {
+    bool flag = _tx == 0;
+    _pos-=_cx+_tx;
+    _cx=0;
+    _tx=0;
+    if (flag) {
+      _invalidate_line(_cy);
+    } else {
+      invalidateWindow();
+    }
+    blink.visible=true;
+  }
+}
+
+void
+TTextArea::_cursor_end()
+{
+  MARK
+  unsigned n = _eol - _pos;
+  if (n!=0) {
+    _pos+=n;
+    _cx+=n;
+    _invalidate_line(_cy);
+    _catch_cursor();
+    blink.visible=true;
+  }
+}
+
+void
+TTextArea::_page_down()
+{
+  MARK
+  int h = visible.h / preferences->getFont()->getHeight();
+  _cursor_down(h);
+}
+
+void
+TTextArea::_page_up()
+{
+  MARK
+  int h = visible.h / preferences->getFont()->getHeight();
+  _cursor_up(h);
+}
+
+void
+TTextArea::_return()
+{
+  MARK
+  string indent;
+  if (preferences->autoindent) {
+    const string &s = model->getValue();
+    unsigned i;
+    for(i=_bol; i<_eol; i++) {
+      if (s[i]!=' ' && s[i]!='\t')
+        break;
+      indent+=s[i];
+    }
+    if (_bol >= _eol) // ???
+      indent.clear();
+    if (_cx + _tx < i-_bol)
+      indent.erase(_cx+_tx);
+  }
+  _insert('\n');
+  for(int i=0; i<indent.size(); i++)
+    _insert(indent[i]);
+}
+
+void
+TTextArea::_delete()
+{
+  MARK
+  DBM(cout << "_delete: _bol=" << _bol << ", _pos=" << _pos << ", _eol=" << _eol << endl;)
+  if (_pos<model->getValue().size()) {
+    model->remove(_pos);
+  }
+}
+
+void
+TTextArea::_backspace()
+{
+  MARK
+  _cursor_left();
+  _delete();
+}
+
+void
+TTextArea::resize()
+{
+  _catch_cursor();
+  adjustScrollbars();
+}
+
+/**
+ * Adjust view (_tx, _ty) so that the cursor is still visible.
+ */
+void
+TTextArea::_catch_cursor()
+{
+  MARK
+  int h = preferences->getFont()->getHeight();
+  int w = preferences->getFont()->getTextWidth("X");
+  int th = (visible.h-h+1) / h;
+  int tw = (visible.w-w+1) / w;
+
+  DBM(cout << "_catch_cursor: th="<<th<<", tw="<<tw<<", _cx="<<_cx<<", _cy="<<_cy<<endl;)
+DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
+  if (_cy > th) {
+    _scroll_down(_cy-th);
+  }
+  if (_cy < 0) {
+    _scroll_up(-_cy);
+  }
+
+#if 0
+  const string line(model->getValue().substr(_bol, _eol-_bol));
+  int cx = 0;
+  for(unsigned i=0; i<_tx+_cx; i++) {
+    if (line[i]=='\t') {
+      cx+= (preferences->tabwidth-cx) % preferences->tabwidth;
+    } else {
+      cx++;
+    }
+  }
+  cx -= _tx;
+cout << "_cx+_tx=" << (_cx+_tx) << ", cx+_tx=" << (cx+_tx) << endl;
+cout << "_cx=" << _cx << ", cx=" << cx << endl;
+#else
+  int cx = _cx;
+#endif  
+  if (cx > tw+1) {
+    _scroll_right(cx - tw);
+  }
+  if (cx < 0) {
+    _scroll_left(-cx);
+  }
+DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
+}
+
+void
+TTextArea::_scroll_down(unsigned n)
+{
+  MARK
+  if (_cy==0)
+    return;
+  _cy-=n;
+  _ty+=n;
+  if (vscroll)
+    vscroll->setValue(_ty);
+  scrollRectangle(visible, 0, -preferences->getFont()->getHeight()*n);
+}
+
+void
+TTextArea::_scroll_up(unsigned n)
+{
+  MARK
+  if (_ty==0)
+    return;
+  if (n>_ty)
+    n=_ty;
+  _cy+=n;
+  _ty-=n;
+  if (vscroll)
+    vscroll->setValue(_ty);
+  scrollRectangle(visible, 0, preferences->getFont()->getHeight()*n);
+}
+
+void
+TTextArea::_scroll_right(unsigned n)
+{
+  MARK
+  if (_cx==0)
+    return;
+  _cx-=n;
+  _tx+=n;
+  invalidateWindow();  
+}
+
+void
+TTextArea::_scroll_left(unsigned n)
+{
+  MARK
+  if (_tx==0)
+    return;
+  if (n>_tx)
+    n = _tx;
+  _cx+=n;
+  _tx-n;
+  invalidateWindow();
+}
+
+void 
+TTextArea::setModified(bool m)
+{
+  assert(model!=NULL);
+  model->setModified(m);
+}
+
+bool 
+TTextArea::isModified() const
+{
+  if (!model)
+    return false;
+  return model->isModified();
+}
+   
+void
+TTextArea::setValue(const string &txt)
+{
+  assert(model!=NULL);
+  return model->setValue(txt);
+}
+
+void
+TTextArea::setValue(const char *data, unsigned len)
+{
+  assert(model!=NULL);
+  return model->setValue(data, len);
+}
+
+const string& 
+TTextArea::getValue() const
+{
+  assert(model!=NULL);
+  return model->getValue();
+}
+
+void
+TTextArea::setCursor(unsigned x, unsigned y)
+{
+  if (!model)
+    return;
+    
+  if (_tx+_cx == x && _ty+_cy==y)
+    return;
+  
+  MARK
+  DBM(cout << "x, y = " << x << ", " << y << endl;)
+    
+  _invalidate_line(_cy);
+    
+  int wx = visible.w / preferences->getFont()->getTextWidth("x");
+  int wy = visible.h / preferences->getFont()->getHeight();
+
+#if 0
+cout << "screen position is at " << x << ", " << y << endl;
+cout << "screen is " << _tx << " - " << _ty << ", "
+     << (_tx + wx) << " - " << (_ty + wy) << endl;
+#endif
+  if (_tx <= x && x <= _tx + wx &&
+      _ty <= y && y <= _ty + wy )
+  {
+    DBM(cout << "_bol, _pos, _eol = " << _bol << ", " << _pos << ", " << _eol << endl;)
+
+    unsigned i=0;
+    string::const_iterator tpos = model->getValue().begin();
+    while(i<_ty) {
+      if (*tpos=='\n')
+        ++i;
+      ++tpos;
+    }
+    tpos+=_tx;
+    
+//    cerr << "old line: " << model->getValue().substr(_bol, _eol-_bol) << endl;
+    x-=_tx; y-=_ty;
+    string::const_iterator p = tpos;
+    string::const_iterator bol = p;
+    _cx = _cy = 0;
+    while(p!=model->getValue().end()) {
+      DBM(cout << "_cx, _cy = " << _cx << ", " << _cy << endl;)
+      if (_cy==y && _cx==x) {
+        DBM(cout << "break 2" << endl;)
+        break;
+      }
+      if (*p=='\n') {
+        if (_cy==y) {
+          DBM(cout << "break 1" << endl;)
+          break;
+        }
+        _cx = 0;
+        ++_cy;
+        bol = p+1;
+      } else {
+        ++_cx;
+      }
+      ++p;
+    }
+    _bol = bol - model->getValue().begin();
+    // _pos = p - model->getValue().begin();
+    _pos = _bol + _cx;
+    _eol_from_bol();
+    DBM(cout << "_bol, _pos, _eol = " << _bol << ", " << _pos << ", " << _eol << endl;)
+//    cerr << "new line: " << model->getValue().substr(_bol, _eol-_bol) << endl;
+  } else
+  {
+    // stupid implementation
+    _cx = _cy = 0;
+    _tx = _ty = 0;
+    _pos = 0;
+    _bol = 0;
+    _eol = model->getValue().find('\n', _bol);
+    _cursor_down(x);
+    _cursor_right(y);
+    if (vscroll)
+      vscroll->setValue(_ty);
+  }
+  DBM(cout << "_cx, _cy = " << _cx << ", " << _cy << endl;)
+  blink.visible=true;
+  _invalidate_line(_cy);
+}
+    
+unsigned 
+TTextArea::getCursorX() const
+{
+  return _cx+_tx;
+}
+
+unsigned 
+TTextArea::getCursorY() const
+{
+  return _cy+_ty;
+}
+    
+unsigned 
+TTextArea::gotoLine(unsigned l)
+{
+//  cout << __PRETTY_FUNCTION__ << endl;
+  if (!model)
+    return 0;
+  if (l>model->nlines)
+    l=model->nlines;
+  if (_cy+_ty==l)
+    return l;
+  if (_cy+_ty<l) {
+    _cursor_down(l - _cy-_ty);
+  } else {
+    _cursor_up  (_cy+_ty - l);
+  }
+  return 0;
+}
+
+void 
+TTextArea::find(const string&)
+{
+  cout << __PRETTY_FUNCTION__ << endl;
+}
+
+unsigned 
+TTextArea::getLines() const
+{
+  if (!model)
+    return 0;
+  return model->nlines;
+}
+//---------------------------------------------------------------------
+
+TTextModel::TTextModel()
+{
+  nlines = 0;
+  _modified = false;
+  history = new THistory();
+}
+
+void
+TTextModel::setValue(const string &d)
+{
+  if (data==d)
+    return;
+//  DBM(cout << __PRETTY_FUNCTION__ << endl;)
+
+  offset = 0;
+  data = d;
+  length = data.size();
+  lines = (unsigned)-1;   // all lines have changed
+
+  nlines = 0;
+  unsigned pos = 0;
+  while(true) {
+    pos = d.find('\n', pos);
+    if (pos==string::npos)
+      break;
+    pos++;
+    nlines++;
+  }
+  
+  _modified = false;
+  type = CHANGE;
+  sigTextArea();
+  sigChanged();
+}
+
+void
+TTextModel::setValue(const char *d, unsigned len)
+{
+  if (data.compare(0, string::npos, d, len)==0)
+    return;
+
+  offset = 0;
+  length = len;
+  data.assign(d, len);
+  lines = (unsigned)-1;   // all lines have changed
+
+  nlines = 0;
+  unsigned pos = 0;
+  while(true) {
+    pos = data.find('\n', pos);
+    if (pos==string::npos)
+      break;
+    pos++;
+    nlines++;
+  }
+  
+  _modified = false;
+  type = CHANGE;
+  sigTextArea();
+  sigChanged();
+}
+
+/**
+ * insert a single char
+ */
+void
+TTextModel::insert(unsigned p, int c, bool undo)
+{
+  c = filter(c);
+  if (!c)
+    return;
+
+  if (undo && history) {
+    string s;
+    s+=(char)c;
+    history->add(new TUndoableInsert(this, p, s));
+  }
+  data.insert(p, 1, c);
+  
+  type = INSERT;
+  offset = p;
+  length = 1;
+  lines  = c=='\n' ? 1 : 0;
+  _modified = true;
+  
+  nlines += lines;
+  
+  sigTextArea();
+  sigChanged();
+}
+
+/**
+ * insert multiple chars
+ */
+void
+TTextModel::insert(unsigned p, const string &aString, bool undo)
+{
+  string s(aString);
+
+  string::iterator sp;
+  sp = s.begin();
+  while(sp!=s.end()) {
+    if (filter(*sp)==0)
+      sp = s.erase(sp);
+    else  
+      ++sp;
+  }
+
+  if (s.empty())
+    return;
+                              
+  if (undo && history)
+    history->add(new TUndoableInsert(this, p, s));
+
+  data.insert(p, s);
+  
+  type = INSERT;
+  offset = p;
+  length = s.size();
+  lines = 0;
+  for(unsigned i=0; i<length; i++) {
+    if (s[i]=='\n')
+      lines++;
+  }
+
+  nlines += lines;
+  _modified = true;
+  
+  sigTextArea();
+  sigChanged();
+}
+
+/**
+ * remove multiple chars
+ *
+ * \param p    offset
+ * \param l    length
+ * \param undo store in undo history if true
+ */
+void
+TTextModel::remove(unsigned p, unsigned l, bool undo)
+{
+  DBM(cout << "remove at " << p << endl;)
+  if (undo && history)
+    history->add(new TUndoableRemove(this, p, data.substr(p,l)));
+  lines = 0;
+  for(unsigned i=p; i<p+l; ++i) {
+    if (data[i]=='\n')
+      ++lines;
+  }
+  nlines -= lines;
+  type   = REMOVE;
+  offset = p;
+  length = l;
+  _modified = true;
+  sigTextArea();
+  data.erase(p, l);
+  sigChanged();
+}
+
+int
+TTextModel::filter(int c)
+{
+  return c;
+}
+
+void
+TTextModel::focus(bool)
+{
+}
+
+void
+TTextModel::undo()
+{
+  if (history && history->getBackSize()>0) {
+     history->getCurrent()->undo();
+     history->goBack();
+  }
+}
+
+void
+TTextModel::redo()
+{
+  if (history && history->getForwardSize()>0) {
+     history->goForward();
+     history->getCurrent()->redo();
+  }
+}

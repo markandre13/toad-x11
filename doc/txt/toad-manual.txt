@@ -1,0 +1,684 @@
+
+                         QUICK AND DIRTY TOAD MANUAL
+                             UNDER CONSTRUCTION
+                         
+                       written 2000 by Mark-André Hopf
+
+
+TABLE OF CONTENTS
+
+  1 INTRODUCTION TO GUI PROGRAMMING
+  2 WHO'S AFRAID OF C++ ?  C++ FOR C PROGRAMMERS
+    2.1 LESSON 1: GENERAL C++ FEATURES AND OBJECTS
+    2.2 C++ COMMENTS
+    2.3 FEWER TYPEDEF'S
+    2.4 STRUCTURES WITH FUNCTIONS
+    2.5 NEW WORDS FOR C++
+    2.6 DECLARATION AND DEFINITION OF FUNCTIONS IN STRUCTURES
+    2.7 ACCESS RIGHTS FOR ELEMENTS IN STRUCTURES
+    2.8 THE KEYWORD `CLASS'
+    2.9 THE KEYWORD `THIS'
+    2.10 MEMORY ALLOCATION WITH THE KEYWORDS `NEW' AND `FREE'
+    2.11 THE CONSTRUCTOR AND DESTRUCTOR MEMBER FUNCTIONS
+    2.12 OVERLOADING OF FUNCTION NAMES
+    2.13 REFERENCES
+    2.14 THE KEYWORD `CONST'
+  3 TOAD
+
+
+INTRODUCTION
+
+    This manual was written because a lot of people were missing a manual for
+  TOAD. So I wrote one as fast as I could. I'm afraid it's full of mistakes
+  in spelling and grammar but as long as you get what I'm trying to tell you
+  it's going to be okay.
+  
+    I will asume you know
+  - about GNU or a GNU compatible operating system (e.g. GNU/Linux, UNIX, ...)
+  - how to run your prefered texteditor (e.g. joe, emacs, vi, ...),
+  - the ANSI C programming language,
+  - the POSIX C library       (type `info libc' on GNU compatible systems)
+  - how to run the C compiler (type `info gcc' on GNU compatible systems)
+  - how to write a Makefile   (type `info make' on GNU compatible systems)
+
+
+1 INTRODUCTION TO GUI PROGRAMMING
+
+    When you already know how to write event driven GUI applications, you
+  can skip this chapter.
+
+                           *** TO BE COMPLETED ***
+
+  e.g. event-driven programming, objects, etc.
+
+  
+2 WHO'S AFRAID OF C++ ?  C++ FOR C PROGRAMMERS.
+
+    When you already know how to write C++ code, you can skip this chapter.
+
+    There are still people around being afraid of C++. I know how it feels
+  since I was one of them back in 1991. Some say that C++ is a complicated
+  language. Don't believe them! True, it has a lot of features but you don't
+  have to know them all at once. As Bjarne Stroustrup always tells us, one
+  can start using C++ as a better C compiler and grow into it step by step.
+  This way it can be a lot of fun. Unless you get forced to learn C++.
+  
+    And is C++ slow? It takes a little more time to compile but the
+  resulting should be as fast as C, which is one of the ideas behind C++
+  (and the reason for some complications).
+  
+    The next statement is about _why_ we need an object oriented programming
+  language (OOP). Don't believe all the hype about reuseability. The really
+  good thing is that it helps you to organize your code and keeps it
+  readable. And for GUIs we do need this help. Even the first commercial
+  GUI systems had an OOP: The Xerox Alto Star had Smalltalk (1981) and the
+  Apple Lisa had Clascal (1983), an object-oriented Pascal variant.
+  
+  ...
+
+
+2.1 LESSON 1: GENERAL C++ FEATURES AND OBJECTS
+  
+    I'm going to start with a little GUI library written in C. The tree dots
+  `...' indicate other important code which isn't shown:
+  
+      C Variant
+      ^^^^^^^^^
+        /*
+         * for each window we have to store it's position and size
+         */
+
+        /*
+         * allocate memory for a new window structure and initialize it
+         */
+        TWindow* new_window(int x, int y, unsigned w, unsigned h)
+        {
+           TWindow *p;
+           p = malloc(sizeof(TWindow));
+           p->x = x;
+           p->y = y;
+           p->width = w;
+           p->height = h;
+           ...
+           return p;
+        }
+        
+        void resize_window(TWindow *p, unsigned w, unsigned h)
+        {
+           p->width = w;
+           p->height = h;
+           ...
+        }
+        
+        main()
+        {
+          TWindow *mywindow = new_window(50,50,640,480);
+          ...
+          resize_window(mywindow, 320, 200);
+        }
+  
+    Being a C programmer you should understand the program above. I'm now
+  going to convert it to C++, step by step. 
+  
+    At first two unimportant but nice features:
+
+2.2 C++ COMMENTS
+
+      C Variant
+      ^^^^^^^^^^^
+         /* for each window we have to store it's position and size */
+
+      C++ Variant
+      ^^^^^^^^^^^
+        // for each window we have to store it's position and size
+        
+    +------------------------------------------------------------------+
+    | C++ has a 2nd variant to enclose comments: `//' and end of line. |
+    +------------------------------------------------------------------+
+
+  Note: The GNU C compiler accepts `//' for comments also.
+
+2.3 FEWER TYPEDEF'S
+  
+      C Variant
+      ^^^^^^^^^^^
+        struct SWindow {
+          int x, y;
+          unsigned width, height;
+        };
+        typedef SWindow TWindow;
+
+      C++ Variant
+      ^^^^^^^^^^^
+        struct TWindow {
+          int x, y;
+          unsigned width, height;
+        };
+        
+    See? We got rid of the `typedef' statement.
+    
+                    +-----------------------------------+
+                    | In C++ every structure is a type. |
+                    +-----------------------------------+
+
+    But as I'm going to explain later, simplification isn't the only reason.
+                    
+    There will be a lot of other features were we will get rid of something. 
+  (Okay, you'll have to learn something for each new feature but in the long
+  run know them and it's helpfull.)
+
+2.4 STRUCTURES WITH FUNCTIONS
+                    
+    The next feature is the most important one in C++.
+
+      C Variant
+      ^^^^^^^^^^^
+        struct TWindow {
+           ...
+        };
+        
+        void resize_window(TWindow *p, unsigned w, unsigned h)
+        {
+          p->width = w;
+          p->height= h;
+          ...
+        }
+        
+        main()
+        {
+           ...
+           resize_window(mywindow, 320, 200);
+        }
+        
+      C++ Variant
+      ^^^^^^^^^^^
+        struct TWindow {
+           ...
+           void resize(unsigned w, unsigned h)
+           {
+             this->width  = w;
+             this->height = h;
+             ...
+           }
+        };
+        
+        main()
+        {
+          ...
+          mywindow->resize(320, 200);
+        }
+        
+    You see the function `resize_window' has moved into the structure.
+        
+         +--------------------------------------------------------+
+         | In C++ structures can contain variables AND FUNCTIONS! |
+         +--------------------------------------------------------+
+
+2.5 NEW WORDS FOR C++
+
+    This leads to some new words in C++
+
+                    +--------------------------------+
+                    | class                          |
+                    | ^^^^^^^^^                      |
+                    |   another name for `structure' |
+                    |                                |
+                    | object                         |
+                    | ^^^^^^^^^                      |
+                    |   the allocated data structure |
+                    |                                |
+                    | attribute                      |
+                    | ^^^^^^^^^                      |
+                    |   a variable in an object      |
+                    |   (aka member variable)        |
+                    |                                |
+                    | method                         |
+                    | ^^^^^^^^^                      |
+                    |   a function in an object      |
+                    |   (aka member function)        |
+                    +--------------------------------+
+
+2.6 DECLARATION AND DEFINITION OF FUNCTIONS IN STRUCTURES
+
+    To separate declaration and definition, e.g. into header and source file
+  as in C, the code
+                    
+        // declaration & definition
+        struct TWindow {
+           ...
+           void resize(unsigned w, unsigned h)
+           {
+             this->width  = w;
+             this->height = h;
+             ...
+           }
+        };
+
+  can be written as
+
+        // declaration in `window.hh'
+        struct TWindow {
+           ...
+           void resize(unsigned w, unsigned h);
+        };
+    
+        // definition in `window.cc'
+        void TWindow::resize(unsigned w, unsigned h)
+        {
+           this->width  = w;
+           this->height = h;
+           ...
+        }
+
+2.7 ACCESS RIGHTS FOR ELEMENTS IN STRUCTURES
+
+    Now that we have two kinds of functions and variables (inside and
+  outside an object) C++ introduces access rights for them. There are
+  two of them: public and private rights.
+    (There is a third one, once suggested during the development of C++
+  by Mark Linton, who wrote, now listen!, a GUI library! I'm going to
+  explain it later.)
+  
+    Setting these access rights is very easy:
+    
+      struct TWindow 
+      {
+        private:
+          int x, y;
+          unsigned width, height;
+          
+        public:
+          resize(int x, int y, unsigned w, unsigned h)
+          {
+            this->x = x;
+            this->y = y;
+            width = w;
+            height = h;
+            ...
+          }
+      };
+    
+    Now that attributes (member variables) x, y, width and height are
+  declared as `private' in TWindow, only the methods (member functions)
+  of TWindow are allowed to access them.
+  
+    This makes sense when you want some code (the three dots above) to be
+  executed every time one of these attributes changes.
+  
+    An example to illustrate the consequences:
+  
+      TWindow *mywindow = new TWindow(0,0, 10, 10);
+      mywindow->x = 17;              // error during compilation
+      mywindow->resize(17,0,10,10);  // okay
+      
+               +--------------------------------------------+
+               | Attributes and methods have access rights. |
+               +--------------------------------------------+
+
+2.8 THE KEYWORD `CLASS'
+
+    The examples above always used the C keyword `struct' to create a
+  class. C++ introduces another one, `class'. The only difference are
+  the initial acess rights, meaning the right used BEFORE any of the
+  `private:' or `public:' appears in the code.
+  
+      struct {
+        private:
+          ...
+      };
+      
+    Is equivalent to
+  
+      class {
+        ...
+      };
+  
+    And
+      
+      class {
+        public:
+          ...
+      };
+      
+    is equivalent to
+    
+      struct {
+        ...
+      };
+      
+    When to use `class' and when to use `struct' is a matter of taste. 
+    My rule is to use `class' when I put methods into the structure, use
+  inheritance (explained later) and other object-oriented stuff. Or the
+  other way around: I use `struct' when a C Compiler wouldn't complain
+  about it.
+ 
+            +---------------------------------------------------+
+            | C++ has a special keyword `class' for structures. |
+            +---------------------------------------------------+
+
+2.9 THE KEYWORD `THIS'
+
+    Another strange thing in the C++ example above is the word `this'.
+    `this' is a reserved keyword in C++ and it's the pointer to the data
+  structure the `method' belongs to.
+
+    E.g. when you call the method `resize'
+      
+        mywindow->resize(320, 200)
+    
+  the variable `this' will have the same value as `mywindow' during the
+  execution of the method `resize'.
+
+                  +--------------------------------------+
+                  | `this' points to the methods' object |
+                  +--------------------------------------+
+
+    In most situations you don't have to use the keyword `this', e.g.
+  instead of
+
+           void resize(unsigned w, unsigned h)
+           {
+             this->width  = w;
+             this->height = h;
+             ...
+           }
+
+  the C++ compiler will also accept
+
+           void resize(unsigned w, unsigned h)
+           {
+             width  = w;
+             height = h;
+             ...
+           }
+
+2.10 MEMORY ALLOCATION WITH THE KEYWORDS `NEW' AND `FREE'
+           
+    The next features gets rid of `malloc' and `free':
+
+      C Variant
+      ^^^^^^^^^^^
+        struct TWindow {
+          ...
+        };
+
+        TWindow* new_window(int x, int y, unsigned w, unsigned h)
+        {
+           TWindow *p;
+           p = malloc(sizeof(TWindow));
+           p->x = x;
+           p->y = y;
+           p->width = w;
+           p->height = h;
+           ...
+           return p;
+        }
+
+        void delete_window(TWindow *p)
+        {
+          ...
+          free(p);
+        }
+
+        main()
+        {
+          TWindow *mywindow = new_window(50,50,640,480);
+          ...
+          delete_window(mywindow);
+          mywindow = NULL;
+        }
+        
+      C++ Variant
+      ^^^^^^^^^^^
+        class TWindow {
+          public:
+            TWindow(int x, int y, unsigned w, unsigned h)
+            {
+              this->x = x;
+              this->y = y;
+              width = w;
+              height = h;
+              ...
+            }
+          
+            ~TWindow()
+            {
+              ...
+            }
+        }
+        
+        main()
+        {
+          TWindow *mywindow = new TWindow(50, 50, 640, 480);
+          ...
+          delete mywindow;
+          mywindow = NULL;
+        }
+
+    Here are several things to mention:
+    
+               +---------------------------------------------+
+               | Instead of `malloc' and `free' the keywords |
+               | `new' and `delete' are used in C++.         |
+               +---------------------------------------------+
+
+2.11 THE CONSTRUCTOR AND DESTRUCTOR MEMBER FUNCTIONS
+               
+    `new' and `delete' not only take care to allocate and free the memory
+  for the object. You may have noticed two methods in the class above:
+  
+            TWindow(int x, int y, unsigned w, unsigned h)
+            
+            ~TWindow()
+            
+    `TWindow' is a constructor method which is called right after `new' has
+  allocated the memory for the object. It can be used to initialize the
+  allocated memory.
+  
+    `~TWindow' is a destructor method which is called right before `delete'
+  is going to free the memory of the object. It can be used to free memory
+  related to the object and other stuff.
+        
+      +--------------------------------------------------------------+
+      | Objects have constructors and destructors. These methods     |
+      | have the same name as their class except that the destructor |
+      | is prefixed with the tilde `~' char in its name.             |
+      +--------------------------------------------------------------+
+
+      +--------------------------------------------------------------+
+      | Constructors and destructors don't return anything. There    |
+      | isn't even a `void' in their beginning.                      |
+      +--------------------------------------------------------------+
+      
+      +--------------------------------------------------------------+
+      | Constructors may take a list of arguments, destructors not.  |
+      +--------------------------------------------------------------+
+      
+    Sometimes it might be helpfull to declare more than one constructor for
+  a class. This can be done with different argument lists
+  
+      class string {
+        public:
+          string();
+          string(char *c_string);
+          string(string *cpp_string);
+          ~string();
+      };
+  
+    This allows you to write code like
+  
+      char *text1 = "hello";
+      
+      string s1("Hello");
+      string s2(s1);
+      
+    which I declare being another simplification.
+
+      +--------------------------------------------------------------+
+      | A class can have more than one constructor but only one      |
+      | destructor.                                                  |
+      +--------------------------------------------------------------+
+
+2.12 OVERLOADING OF FUNCTION NAMES
+      
+    The trick above with one constructor name and different argument lists
+  works for every method and every function in C++ and is called
+  `overloading'. E.g.:
+
+      int f(int);
+      double f(double);
+
+           +----------------------------------------------------+      
+           | C++ supports overloading of functions and methods. |
+           +----------------------------------------------------+
+
+    An esoteric feature of C++ is to overload some of the builtin operators
+  such as +, ++, ==, !=, <<, >>, (), [], new or delete. E.g.
+  
+      class string {
+        ...
+        string operator+=(string s) {
+          return add(s);
+        }
+        string add(string s) {
+          ...
+        }
+      };
+    
+      int main()
+        string a("I am"), b(" hungry");
+        a+=b;  // same as a.add(b);
+      }
+
+2.13 REFERENCES
+
+    The last two features in this section are to enhance performance. Lets
+  have a look at a program where a large structure named `TLarge' is given
+  as an argument to a function named `f':
+
+      C Variant
+      ^^^^^^^^^^^
+        // a very large data structure (or class)
+        struct TLarge
+        {
+           int x,y,w,h;
+           ...
+        };
+      
+        // a function with the large structure as argument; this should be a
+        // pointer because `f(TLarge p)' would create a copy of `p' on the
+        // stack
+        void f(TLarge *p)
+        {
+          int x = p->x;
+          ...
+        }
+      
+        int main()
+        {
+          TLarge a;
+          f(&a);
+        }
+      
+      C++ Variant
+      ^^^^^^^^^^^
+        // same as above
+        struct TLarge
+        {
+           int x,y,w,h;
+           ...
+        };
+      
+        // instead of `*p' we write `&p', which is another way to declare
+        // a pointer (meaning the end result is still a pointer)
+        void f(TLarge &p)
+        {
+          int x = p.x;
+          ...
+        }
+      
+        int main()
+        {
+          TLarge a;
+          f(a);               // no `&' to get the adress
+        }
+
+    The reason why ...
+
+    string a,b,c;
+    a = b + c;
+    
+    a = &b + &c;
+
+    
+  reference
+
+2.14 THE KEYWORD `CONST'
+
+2.X C++ PITFALLS
+
+  multiple inheritance virtual destructors
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  struct A {
+    int a;
+  }
+
+  struct B {
+    int b;
+  };
+
+  struct AB: public A, public B
+  {
+  };
+
+  int main()
+  {
+    B *b = new AB();
+    delete b;
+  }
+  
+  will cause a segmentation fault
+  
+
+3 TOAD
+
+  3.X Callbacks
+
+  TOAD comes with a lean and fast callback mechanism for functions and
+  methods and which is independent from the TOAD library itself.
+
+  #include <toad/connect.hh>
+  
+  void f() 
+  {
+    cout << "I've been called" << endl;
+  }
+  
+  int main()
+  {
+    TSignal sig;
+    connect(sig, &f1);
+  
+    sig();
+    
+    disconnect(sig, &f1);
+  }
+    
+    
+  
+  
+  
+
+X TOAD HACKING
+
+
+X.Y PATCHES
+
+    Creating a patch
+
+         diff -ruP {old source dir} {new source dir} > {diff file}
+
+    Inserting a patch
+
+         patch -p1 -s -E -d {old source dir} < {diff file}

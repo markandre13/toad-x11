@@ -1,0 +1,4 @@
+things to add:
+- edit focus traversal
+- use layout managers like TForm
+- when introducing MVC provide access to the Controllers?

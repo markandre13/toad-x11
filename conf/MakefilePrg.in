@@ -1,0 +1,92 @@
+############################################################################
+#                                                                          #
+# TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System    #
+# Master Makefile for Programs                                             #
+# Copyleft 1996-2002 by Mark-André Hopf <mhopf@mark13.de>                  #
+#                                                                          #
+############################################################################
+
+# user definable variables:
+#--------------------------
+# PRGFILE	the name of the resulting programfile
+# SRCS		*.cc sourcefiles
+# CFLAGS	additional compiler flags
+# DEFINES
+# LDFLAGS
+# LIBS		additional -l parameters
+#
+# possible targets:
+# -------------------------
+# make		compile & link program
+# make run	run program (with modified LD_LIBRARY_PATH)
+# make clean	remove created files
+
+TOAD_INC	= @toaddir@/src/include
+TOAD_LIB	= @toaddir@/src
+
+CC 	= @CC@
+CFLAGS  += @CFLAGS@ $(INCDIRS)
+CXX     = @CXX@   
+CXXFLAGS+= @CXXFLAGS@ @X_CFLAGS@ $(INCDIRS)
+DEFINES += @DEFS@
+LD      = $(CXX)
+LDFLAGS += @LDFLAGS@ $(LIBDIRS)
+LIBS    += @LIBS@ -L$(TOAD_LIB) -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11
+
+# GNU Compiler specific options
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+CXXFLAGS+= -Iinclude -frtti \
+           -Wno-return-type -Wno-pmf-conversions -Wwrite-strings \
+           -Woverloaded-virtual
+
+
+OBJS		= $(SRCS:.cc=.o)
+
+# TOAD_DEP	= $(wildcard $(TOAD_LIB)/*)
+
+all:
+	$(MAKE) $(PRGFILE)
+
+#---------------------------------------------------------------------------
+# Compiling
+#---------------------------------------------------------------------------
+.SUFFIXES: .cc
+
+.cc.o:
+	@echo compiling $*.cc ...
+	@$(CXX) $(CXXFLAGS) $(DEFINES) -I$(TOAD_INC) $*.cc -c -o $*.o
+
+#---------------------------------------------------------------------------
+# Linking
+#---------------------------------------------------------------------------
+$(PRGFILE): $(OBJS) $(TOAD_DEP)
+	@echo linking $(PRGFILE) ...
+	@$(LD) $(LDFLAGS) $(OBJS) -o $(PRGFILE) $(LIBS)
+	@echo Ok
+
+#---------------------------------------------------------------------------
+# Xtras
+#---------------------------------------------------------------------------
+clean::
+	@echo removing generated files in `pwd`
+	@rm -f $(PRGFILE) .depend $(CLEAN)
+	@find . -name "*.o" -exec rm -f {} \;
+	@find . -name "*.bak" -exec rm -f {} \;
+	@find . -name "*~" -exec rm -f {} \;
+	@find . -name "core" -exec rm -f {} \;
+	@find . -name "DEADJOE" -exec rm -f {} \;
+	@find . -name "a.out" -exec rm -f {} \;
+	@touch .depend
+
+# you may have to add
+#   <user> soft core unlimited
+#   <user> hard core unlimited
+# to your /etc/security/limits.conf or something similar on your system
+# for ulimit and core dumps to work
+run::
+	@echo starting program
+	@ulimit -c unlimited ; LD_LIBRARY_PATH=$(TOAD_LIB):$(LD_LIBRARY_PATH) ./$(PRGFILE)
+
+# X11R6 makedepend has the `-Y' option
+dep:
+	@/usr/X11R6/bin/makedepend $(INCDIRS) -Y $(SRCS) 2> /dev/null

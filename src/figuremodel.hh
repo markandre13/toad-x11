@@ -1,0 +1,143 @@
+/*
+ * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,   
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with this library; if not, write to the Free
+ * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+ * MA  02111-1307,  USA
+ */
+
+#ifndef _TOAD_FIGUREMODEL_HH
+#define _TOAD_FIGUREMODEL_HH
+
+#include <list>
+#include <toad/toad.hh>
+#include <toad/model.hh>
+#include <toad/io/serializable.hh>
+
+namespace toad {
+
+class TFigure;
+
+/**
+ * \ingroup figure
+ */
+class TFigureModel:
+  public TModel, public TSerializable
+{
+    friend class TFigureWindow; // debugging
+    typedef std::list<TFigure*> TStorage;
+  public:
+    /**
+     * Kind of modification that took place.
+     */
+    enum { MODIFIED, DELETE } type;
+    
+    class iterator
+    {
+      friend class TFigureModel;
+        TFigureModel *owner;
+        TStorage::iterator p;
+      public:
+        iterator(): owner(0) {}
+        iterator(const iterator &a): owner(a.owner), p(a.p) {}
+        iterator(TFigureModel *aOwner, TStorage::iterator aPointer):
+          owner(aOwner), p(aPointer) {}
+        friend bool operator==(const iterator&, const iterator&);
+        friend bool operator!=(const iterator&, const iterator&);
+        iterator& operator++() { ++p; return *this; }
+        iterator& operator--() { --p; return *this; }
+        iterator operator++(int) { iterator tmp=*this; ++(*this); return tmp; }
+        iterator operator--(int) { iterator tmp=*this; --(*this); return tmp; }
+        TFigure*& operator*() const { return *p; }
+    };
+
+#if 0
+    class const_iterator
+    {
+      friend class TFigureModel;
+        const TFigureModel *owner;
+        TStorage::const_iterator p;
+      public:
+        const_iterator(): owner(0) {}
+        const_iterator(const const_iterator &a): owner(a.owner), p(a.p) {}
+        const_iterator(const TFigureModel *aOwner, const TStorage::iterator aPointer):
+          owner(aOwner), p(aPointer) {}
+        friend bool operator==(const const_iterator&, const const_iterator&);
+        friend bool operator!=(const const_iterator&, const const_iterator&);
+        const_iterator& operator++() { ++p; return *this; }
+        const_iterator& operator--() { --p; return *this; }
+        const_iterator operator++(int) { const_iterator tmp=*this; ++(*this); return tmp; }
+        const_iterator operator--(int) { const_iterator tmp=*this; --(*this); return tmp; }
+        const TFigure* operator*() const { return *p; }
+    };
+#endif
+    
+    TFigureModel();
+    TFigureModel(const TFigureModel&);
+    ~TFigureModel();
+    
+    void add(TFigure *g) {
+      storage.push_back(g);
+      sigChanged();
+    }
+    void erase(const iterator&);
+    void erase(const iterator&, const iterator&);
+
+    void insert(const iterator &, TFigure*);
+    void insert(const iterator &at, const iterator &from, const iterator &to);
+
+    //! remove all figures
+    void clear();
+    
+    iterator begin() {
+      return iterator(this, storage.begin());
+    }
+    iterator end() {
+      return iterator(this, storage.end());
+    }
+/*
+    const_iterator begin() const {
+      return iterator(this, storage.begin());
+    }
+    const_iterator end() const {
+      return const_iterator(this, storage.end());
+    }
+*/
+    TCloneable* clone() const { return new TFigureModel(*this); }
+    const char * name() const { return "toad::TFigureModel"; }
+    void store(TOutObjectStream&) const;
+    bool restore(TInObjectStream&);
+
+  protected:
+    TStorage storage;
+};
+
+inline bool operator==(const TFigureModel::iterator &a,
+                const TFigureModel::iterator &b)
+{
+  return a.p == b.p;
+}
+
+inline bool operator!=(const TFigureModel::iterator &a,
+                const TFigureModel::iterator &b)
+{
+  return a.p != b.p;
+}
+
+typedef GSmartPointer<TFigureModel> PFigureModel;
+
+} // namespace toad
+
+#endif

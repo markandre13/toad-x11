@@ -1,0 +1,2 @@
+1	Create a PWindow pointer for every window during `Create'
+2	Remove DoModal

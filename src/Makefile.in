@@ -1,0 +1,172 @@
+# 
+# TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
+# Copyright (C) 1995-2003 by Mark-André Hopf <mhopf@mark13.de>
+#
+# @configure_input@
+#
+
+#
+# I'm not using automake or libtool for now as they don't allow me
+# to work with human readable Makefile which is important for me when
+# tracing bugs in the build environment -- Mark
+#
+
+# values from the configure script
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@
+datadir=@datadir@
+INSTALL=install
+
+CC	= @CC@
+CFLAGS	= @CFLAGS@
+CXX	= @CXX@
+CXXFLAGS= @CXXFLAGS@
+DEFINES	= @DEFS@
+LD	= $(CXX)
+LDFLAGS = @LDFLAGS@
+LIBS	= @LIBS@
+
+# GNU Compiler specific options
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+CXXFLAGS+= -Iinclude -frtti \
+	   -Wno-return-type -Wno-pmf-conversions -Wwrite-strings \
+	   -Woverloaded-virtual
+
+# library option
+CXXFLAGS+= -fPIC
+
+# manual TOAD library setup
+#----------------------------------------------------------------------------
+LIBFILE         = toad
+LIBMAJOR        = 0
+LIBMINOR        = 64
+LIBPL           = 0
+
+VERSION         = $(LIBMAJOR).$(LIBMINOR).$(LIBPL)
+LDFLAGS		= -shared 
+LIBNAME		= libtoad.so
+LIBFULLNAME	= $(LIBNAME).$(VERSION)
+
+# this one is for libstd++ <= 3 (should be set by configure)
+DEFINES         += -DOLDLIBSTD
+
+# TOAD sources (sorted by module)
+#----------------------------------------------------------------------------
+OS_GUI          =
+OS_SYS          =
+GRAPHIC		= pen/parameters.cc pen/operations.cc pen/bezier.cc
+
+NEW_CHECKER	= new.cc
+
+FILTER		= filter_png.cc filter_bmp.cc filter_jpeg.cc filter_gif.cc
+
+IO              = io/serializable.cc io/atvparser.cc io/binstream.cc io/urlstream.cc
+
+DND		= dragndrop.cc dnd/dropobject.cc \
+		  dnd/textplain.cc dnd/color.cc dnd/image.cc
+
+GADGET		= figure.cc figurewindow.cc \
+		  figure/circle.cc figure/group.cc figure/rectangle.cc \
+		  figure/line.cc figure/text.cc figure/frame.cc figure/bezier.cc \
+		  figure/polygon.cc figure/polyline.cc figure/window.cc \
+		  figureeditor.cc figureeditor/undoablemove.cc \
+		  figureeditor/undoablehandlemove.cc \
+		  figureeditor/undoabledelete.cc
+
+MDI		= mdiwindow.cc mdishell.cc
+
+DEBUG		= debug.cc stacktrace.cc
+
+SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
+		layout.cc tabbedlayout.cc popup.cc action.cc \
+		window.cc focusmanager.cc interactor.cc dialog.cc \
+		$(DND) toadbase.cc connect.cc toadmain.cc cursor.cc \
+		$(GRAPHIC) \
+		region.cc polygon.cc rectangle.cc \
+		color.cc colormanager.cc font.cc \
+		bitmap.cc bitmapfilter.cc \
+		control.cc form.cc rowcolumn.cc \
+		labelowner.cc buttonbase.cc pushbutton.cc \
+		radiobuttonbase.cc fatradiobutton.cc radiobutton.cc \
+		fatcheckbutton.cc \
+		scrollbar.cc \
+		checkbox.cc scrolledarea.cc \
+		messagebox.cc tooltip.cc \
+		select.cc pointer.cc \
+		dialogeditor.cc colordialog.cc \
+		table.cc combobox.cc textarea.cc \
+		boundedrangemodel.cc rgbmodel.cc \
+		$(MDI) \
+		$(GADGET) $(IO) $(NEW_CHECKER) $(FILTER) \
+		$(DEBUG)
+
+OBJS	= $(SRCS:.cc=.o)
+
+default: connect.hh include/toad $(LIBNAME) ../bin/toadbin2c
+
+../bin/toadbin2c: bin2c.c
+	gcc bin2c.c -o ../bin/toadbin2c
+
+SUBDIRS=. io dnd pen util figure dialogeditor figureeditor X11
+
+install:
+	for dir in $(SUBDIRS); do \
+		install -d $(DESTDIR)/$(includedir)/toad/$$dir ; \
+	done
+	find . -name "*.hh" -exec \
+    install -D -m 0644 {} $(DESTDIR)/$(includedir)/toad/{} \;
+	install -d $(DESTDIR)/$(libdir)
+	install $(LIBNAME).$(VERSION) $(DESTDIR)/$(libdir)/$(LIBNAME).$(VERSION)
+	cd $(DESTDIR)/$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
+	cd $(DESTDIR)/$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)	
+
+# recreate `connect.hh'
+#-----------------------
+connect.hh: connect.hh.pm
+	./connect.hh.pm > connect.hh
+
+include/toad:
+	mkdir -p include
+	ln -s ../ include/toad
+
+dep: depend
+
+depend:
+	@makedepend -Iinclude -Y $(SRCS) 2> /dev/null
+	@echo "okay"
+
+#---------------------------------------------------------------------------
+# Compiling
+#---------------------------------------------------------------------------
+.SUFFIXES: .cc
+
+.cc.o:
+	@echo compiling $*.cc ...
+	@$(CXX) $(CXXFLAGS) $(SO_FLAGS) $(DEFINES) $*.cc -c -o $*.o
+
+#---------------------------------------------------------------------------
+# Linking
+#---------------------------------------------------------------------------
+
+$(LIBNAME): $(OBJS)
+	@echo creating $(LIBNAME) ...
+	@$(LD) $(LDFLAGS) -Wl,-soname,$(LIBFULLNAME) -o $(LIBNAME).$(VERSION) $(OBJS) $(LDTAIL)
+	@ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
+	@ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)
+	@echo Ok
+
+#---------------------------------------------------------------------------
+# Xtras
+#---------------------------------------------------------------------------
+clean:
+	@echo removing generated files in `pwd`
+	@rm -f $(CLEAN) $(OBJS) *.bak *~ .depend core DEADJOE
+	@rm -f $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR) $(LIBNAME)
+	@rm -f connect.hh ../bin/toadbin2c
+	@rm -f include/toad
+	@-rmdir include
+	@echo Ok

@@ -1,0 +1,104 @@
+#!/usr/bin/perl -w
+#
+# helper script to produce a java-like stacktrace output
+#
+# written 2001 by Mark-André Hopf <mhopf@mark13.de>
+#
+
+use strict;
+
+my $debug=0;
+my ($i, $j, $n);
+
+my $prg=shift;
+if (!defined($prg)) {
+  die "no program name given";
+}
+
+# get address of libraries
+#--------------------------------------------------------------------
+my @addr;
+my @bin;
+# $ENV{"LD_TRACE_LOADED_OBJECTS"}=1;
+open(FD, "env LD_TRACE_LOADED_OBJECTS=1 ${prg}|") ||
+  die "couldn't start program: $!";
+while(<FD>) {
+  if (/^\s*(\S+)\s*=>\s*(\S+)\s\((0x[^\)]+)\)/) {
+    if ($debug) {
+      print "$3\t$2\t$1\n";
+    }
+    $addr[$#addr+1]=$3;
+    $bin[$#bin+1]=$2;
+  }
+}
+close(FD);
+
+# quicksort the libraries by their address
+#--------------------------------------------------------------------
+$n=$#addr;
+$i=0;
+while($n > 0) {
+  $j=0;
+  while($j < $n) {
+    if (hex($addr[$j])>hex($addr[$j+1])) {
+      my $akku;
+      $akku = $addr[$j];
+      $addr[$j] = $addr[$j+1];
+      $addr[$j+1] = $akku;
+      $akku = $bin[$j];
+      $bin[$j] = $bin[$j+1];
+      $bin[$j+1] = $akku;
+    }
+    $j++;
+  }
+  $n--;
+}
+
+if ($debug) {
+  print "-----\n";
+
+  $i=0;
+  while($i <= $#addr) {
+    print "$i: $addr[$i] $bin[$i]\n";
+    $i++;
+  }
+}
+
+my $pa;
+my $cmd;
+while(1) {
+  $i=0;
+  $pa=shift;
+  if (!defined($pa)) {
+    last;
+  }
+  while($i <= $#addr) {
+  #  print hex($pa) . " lt " . hex($addr[$i]) . "\n";
+    if (hex($pa) lt hex($addr[$i])) {
+      last;
+    }
+    $i++;
+  }
+
+  $i--;
+
+  $cmd=sprintf("addr2line -C -f -e ${prg} %x\n", hex($pa));
+  open(FD, "${cmd}|");
+  my $function = <FD>;
+  my $sourcepos= <FD>;
+  my $binary   = $prg;
+  close(FD);
+  if ($function =~ /^\?\?/) {
+    my $a=hex($pa) - hex($addr[$i]);
+    $cmd=sprintf("addr2line -C -f -e ${bin[$i]} %x\n", $a);
+  # printf("executing: $cmd\n");
+    open(FD, "${cmd}|");
+    $function = <FD>;
+    $sourcepos= <FD>;
+    close(FD);
+    $binary = ${bin[$i]};
+  }
+  $function =~ s/\n$//;
+  $sourcepos =~ s/\n$//;
+  print "  at $function [$sourcepos in $binary]\n";
+}

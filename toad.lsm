@@ -1,0 +1,20 @@
+Begin3
+Title:          TOAD C++ GUI Library
+Version:        0.64.0-pre1
+Entered-date:   15JUN2002
+Description:    TOAD is a modern and well-developed C++ GUI Toolkit for
+                developing graphical user interface (GUI) applications using
+                C++ and X-Windows. Some of the highlight are: a simple
+                programming interface, typesafe callbacks to member
+                functions, XmForm alike layout manager, color dithering,
+                bezier curves, built-in dialog editor, OpenGL support, etc.
+Keywords:       X11, X-Windows, GUI, Xlib, C++, library
+Author:         mhopf@mark13.de (Mark-Andre Hopf)
+Maintained-by:  mhopf@mark13.de (Mark-Andre Hopf)
+Primary-site:   http://www.mark13.de/toad/
+                ?kB toad-0.?.?-pre1.tar.gz
+Alternate-site: metalab.unc.edu /pub/Linux/libs/X/c++libs/
+                ?kB toad-0.?.?-pre1.tar.gz
+Platform:       GNU C++ Compiler 3.0 GNU C library 2, X11
+Copying-policy: LGPL
+End

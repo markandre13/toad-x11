@@ -1,0 +1,38 @@
+main design and coding fool
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mark-André Hopf <mhopf@mark13.de>
+
+feedback, ideas, code and inspiration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Michael Müller
+  bug reports and feedback since 1998
+
+Amine Chadly
+  code updates in examples/
+
+helpfull bug reports and feature requests
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+Alain Rougé
+  bug reports, testing & feedback
+
+Armin Faltl
+  inspiration for void TWindow::handleX11Event()
+
+Rob O'Connell
+  bug report
+
+Sachin Bhandare
+  bug report
+
+Ziggy Uszkurat
+  bug report
+
+code taken from other sources
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Thomas Niemann <thomasn@epaperpress.com>
+  red-black tree implementation used in src/new.cc
+
+various people
+  the still unused gif code in src/filter_gif.cc, see the file itself

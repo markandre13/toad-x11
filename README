@@ -1,0 +1,215 @@
+
+                      TOAD C++ GUI Library 0.64.0-preX
+                         the "hacking again" release
+
+        Copyright (C) 1996-2002 by Mark-André Hopf <mhopf@mark13.de>
+                    
+CONTENTS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1 Smallprint
+2 A Word of Warning
+3 What is the TOAD C++ GUI Library?
+4 Requirements
+5 Using the TOAD C++ GUI Library
+6 Documentation and Help
+7 How the Source is organised
+8 Debugging
+9 Acknowledgements
+
+
+1. SMALLPRINT
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  The TOAD C++ GUI Library is distributed under the terms of the GNU Lesser
+  General Public License (LGPL) See the file COPYING.LIB for more details.
+
+  Some programs coming with the TOAD C++ GUI Library may be under the terms
+  of the GNU General Public License (GPL). See the file COPYING for more
+  details.
+
+  The TOAD C++ GUI Library comes WITHOUT ANY WARRANTY; without even the
+  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+2. A WORD OF WARNING
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Current releases are named 0.x.y indicating that the TOAD C++ GUI Library
+  is still under construction and a lot of things may change from one
+  release to another.
+
+   But if you want to experiment with a GNU LGPLed C++ GUI toolkit this
+  one might be the right stuff for you.
+
+
+3. WHAT IS THE TOAD C++ GUI LIBRARY?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   The TOAD C++ GUI Library is a set of C++ classes for developing X Window
+  applications. Since there are so many other GUI libraries around (the
+  living ones: GTK+, Qt, LessTif, Motif, fltk, Xclasses, notif, OpenLook,
+  wxWindows, Fox and the dead ones: SUIT, Andrew Toolkit, InterViews,
+  Fresco, XForms, ET++, Common Point and many more) you may ask yourself why
+  one should use the TOAD C++ GUI Library? Take a look at it and you will
+  see the answer (or not ;) ).
+  
+
+4. REQUIREMENTS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  - GNU Make 3.75
+  - GNU C++ Compiler 3.0 or later
+  - GNU libstd++ 3.0 or later
+  - later than GNU Binutils 2.9.1
+  - GNU C library 2.1 or later
+  - X Window System, Version 11, Release 6 or later
+  - zlib 1.1.1
+  - libpng 1.0.1
+  - libxml2
+
+  The TOAD C++ GUI Library has been tested on the following platforms:
+  - Debian GNU/Linux 3.0 (current)
+  - AIX (as of TOAD 0.42.19 and 0.42.20)
+  - SunOS (only the early releases)
+  and will probably run on any other Linux, Hurd or FreeBSD compatible 
+  system.
+
+
+5. USING THE TOAD C++ GUI LIBRARY
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ 5.1 RUNNING EXAMPLES WITHOUT INSTALLATION
+
+  - run 
+      ./configure && make
+    or when your C++ compiler has another name
+    set the CXX environment variable. Ie.
+      CXX=g++-3.0 ./configure && make
+    on Debian GNU/Linux 3.0 (aka Woody)
+  - change to one of the directories in `examples/'
+  - run `make'
+  - run `make run'
+    (should work when your system supports LD_LIBRARY_PATH and only the
+    TOAD library is missed by the linker)
+
+ 5.2 WRITING PROGRAMS WITHOUT INSTALLATION
+
+  - Run `build', type [1] and [0]
+  - Copy or link `toad/conf/MakefilePrg' to `~/.TOADMakefile' (or something
+    alike)
+  - Copy the files from `toad/examples/skeletons/menubar/' to a new directory
+  - Change the last line in `Makefile' to `include ~/.TOADMakefile'
+  - hack
+  - Run `make'
+  - Run `make run'
+
+ 5.3 FULL INSTALLATION
+
+  - Run `build', type [1] and [2], follow the instructions and you're done.
+
+
+6. DOCUMENTATION AND HELP
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  - a programming manual is planned after the release of version 1.0
+
+  - When you have PERL and a WebBrowser installed, move to the
+    `doc/reference' directory, run make and view the "index.html" file.
+
+  - There's a WWW site regarding the TOAD C++ GUI Library:
+  
+                         http://www.mark13.de/toad/
+
+    and a mailing list.
+
+    To subscribe the list just send an empty eMail to
+    
+                   toad-dev-subscribe@list.innominate.org
+
+    and send a reply to confirm that you really want to join the list.
+    You may then send messages to
+
+                        toad-dev@list.innominate.org
+
+    To unsubscribe from the list send an empty eMail to
+
+                  toad-dev-unsubscribe@list.innominate.org
+
+
+7. HOW THE SOURCE IS ORGANISED
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+(out of date)
+
+src/                    : the library source
+src/Makefile            : Makefile for the library
+
+examples/               : some example programs
+examples/<dir>/Makefile	: simplified Makefile for <dir> which includes
+                          conf/MakefilePrg
+conf/MakefilePrg        : the Makefile to build programs
+
+doc/                    : some documentation
+
+construction/           : sources where new features are created and
+                          tested
+                          
+testsuite/              : programs that should compile for a valid release
+
+8. DEBUGGING
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Hints for the FSF's GNU Compiler and Debugger:
+  
+  GCC 3.2 C++ ABI
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  use this when compiling gcc 3.2
+  --enable-__cxa_atexit --enable-threads=posix --enable-shared
+
+  tips to trace exceptions or fatal errors
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  - As this release requires g++-3.x you should update your debugger to
+    gdb-5.2 or above and create a file ~/.gdbinit with this content:
+
+    set print pretty on 
+    set print object on
+    set print static-members on
+    set print vtbl on 
+    set print demangle on 
+    set demangle-style gnu-v3
+
+  - set breakpoint at `exit'
+  - set breakpoint at `__cxa_throw' to find the place where C++
+    exceptions are thrown
+
+
+  tips to trace memory bugs with glibc and the library
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  - enable `DEFINES = -DDEBUG_MEMORY' in src/Makefile before compiling
+    the library
+
+  - link program with `-lmcheck' or set the environment variable 
+    `MALLOC_CHECK_' to
+      0: any detected heap corruption is silently ignored
+      1: a diagnostic is printed on `stderr'
+      2: `abort' is called immediately
+
+  - set the environment variable `MALLOC_TRACE' to the name of a logfile; 
+    get a report afterwards with `mtrace <program> <logfile>'.
+
+
+9. ACKNOWLEDGEMENTS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
+  The TOAD C++ GUI Library wouldn't have been possible without all the
+  people who have contributed to
+  - TOAD C++ GUI Library itself
+  - The GNU System and Linux (kernel, gcc, glibc, gdb, ...)
+  - XFree86 (see http://www.xfree86.org/)
+  - Joe's Own Editor
+  and all the other programs and data I love and use but don't have the
+  time to list here.
+
+  Special greetings to:
+
+  Mom & Dad, Gita, Martin, Tim, Melanie, Gordon, Tilo, Juli, Gerd, Jens,
+  Michael, Rolf, Carla, others and the jumping pumping machine brain...

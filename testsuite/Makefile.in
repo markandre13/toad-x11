@@ -1,0 +1,46 @@
+#
+# TOAD testsuite
+# written by mhopf@mark13.de
+#
+
+files=$(wildcard *.cc)
+goal=$(patsubst %.cc,%.ok,$(files))
+# tests=$(patsubst %.cc,%.bin,$(files))
+
+CC  = @CC@
+CFLAGS  += @CFLAGS@ $(INCDIRS)
+CXX     = @CXX@   
+CXXFLAGS+= @CXXFLAGS@ @XML2_FLAGS@ @X_CFLAGS@ $(INCDIRS)
+DEFINES += @DEFS@
+LD      = $(CXX) 
+LDFLAGS += @LDFLAGS@ $(LIBDIRS)
+LIBS    += @LIBS@ @XML2_LIBS@ -L$(TOAD_LIB) -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11
+TOAD_INC  = @toaddir@/src/include
+TOAD_LIB  = @toaddir@/src
+
+CXXFLAGS+= -Iinclude -frtti \
+           -Wno-return-type -Wno-pmf-conversions -Wwrite-strings \
+           -Woverloaded-virtual
+                      
+
+all: $(goal) report
+
+report: $(goal)
+	./report.pl $(goal)
+
+clean: 
+	rm -f *.o *.bin *.ok *.log *~
+
+.SUFFIXES: .cc .bin .ok
+
+.cc.o:
+	@echo compile $*.cc
+	@$(CXX) $(CXXFLAGS) $(DEFINES) -I$(TOAD_INC) $*.cc -c -o $*.o
+
+.o.bin:
+	@echo link $*.bin
+	@$(LD) $*.o -o $*.bin $(LIBS)
+
+.bin.ok:
+	@echo run $*.bin
+	@-./$*.bin ; echo $$? > $*.ok

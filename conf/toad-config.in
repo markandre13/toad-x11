@@ -1,0 +1,60 @@
+#!/bin/sh
+
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@
+datadir=@datadir@
+
+CXXFLAGS="-I${includedir} @XML2_FLAGS@ @X_CFLAGS@"
+LIBS="@LDFLAGS@ -L${libdir} @LIBS@ @XML2_LIBS@ -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11"
+
+usage() {
+cat<<EOF
+Usage: $0 [OPTIONS]
+Options:
+  [--prefix]
+  [--exec-prefix]
+  [--libs]
+  [--cxxflags]
+EOF
+}
+
+if test $# -eq 0 ; then
+  usage
+  exit 0;
+fi
+
+while true ; do
+
+arg=$1
+shift
+
+
+if test -z $arg ; then
+  exit 0;
+fi
+
+case $arg in
+  --prefix)
+    echo $prefix
+    ;;
+  --exec-prefix)
+    echo $exec_prefix
+    ;;
+  --libs)
+    echo $LIBS
+    ;;
+  --cxxflags)
+    echo $CXXFLAGS
+    ;;
+  *)
+    echo "unknown argument '$arg'"
+    exit 1;
+    ;;
+esac
+
+done
+
+exit 0
