@@ -1828,6 +1828,8 @@ TTextModel::insert(unsigned p, int c)
 void
 TTextModel::insert(unsigned p, const string &aString)
 {
+  if (aString.size()==0)
+    return;
   string s(aString);
 
   string::iterator sp;

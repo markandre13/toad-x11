@@ -149,6 +149,20 @@ static TDomain* GetTopDomain(TWindow *wnd);
 static TWindow* Walk(TWindow *top, TWindow *focus, bool bNext);
 static TDomain* SetPathTo(TWindow *wnd, TWindow *who);
 
+namespace {
+  struct no_domain_yet_s {
+    no_domain_yet_s(TEventFilter *flt, TWindow *wnd, EEventFilterPos pos) {
+      this->flt = flt;
+      this->wnd = wnd;
+      this->pos = pos;
+    }
+    TEventFilter *flt;
+    TWindow *wnd;
+    EEventFilterPos pos;
+  };
+  vector<no_domain_yet_s> no_domain_yet;
+};
+
 // called everytime a new window is created on the screen and it creates
 // a new domain if necessary
 //---------------------------------------------------------------------------
@@ -183,6 +197,25 @@ TOADBase::focusNewWindow(TWindow* wnd)
     // window parents' domain
     //----------------------------------------------------------------
     AddSubDomain(wnd);
+  }
+  
+  for(vector<no_domain_yet_s>::iterator p=no_domain_yet.begin();
+      p!=no_domain_yet.end();
+      ++p)
+  {
+    switch(p->pos) {
+      case KF_TOP_DOMAIN: {
+        TDomain *domain = GetTopDomain(p->wnd);
+        if (domain) {
+cout << "delayed register filter for window " << wnd << " in domain " << domain << endl;
+          p->flt->next = domain->filter;
+          p->flt->ptr  = domain;
+          domain->filter = p->flt;
+          no_domain_yet.erase(p);
+          return;
+        }
+      }
+    }
   }
 }
 
@@ -332,7 +365,10 @@ DBM(
   }
   
   TDomain *top_domain = GetTopDomain(wnd);
-  assert(top_domain!=NULL);
+  if (!top_domain) {
+    cout << "can't set focus to '" << wnd->getTitle() << "', no top domain\n";
+    return;
+  }
   if (top_domain->focus_window==wnd)
     return;
 
@@ -641,8 +677,9 @@ printf("keyDown for %08x\n", current_domain->focus_window);
   
     filter = current_domain->filter;
     while(filter) {
-      if (filter->keyEvent(keyevent))
+      if (filter->keyEvent(keyevent)) {
         return;
+      }
       filter = filter->next;
     }
 
@@ -776,9 +813,9 @@ GetTopDomain(TWindow *wnd)
   
   while(wnd->getParent() && !wnd->bShell)
     wnd = wnd->getParent();
-    
   TDomainMap::iterator dp = top_domain_map.find(wnd);
-  assert(dp!=top_domain_map.end());
+  if (dp==top_domain_map.end())
+    return 0;
   return (*dp).second;
 }
 
@@ -967,6 +1004,7 @@ TOADBase::closeXInput()
 // key filter stuff
 //---------------------------------------------------------------------------
 
+
 /**
  * Insert a <code>TEventFilter</code> into the keyboard handling.
  *
@@ -1010,6 +1048,9 @@ TOADBase::insertEventFilter(TEventFilter *flt, TWindow *wnd, EEventFilterPos pos
           flt->next = domain->filter;
           flt->ptr  = domain;
           domain->filter = flt;
+        } else {
+          cout << "upsi, no domain found for window " << flt << " to register filter; delaying" << endl;
+          no_domain_yet.push_back(no_domain_yet_s(flt, wnd, pos));
         }
       } break;
     case KF_DOMAIN:

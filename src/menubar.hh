@@ -29,6 +29,8 @@ class TMenuBar:
   public TMenuHelper
 {
     typedef TMenuHelper super;
+    class TMyKeyFilter;
+    friend class TMyKeyFilter;
 
   public:
     TMenuBar(TWindow*, const string&);
