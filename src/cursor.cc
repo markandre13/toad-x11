@@ -89,11 +89,10 @@ void TWindow::setCursor(TCursor::EType type)
     return;
   Cursor cursor = TCursor::X11Cursor(type);
   if (x11window) {
-    if (type!=TCursor::DEFAULT)
+    if (type!=TCursor::PARENT)
       XDefineCursor(x11display, x11window, cursor);
     else
       XUndefineCursor(x11display, x11window);
   }
   _cursor = type;
 }
-

@@ -60,6 +60,7 @@ class TCursor
       TARGET,
       DOT,
       CIRCLE,
+      PARENT,
       _MAX
     };
 
