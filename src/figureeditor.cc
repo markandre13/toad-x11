@@ -764,7 +764,6 @@ TFigureEditor::setLineColor(const TRGB &rgb)
 void
 TFigureEditor::setFillColor(const TRGB &rgb)
 {
-cerr << __PRETTY_FUNCTION__ << endl;
   preferences->setFillColor(rgb);
 }
 
