@@ -473,16 +473,22 @@ TFigureEditor::setFilled(bool b)
   window->invalidateWindow();
 }
 
+/**
+ * Add a figure to the editors model.
+ */
 void
-TFigureEditor::add(TFigure *g)
+TFigureEditor::addFigure(TFigure *g)
 {
   model->add(g);
   update_scrollbars = true;
   invalidateFigure(g);
 }
 
+/**
+ * Removes a figure from the editors model.
+ */
 void
-TFigureEditor::deleteGadget(TFigure *g)
+TFigureEditor::deleteFigure(TFigure *g)
 {
   if (g==gadget)
     gadget=NULL;
@@ -565,14 +571,9 @@ TFigureEditor::deleteAll()
 {
   selectAll();
   deleteSelection();
-  setOrigin(0,0);
-/*
-  if (vscroll)
-    vscroll->setValue(0);
-  if (hscroll)
-    hscroll->setValue(0);
+//  setOrigin(0,0); needed?
+  setPanePos(0,0);
   updateScrollbars();
-*/
 }
 
 void
@@ -838,7 +839,7 @@ redo:
       assert(gadget!=NULL);
       unsigned r = gadget->keyDown(this,key,s,m);
       if (r & TFigure::DELETE)
-        deleteGadget(gadget);
+        deleteFigure(gadget);
       if (r & TFigure::STOP)
         stopOperation();
       if (r & TFigure::REPEAT)
@@ -1047,7 +1048,7 @@ redo:
           unsigned r = gadget->mouseLDown(this,x,y,m);
           state = STATE_CREATE;
           if (r & TFigure::DELETE)
-            deleteGadget(gadget);
+            deleteFigure(gadget);
           if (r & TFigure::STOP)
             stopOperation();
           if (r & TFigure::REPEAT)
@@ -1091,7 +1092,7 @@ redo:
         #if VERBOSE
           cout << "    delete gadget" << endl;
         #endif
-        deleteGadget(gadget);
+        deleteFigure(gadget);
       }
       if (r & TFigure::STOP) {
         #if VERBOSE
@@ -1145,7 +1146,7 @@ redo:
         #if VERBOSE
           cout << "    delete gadget" << endl;
         #endif
-        deleteGadget(gadget);
+        deleteFigure(gadget);
       }
       if (r & TFigure::STOP) {
         #if VERBOSE
@@ -1278,7 +1279,7 @@ redo:
         #if VERBOSE
           cout << "    delete gadget" << endl;
         #endif
-        deleteGadget(gadget);
+        deleteFigure(gadget);
       }
       if (r & TFigure::STOP) {
         #if VERBOSE
@@ -1554,125 +1555,25 @@ DBM(cout << "area size: (" << x1 << ", " << y1 << ") - ("
          << x2 << ", " << y2 << ")\n";)
 
 
-  // calculate lower, right visible corner still in occupied area in x22, y22
-  int w, h;
-  w = window->getWidth();
-  h = window->getHeight();
-
-  int x22 = x2, y22 = y2;
-
-  x22=x1 + w-1;
-  if (x22<x2) x22=x2;
-  if (x22<w) x22=w;
-    
-  y22=y1 + h-1;
-  if (y22<y2) y22=y2;
-  if (y22<h) y22=h;
-
-//DBM(cout << "x-axis (3): " << x1 << " - " << x22 << endl;)
-//DBM(cout << "y-axis (3): " << y1 << " - " << y22 << endl;)
-
-DBM(cout << "lower, right visible: " << x22 << ", " << y22 << endl;)
-DBM(cout << "height, width       : " << w << ", " << h << endl;)
-  // setup scrollbars
-  //-----------------------------------------------------------------
-  bool vs, hs;
-  vs = hs = false;
-
-  if (x1<0 || x22>w) {
-    hs   = true;
-    h   -= TScrollBar::getFixedSize();
-    y22 -= TScrollBar::getFixedSize();
-    if (y22<y2)
-      y22=y2;
-  }
-  if (y1<0 || y22>h) {
-    vs   = true;
-    w   -= TScrollBar::getFixedSize();
-    x22 -= TScrollBar::getFixedSize();
-    if (x22<x2)
-      x22=x2;
-  }
-  if (!hs && (x1<0 || x2>w)) {
-    hs   = true;
-    h   -= TScrollBar::getFixedSize();
-    y22 -= TScrollBar::getFixedSize();
-    if (y22<y2)
-      y22=y2;
-  }
-  x2=x22;
-  y2=y22;
-
-//DBM(cout << "x-axis (4): " << x1 << " - " << x22 << endl;)
-//DBM(cout << "y-axis (4): " << y1 << " - " << y22 << endl;)
-
-#if 0
-  if (hs) {
-    if (!hscroll) {
-      hscroll = new TScrollBar(window, "hscroll");
-      CONNECT_VALUE(hscroll->getModel()->sigChanged, this, actHScroll, hscroll);
-    }
-    hscroll->setShape(0,h,w,TScrollBar::getFixedSize());
-    hscroll->getModel()->setRangeProperties(
-      -window->getOriginX(),
-      w,
-      x1, x2);
-DBM(cout << "hscroll: " << x1 << ", " << -window->getOriginX() << ", " << x2 << endl;)
-    if (!hscroll->isRealized()) {
-      hscroll->createWindow();
-    } else {
-      hscroll->setMapped(true);
-    }
-  } else {
-    if (hscroll) {
-      hscroll->setMapped(false);
-    }
-  }
-
-  if (vs) {
-    if (!vscroll) {
-      vscroll = new TScrollBar(window, "vscroll");
-      CONNECT_VALUE(vscroll->getModel()->sigChanged, this, actVScroll, vscroll);
-    }
-    vscroll->setShape(w,0,TScrollBar::getFixedSize(),h);
-DBM(cout << "updateScrollbars: vscroll to " << -window->getOriginY() << endl;)
-    vscroll->getModel()->setRangeProperties(
-      -window->getOriginY(),
-      h,
-      y1, y2);
-    if (!vscroll->isRealized()) {
-      vscroll->createWindow();
-    } else {
-      vscroll->setMapped(true);
-    }
-  } else {
-    if (vscroll) {
-      vscroll->setMapped(false);
-    }
-  }
-#endif
+  pane.x = x1;
+  pane.y = y1;
+  if (x2<getWidth()-1)
+    x2=getWidth()-1;
+  if (y2<getHeight()-1)
+    y2=getHeight()-1;
+  pane.w = x2-x1+1;
+  pane.h = y2-y1+1;
+  doLayout();
 DBM(cout << __PRETTY_FUNCTION__ << ": exit" << endl << endl;)
 }
 
 void
-TFigureEditor::actVScroll(int v)
+TFigureEditor::scrolled(int dx, int dy)
 {
-#if 0
-DBM(cout << "actVScroll: v=" << v << " vscroll range=" << vscroll->getMinimum() << " - " << vscroll->getMaximum() << endl;)
-
-  window->scrollTo(window->getOriginX(), -v);
-  updateScrollbars();
-#endif
-}
-
-void
-TFigureEditor::actHScroll(int v)
-{
-#if 0
-DBM(cout << "actHScroll: v=" << v << " hscroll range=" << hscroll->getMinimum() << " - " << hscroll->getMaximum() << endl;)
-  window->scrollTo(-v, window->getOriginY());
-  updateScrollbars();
-#endif
+  int x, y;
+  getPanePos(&x, &y);
+  // window->scrollTo(-x, -y);
+  window->setOrigin(-x, -y);
 }
 
 void

@@ -48,8 +48,8 @@ class TScrollPane:
     void setPanePos(int x, int y);
     void setUnitIncrement(int uix, int uiy);
 
-    //! pane size in pixels (rename this one!)
-    int tab_w, tab_h;
+    // pane location and size in pixels
+    TRectangle pane;
 
   private:
     //! unit increment as set by setUnitIncrement

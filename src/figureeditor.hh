@@ -80,12 +80,12 @@ class TFigureEditor:
     void setLineColor(const TRGB&);
     void setFillColor(const TRGB&);
     void setFilled(bool);
-    
-    void invalidate() { if (window) window->invalidateWindow(); }
+
+    void invalidateWindow() { if (window) window->invalidateWindow(); }
     void invalidateFigure(TFigure*);
 
-    void add(TFigure*);   
-    void deleteGadget(TFigure*);
+    void addFigure(TFigure*);   
+    void deleteFigure(TFigure*);
 
     void selectAll();
 
@@ -195,8 +195,9 @@ class TFigureEditor:
     int x1,x2, y1,y2;
     bool update_scrollbars; // checked during paint
     void updateScrollbars();
-    void actVScroll(int);
-    void actHScroll(int);
+//    void actVScroll(int);
+//    void actHScroll(int);
+    void scrolled(int dx, int dy);
     
     void adjustPane();
 

@@ -911,29 +911,29 @@ TTable::handleNewModel()
   
   TRCInfo *info;
 
-  // calculate tab_w
-  tab_w=0;
+  // calculate pane.w
+  pane.w=0;
   info = col_info;
   for(int i=0; i<cols; ++i) {
-    DBM(cout << "tab_w: " << tab_w << endl;)
+    DBM(cout << "pane.w: " << pane.w << endl;)
     int n = renderer->getColWidth(i);
     info->size = n;
-    tab_w += n + border;
+    pane.w += n + border;
     ++info;
   }
-  DBM(cout << "tab_w: " << tab_w << endl;)
+  DBM(cout << "pane.w: " << pane.w << endl;)
 
-  // calculate tab_h
-  tab_h=0;
+  // calculate pane.h
+  pane.h=0;
   info = row_info;
   for(int i=0; i<rows; ++i) {
-    DBM(cout << "tab_h: " << tab_h << endl;)
+    DBM(cout << "pane.h: " << pane.h << endl;)
     int n = renderer->getRowHeight(i);
     info->size = n;
-    tab_h += n + border;
+    pane.h += n + border;
     ++info;
   }
-  DBM(cout << "tab_h: " << tab_h << endl;)
+  DBM(cout << "pane.h: " << pane.h << endl;)
 
   doLayout();
 }
@@ -943,7 +943,7 @@ TTable::adjustPane()
 {
   visible.set(0,0,getWidth(),getHeight());
 
-  DBM(cout << "tab_h: " << tab_h << endl;)
+  DBM(cout << "pane.h: " << pane.h << endl;)
 
   if (row_header_renderer) {
     visible.x = row_header_renderer->getWidth();
@@ -953,7 +953,7 @@ TTable::adjustPane()
     visible.y = col_header_renderer->getHeight();
     visible.h -= visible.y;
   }
-  setUnitIncrement(cols ? tab_w/cols : 1, rows ? tab_h/rows : 1);
+  setUnitIncrement(cols ? pane.w/cols : 1, rows ? pane.h/rows : 1);
 }
 
 //---------------------------------------------------------------------------

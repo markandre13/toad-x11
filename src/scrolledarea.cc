@@ -82,35 +82,38 @@ TScrollPane::scrolled(int dx, int dy)
 {
 }
 
+/**
+ * Configure the scrollbars according the window and pane size.
+ */
 void
 TScrollPane::doLayout()
 {
   visible.set(0,0,getWidth(), getHeight());
-  adjustPane();
+  adjustPane(); // adjust 'visible'
 
   bool need_hscroll = false;
   bool need_vscroll = false;
 
-  if (tab_w > visible.w) {
+  if (pane.w > visible.w || pane.x < 0) {
     need_hscroll = true;  
     visible.h -= TScrollBar::getFixedSize();
   }
    
-  if (tab_h > visible.h) {
+  if (pane.h > visible.h || pane.y < 0) {
     need_vscroll = true;  
     visible.w -= TScrollBar::getFixedSize();
   }
    
-  if (!need_hscroll && tab_w > visible.w) {
+  if (!need_hscroll && pane.w > visible.w) {
     need_hscroll = true;
     visible.h -= TScrollBar::getFixedSize();
   }
-   
+
   DBM(cout
       << "doLayout:" << endl
       << "visible.w, visible.h = "<<visible.w<<", "<<visible.h<<endl
       << "rows, cols           = "<<rows<<", "<<cols<<endl
-      << "tab_w, tab_h         = "<<tab_w<<", "<<tab_h<<endl
+      << "pane                 = "<<pane<<endl
       << "need h,v             = "<<need_hscroll<<", "<<need_vscroll<<endl;)
 
   if (need_vscroll) {
@@ -126,8 +129,8 @@ TScrollPane::doLayout()
       TScrollBar::getFixedSize(),
       visible.h);
     vscroll->setExtent(visible.h);
-    vscroll->setMinimum(0);
-    vscroll->setMaximum(tab_h);
+    vscroll->setMinimum(pane.y);
+    vscroll->setMaximum(pane.y+pane.h-1);
     vscroll->setMapped(true);  
     vscroll->setUnitIncrement(uiy);
   } else {
@@ -150,8 +153,8 @@ TScrollPane::doLayout()
       visible.w,
       TScrollBar::getFixedSize());
     hscroll->setExtent(visible.w);
-    hscroll->setMinimum(0);
-    hscroll->setMaximum(tab_w);
+    hscroll->setMinimum(pane.x);
+    hscroll->setMaximum(pane.x+pane.w-1);
     hscroll->setMapped(true);  
     hscroll->setUnitIncrement(uix);
   } else {
