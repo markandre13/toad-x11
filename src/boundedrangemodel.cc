@@ -170,11 +170,11 @@ DBM(cerr << "BoundedRangeTextModel filter detected '\\n', calling masterChanged\
         masterChanged();
         return 0;
       }
-      if (c==TTextModel::CHARACTER_CURSOR_DOWN) {
+      if (c==TTextModel::CHARACTER_CURSOR_UP) {
         model->setValue(model->getValue()+1);
         return 0;
       }
-      if (c==TTextModel::CHARACTER_CURSOR_UP) {
+      if (c==TTextModel::CHARACTER_CURSOR_DOWN) {
         model->setValue(model->getValue()-1);
         return 0;
       }
