@@ -1950,8 +1950,9 @@ TWindow::loadLayout(const string &file)
     }
     
     new_layout = dynamic_cast<TLayout*>(s);
-    if (!layout) {
+    if (!new_layout) {
       cerr << "loading layout failed:\nfile '"<<filename<<"' doesn't provide TLayout object" << endl;
+      cerr << "  got '" << typeid(*s).name() << "'\n";
       delete s;
     }
   }
