@@ -58,15 +58,15 @@ class urlstreambase
     std::streambuf *fb;
 
     void parse(const string&);
-    void iopen();
+    bool iopen();
 #ifdef __X11__
-    void iopen_http();
+    bool iopen_http();
 #endif
-    void iopen_file();
-    void iopen_memory();
+    bool iopen_file();
+    bool iopen_memory();
     
-    void oopen();
-    void oopen_file();
+    bool oopen();
+    bool oopen_file();
 
 #if 0
     void set_sb(streambuf *new_sb, int new_fd = -1);
@@ -87,14 +87,17 @@ class iurlstream:
       istream(NULL) 
     {
       parse(url);
-      iopen();
+      if (!iopen())
+        setstate(ios_base::failbit);
     }
     iurlstream():
       istream(NULL)
     {}
     void open(const string &url) {
+      clear();
       parse(url);
-      iopen();
+      if (!iopen())
+        setstate(ios_base::failbit);
     }
   protected:
     void urlbase_init(streambuf*);
@@ -108,14 +111,17 @@ class ourlstream:
       ostream(NULL)
     {
       parse(url);
-      oopen();
+      if (!oopen())
+        setstate(ios_base::failbit);
     }
     ourlstream():
       ostream(NULL)
     {}
     void open(const string &url) {
+      clear();
       parse(url);
-      oopen();
+      if (!oopen())
+        setstate(ios_base::failbit);
     }
   protected:
     void urlbase_init(streambuf*);

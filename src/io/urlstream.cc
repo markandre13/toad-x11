@@ -328,40 +328,47 @@ void urlstreambase::parse(const string &url)
     filename = url;
 }
 
-void urlstreambase::iopen()
+bool
+urlstreambase::iopen()
 {
   switch(protocol) {
     case P_NONE:
     case P_FILE:
-      iopen_file();
+      return iopen_file();
       break;
 #ifdef __X11__
     case P_HTTP:
-      iopen_http();
+      return iopen_http();
       break;
 #endif
     case P_MEMORY:
-      iopen_memory();
+      return iopen_memory();
       break;
     default:
-      throw runtime_error("input isn't supported for this protocol");
+      ;
+      // throw runtime_error("input isn't supported for this protocol");
   }
+  return false;
 }
 
-void urlstreambase::oopen()
+bool
+urlstreambase::oopen()
 {
   switch(protocol) {
     case P_NONE:
     case P_FILE:
-      oopen_file();
+      return oopen_file();
       break;
     default:
-      throw runtime_error("output isn't supported for this protocol");
+      ;
+      // throw runtime_error("output isn't supported for this protocol");
   }
+  return false;
 }
 
 #ifdef __X11__
-void urlstreambase::iopen_http()
+bool
+urlstreambase::iopen_http()
 {
   string error;
   string cmd;
@@ -434,39 +441,42 @@ void urlstreambase::iopen_http()
     r = n = 0;
   }
 
-  return;
+  return true;
 
 error5:
 error4:
 error3:
   ::close(sock);
 error1:
-  throw runtime_error(error.c_str());
+  // throw runtime_error(error.c_str());
+  return false;
 }
 #endif
 
-void urlstreambase::iopen_file()
+bool
+urlstreambase::iopen_file()
 {
   close();
   int fd = ::open(filename.c_str(), O_RDONLY);
   if (fd==-1) {
-    string error = "failed to open `"+url+"': "+ strerror(errno);
-    throw runtime_error(error.c_str());
+    // error = "failed to open `"+url+"': "+ strerror(errno);
+    return false;
   }
   set_buffer(fd, ios::in);
-  return;
+  return true;
 }
 
-void urlstreambase::oopen_file()
+bool
+urlstreambase::oopen_file()
 {
   close();
   int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644 );
   if (fd==-1) {
     string error = "failed to open `"+url+"': "+ strerror(errno);
-    throw runtime_error(error.c_str());
+    return false;
   }
   set_buffer(fd, ios::out);
-  return;
+  return true;
 }
 
 namespace toad {
@@ -480,15 +490,16 @@ void urlstreambase::saveMemoryFile(const string &name,
   memory_file_system[name].assign(data, len);
 }
 
-void urlstreambase::iopen_memory()
+bool
+urlstreambase::iopen_memory()
 {
   close();
   TMemoryFileSystem::iterator p = memory_file_system.find(filename);
   if (p==memory_file_system.end()) {
-    string error = "failed to open `"+url+"': no such file";
-    throw runtime_error(error.c_str());
+    return false;
   }
   set_buffer(new stringbuf(p->second));
+  return true;
 }
 
 void
