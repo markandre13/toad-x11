@@ -41,6 +41,7 @@ using namespace std;
 #include <cstddef>
 #include "connect.hh"
 #include <iostream>
+#include <cassert>
 
 using namespace toad;
 
