@@ -134,7 +134,7 @@ class TSmartObject
      * delete the object.
      */
     void * operator new(std::size_t size) {
-      assert(heap_start == NULL);
+      assert(heap_start == 0);
       char * ptr = new char[size];
       heap_start = ptr;
       heap_end   = ptr+size;
@@ -172,27 +172,27 @@ class GSmartPointer
     /* A reference count template that is used to encapsulate an object */
   
     GSmartPointer() {
-      _ptr = NULL;
+      _ptr = 0;
     }
 
     GSmartPointer(T* p) {
-      _ptr = NULL;
+      _ptr = 0;
       _set(p);
     }
 
     GSmartPointer(const GSmartPointer<T>& p) {
-      _ptr = NULL;
+      _ptr = 0;
       _set(p._ptr);
     }
 
     template <class T2>
     GSmartPointer(const GSmartPointer<T2>& p) {
-      _ptr = NULL;
+      _ptr = 0;
       _set(p._ptr);
     }
 
     ~GSmartPointer() {
-      _set(NULL);
+      _set(0);
     }
     
     GSmartPointer<T>& operator =(T *p) {
