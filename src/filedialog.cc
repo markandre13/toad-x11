@@ -143,8 +143,13 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
     cwd = buffer;
   }
   
-  if (previous_cwds.empty()) {
+  static bool loadedbitmap = false;
+  if (!loadedbitmap) {
     bmp.load(RESOURCE("folder_red_open.png"));
+    loadedbitmap = true;
+  }
+
+  if (previous_cwds.empty()) {
     previous_cwds.push_front(cwd);
   }
   first_chdir = true;
