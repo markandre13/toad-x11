@@ -640,6 +640,9 @@ DBSCROLL({
 
   if (!renderer)
     return;
+  if (!renderer->getModel())
+    return;
+
   bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
   bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
   xp = fpx + visible.x;

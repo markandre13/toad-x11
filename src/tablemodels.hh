@@ -268,15 +268,21 @@ class GTableCellRenderer_String:
         connect(model->sigChanged, this, &This::modelChanged);
     }
     int getRows() {
+      if (!model)
+        return 0;
       return model->getRows();
     }
     int getCols() {
+      if (!model)
+        return 0;
       return model->getCols();
     }
     int getRowHeight(int) {
       return TOADBase::getDefaultFont().getHeight()+2;
     }
     int getColWidth(int) {
+      if (!model)
+        return 0;
       int n = model->getRows();
       int max = 0;
       for(int i=0; i<n; i++) {
