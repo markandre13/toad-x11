@@ -48,9 +48,31 @@ using namespace toad;
 typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableCellRenderer_DirectoryEntrySet;
 typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
 namespace {
-  TBitmap bmp;
-  string cwd;
-  TPreviousDirs previous_cwds;
+TBitmap bmp;
+string cwd;
+TPreviousDirs previous_cwds;
+
+void  
+removeDuplicates()
+{
+  TPreviousDirs::iterator p, e;
+  p = previous_cwds.begin();
+  e = previous_cwds.end();
+  ++p;
+  while(p!=e) {
+    if (*p == cwd) {
+      previous_cwds.erase(p);
+      p = previous_cwds.begin();
+      e = previous_cwds.end();
+    }
+    ++p;
+  }
+  
+  while(previous_cwds.size()>10)
+    previous_cwds.pop_back();
+
+}
+
 }; // namespace
 
 bool
@@ -106,51 +128,6 @@ TDirectoryEntry::renderItem(TPen &pen, int col, int w, int h) const {
   }
 }
 
-#ifndef FINAL_FILEDIALOG
-
-void filedialog_mf();
-
-class TMyWindow:
-  public TPushButton
-{
-  public:
-    TMyWindow(TWindow *parent, const string &title):
-      TPushButton(parent, title)
-    {
-      connect(sigActivate, this, &TMyWindow::click);
-    }
-    
-    void click()
-    {
-      TFileDialog dlg(0, "TFileDialog");
-      dlg.doModalLoop();
-    }
-};
-
-int
-main(int argc, char **argv, char **envv)
-{
-  toad::initialize(argc, argv, envv);
-
-  #warning "better make this one: addResourcePrefix or check for an resource prefix in the name and make this one part of the urlstream class"
-//  TOADBase::setResourcePrefix("");
-  
-  filedialog_mf();
-  
-  {
-    bmp.load(RESOURCE("folder_red_open.png"));
-  
-//    TFileDialog dlg(0, "TFileDialog");
-    TMyWindow wnd(0, "TFileDialog");
-    toad::mainLoop();
-  }
-  toad::terminate();
-  return 0;
-}
-
-#endif
-
-
 TFileDialog::TFileDialog(TWindow *parent, const string &title):
   TDialog(parent, title)
 {
@@ -200,7 +177,15 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title):
 void
 TFileDialog::setFilename(const string &s)
 {
-  filename = s;
+  unsigned n = s.rfind('/');
+  if (n==string::npos) { 
+    filename = s;
+  } else {
+    cwd = s.substr(0,n);  
+    previous_cwds.push_front(cwd);
+    removeDuplicates();
+    filename = s.substr(n+1);
+  }
 }
 
 string
@@ -220,25 +205,8 @@ void
 TFileDialog::button(unsigned result)
 {
   this->result = result;
-  
-  TPreviousDirs::iterator p, e;
-  
   previous_cwds.push_front(cwd);
-  p = previous_cwds.begin();
-  e = previous_cwds.end();
-  ++p;
-  while(p!=e) {
-    if (*p == cwd) {
-      previous_cwds.erase(p);
-      p = previous_cwds.begin();
-      e = previous_cwds.end();
-    }
-    ++p;
-  }
-  
-  while(previous_cwds.size()>10)
-    previous_cwds.pop_back();
-  
+  removeDuplicates();
   destroyWindow();
 }
 
