@@ -175,8 +175,6 @@ TTextArea::TPreferences::TPreferences()
 
 TTextArea::TPreferences::~TPreferences()
 {
-  if (font)
-    delete font;
 }
 
 void
