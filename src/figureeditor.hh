@@ -184,11 +184,7 @@ class TFigureEditor:
     
     unsigned result;            // values are defined in TFigure
     
-    void setModel(TFigureModel *m) {
-      model = m;
-      invalidateWindow();
-      updateScrollbars();
-    }
+    void setModel(TFigureModel *m);
     TFigureModel * getModel() const {
       return model;
     }

@@ -1101,6 +1101,16 @@ TFigureEditor::ungroup()
   clearSelection();
 }
 
+void
+TFigureEditor::setModel(TFigureModel *m)
+{
+  stopOperation();
+  clearSelection();
+  model = m;
+  invalidateWindow();
+  updateScrollbars();
+}
+
 /**
  * Abondon the current mode of operation and select a new mode.
  */
