@@ -2026,62 +2026,81 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
   //-----------------------------------------------------------------
   int x1, y1; // upper, left corner
   int x2, y2; // lower, right corner
-/*
-  x1=-window->getOriginX();
-  if (x1>0)
-    x1=0;
-  y1=-window->getOriginY();
-  if (y1>0)
-    y1=0;
 
-  x2=x1+1;
-  y2=y1+1;
-*/
-//DBM(cout << "x-org     : " << window->getOriginX() << endl;)
-//DBM(cout << "x-axis (1): " << x1 << " - " << x2 << endl;)
-//DBM(cout << "y-axis (1): " << y1 << " - " << y2 << endl;)
-  
-  TFigureModel::iterator p, e;
-  p = model->begin();
-  e = model->end();
+  x1 = y1 = INT_MAX;
+  x2 = y2 = INT_MIN;
+
   TRectangle r;
-  
-  if (p==e) {
-    x1 = x2 = y1 = y2 = 0;
-  } else {
+  for(TFigureModel::iterator p = model->begin();
+      p != model->end();
+      ++p)
+  {
+    int ax1, ay1, ax2, ay2;
     (*p)->getShape(&r);
-    x1=r.x;
-    y1=r.y;
-    x2=r.x+r.w-1;
-    y2=r.y+r.h-1;
-    ++p;
-  }
-  
-  while(p!=e) {
-    int a;
-    (*p)->getShape(&r);
-    if (r.x<x1)
-      x1=r.x;
-    a = r.x+r.w-1;
-    if (a>x2)
-      x2=a;
-    if (r.y<y1)
-      y1=r.y;
-    a = r.y+r.h-1;
-    if (a>y2)
-      y2=a;
-    p++;
+    ax1=r.x;
+    ay1=r.y;
+    ax2=r.x+r.w-1;
+    ay2=r.y+r.h-1;
+    
+    if ( (*p)->mat) {
+      (*p)->mat->map(ax1, ay2, &ax1, &ay1);
+      (*p)->mat->map(ax2, r.y, &ax2, &ay2);
+
+//printf("lower left  (%i, %i)\n"
+//       "upper right (%i, %i)\n", ax1, ay1, ax2, ay2);
+      
+      if (ax1>ax2) {
+        int a = ax1; ax1 = ax2; ax2 = a;
+      }
+      if (ay1>ay2) {
+        int a = ay1; ay1 = ay2; ay2 = a;
+      }
+
+      
+      if (ax1<x1)
+        x1=ax1;
+      if (ax2>x2)
+        x2=ax2;
+      if (ay1<y1)
+        y1=ay1;
+      if (ay2>y2)
+        y2=ay2;
+
+      ax1=r.x;
+      ay1=r.y;
+      ax2=r.x+r.w-1;
+      ay2=r.y+r.h-1;
+
+      (*p)->mat->map(ax1, ay1, &ax1, &ay1);
+      (*p)->mat->map(ax2, ay2, &ax2, &ay2);
+//printf("upper left  (%i, %i)\n"
+//       "lower right (%i, %i)\n\n", ax1, ay1, ax2, ay2);
+      if (ax1>ax2) {
+        int a = ax1; ax1 = ax2; ax2 = a;
+      }
+      if (ay1>ay2) {
+        int a = ay1; ay1 = ay2; ay2 = a;
+      }
+    }
+
+    if (ax1<x1)
+      x1=ax1;
+    if (ax2>x2)
+      x2=ax2;
+    if (ay1<y1)
+      y1=ay1;
+    if (ay2>y2)
+      y2=ay2;
+//cout << "area size: (" << x1 << ", " << y1 << ") - (" << x2 << ", " << y2 << ")\n";
   }
   
   if (x1>0) x1=0;
   if (y1>0) y1=0;
+  if (x2<0) x2=0;
+  if (y2<0) y2=0;
 
-//DBM(cout << "x-axis (2): " << x1 << " - " << x2 << endl;)
-//DBM(cout << "y-axis (2): " << y1 << " - " << y2 << endl;)
-
-DBM(cout << "area size: (" << x1 << ", " << y1 << ") - ("
-         << x2 << ", " << y2 << ")\n";)
-
+//cout << "area size: (" << x1 << ", " << y1 << ") - (" << x2 << ", " << y2 << ")\n";
+//cout << "final" << endl << endl;
   if (!mat) {
     pane.x = x1;
     pane.y = y1;
@@ -2095,7 +2114,6 @@ DBM(cout << "area size: (" << x1 << ", " << y1 << ") - ("
     pane.y = static_cast<int>(dy1);
     pane.w = static_cast<int>(dx2-dx1);
     pane.h = static_cast<int>(dy2-dy1);
-    
   }
   doLayout();
 DBM(cout << __PRETTY_FUNCTION__ << ": exit" << endl << endl;)
