@@ -48,11 +48,11 @@ fi
 # fontconfig (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AC_MSG_CHECKING([fontconfig])
-pkg-config --atleast-version=2.2.0 fontconfig
-if test $? -ne 0 ; then
-  AC_MSG_ERROR([You must have fontconfig 2.2.0 or higher; see http://www.freedesktop.org/])
-fi
-AC_MSG_RESULT([yes])
+#pkg-config --atleast-version=2.2.0 fontconfig
+#if test $? -ne 0 ; then
+#  AC_MSG_ERROR([You must have fontconfig 2.2.0 or higher; see http://www.freedesktop.org/])
+#fi
+#AC_MSG_RESULT([yes])
 CXXFLAGS="$CXXFLAGS `$pkg_config --cflags fontconfig`"
 LIBS="$LIBS `$pkg_config --libs fontconfig`"
 
