@@ -131,8 +131,9 @@ TFPolygon::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
       editor->setMouseMoveMessages(TWindow::TMMM_ALL);
     case TFigureEditor::STATE_CREATE:
       if (m & MK_DOUBLE) {
-        if (polygon.size()<3)
+        if (polygon.size()<4)
           return STOP|DELETE;
+        polygon.erase(--polygon.end());
         return STOP;
       }
       polygon.addPoint(mx, my);

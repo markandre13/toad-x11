@@ -54,3 +54,21 @@ TFPolyline::distance(int mx, int my)
   }
   return min;
 }
+
+/**
+ * A variation of our super class mouseLDown, which accepts a minimum of
+ * 2 points instead of 3.
+ */
+unsigned 
+TFPolyline::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
+{
+  if (editor->state == TFigureEditor::STATE_CREATE &&
+      m & MK_DOUBLE) 
+  {
+    if (polygon.size()<3)
+      return STOP|DELETE;
+    polygon.erase(--polygon.end());
+    return STOP;
+  }
+  return super::mouseLDown(editor, mx, my, m);
+}

@@ -164,18 +164,18 @@ class TFRectangle:
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint &p);
     void translateHandle(unsigned handle, int mx, int my);
-
-    unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
-    unsigned mouseMove(TFigureEditor*, int, int, unsigned);
-    unsigned mouseLUp(TFigureEditor*, int, int, unsigned);
     
     TCloneable* clone() const { return new TFRectangle(*this); }
-
     const char * name() const { return "toad::TFRectangle"; } 
     void store(TOutObjectStream&) const;
     bool restore(TInObjectStream&);
     
+  protected:
     TPoint p1, p2;
+
+    unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
+    unsigned mouseMove(TFigureEditor*, int, int, unsigned);
+    unsigned mouseLUp(TFigureEditor*, int, int, unsigned);
 };
 
 /**
@@ -192,10 +192,6 @@ class TFPolygon:
       fill_color.set(0,0,0);
     }
     
-    // polygon creation
-    unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
-    unsigned mouseMove(TFigureEditor*, int, int, unsigned);
-
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
     void getShape(TRectangle&);
@@ -207,9 +203,14 @@ class TFPolygon:
     const char * name() const { return "toad::TFPolygon"; }
     void store(TOutObjectStream&) const;
     bool restore(TInObjectStream&);
+
   protected:
     typedef vector<TPoint> TPoints;
     TPolygon polygon;
+
+    // polygon creation
+    unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
+    unsigned mouseMove(TFigureEditor*, int, int, unsigned);
 };
 
 /**
@@ -218,11 +219,15 @@ class TFPolygon:
 class TFPolyline:
   public TFPolygon
 {
+    typedef TFPolygon super;
   public:
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
     TCloneable* clone() const { return new TFPolyline(*this); }
     const char * name() const { return "toad::TFPolyline"; }
+    
+  protected:
+    unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
 };
 
 /**
