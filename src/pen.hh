@@ -283,6 +283,7 @@ class TPenBase:
     virtual void lineTo(const TPoint &p) = 0;
     virtual void curveTo(int x2, int y2, int x3, int y3, int x4, int y4) = 0;
     virtual void curveTo(const TPoint &p2, const TPoint &p3, const TPoint &p4) = 0;
+    virtual void curveTo(double x2, double y2, double x3, double y3, double x4, double y4) = 0;
 };
 
 class TMatrix2D;
@@ -294,6 +295,7 @@ class TPen:
     friend class TBitmap;
     friend class TColor;
 
+  public:
     TMatrix2D *mat;
 
   public:
@@ -453,6 +455,10 @@ class TPen:
     void curveTo(const TPoint &p2, const TPoint &p3, const TPoint &p4) {
       drawBezier(_pos.x, _pos.y, p2.x,p2.y, p3.x,p3.y, p4.x,p4.y);
       _pos=p4;
+    }
+    void curveTo(double x2, double y2, double x3, double y3, double x4, double y4) {
+      drawBezier((double)_pos.x, (double)_pos.y, x2,y2, x3,y3, x4,y4);
+      _pos.set(x4,y4);
     }
     
   private:

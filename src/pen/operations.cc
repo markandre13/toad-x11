@@ -318,7 +318,7 @@ TPen::drawPoint(int x, int y) const
   } else {
     short sx, sy;
     mat->map(x, y, &sx, &sy);
-    XDrawPoint(x11display, x11drawable, o_gc, x, y);
+    XDrawPoint(x11display, x11drawable, o_gc, sx, sy);
   }
 }
 
@@ -340,8 +340,21 @@ TPen::vdrawLine(int x1, int y1, int x2, int y2) const
 void
 TPen::drawLines(const TPoint *s, int n) const
 {
-  TPOINT_2_XPOINT(s,d,n)
-  XDrawLines(x11display, x11drawable, o_gc, d, n, CoordModeOrigin);
+  if (!mat) {
+    TPOINT_2_XPOINT(s,d,n)
+    XDrawLines(x11display, x11drawable, o_gc, d, n, CoordModeOrigin);
+  } else {
+    XPoint xp[n];
+    const TPoint *sp = s;
+    const TPoint *se = s+n;
+    XPoint *dp = xp;
+    while(sp!=se) {
+      mat->map(sp->x, sp->y, &dp->x, &dp->y);
+      ++dp;
+      ++sp;
+    }
+    XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
+  }
 }
 
 void
@@ -353,11 +366,19 @@ TPen::drawLines(const TPolygon &polygon) const
   sp = polygon.begin();
   se = polygon.end();
   XPoint *dp = DST;
-  while(sp!=se) {
-   dp->x = sp->x;
-   dp->y = sp->y;
-   dp++;
-   ++sp;
+  if (!mat) {
+    while(sp!=se) {
+      dp->x = sp->x;
+      dp->y = sp->y;
+      ++dp;
+      ++sp;
+    }
+  } else {
+    while(sp!=se) {
+      mat->map(sp->x, sp->y, &dp->x, &dp->y);
+      ++dp;
+      ++sp;
+    }
   }
 
   XDrawLines(x11display, x11drawable, o_gc, 
@@ -431,24 +452,142 @@ TPenBase::fillRectanglePC(int x, int y, int w, int h) const
 
 // circle
 //----------------------------------------------------------------------------
+/*****************************************************************
+The Graphic Gem III
+ed. by David Kirk, Academic Press, 1992
+
+Van Aken, Jerry, and Simar, Ray, A Parametric Elliptical Arc Algorithm,
+p. 164-172, code: p. 478-479
+
+http://www.acm.org/pubs/tog/GraphicsGems/gemsiii/parelarc.c
+
+Plot a series of points along a PI/2-radian arc of an ellipse.
+The arc is specified in terms of a control polygon (a triangle)
+with vertices P, Q and K.  The arc begins at P, ends at Q, and is
+completely contained within the control polygon.  The draw_point 
+function plots a single pixel at display coordinates (x,y).
+
+Entry:
+  xP, yP, xQ, yQ, xK, yK -- coordinates of P, Q and K.  These
+    are 32-bit fixed-point values with 16 bits of fraction.  
+  m -- nonnegative integer that controls spacing between points.
+    The angular increment between points is 1/2^m radians.
+Exit:
+  The number of points plotted is 1 + floor((PI/2)*2^m).
+*****************************************************************/
+
+#define PIV2  102944     /* fixed point PI/2 */
+#define TWOPI 411775     /* fixed point 2*PI */
+#define HALF  32768      /* fixed point 1/2 */ 
+typedef long FIX;        /* 32-bit fixed point, 16-bit fraction */
+
+void
+map2(const TMatrix2D *m, long &x, long &y)
+{
+  double ox, oy;
+  ox = m->a11 * (double)x + m->a12 * (double)y + m->tx;
+  oy = m->a21 * (double)x + m->a22 * (double)y + m->ty;
+  x = (long)ox;
+  y = (long)oy;
+}
+
+XPoint *
+qtr_elips(const TPen *pen, XPoint *p, long xP, long yP, long xQ, long yQ, long xK, long yK, int m)
+{
+    int i, x, y;
+    FIX vx, ux, vy, uy, w, xJ, yJ;
+    if (pen->mat) {
+      map2(pen->mat, xP, yP);
+      map2(pen->mat, xQ, yQ);
+      map2(pen->mat, xK, yK);
+    }
+    xP<<=16;   
+    yP<<=16;   
+    xQ<<=16;   
+    yQ<<=16;   
+    xK<<=16;   
+    yK<<=16;   
+    vx = xK - xQ;                 /* displacements from center */
+    ux = xK - xP;
+    vy = yK - yQ;
+    uy = yK - yP;
+    xJ = xP - vx + HALF;          /* center of ellipse J */
+    yJ = yP - vy + HALF;
+    ux -= (w = ux >> (2*m + 3));  /* cancel 2nd-order error */
+    ux -= (w >>= (2*m + 4));      /* cancel 4th-order error */
+    ux -= w >> (2*m + 3);         /* cancel 6th-order error */
+    ux += vx >> (m + 1);          /* cancel 1st-order error */
+    uy -= (w = uy >> (2*m + 3));  /* cancel 2nd-order error */
+    uy -= (w >>= (2*m + 4));      /* cancel 4th-order error */
+    uy -= w >> (2*m + 3);         /* cancel 6th-order error */
+    uy += vy >> (m + 1);          /* cancel 1st-order error */
+    for (i = (PIV2 << m) >> 16; i >= 0; --i) {
+        p->x = (xJ + vx) >> 16;
+        p->y = (yJ + vy) >> 16;
+        ++p;
+        ux -= vx >> m;
+        vx += ux >> m;
+        uy -= vy >> m;
+        vy += uy >> m;
+    }
+    return p;
+}
+
 void
 TPen::vdrawCircle(int x, int y, int w, int h) const
 {
-  XDRAW_RASTER_COORD(w,h)
-  if (w==0 || h==0) {
-    XDrawLine(x11display, x11drawable, o_gc, x, y, x+w,y+h);
-    return;
+  if (!mat) {
+    XDRAW_RASTER_COORD(w,h)
+    if (w==0 || h==0) {
+      XDrawLine(x11display, x11drawable, o_gc, x, y, x+w,y+h);
+      return;
+    }
+    // hmm, seem my X server ignores w,h>=800...
+    XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, 0,360*64);
+  } else {
+    int m = pow(max(w, h), 0.25);
+    ++m;
+    if (m<3) m = 3;
+    if (m>16) m = 15;
+  
+    int n = ( ((PIV2<<m) >> 16)+1 )*4;
+    XPoint pts[n];
+    XPoint *p = pts;
+  
+    p = qtr_elips(this, p,  x+w/2, y     ,  x+w  , y+h/2,  x+w, y  ,  m);
+    p = qtr_elips(this, p,  x+w  , y+h/2 ,  x+w/2, y+h  ,  x+w, y+h,  m);
+    p = qtr_elips(this, p,  x+w/2, y+h   ,  x    , y+h/2,  x  , y+h,  m);
+    p = qtr_elips(this, p,  x    , y+h/2 ,  x+w/2, y    ,  x  , y  ,  m);
+    XDrawLines(x11display, x11drawable, o_gc, pts, n, CoordModeOrigin);
   }
-  XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, 0,360*64);
 }
 
 void
 TPen::vfillCircle(int x, int y, int w, int h) const
 {
-  XDRAW_RASTER_COORD(w,h)
   XDRAW_PIXEL_COORD(w,h)
-  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
-  XDrawArc(x11display, x11drawable, o_gc, x, y,w,h, 0,360*64);
+  if (!mat) {
+    XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
+    XDrawArc(x11display, x11drawable, o_gc, x, y,w,h, 0,360*64);
+  } else {
+    int m = pow(max(w, h), 0.25);
+    ++m;
+    if (m<3) m = 3;
+    if (m>16) m = 15;
+  
+    int n = ( ((PIV2<<m) >> 16)+1 )*4;
+    XPoint pts[n];
+    XPoint *p = pts;
+  
+    p = qtr_elips(this, p,  x+w/2, y     ,  x+w  , y+h/2,  x+w, y  ,  m);
+    p = qtr_elips(this, p,  x+w  , y+h/2 ,  x+w/2, y+h  ,  x+w, y+h,  m);
+    p = qtr_elips(this, p,  x+w/2, y+h   ,  x    , y+h/2,  x  , y+h,  m);
+    p = qtr_elips(this, p,  x    , y+h/2 ,  x+w/2, y    ,  x  , y  ,  m);
+    
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
+                 pts, n, Nonconvex, CoordModeOrigin);
+    XDrawLines(x11display, x11drawable, o_gc, pts, n, CoordModeOrigin);
+  }
 }
 
 void
