@@ -203,6 +203,9 @@ TFGroup::translate(int dx, int dy)
 void
 TFGroup::store(TOutObjectStream &out) const
 {
+  if (mat) {
+    ::store(out, "trans", mat);
+  }
   gadgets.store(out);
 }
 
@@ -211,6 +214,10 @@ TFGroup::restore(TInObjectStream &in)
 {
   if (in.what == ATV_FINISHED) {
     calcSize();
+    return true;
+  }
+  if (::restorePtr(in, "trans", &mat)) {
+    return true;
   }
   if (gadgets.restore(in))
     return true;
