@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,6 +31,7 @@ TFatCheckButton::TFatCheckButton(TWindow *p, const string &t, TBoolModel *m):
 void
 TFatCheckButton::_init(TBoolModel *m)
 {
+  bNoBackground = true;
   model = 0;
   if (!m)
     m = new TBoolModel();
@@ -56,13 +57,6 @@ void TFatCheckButton::mouseLDown(int, int, unsigned)
   if (model) {
     setValue(!*model);
   }
-
-  if (model && *model) {
-    setBackground(TColor::SLIDER_FACE);
-  } else {
-    setBackground(TColor::BTNFACE);
-  }
-  
   setFocus();
   invalidateWindow();
 }
@@ -85,6 +79,12 @@ TFatCheckButton::paint()
 {
   TPen pen(this);
   bool b = model ? *model : false;
+  if (b) {
+    pen.setColor(TColor::SLIDER_FACE);
+  } else {
+    pen.setColor(TColor::BTNFACE);
+  }
+  pen.fillRectangle(0, 0, getWidth(), getHeight());
   drawShadow(pen, b);
   drawLabel(pen, getLabel(), b);
 }
