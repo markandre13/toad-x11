@@ -44,24 +44,25 @@ using namespace toad;
 TColor sysrgb[TColor::MAX]=
 {
   TColor(  0,  0,  0),  // BTNTEXT
-  TColor(128,128,128),  // BTNSHADOW
-  TColor(192,192,192),  // BTNFACE
+  TColor(150,150,150),  // BTNSHADOW
+  TColor(215,215,215),  // BTNFACE
   TColor(255,255,255),  // BTNLIGHT
-  TColor(192,192,192),  // MENU
+  TColor(215,215,215),  // MENU
   TColor(  0,  0,  0),  // MENUTEXT
   TColor(255,255,255),  // TEXTEDIT
   TColor(128,  0,  0),  // MDIAREA
   TColor(  0,  0,128),  // CAPTION
   TColor(255,255,255),  // CAPTIONTEXT
-  TColor(192,192,192),  // INACTIVECAPTION
+  TColor(215,215,215),  // INACTIVECAPTION
   TColor(  0,  0,  0),  // INACTIVECAPTIONTEXT
-  TColor(192,192,192),  // DIALOG
+  TColor(215,215,215),  // DIALOG
   TColor(  0,  0,  0),  // DIALOGTEXT
   TColor(127,127,191),  // SLIDER_FACE
   TColor( 63, 63,127),  // SLIDER_SHADOW
   TColor(191,191,255),  // SLIDER_LIGHT
   TColor(127,127,191),  // SELECTED
   TColor(  0,  0,  0),  // SELECTED_TEXT
+  TColor(215,215,215),  // SELECTED_GRAY
 };
 
 TColor::TColor()

@@ -120,8 +120,9 @@ class TColor
       SLIDER_FACE,          // scrollbar slider
       SLIDER_SHADOW,
       SLIDER_LIGHT,
-      SELECTED,
-      SELECTED_TEXT,
+      SELECTED,             // background for selected text when focus
+      SELECTED_TEXT,        // color for selected text
+      SELECTED_GRAY,        // background for selected text when no focus
       MAX
     };
 
