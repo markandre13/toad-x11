@@ -263,8 +263,6 @@ TFigureModel::erase(TFigureSet &set)
 TFigure*
 TFigureModel::group(TFigureSet &set)
 {
-cerr << __PRETTY_FUNCTION__ << endl;
-
   if (set.size()<2)
     return 0;
     
