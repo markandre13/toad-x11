@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-Andr? Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-Andr? Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
 #endif
 
 #include <assert.h>
+#include <cmath>
 #include <cstring>
 
 #define _TOAD_PRIVATE
