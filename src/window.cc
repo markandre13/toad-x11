@@ -213,13 +213,12 @@ enum {
   VMAS_MAX,
 };
 
-#define _vmas_cast(f) ((void*)f)
-
-#define SET_VMAS(I, F) \
-  _vmas_table[I] = (void*)&TWindow::F
-#define CHK_VMAS(I, F) \
-  (_vmas_table[I] != _vmas_cast(&TWindow::F))
-static const void* _vmas_table[VMAS_MAX] = { NULL,  };
+typedef void (*pmf)(TWindow*);
+#define SET_VMAS(const, func) \
+  _vmas_table[const] = (pmf)(this->*(&TWindow::func))
+#define CHK_VMAS(C, F) \
+  _vmas_table[C] != (pmf)(this->*(&TWindow::F))
+static pmf _vmas_table[VMAS_MAX] = { 0, };
 
 TWindow::TWindow(TWindow *p, const string &title)
   :TInteractor(p, title)
@@ -2355,7 +2354,7 @@ void
 TWindow::setMouseMoveMessages(unsigned short mode)
 {
 #ifdef __X11__
-  if ( !CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) )
+  if ( !(CHK_VMAS(VMAS_MOUSEMOVE, mouseMove)) )
     return;
   _mmm_mask = mode;
   flag_mmm_modified = true;
@@ -2368,7 +2367,7 @@ void
 TWindow::addMouseMoveMessages(unsigned short mode)
 {
 #ifdef __X11__
-  if ( !CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) )
+  if ( !(CHK_VMAS(VMAS_MOUSEMOVE, mouseMove)) )
     return;
   _mmm_mask |= mode;
   flag_mmm_modified = true;
@@ -2381,7 +2380,7 @@ void
 TWindow::clrMouseMoveMessages(unsigned short mode)
 {
 #ifdef __X11__
-  if ( !CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) )
+  if ( !(CHK_VMAS(VMAS_MOUSEMOVE, mouseMove)) )
     return;
   _mmm_mask &= ~mode;
   flag_mmm_modified = true;

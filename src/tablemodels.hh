@@ -264,7 +264,7 @@ class GArrayWrap:
 #if 0
         throw TException("index is out of bounds");
 #else
-        cerr << "GArrayWrap::getElementAt: index>=size (" << index << ">=" << size << endl;
+        std::cerr << "GArrayWrap::getElementAt: index>=size (" << index << ">=" << size << std::endl;
         printStackTrace();
         abort();
 #endif
@@ -297,11 +297,11 @@ class GSTLSet:
     
   public:
     int getRows() {
-      return size();
+      return container::size();
     }
     typename container::const_reference 
     getElementAt(int, int index) {
-      assert(index>=0 && index<(int)size());
+      assert(index>=0 && index<(int)container::size());
       while(idx<index) {
         ++idx;
         ++ptr;
@@ -315,8 +315,8 @@ class GSTLSet:
     void insert(typename container::const_reference s) {
       container::insert(s);
       idx = 0;
-      ptr = begin();
-      sigChanged();
+      ptr = container::begin();
+      GAbstractTableModel<D>::sigChanged();
     }
 };
 
@@ -341,11 +341,11 @@ class GSTLMap:
     
   public:
     int getRows() {
-      return size();
+      return container::size();
     }
     const D& getElementAt(int, int index) {
-      if (index>=size()) {
-        cerr << "GSTLMap::getElementAt: index>=size (" << index << ">=" << size() << endl;
+      if (index>=container::size()) {
+        cerr << "GSTLMap::getElementAt: index>=size (" << index << ">=" << container::size() << endl;
         printStackTrace();
         abort();
       }
@@ -363,12 +363,12 @@ class GSTLMap:
       container *p = this;
       D &d( (*p)[key] );
       idx = 0;
-      ptr = begin();
+      ptr = container::begin();
       return d;
     }
     void clear() {
       container::clear();
-      sigChanged();
+      GAbstractTableModel<D>::sigChanged();
     }
 };
 
@@ -633,21 +633,21 @@ class GSTLRandomAccess:
     typedef typename CONTAINER::iterator iterator;
   
     int getRows() {
-      return size();
+      return CONTAINER::size();
     }
      
     const TYPE&
     getElementAt(int, int index) {
-      assert(index>=0 && index<(int)size());
+      assert(index>=0 && index<(int)CONTAINER::size());
       return (*this)[index];
     }
     void push_back(const TYPE &s) {
       CONTAINER::push_back(s);
-      sigChanged();
+      GAbstractTableModel<TYPE>::sigChanged();
     }
     iterator insert(iterator p, const TYPE &s) {
       iterator r = CONTAINER::insert(p, s);
-      sigChanged();
+      GAbstractTableModel<TYPE>::sigChanged();
       return r;
     }
 };   

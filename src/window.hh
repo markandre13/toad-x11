@@ -260,7 +260,7 @@ class TWindow:
       TInteractor *p = TInteractor::getParent();
       if (!p) return NULL;
       TWindow *w = dynamic_cast<TWindow*>(p);
-      if (!w) cerr << "fatal: window with interactor parent" << endl;
+      if (!w) std::cerr << "fatal: window with interactor parent" << std::endl;
       return w;
     }
 

@@ -311,17 +311,17 @@ bool restore(atv::TInObjectStream &in, const char *attribute, T value) {
 
 template <class T>
 bool restorePtr(atv::TInObjectStream &in, T *value) {
-  if (in.what != ATV_GROUP) {
+  if (in.what != atv::ATV_GROUP) {
     return false;
   }
   if (in.type == "NULL") {
     *value = 0;
-    in.setInterpreter(&null);
+    in.setInterpreter(&atv::null);
     return true;
   }
   atv::TSerializable *s = in.clone(in.type);
   if (in.isVerbose())
-    cerr << "created new object type " << in.type << endl;
+    std::cerr << "created new object type " << in.type << std::endl;
   if (!s) {
     in.err << "unknown type '" << in.type << "'\n";
     ATV_FAILED(in);

@@ -58,6 +58,44 @@ class TRadioStateModel:
 };
 typedef GSmartPointer<TRadioStateModel> PRadioStateModel;
 
+class TRadioButtonBase: 
+  public TButtonBase
+{
+    typedef TButtonBase super;
+    PRadioStateModel _state;
+  public:
+    TRadioButtonBase(TWindow *p, 
+                     const string &t,
+                     TRadioStateModel *state = NULL)
+      :super(p,t)
+    {
+      _state = state;
+      if (_state)
+        _state->add(this);
+    }
+    ~TRadioButtonBase() {
+      if (_state)
+        _state->remove(this);
+    }
+    
+    void setModel(TRadioStateModel *model) {
+      _state = model;
+    }
+    
+    bool isSelected() const {
+      return _state ? (_state->getCurrent() == this) : false;
+    }
+    void setDown(bool down=true);
+    void _setDown(bool);
+    
+    void mouseLDown(int,int,unsigned);
+    void mouseLUp(int,int,unsigned);
+    void mouseEnter(int,int,unsigned);
+    void mouseLeave(int,int,unsigned);
+    
+    bool isDown() const;
+};
+
 template <class T> 
 class GRadioStateModel:
   public TRadioStateModel
@@ -125,43 +163,6 @@ class GRadioStateModel:
     }
 };
 
-class TRadioButtonBase: 
-  public TButtonBase
-{
-    typedef TButtonBase super;
-    PRadioStateModel _state;
-  public:
-    TRadioButtonBase(TWindow *p, 
-                     const string &t,
-                     TRadioStateModel *state = NULL)
-      :super(p,t)
-    {
-      _state = state;
-      if (_state)
-        _state->add(this);
-    }
-    ~TRadioButtonBase() {
-      if (_state)
-        _state->remove(this);
-    }
-    
-    void setModel(TRadioStateModel *model) {
-      _state = model;
-    }
-    
-    bool isSelected() const {
-      return _state ? (_state->getCurrent() == this) : false;
-    }
-    void setDown(bool down=true);
-    void _setDown(bool);
-    
-    void mouseLDown(int,int,unsigned);
-    void mouseLUp(int,int,unsigned);
-    void mouseEnter(int,int,unsigned);
-    void mouseLeave(int,int,unsigned);
-    
-    bool isDown() const;
-};
 
 } // namespace toad
 
