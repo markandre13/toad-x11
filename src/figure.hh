@@ -221,7 +221,6 @@ class TFPolygon:
     
     SERIALIZABLE_INTERFACE(toad::, TFPolygon);
   protected:
-    typedef vector<TPoint> TPoints;
     TPolygon polygon;
 
     // polygon creation
@@ -287,9 +286,10 @@ class TFBezierline:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);
 
-    void addPoint(int, int);
+    void insertPointNear(int x, int y);
 
     void paint(TPenBase &, EPaintType);
+    void paintSelection(TPenBase &pen, int handle);
     double distance(int x, int y);
     void translateHandle(unsigned handle, int mx, int my);
     unsigned mouseRDown(TFigureEditor*, int, int, unsigned);
@@ -459,6 +459,7 @@ class TFGroup:
     double distance(int x, int y);
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint &p);
+    void translateHandle(unsigned handle, int dx, int dy);
     
     void drop() {
       gadgets.drop();
@@ -475,6 +476,22 @@ class TFGroup:
 
   protected:
     void modelChanged();
+};
+
+class TFImage:
+  public TFRectangle
+{
+    string filename;
+    PBitmap bitmap;
+    typedef TFRectangle super;
+  public:
+    TFImage() {}
+    bool startInPlace();
+    void paint(TPenBase &, EPaintType);
+    TCloneable* clone() const { return new TFImage(*this); }
+    const char * getClassName() const { return "toad::TFImage"; } 
+    void store(TOutObjectStream&) const;
+    bool restore(TInObjectStream&);
 };
 
 } // namespace toad

@@ -88,6 +88,7 @@ TFigure::initialize()
   serialize.registerObject(new TFBezierline());
   serialize.registerObject(new TFGroup());
   serialize.registerObject(new TFWindow());
+  serialize.registerObject(new TFImage());
   serialize.registerObject(new TFigureModel());
 }
 
@@ -184,6 +185,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
 {
   pen.setLineColor(TColor::FIGURE_SELECTION);
   pen.setFillColor(TColor::WHITE);
+
   unsigned h=0;
   TPoint pt;
   while(true) {
@@ -209,6 +211,8 @@ TFigure::paintSelection(TPenBase &pen, int handle)
       pen.pop();
     h++;
   }
+  
+  // no handles found, use the figures shape instead
   if (h==0) {
     TRectangle r;
     getShape(&r);
@@ -399,6 +403,9 @@ double TFigure::distance2Line(int x, int y, int x1, int y1, int x2, int y2)
   double by = y2 - y1;
   double ax = x-x1;
   double ay = y-y1;
+  if (bx==0.0 && by==0.0) {
+    return sqrt(ax*ax+ay*ay);
+  }
   double lb = bx*bx+by*by;
   double t = (bx * ax + by * ay ) / lb;
   if (t<0.0 || t>1.0)

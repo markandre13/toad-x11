@@ -85,9 +85,11 @@ TFGroup::calcSize()
   while(p!=e) {
     TFigure *f = *p;
     f->getShape(&r);
+#if 0
     if (mat)
       m = *mat;
     else
+#endif
       m.identity();
     if (f->mat)
       m.multiply(f->mat);
@@ -160,6 +162,42 @@ if (super::getHandle(n, p)) {
 }
   return false;
 #endif
+}
+
+void
+TFGroup::translateHandle(unsigned handle, int x, int y)
+{
+  double w0, w1, h0, h1;
+
+  cerr << __FUNCTION__ << endl;
+  switch(handle) {
+    case 0:
+      break;
+    case 1:
+      break;
+    case 2:
+cerr << "  p2.x = " << p2.x << ", x = " << x << endl;
+      w0 = p2.x - p1.x;
+      w1 = x - p1.x;
+      h0 = p2.y - p1.y;
+      h1 = y - p1.y;
+      if (!mat)
+        mat = new TMatrix2D();
+      cerr << "scale by " << (1.0 / w0 * w1) << endl;
+      mat->scale( 1.0 / w0 * w1, 1.0 / h0 * h1);
+      // double h0 = p2.y - p1.y;
+#if 0
+      calcSize();
+#endif
+#if 0
+      p2.x = x;
+      p2.y = y;
+#endif
+cerr << "  p2.x = " << p2.x << ", x = " << x << endl;
+      break;
+    case 3:
+      break;
+  }
 }
 
 double

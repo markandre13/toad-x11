@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,6 +54,56 @@ TFBezierline::paint(TPenBase &pen, EPaintType type)
   pen.setColor(line_color);
   pen.drawPolyBezier(polygon);
 }
+
+/**
+ * Like TFigure::paintSelection but with slighlty different behaviour
+ * to ease bezier editing.
+ */
+void
+TFBezierline::paintSelection(TPenBase &pen, int handle)
+{
+  pen.setLineColor(TColor::FIGURE_SELECTION);
+  pen.setFillColor(TColor::WHITE);
+  unsigned h=0;
+  TPoint pt;   
+  while(true) {
+    if ( !getHandle(h, pt) )
+      break;
+    int x, y;
+    if (pen.mat) {
+      pen.mat->map(pt.x, pt.y, &x, &y);
+      pen.push();
+      pen.identity();
+    } else {
+      x = pt.x;
+      y = pt.y;
+    }
+    if (handle!=h) {
+      if ((h%3)==0) {
+        pen.fillRectanglePC(x-2,y-2,5,5);
+      } else {
+        if (h+1==handle || h-1==handle) {
+          pen.setFillColor(TColor::FIGURE_SELECTION);
+          pen.fillCirclePC(x-2,y-2,6,6);
+          pen.setFillColor(TColor::WHITE);
+        } else {
+          pen.fillCirclePC(x-2,y-2,6,6);
+        }
+      }
+    } else {
+      pen.setFillColor(TColor::FIGURE_SELECTION);
+      if ((h%3)==0)
+        pen.fillRectanglePC(x-2,y-2,5,5);
+      else
+        pen.fillCirclePC(x-2,y-2,6,6);
+      pen.setFillColor(TColor::WHITE); 
+    }
+    if (pen.mat)
+      pen.pop();
+    h++;
+  }
+}    
+
 
 double
 TFBezierline::distance(int x, int y)
@@ -181,16 +231,16 @@ class TMyPopupMenu:
   public:
     TMyPopupMenu(TWindow *p, const string &t): TPopupMenu(p, t)
     {
-cerr << "create menu " << this << endl;
+//cerr << "create menu " << this << endl;
     }
     ~TMyPopupMenu() {
-cerr << "delete tree " << tree << endl;
+//cerr << "delete tree " << tree << endl;
       delete tree;
     }
     
     void closeRequest() {
       TPopupMenu::closeRequest();
-cerr << "delete menu " << this << endl;
+//cerr << "delete menu " << this << endl;
       delete this;
     }
     
@@ -200,14 +250,14 @@ cerr << "delete menu " << this << endl;
 unsigned
 TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
 {
-  cerr << "TFBezierline::mouseRDown" << endl;
-cerr << " at (" << x << ", " << y << ")\n";
-cerr << " 1s point at (" << polygon[0].x << ", " << polygon[0].y << ")\n";
+//  cerr << "TFBezierline::mouseRDown" << endl;
+//cerr << " at (" << x << ", " << y << ")\n";
+//cerr << " 1s point at (" << polygon[0].x << ", " << polygon[0].y << ")\n";
 
-cerr << "editor->fuzziness = " << editor->fuzziness << endl;
+//cerr << "editor->fuzziness = " << editor->fuzziness << endl;
   unsigned i=0;
   bool found=false;
-  for(TPoints::iterator p=polygon.begin();
+  for(TPolygon::iterator p=polygon.begin();
       p!=polygon.end();
       ++p, ++i)
   {
@@ -221,21 +271,27 @@ cerr << "editor->fuzziness = " << editor->fuzziness << endl;
   }
 
   TInteractor *dummy = new TInteractor(0, "dummy interactor");
-cerr << "create tree " << dummy << endl;
+//cerr << "create tree " << dummy << endl;
   TAction *action;
   if (!found) {
     action = new TAction(dummy, "add point");
-    connect(action->sigActivate, this, &TFBezierline::addPoint, x, y);
+    connect(action->sigActivate, editor, &TFigureEditor::invalidateFigure, this);
+    connect(action->sigActivate, this, &TFBezierline::insertPointNear, x, y);
+    connect(action->sigActivate, editor, &TFigureEditor::invalidateFigure, this);
+    action = new TAction(dummy, "split");
   } else {
 /*
     GIMP: normal: edit curve symmetric
           shift : edit curve sharp
           ctrl  : move curve corner
 */
+/*
     action = new TAction(dummy, "symmetric");
     action = new TAction(dummy, "smooth corner");
     action = new TAction(dummy, "sharp corner");
+*/
     action = new TAction(dummy, "delete point");
+    action = new TAction(dummy, "split");
   }
   // action = new TAction(dummy, "sharp edge");
   // action = new TAction(dummy, "no edge");
@@ -247,11 +303,156 @@ cerr << "create tree " << dummy << endl;
   return 0;
 }
 
-void
-TFBezierline::addPoint(int x, int y)
+namespace {
+
+inline double
+mid(double a, double b)
 {
-  cerr << "add point" << endl;
+  return (a + b) / 2.0;
 }
+
+inline double
+distance(double x, double y, double x1, double y1)
+{
+  double ax = x-x1;
+  double ay = y-y1;
+  return sqrt(ax*ax+ay*ay);
+}
+
+double
+bezpoint(
+  double px, double py,
+  double x0, double y0,
+  double x1, double y1,
+  double x2, double y2,
+  double x3, double y3,
+  double min=0.0, double max=1.0,
+  double *dist = 0)
+{
+  double vx0 = x1-x0;
+  double vx1 = x2-x1;
+  double vx2 = x3-x2;
+  double vy0 = y1-y0;
+  double vy1 = y2-y1;
+  double vy2 = y3-y2;
+
+  double w0 = vx0 * vy1 - vy0 * vx1;
+  double w1 = vx1 * vy2 - vy1 * vx2;
+  
+  double vx3 = x2 - x0;
+  double vx4 = x3 - x0;
+  double vy3 = y2 - y0;
+  double vy4 = y3 - y0;
+  
+  double w2 = vx3 * vy4 - vy3 * vx4;
+  double w3 = vx0 * vy4 - vy0 * vx4;
+
+  if (fabs(w0)+fabs(w1)+fabs(w2)+fabs(w3)<1.0) {
+    double mind, d, f;
+    mind = distance(px, py, x0, y0);
+    f = 0.0;
+    d = distance(px, py, x1, y1);
+    if (d<mind) {
+      mind = d;  
+      f = 1.0;   
+    }
+    d = distance(px, py, x2, y2);
+    if (d<mind) {
+      mind = d;  
+      f = 2.0;   
+    }
+    d = distance(px, py, x3, y3);
+    if (d<mind) {
+      mind = d;  
+      f = 3.0;   
+    }
+
+    if (dist)
+      *dist = mind;
+    return min + (max-min)*f/3.0;
+  }
+   
+  double xx  = mid(x1, x2);
+  double yy  = mid(y1, y2);
+  double x11 = mid(x0, x1);
+  double y11 = mid(y0, y1);
+  double x22 = mid(x2, x3);
+  double y22 = mid(y2, y3);
+  double x12 = mid(x11, xx);
+  double y12 = mid(y11, yy);
+  double x21 = mid(xx, x22);
+  double y21 = mid(yy, y22);
+  double cx  = mid(x12, x21);
+  double cy  = mid(y12, y21);
+  double d1, d2, t1, t2;
+  t1 = bezpoint(px, py, x0, y0, x11, y11, x12, y12, cx, cy, min, min+(max-min)/2.0, &d1);
+  t2 = bezpoint(px, py, cx, cy, x21, y21, x22, y22, x3, y3, min+(max-min)/2.0, max, &d2);
+  if (dist) {
+    *dist = (d1<d2) ? d1 : d2;
+  }
+  return (d1<d2) ? t1 : t2;
+}
+
+} // namespace
+
+/**
+ * Insert an additional point near the point given by x, y.
+ */
+void
+TFBezierline::insertPointNear(int x, int y)
+{
+//  cerr << "add point near " << x << ", " << y << endl;
+
+  unsigned i=0;
+  double f, min;
+
+  for(unsigned j=0; j+3 <= polygon.size(); j+=3) {
+    double u, d;
+    u = bezpoint(x, y,
+                 polygon[j  ].x, polygon[j  ].y,
+                 polygon[j+1].x, polygon[j+1].y,
+                 polygon[j+2].x, polygon[j+2].y,
+                 polygon[j+3].x, polygon[j+3].y,
+                 0.0, 1.0, &d);
+    if (j==0) {
+      i = j;
+      f = u;
+      min = d;
+    } else {
+      if (d<min) {
+        min = d;
+        f = u;
+        i = j;
+      }
+    }
+  }
+
+  int x0 = f*(polygon[i+1].x-polygon[i+0].x) + polygon[i+0].x;
+  int y0 = f*(polygon[i+1].y-polygon[i+0].y) + polygon[i+0].y;
+  int x1 = f*(polygon[i+2].x-polygon[i+1].x) + polygon[i+1].x;
+  int y1 = f*(polygon[i+2].y-polygon[i+1].y) + polygon[i+1].y;
+  int x2 = f*(polygon[i+3].x-polygon[i+2].x) + polygon[i+2].x;
+  int y2 = f*(polygon[i+3].y-polygon[i+2].y) + polygon[i+2].y;
+
+  int x3 = f*(x1-x0) + x0;
+  int y3 = f*(y1-y0) + y0;
+  int x4 = f*(x2-x1) + x1;
+  int y4 = f*(y2-y1) + y1;
+
+  int x5 = f*(x4-x3) + x3;
+  int y5 = f*(y4-y3) + y3;
+
+  polygon[i+1].set(x0,y0);
+  polygon.insert(polygon.begin()+i+2, TPoint(x3,y3));
+  polygon.insert(polygon.begin()+i+3, TPoint(x5,y5));
+  polygon.insert(polygon.begin()+i+4, TPoint(x4,y4));
+  polygon[i+5].set(x2,y2);
+}
+
+
+/*
+ * TFBezier is derived from TFBezierline
+ */
 
 void
 TFBezier::paint(TPenBase &pen, EPaintType type)
