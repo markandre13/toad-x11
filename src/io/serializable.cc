@@ -31,6 +31,7 @@
 #include "serializable.hh"
 
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 using namespace atv;
@@ -71,7 +72,7 @@ TObjectStore::registerObject(TSerializable *obj)
 void
 TObjectStore::unregisterAll()
 {
-#if 0
+#if 1
   TSerializableBuffer::iterator p, e;
   p = buffer.begin();
   e = buffer.end();
@@ -397,10 +398,20 @@ restore(TInObjectStream &in, double *value)
 {
   if (in.what != ATV_VALUE)
     return false;
+#if 1
+  istringstream vs(in.value);
+  vs.imbue(locale("C"));
+  vs >> *value;
+  if (static_cast<unsigned>(vs.tellg()) != in.value.size())
+    return false;
+#else
   char *endptr;
+  setlocale(LC_NUMERIC, "C");
   *value = strtod(in.value.c_str(), &endptr);
+  setlocale(LC_NUMERIC, "");
   if (endptr!=0 && *endptr!=0)
     return false;
+#endif
   return true;
 }
 
