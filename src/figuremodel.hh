@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,8 +30,14 @@
 namespace toad {
 
 class TFigure;
+class TFGroup;
 
+/**
+ * \ingroup figure
+ */
 typedef set<TFigure*> TFigureSet;
+
+class TFigureAtDepthList;
 
 /**
  * \ingroup figure
@@ -39,11 +45,6 @@ typedef set<TFigure*> TFigureSet;
 class TFigureModel:
   public TModel, public TSerializable
 {
-    class TUndoRemove;
-    friend class TUndoRemove;
-    class TUndoInsert;
-    friend class TUndoInsert;
-
     friend class TFigureWindow; // debugging
     typedef std::vector<TFigure*> TStorage;
   public:
@@ -55,8 +56,10 @@ class TFigureModel:
            GROUP, UNGROUP,
            TRANSLATE,
            ROTATE,
+           _UNDO_GROUP
     } type;
     TFigureSet figures;
+    TFigure *figure;
     
     class iterator
     {
@@ -107,7 +110,11 @@ class TFigureModel:
     void add(TFigureSet&);
     void erase(TFigureSet&);
     
+    void insert(TFigureAtDepthList &store);
+    
     TFigure* group(TFigureSet &);
+    void _undoGroup(TFGroup*, TFigureAtDepthList &figures);
+
     void ungroup(TFigureSet &grouped, TFigureSet *ungrouped);
     
     void erase(const iterator&);
@@ -116,8 +123,13 @@ class TFigureModel:
     void insert(const iterator &, TFigure*);
     void insert(const iterator &at, const iterator &from, const iterator &to);
 
-    //! remove all figures
+    //! remove and delete all figures
     void clear();
+    
+    //! remove all figures but don't delete them
+    void drop() {
+      storage.clear();
+    }
     
     iterator begin() {
       return iterator(this, storage.begin());
@@ -136,6 +148,42 @@ class TFigureModel:
     SERIALIZABLE_INTERFACE_PUBLIC(toad::, TFigureModel)
   protected:
     TStorage storage;
+};
+
+/**
+ * \ingroup figure
+ *
+ * This class and the corresponding insert method in TFigureModel
+ * are required to implement the undo/redo functionality.
+ *
+ * The destructor of this class deletes all figures owned by this
+ * class.
+ */
+class TFigureAtDepthList
+{
+    friend class TFigureModel;
+    struct figdep_t {
+      figdep_t(TFigure *f, unsigned d) {
+        figure = f;
+        depth  = d;
+      }
+      TFigure *figure;
+      unsigned depth;
+    };
+    typedef vector<figdep_t> TStore;
+    TStore store;
+  public:
+    ~TFigureAtDepthList();
+  
+    void push_back(TFigure *figure, unsigned depth) {
+      store.push_back(figdep_t(figure, depth));
+    }
+    /**
+     * Drop references to all figures (Clear list and don't delete figures.)
+     */
+    void drop() {
+      store.clear();
+    }
 };
 
 inline bool operator==(const TFigureModel::iterator &a,

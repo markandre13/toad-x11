@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -782,6 +782,11 @@ TFigureEditor::modelChanged()
     case TFigureModel::GROUP:
       #warning "not removing figure from selection"
       invalidateFigure(*model->figures.begin());
+      break;
+    case TFigureModel::_UNDO_GROUP:
+      invalidateFigure(model->figure);
+      selection.clear();
+      selection.insert(model->figures.begin(), model->figures.end());
       break;
     case TFigureModel::UNGROUP:
       #warning "not removing figure (group) from selection"
