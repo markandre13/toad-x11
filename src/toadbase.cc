@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -920,6 +920,12 @@ handle_event:
         case Button3:
           me.type = TMouseEvent::RDOWN;
           break;
+        case Button4:
+          me.type = TMouseEvent::ROLL_UP;
+          break;
+        case Button5:
+          me.type = TMouseEvent::ROLL_DOWN;
+          break;
       }
 
       {
@@ -970,6 +976,12 @@ handle_event:
           break;
         case Button3:
           me.type = TMouseEvent::RUP;
+          break;
+        case Button4:
+          me.type = TMouseEvent::ROLL_UP_END;
+          break;
+        case Button5:
+          me.type = TMouseEvent::ROLL_DOWN_END;
           break;
       }
       TEventFilter *flt = toad::global_evt_filter;

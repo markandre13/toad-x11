@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,7 +70,10 @@ class TLayout;
 class TMouseEvent {
   public:
     enum EType {
-      MOVE, ENTER, LEAVE, LDOWN, MDOWN, RDOWN, LUP, MUP, RUP
+      MOVE, ENTER, LEAVE, 
+      LDOWN, MDOWN, RDOWN, LUP, MUP, RUP,
+      ROLL_UP, ROLL_UP_END,
+      ROLL_DOWN, ROLL_DOWN_END
     } type;
     TWindow *window;
     int x, y;
