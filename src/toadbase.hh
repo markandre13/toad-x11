@@ -56,6 +56,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <cassert>
 
 // ANSI headers needed everywhere in TOAD
 //-----------------------------------------------
