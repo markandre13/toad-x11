@@ -249,9 +249,9 @@ running = false;
   do {
     #ifdef DEBUG
     printf("! \"%s\" at (%i,%i) with size (%i,%i)\n",
-      ptr->it->Title().c_str(),
-      ptr->it->XPos(), ptr->it->YPos(),
-      ptr->it->Width(), ptr->it->Height());
+      ptr->it->getTitle().c_str(),
+      ptr->it->getXPos(), ptr->it->getYPos(),
+      ptr->it->getWidth(), ptr->it->getHeight());
     #endif
     nChildren++;
     ptr->done  = 0;
@@ -359,7 +359,7 @@ running = false;
         //------------------------------------------------------------
         ptr->it->getShape(&shape);
         #ifdef DEBUG
-        printf("Placing %s now:\n",ptr->it->Title().c_str());
+        printf("Placing %s now:\n",ptr->it->getTitle().c_str());
         #endif
         // no top and/or left attachment
         #ifdef DEBUG
@@ -453,7 +453,7 @@ running = false;
           ptr->it->getShape(&shape);
           if ( (ptr->nflag&LEFT) && !(ptr->done&LEFT) && (ptr->done&RIGHT) ) {
             #ifdef DEBUG
-            printf("guessing left side of %s\n",ptr->it->Title().c_str());
+            printf("guessing left side of %s\n",ptr->it->getTitle().c_str());
             #endif
             ptr->coord[DLEFT] = ptr->coord[DRIGHT] - shape.w;
             ptr->done|=HAS_L;
@@ -461,7 +461,7 @@ running = false;
           }
           if ( (ptr->nflag&RIGHT) && !(ptr->done&RIGHT) && (ptr->done&LEFT) ) {
             #ifdef DEBUG
-            printf("guessing right side of %s\n",ptr->it->Title().c_str());
+            printf("guessing right side of %s\n",ptr->it->getTitle().c_str());
             #endif
             ptr->coord[DRIGHT] = ptr->coord[DLEFT] + shape.w;
             ptr->done|=HAS_R;
@@ -469,7 +469,7 @@ running = false;
           }
           if ( !(ptr->nflag&TOP) && !(ptr->done&TOP) && (ptr->done&BOTTOM) ) {
             #ifdef DEBUG
-            printf("guessing top side of %s\n",ptr->it->Title().c_str());
+            printf("guessing top side of %s\n",ptr->it->getTitle().c_str());
             #endif
             ptr->coord[DTOP] = ptr->coord[DBOTTOM] - shape.h;
             ptr->done|=HAS_T;
@@ -477,7 +477,7 @@ running = false;
           }
           if ( (ptr->nflag&BOTTOM) && !(ptr->done&BOTTOM) && (ptr->done&TOP) ) {
             #ifdef DEBUG
-            printf("guessing bottom side of %s\n",ptr->it->Title().c_str());
+            printf("guessing bottom side of %s\n",ptr->it->getTitle().c_str());
             #endif
             ptr->coord[DBOTTOM] = ptr->coord[DTOP] + shape.h;
             ptr->done|=HAS_B;
@@ -496,7 +496,7 @@ running = false;
         #ifdef DEBUG
         count=0;
         while(count<nChildren) {
-          printf("%25s : ",ptr->it->Title().c_str());
+          printf("%25s : ",ptr->it->getTitle().c_str());
           printf( ptr->done&HAS_T ? "t" : "-");
           printf( ptr->done&HAS_B ? "b" : "-");
           printf( ptr->done&HAS_L ? "l" : "-");
@@ -547,7 +547,9 @@ TForm::childNotify(TWindow *c, EChildNotify t)
       removeForm(c); 
       break;
     case TCHILD_RESIZE:
-//cout << "TForm: child \"" << c->Title() << "\" has been resized" << endl;
+#ifdef DEBUG
+cout << "TForm: child \"" << c->getTitle() << "\" has been resized" << endl;
+#endif
       arrange(0,0,getWidth(),getHeight()); 
       break;
     default:;
