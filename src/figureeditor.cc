@@ -1569,6 +1569,10 @@ redo:
         stopOperation();
       }
       if (r & TFigure::REPEAT) {
+        if (m & MK_DOUBLE) {
+          cerr << "TFigureEditor: kludge: avoiding endless loop bug\n";
+          break;
+        }
         #if VERBOSE
           cout << "    repeat event" << endl;
         #endif
@@ -1974,15 +1978,15 @@ TFigureEditor::findFigureAt(int mx, int my)
   TFigureModel::iterator p,b,found;
   p = found = model->end();
   b = model->begin();
-  TMatrix2D *stack = new TMatrix2D();
+  TMatrix2D stack;
   while(p!=b) {
     --p;
     if (*p!=gadget) {
       int x, y;
       if ((*p)->mat) {
-        stack->multiply((*p)->mat);
-        stack->invert();
-        stack->map(mx, my, &x, &y);
+        stack.multiply((*p)->mat);
+        stack.invert();
+        stack.map(mx, my, &x, &y);
       } else {
         x = mx;
         y = my;
@@ -1990,7 +1994,7 @@ TFigureEditor::findFigureAt(int mx, int my)
 //cerr << "  after rotation ("<<x<<", "<<y<<")\n";
       double d = (*p)->distance(x, y);
 //cerr << "  distance = " << d << endl;
-      stack->identity();
+      stack.identity();
       if (d<distance) {
         distance = d;
         found = p;
