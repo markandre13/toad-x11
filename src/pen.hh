@@ -459,7 +459,7 @@ class TPen:
     }
     void curveTo(double x2, double y2, double x3, double y3, double x4, double y4) {
       drawBezier((double)_pos.x, (double)_pos.y, x2,y2, x3,y3, x4,y4);
-      _pos.set(x4,y4);
+      _pos.set((int)x4,(int)y4);
     }
     
   private:
