@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,9 +84,50 @@ TScrollPane::_scrolled()
   scrolled(dx, dy);
 }
 
+/**
+ * This virtual method is called when one of the scrollbars was moved.
+ *
+ * The method getPanePos will deliver the absolute position, the two
+ * parameters will deliver the relative movement in relation to the
+ * previous position.
+ *
+ * The default action is to set the windows origin to the new pane position.
+ *
+ * \param dx
+ *   delta movement on x-axis
+ * \param dy
+ *   delta movement on y-axis
+ */
 void
 TScrollPane::scrolled(int dx, int dy)
 {
+  int x, y;
+  getPanePos(&x, &y);
+  setOrigin(-x, -y);
+}
+
+// avoid calling resize() when no window exists
+void
+TScrollPane::adjust()
+{
+}
+
+void
+TScrollPane::created()
+{
+  if (isRealized())
+    doLayout();
+  else
+    cerr << "TScrollPane::created: not realized" << endl;
+}
+
+void
+TScrollPane::resize()
+{
+  if (isRealized())
+    doLayout();
+  else
+    cerr << "TScrollPane::resize: not realized" << endl;
 }
 
 /**
@@ -244,4 +285,3 @@ TScrollPane::setUnitIncrement(int uix, int uiy)
   if (vscroll)
     vscroll->setUnitIncrement(uiy);
 }
-    
