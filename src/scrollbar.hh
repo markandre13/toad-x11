@@ -65,6 +65,11 @@ class TScrollBar:
     void setUnitIncrement(int i) { unitIncrement=i; }
     int getUnitIncrement() const { return unitIncrement; }
 
+    void increment();
+    void decrement();
+    void pageUp();
+    void pageDown();
+
   protected:
     void resize();
     void paint();
@@ -84,8 +89,6 @@ class TScrollBar:
 
     TArrowButton *btn1;
     TArrowButton *btn2;
-    void increment();
-    void decrement();
     TRectangle rectSlider;
     int nMouseDown;
     

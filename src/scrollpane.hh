@@ -53,9 +53,10 @@ class TScrollPane:
     void getPanePos(int *x, int *y, bool setall=true) const;
     void setPanePos(int x, int y);
     void setUnitIncrement(int uix, int uiy);
-
-    
     void paintCorner(TPen&);
+    
+    void pageUp();
+    void pageDown();
 
   private:
     //! unit increment as set by setUnitIncrement

@@ -40,11 +40,14 @@ TBoundedRangeModel::TBoundedRangeModel():
 void
 TBoundedRangeModel::setExtent(int extent)
 {
+  if (extent<1)
+    extent = 1;
   if (this->extent == extent)
     return;
   this->extent = extent;
-  if (value+extent>maximum)
-    value = maximum-extent;
+    
+  if (value+extent-1>maximum)
+    value = maximum-extent+1;
   if (value<minimum)
     value = minimum;
   if (!adjusting)
@@ -57,8 +60,8 @@ TBoundedRangeModel::setMaximum(int max)
   if (maximum == max)
     return;
   maximum = max;
-  if (value+extent>maximum)
-    value=maximum-extent;
+  if (value+extent-1>maximum)
+    value=maximum-extent+1;
   if (!adjusting)
     sigChanged();
 }
@@ -80,8 +83,10 @@ TBoundedRangeModel::setRangeProperties(int value, int extent, int min, int max, 
 {
   if (value<min)
     value = min;
-  if (value+extent>max)
-    value = max - extent;
+  if (extent<1)
+    extent = 1;
+  if (value+extent-1>max)
+    value = max - extent + 1;
 
   if (
     this->value   == value &&
@@ -114,9 +119,9 @@ DBM(cerr << "-> not changed" << endl;)
     out_of_range = true;
     value = minimum;
   }
-  if (value+extent>maximum) {
+  if (value+extent-1>maximum) {
     out_of_range = true;
-    value = maximum-extent;
+    value = maximum-extent+1;
   }
   if (this->value != value) {
 DBM(cerr << "-> changed (previous value was " << this->value << ")\n";)

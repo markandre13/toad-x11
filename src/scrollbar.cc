@@ -270,15 +270,25 @@ TScrollBar::focus(bool)
 void
 TScrollBar::decrement()
 {
-  setFocus();
   model->setValue(model->getValue()-unitIncrement);
 }
 
 void
 TScrollBar::increment()
 {
-  setFocus();
   model->setValue(model->getValue()+unitIncrement);
+}
+
+void
+TScrollBar::pageUp()
+{
+  model->setValue(model->getValue()-model->getExtent());
+}
+
+void
+TScrollBar::pageDown()
+{
+  model->setValue(model->getValue()+model->getExtent());
 }
 
 void
@@ -301,6 +311,7 @@ TScrollBar::valueChanged()
 void
 TScrollBar::keyDown(TKey key,char*,unsigned)
 {
+//  setFocus();
   switch(key) {
     case TK_UP:
       if (bVertical)
@@ -319,8 +330,10 @@ TScrollBar::keyDown(TKey key,char*,unsigned)
         increment();
       break;
     case TK_PAGEUP:
+      pageUp();
       break;
     case TK_PAGEDOWN:
+      pageDown();
       break;
   }
 }
@@ -389,7 +402,7 @@ TScrollBar::_placeSlider()
       
   // calculate range of possible slider positions 
   //----------------------------------------------
-  int nRange = model->getMaximum() - model->getMinimum() - model->getExtent();
+  int nRange = model->getMaximum() - model->getMinimum() - model->getExtent() + 1;
 
   if (nRange<0)
     nRange = 0;

@@ -285,3 +285,19 @@ TScrollPane::setUnitIncrement(int uix, int uiy)
   if (vscroll)
     vscroll->setUnitIncrement(uiy);
 }
+
+void
+TScrollPane::pageUp()
+{
+  if (vscroll) {
+    vscroll->pageUp();
+  }
+}
+
+void
+TScrollPane::pageDown()
+{
+  if (vscroll) {
+    vscroll->pageDown();
+  }
+}

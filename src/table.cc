@@ -1166,6 +1166,12 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
         }
       }
       break;
+    case TK_PAGEUP:
+      pageUp();
+      break;
+    case TK_PAGEDOWN:
+      pageDown();
+      break;
     case TK_RIGHT:
       if (!per_row && cx<cols-1) {
         if (!selecting) {
