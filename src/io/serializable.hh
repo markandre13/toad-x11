@@ -88,6 +88,7 @@ class TObjectStore
     typedef std::map<const char*,TSerializable*,TCompare> TSerializableBuffer;
     TSerializableBuffer buffer;
   public:
+    ~TObjectStore() { unregisterAll(); }
     void registerObject(TSerializable *obj);
     bool isRegistered(const std::string &type) const;
     void unregisterAll();
