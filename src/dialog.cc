@@ -123,8 +123,6 @@ TDialog::destroy()
 void
 TDialog::paint()
 {
-  super::paint();
-
   // move this into TDialogLayout:
   if (bDrawFocus) {
     TWindow *wnd = getFocusWindow();
