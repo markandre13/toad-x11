@@ -630,6 +630,8 @@ class GSTLRandomAccess:
   public GAbstractTableModel<TYPE>
 {
   public:
+    typedef typename CONTAINER::iterator iterator;
+  
     int getRows() {
       return size();
     }
@@ -642,6 +644,11 @@ class GSTLRandomAccess:
     void push_back(const TYPE &s) {
       CONTAINER::push_back(s);
       sigChanged();
+    }
+    iterator insert(iterator p, const TYPE &s) {
+      iterator r = CONTAINER::insert(p, s);
+      sigChanged();
+      return r;
     }
 };   
 
