@@ -825,8 +825,8 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap* bmp)
 {
   if (mat) {
-    x+=mat->tx;
-    y+=mat->ty;
+    x+=static_cast<int>(mat->tx);
+    y+=static_cast<int>(mat->ty);
   }
   bmp->drawBitmap(this, x, y);
 }
@@ -835,8 +835,8 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap& bmp)
 {
   if (mat) {
-    x+=mat->tx;
-    y+=mat->ty;
+    x+=static_cast<int>(mat->tx);
+    y+=static_cast<int>(mat->ty);
   }
   bmp.drawBitmap(this, x, y);
 }
@@ -845,10 +845,10 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int ah)
 {
   if (mat) {
-    x+=mat->tx;
-    y+=mat->ty;
-    ax+=mat->tx;
-    ay+=mat->ty;
+    x+=static_cast<int>(mat->tx);
+    y+=static_cast<int>(mat->ty);
+    ax+=static_cast<int>(mat->tx);
+    ay+=static_cast<int>(mat->ty);
   }
   bmp->drawBitmap(this, x, y, ax,ay,aw,ah);
 }
@@ -857,10 +857,10 @@ void
 TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int ah)
 {
   if (mat) {
-    x+=mat->tx;
-    y+=mat->ty;
-    ax+=mat->tx;
-    ay+=mat->ty;
+    x+=static_cast<int>(mat->tx);
+    y+=static_cast<int>(mat->ty);
+    ax+=static_cast<int>(mat->tx);
+    ay+=static_cast<int>(mat->ty);
   }
   bmp.drawBitmap(this, x, y, ax,ay,aw,ah);
 }
@@ -1132,7 +1132,7 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
             XUtf8DrawString(x11display, x11drawable, font->xutf8font_r, o_gc, x2, y2, buffer, clen);
           else
             XUtf8DrawImageString(x11display, x11drawable, font->xutf8font_r, o_gc, x2, y2, buffer, clen);
-          x+=font->x11scale * XUtf8TextWidth(font->xutf8font,buffer,clen);
+          x+=font->getTextWidth(buffer, clen);
 #endif
           break;
         case TFont::RENDER_FREETYPE:
@@ -1250,12 +1250,12 @@ TPen::drawTextWidth(int x,int y,const string &str, unsigned width)
   const char* text=str.c_str();
   
   unsigned i;
-
+#if 0
   if (mat) {
-    x+=mat->tx;
-    y+=mat->ty;
+    x+=static_cast<int>(mat->tx);
+    y+=static_cast<int>(mat->ty);
   }
-
+#endif
   // 1st step: count words and lines
   unsigned word_count, min_lines;
   count_words_and_lines(text, &word_count, &min_lines);
