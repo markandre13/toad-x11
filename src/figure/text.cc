@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,24 @@ TFText::paint(TPenBase &pen, EPaintType type)
 {
   pen.setFont(fontname);
   pen.setLineColor(line_color);
-  unsigned l,r;
+
+  if (filled) {
+    pen.setFillColor(fill_color);
+    TPoint q1, q2;
+    if (pen.mat) {
+      pen.mat->map(p1.x, p1.y, &q1.x, &q1.y);
+      pen.mat->map(p2.x, p2.y, &q2.x, &q2.y);
+      pen.push();
+      pen.identity();
+    }
+    TRectangle r(q1, q2);
+    pen.fillRectangle(r.x-2, r.y-2, r.w+4, r.h+4);
+    if (pen.mat) {
+      pen.pop();
+    }
+  }
+  
+  unsigned l, r;
   int yp = p1.y;
   l = 0;
   while(true) {
