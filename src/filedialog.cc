@@ -37,8 +37,6 @@
 
 #include <deque>
 
-// #include "filedialog.hh"
-
 #define FINAL_FILEDIALOG
 //#define RESOURCE(file) "file://resource/" file
 #define RESOURCE(file) "memory://toad/" file
@@ -51,6 +49,7 @@ typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
 namespace toad {
 TPreviousDirs previous_cwds;
 }
+
 namespace {
 TBitmap bmp;
 string cwd;
@@ -77,6 +76,36 @@ removeDuplicates()
 }
 
 }; // namespace
+
+void
+TFileDialog::TResource::store(TOutObjectStream &out) const
+{
+  TPreviousDirs::iterator p, e;
+  p = previous_cwds.begin();
+  e = previous_cwds.end();
+  while(p!=e) {
+    out.indent();
+    ::store(out, *p);
+    ++p;
+  }
+}
+
+bool
+TFileDialog::TResource::restore(TInObjectStream &in)
+{
+  string filename;
+  if (in.what==ATV_START)
+    previous_cwds.erase(previous_cwds.begin(), previous_cwds.end());
+  if (::restore(in, &filename)) {
+//    cerr << "restored '" << filename << "'\n";
+    previous_cwds.push_back(filename);
+    return true;
+  }
+  if (super::restore(in)) 
+    return true;
+  ATV_FAILED(in);
+  return false;
+}
 
 bool
 TDirectoryEntry::operator<(const TDirectoryEntry &f) const {
@@ -174,7 +203,6 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   cb_filter->setRenderer(
     new GTableCellRenderer_PText<TFilterList, 1>(&filterlist)
   );
-  connect(cb_filter->sigSelection, this, &This::filterSelected);
   cb_filter->selectAtCursor();
 
   new TCheckBox(this, "show hidden", &show_hidden);
@@ -189,16 +217,26 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   connect((new TPushButton(this, "cancel"))->sigActivate, 
           this, &This::button, TMessageBox::ABORT);
 
-  cb = new TComboBox(this, "previous");
-  cb->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
-  connect(cb->sigSelection, this, &This::jumpDirectory);
-  cb->selectAtCursor();
-  
-//  loadDirectory();
+  TComboBox *cb_prev = new TComboBox(this, "previous");
+  cb_prev->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
+  cb_prev->selectAtCursor();
+
+  // don't connect earlier to avoid loadDirectory being called unneccessary
+  connect(cb_filter->sigSelection, this, &This::filterSelected);
+  connect(cb_prev->sigSelection, this, &This::jumpDirectory);
   
   loadLayout(RESOURCE("TFileDialog.atv"));
   
   adjustOkButton();
+}
+
+void
+TFileDialog::create()
+{
+  // between the constructor and window creation new file filters may
+  // have been added, so we invoke loadDirectory (by selecting the
+  // first filter) here:
+  cb_filter->selectAtCursor();
 }
 
 /**
@@ -232,18 +270,10 @@ TFileDialog::getFilename() const
 void
 TFileDialog::addFileFilter(TFileFilter *ff)
 {
-#if 0
-  TFilterList::iterator p = filterlist.end();
-  if (p!=filterlist.begin())
-    --p;
-#endif
-#if 0
-  filterlist.insert(filterlist.begin(), ff);
-#endif
-#if 1
-  filterlist.push_back(ff);
-#endif
-//  cb_filter->getSelectionModel()->setSelection(0,0);
+  if (filterlist.begin()!=filterlist.end())
+    filterlist.insert(filterlist.end()-1, ff);
+  else
+    filterlist.push_back(ff);
 }
 
 /**
@@ -310,9 +340,9 @@ TFileFilter::wildcard(const string &str, const string &filter)
 
   while(true) {
     f=fp; s=sp;
-    while(flt[f]==str[s] || flt[f]=='?') {
+    while(tolower(flt[f])==tolower(str[s]) || flt[f]=='?') {
       if (flt[f]==0 || str[s]==0)
-        return (flt[f]==str[s]);
+        return (tolower(flt[f])==tolower(str[s]) /*flt[f]==str[s]*/);
       s++;
       f++;
     }
@@ -566,8 +596,10 @@ TFileDialog::loadDirectory()
     e.name = de->d_name;
     e.mode = st.st_mode;
     e.size = st.st_size;
-    entries.insert(e);
+    entries.push_back(e);
   }
+  
+  sort(entries.begin(), entries.end());
   
   entries.unlock();
   

@@ -21,7 +21,8 @@
 #ifndef _TOAD_FILEDIALOG_HH
 #define _TOAD_FILEDIALOG_HH
 
-#include <set>
+//#include <set>
+#include <vector>
 #include <toad/dialog.hh>
 #include <toad/textmodel.hh>
 #include <toad/boolmodel.hh>
@@ -43,7 +44,8 @@ struct TDirectoryEntry
   void renderItem(TPen &pen, int col, int w, int h) const;
 };
 
-typedef GSTLSet<set<TDirectoryEntry>, TDirectoryEntry> TDirectoryEntrySet;
+// typedef GSTLSet<set<TDirectoryEntry>, TDirectoryEntry> TDirectoryEntrySet;
+typedef GSTLRandomAccess<vector<TDirectoryEntry>, TDirectoryEntry> TDirectoryEntrySet;
 
 class TFileFilter
 {
@@ -93,6 +95,14 @@ class TFileDialog:
     unsigned getResult() const {
       return result;
     }
+
+    class TResource:
+      public TSerializable
+    {
+        typedef TSerializable super;
+        SERIALIZABLE_INTERFACE(toad::TFileDialog::, TResource)
+    };
+    
   protected:
     typedef GSTLRandomAccess<vector<TFileFilter*>, TFileFilter*> TFilterList;
     TFilterList filterlist;
@@ -109,6 +119,8 @@ class TFileDialog:
     TDirectoryEntrySet entries;
 
     TBoolModel show_hidden;
+    
+    void create();
     
     void hidden();
     void filenameEdited();
