@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-Andr? Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-Andr? Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1408,6 +1408,7 @@ redo:
                 clearSelection();
                 sigSelectionChanged();
                 gadget = g;
+                invalidateFigure(gadget);
                 state = STATE_EDIT;
                 goto redo;
               }
@@ -1452,6 +1453,7 @@ redo:
                   state = STATE_MOVE;
                   TUndoManager::beginUndoGrouping();
                 }
+                window->invalidateWindow();
               } else {
                 if (m&MK_SHIFT) {
                   clearSelection();
@@ -1460,6 +1462,7 @@ redo:
                   state =  STATE_SELECT_RECT;
                   select_x = x;
                   select_y = y;
+                  window->invalidateWindow();
                 } else {
                   state = STATE_MOVE;
                   memo_x = memo_y = 0;
@@ -1693,8 +1696,8 @@ redo:
           mat->map(r.x, r.y, &r.x, &r.y);
           mat->map(r.w, r.h, &r.w, &r.h);
         }
-        r.x+=visible.x;
-        r.y+=visible.y;
+        r.x+=window->getOriginX()+visible.x;
+        r.y+=window->getOriginY()+visible.y;
         r.w++;
         r.h++;
         window->invalidateWindow(r);
@@ -1703,8 +1706,8 @@ redo:
           mat->map(r.x, r.y, &r.x, &r.y);
           mat->map(r.w, r.h, &r.w, &r.h);
         }
-        r.x+=visible.x;
-        r.y+=visible.y;
+        r.x+=window->getOriginX()+visible.x;
+        r.y+=window->getOriginY()+visible.y;
         r.w++;
         r.h++;
         window->invalidateWindow(r);
