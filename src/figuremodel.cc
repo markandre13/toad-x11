@@ -33,7 +33,13 @@ TFigureModel::TFigureModel()
 
 TFigureModel::TFigureModel(const TFigureModel &m)
 {
-//  cerr << "copy constructed TFigureModel " << this << " from " << &m << endl;
+  cerr << "copy constructed TFigureModel " << this << " from " << &m << endl;
+  for(TStorage::const_iterator p = m.storage.begin();
+      p != m.storage.end();
+      ++p)
+  {
+    storage.push_back( static_cast<TFigure*>( (*p)->clone() ) );
+  }
 }
 
 TFigureModel::~TFigureModel()
