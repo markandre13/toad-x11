@@ -174,13 +174,14 @@ void
 TRadioButtonBase::mouseLDown(int x, int y, unsigned m)
 {
   super::mouseLDown(x, y, m);
-  _state->setTemporary(this);
+  if (_state)
+    _state->setTemporary(this);
 }
 
 void
 TRadioButtonBase::mouseLeave(int x, int y, unsigned m)
 {
-  if (bDown)
+  if (_state && bDown)
     _state->setTemporary(NULL);
   super::mouseLeave(x, y, m);
 }
@@ -188,7 +189,7 @@ TRadioButtonBase::mouseLeave(int x, int y, unsigned m)
 void
 TRadioButtonBase::mouseEnter(int x, int y, unsigned m)
 {
-  if (bDown)
+  if (_state && bDown)
     _state->setTemporary(this);
   super::mouseEnter(x, y, m);
 }
@@ -196,7 +197,8 @@ TRadioButtonBase::mouseEnter(int x, int y, unsigned m)
 void
 TRadioButtonBase::mouseLUp(int x, int y, unsigned m)
 {
-  _state->setTemporary(NULL);
+  if (_state)
+    _state->setTemporary(NULL);
   super::mouseLUp(x, y, m);
 }
 
@@ -204,7 +206,7 @@ bool
 TRadioButtonBase::isDown() const
 {
   bool down = (bDown && bInside) || isSelected();
-  if (_state->getTemporary()!=NULL && _state->getTemporary()!=this)
+  if (_state && _state->getTemporary()!=NULL && _state->getTemporary()!=this)
     down = false;
   return down;
 }
