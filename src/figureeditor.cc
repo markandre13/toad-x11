@@ -280,6 +280,12 @@ TFigurePreferences::selection2Top()
 }
 
 void
+TFigurePreferences::applyAll()
+{
+  if (current) current->applyAll();
+}
+
+void
 TFigureEditor::init()
 {
   preferences = 0;
@@ -815,7 +821,7 @@ TFigureEditor::modelChanged()
       break;
     case TFigureModel::UNGROUP:
       #warning "not removing figure (group) from selection"
-      invalidateWindow();
+      window->invalidateWindow();
       break;
   }
 }
@@ -1091,6 +1097,20 @@ TFigureEditor::setCreate(TFigure *t)
   preferences->reason = TFigurePreferences::ALLCHANGED;
   gtemplate->setFromPreferences(preferences);
   setOperation(OP_CREATE);
+}
+
+void
+TFigureEditor::applyAll()
+{
+cerr << "apply all" << endl;
+  preferences->reason = TFigurePreferences::ALLCHANGED;
+  for(TFigureSet::iterator p=selection.begin();
+      p!=selection.end();
+      ++p)
+  {
+    (*p)->setFromPreferences(preferences);
+  }
+  window->invalidateWindow();
 }
 
 /**

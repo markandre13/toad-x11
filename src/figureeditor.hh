@@ -74,6 +74,7 @@ class TFigurePreferences:
     void selection2Bottom();
     void selectionUp();
     void selection2Top();
+    void applyAll();
     
     // additional information on why sigChanged was triggered
     enum EReason {
@@ -239,7 +240,8 @@ class TFigureEditor:
     void selection2Bottom();
     void selectionUp();
     void selectionDown();
-    
+    void applyAll();
+
 #if 0
     void figure2Top(TFigure*);
     void figure2Bottom(TFigure*);
