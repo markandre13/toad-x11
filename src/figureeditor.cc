@@ -196,6 +196,10 @@ class THistoryAction:
     }
 };
 
+void foobar(TFigurePreferences *p) {
+  p->sigChanged();
+}
+
 TFigurePreferences::TFigurePreferences()
 {
   linecolor.set(0,0,0);
@@ -204,6 +208,7 @@ TFigurePreferences::TFigurePreferences()
   fontname = "arial,helvetica,sans-serif:size=12";
 
   drawgrid = true;
+  connect(drawgrid.sigChanged, foobar, this);
   gridsize = 4;
   
   linewidth = 0;
@@ -725,6 +730,22 @@ TFigureEditor::modelChanged()
         gtemplate->unsetFillColor();
       window->invalidateWindow();
       break;
+    case TFigurePreferences::LINEWIDTH:
+    case TFigurePreferences::LINESTYLE:
+    case TFigurePreferences::ARROWMODE:
+    case TFigurePreferences::ARROWSTYLE:
+      for(TFigureSet::iterator p = selection.begin();
+          p != selection.end();
+          ++p)
+      {
+        (*p)->setFromPreferences(preferences);
+      }
+      if (gtemplate)
+        gtemplate->setFromPreferences(preferences);
+      window->invalidateWindow();
+      break;
+    default:
+      window->invalidateWindow();
   }
 }
 
@@ -1077,6 +1098,8 @@ TFigureEditor::setCreate(TFigure *t)
     gtemplate->unsetFillColor();
   gtemplate->setFont(preferences->fontname);
   gtemplate->removeable = true;
+preferences->reason = TFigurePreferences::ALLCHANGED;
+  gtemplate->setFromPreferences(preferences);
   
   clearSelection();
   setOperation(OP_CREATE);
@@ -1199,8 +1222,11 @@ TFigureEditorHeaderRenderer::mouseEvent(TMouseEvent &me)
 void
 TFigureEditor::sheet2grid(int sx, int sy, int *gx, int *gy)
 {
-  if (!preferences->drawgrid)
+  if (!preferences->drawgrid) {
+    *gx = sx;
+    *gy = sy;
     return;
+  }
   if (state!=STATE_ROTATE) {
     int g = preferences->gridsize;
     *gx = ((sx+g/2)/g)*g;

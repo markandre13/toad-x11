@@ -254,8 +254,10 @@ class TFLine:
     unsigned arrowwidth;
 
     TFLine();
+    void setFromPreferences(TFigurePreferences*);
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
+
     TCloneable* clone() const { return new TFLine(*this); }
     const char * name() const { return "toad::TFLine"; }
     

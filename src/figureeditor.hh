@@ -93,6 +93,10 @@ class TFigurePreferences:
       LINECOLOR,
       FILLCOLOR,
       UNSETFILLCOLOR,
+      LINEWIDTH,
+      LINESTYLE,
+      ARROWMODE,
+      ARROWSTYLE,
       /**
        * This TPreferences was subclassed. Try dynamic_cast to get
        * more information.

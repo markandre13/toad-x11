@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,12 +23,15 @@
 
 #include <toad/toad.hh>
 #include <toad/buttonbase.hh>
+#include <toad/boolmodel.hh>
 
 namespace toad {
 
 class TFatCheckButton:
   public TButtonBase
 {
+  PBoolModel model;
+
   public:
     TFatCheckButton(TWindow*, const string&);
 
@@ -39,18 +42,27 @@ class TFatCheckButton:
       _init();
       putData(d);
     }
+
+    void setValue(bool b) {
+      getModel()->setValue(b);
+    }
+    bool getValue() const {
+      return getModel()->getValue();
+    }
     
+    void setModel(TBoolModel *b);
+    TBoolModel * getModel() const {
+      return model;
+    }
+    
+  protected:
+    void valueChanged();
     void mouseLDown(int,int,unsigned);
     void keyDown(TKey, char*, unsigned);
     void paint();
-    
-    TSignal sigValueChanged;
-    
-  protected:
     void _init();
-    bool _data;
 };
 
-}
+} // namespace toad
 
 #endif

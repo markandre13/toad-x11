@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
 
 #include <toad/fatcheckbutton.hh>
 
-namespace toad {
+using namespace toad;
 
 TFatCheckButton::TFatCheckButton(TWindow *p, const string &t):
   TButtonBase(p, t)
@@ -28,39 +28,60 @@ TFatCheckButton::TFatCheckButton(TWindow *p, const string &t):
   _init();
 }
 
-void TFatCheckButton::_init()
+void
+TFatCheckButton::_init()
 {
-  _data = false;
+  model = 0;
+  setModel(new TBoolModel());
+}
+
+void
+TFatCheckButton::setModel(TBoolModel *m)
+{
+  if (model)
+    disconnect(model->sigChanged, this);
+  model = m;
+  if (model)
+    connect(model->sigChanged, this, &TFatCheckButton::valueChanged);
 }
 
 void TFatCheckButton::mouseLDown(int, int, unsigned)
 {
-  if (!isEnabled())
+  if (!isEnabled()) {
     return;
+  }
+
+  if (model) {
+    setValue(!*model);
+  }
   
-  _data = !_data;
-  
-  if (_data)
+  if (model || !*model)
     setBackground(TColor::SLIDER_FACE);
   else
     setBackground(TColor::BTNFACE);
   
   setFocus();
   invalidateWindow();
-  sigValueChanged();
 }
 
-void TFatCheckButton::keyDown(TKey key, char* str, unsigned modifier)
+void
+TFatCheckButton::valueChanged()
+{
+  invalidateWindow();
+}
+
+void
+TFatCheckButton::keyDown(TKey key, char* str, unsigned modifier)
 {
   if (!modifier && (key==TK_RETURN || *str==' '))
     mouseLDown(0,0,0);
 }
 
-void TFatCheckButton::paint()
+void
+TFatCheckButton::paint()
 {
   TPen pen(this);
-  drawShadow(pen, _data);
-  drawLabel(pen, getLabel(), _data);
+  bool b = model ? *model : false;
+  drawShadow(pen, b);
+  drawLabel(pen, getLabel(), b);
 }
-
-} // namespace toad

@@ -61,7 +61,8 @@ TCheckBox::setModel(TBoolModel *m)
   if (model)
     disconnect(model->sigChanged, this);
   model = m;
-  connect(model->sigChanged, this, &TCheckBox::valueChanged);
+  if (model)
+    connect(model->sigChanged, this, &TCheckBox::valueChanged);
 }
 
 void
@@ -81,6 +82,12 @@ TCheckBox::paint()
     pen.fillRectanglePC(2,2,9,9);
   }
   pen.draw3DRectanglePC(0,0,13,13);
+  
+  if (!model) {
+    pen.setColor(TColor::DIALOG);
+    pen.fillRectangle(2,2,9,9);
+    return;
+  }
 
   if (isEnabled()) {
     pen.setColor(0,0,0);
@@ -115,7 +122,8 @@ TCheckBox::mouseLDown(int,int,unsigned)
 {
   if (!isEnabled())
     return;
-  model->toggleValue();
+  if (model)
+    model->toggleValue();
   setFocus();
 }
 
@@ -123,7 +131,8 @@ void
 TCheckBox::keyDown(TKey key, char* str, unsigned modifier)
 {
   if (!modifier && (key==TK_RETURN || *str==' ')) {
-    model->toggleValue();
+    if (model)
+      model->toggleValue();
     setFocus();
   }
 }

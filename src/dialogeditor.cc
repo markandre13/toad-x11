@@ -185,7 +185,8 @@ TDialogEditor::TDialogEditor():
   setLayout(0);
   TFatCheckButton *fcb;
   fcb = new TFatCheckButton(this, "Edit");
-  connect(fcb->sigValueChanged, this, &TDialogEditor::editModeChanged);
+  connect(fcb->getModel()->sigChanged, 
+          this, &TDialogEditor::editModeChanged);
   fcb->setShape(5,5,80,25);
   
   TPushButton *pb;

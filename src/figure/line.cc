@@ -37,6 +37,27 @@ TFLine::TFLine()
 }
 
 void
+TFLine::setFromPreferences(TFigurePreferences *preferences)
+{
+  switch(preferences->reason) {
+    case TFigurePreferences::ALLCHANGED:
+      arrowmode = preferences->arrowmode;
+      arrowtype = preferences->arrowtype;
+      break;
+    case TFigurePreferences::LINEWIDTH:
+      break;
+    case TFigurePreferences::LINESTYLE:
+      break;
+    case TFigurePreferences::ARROWMODE:
+      arrowmode = preferences->arrowmode;
+      break;
+    case TFigurePreferences::ARROWSTYLE:
+      arrowtype = preferences->arrowtype;
+      break;
+  }
+}
+
+void
 TFLine::drawArrow(TPenBase &pen, 
                   const TPoint &p1, const TPoint &p2,
                   const TRGB &line, const TRGB &fill,
