@@ -478,6 +478,115 @@ class GTableCellRenderer_Text:
     }
 };
 
+/**
+ * \ingroup table
+ *
+ */
+template <class T, int WIDTH>
+class GTableRowRenderer:
+  public TAbstractTableCellRenderer
+{
+  private:
+    GSmartPointer<T> model;
+    typedef GTableRowRenderer<T, WIDTH> This;
+    
+  public:
+    GTableRowRenderer(T *m) { 
+      setModel(m);
+      per_row = true;
+    }
+    ~GTableRowRenderer() { }
+    // implements 'virtual TAbstractTableModel * getModel() = 0;'
+    T * getModel() {
+      return model;
+    }
+    void setModel(T *m) {
+      if (model)
+        disconnect(model->sigChanged, this);
+      model = m;
+      if (model)
+        connect(model->sigChanged, this, &This::modelChanged);
+    }
+    int getRows() {
+      return model->getRows();
+    }
+    int getCols() {
+      return WIDTH;
+    }
+    int getRowHeight(int) {
+      return TOADBase::getDefaultFont().getHeight()+2;
+    }
+    int getColWidth(int col) {
+      int n = model->getRows();
+      int max = 0;
+      for(int i=0; i<n; i++) {
+        int w = model->getElementAt(0, i).getColWidth(col);
+        if (w>max)
+          max = w;
+      }
+      return max+2;
+    }
+    void renderItem(TPen &pen, int col, int index, int w, int h, bool selected, bool focus) {
+      if (selected) {
+        pen.setColor(TColor::SELECTED);
+        pen.fillRectangle(0,0,w, h);
+        pen.setColor(TColor::SELECTED_TEXT);
+      }
+
+      model->getElementAt(0, index).renderItem(pen, col, w, h);
+
+      if (selected) {
+        pen.setColor(TColor::BLACK);
+      }
+      if (focus) {
+        pen.drawLine(0,0,w,0);
+        pen.drawLine(0,h,w,h);
+        if (col==0) {
+          pen.drawLine(0,0,0,h);
+        } else if (col==WIDTH-1) {
+          pen.drawLine(w,0,w,h);
+        }
+      }
+    }
+};
+
+/**
+ * \ingroup table
+ * A wrapper for STL random access containers like vector or deque.
+ *
+ * \pre
+typedef GSTLRandomAccess<deque<string>, string> TStrings;
+TStrings strings;
+strings.push_back("Hello");
+strings.push_back("You");
+table->setRenderer(new GTableCellRenderer_String<TStrings>(&strings));
+   \endpre
+ */
+template <class CONTAINER, class TYPE>
+class GSTLRandomAccess:
+  public CONTAINER,
+  public GAbstractTableModel<TYPE>
+{
+  public:
+    int getRows() {
+      return size();
+    }
+     
+    const TYPE&
+    getElementAt(int, int index) {
+      assert(index<size());
+      return (*this)[index];
+    }
+    void push_back(const TYPE &s) {
+      CONTAINER::push_back(s);
+      sigChanged();
+    }
+};   
+
+// list, slist, ...
+// GSTLTraversalAccess
+
+
 } // namespace toad
 
 #endif
