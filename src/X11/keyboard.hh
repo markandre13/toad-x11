@@ -30,21 +30,33 @@
 #define KB_BUFFER_SIZE 20
 
 // modifier keys that came from "X11/X.h"
-#define MK_SHIFT   (1<<0)
-#define MK_LOCK    (1<<1)
-#define MK_CONTROL (1<<2)
-#define MK_MOD1    (1<<3)
-#define MK_MOD2    (1<<4)
-#define MK_APPLE   (1<<4)
-#define MK_MOD3    (1<<5)
-#define MK_MOD4    (1<<6)
-#define MK_MOD5    (1<<7)
-#define MK_LBUTTON (1<<8)
-#define MK_MBUTTON (1<<9)
-#define MK_RBUTTON (1<<10)
-#define MK_ROLLUP  (1<<11)
-#define MK_ROLLDN  (1<<12)
-#define MK_ALT     (1<<13)
+
+// Linux: Shift 1
+//        Caps Lock 2
+//        Ctrl  4
+//        Alt   8
+//        AltGr 8192
+// MacOS: 
+//        Ctrl  4
+//        Apple 16
+//        Alt   8192
+
+#define MK_SHIFT   1
+#define MK_LOCK    2
+#define MK_CONTROL 4
+#define MK_MOD1    8
+#define MK_ALT     8
+#define MK_MOD2    16
+#define MK_APPLE   16
+#define MK_MOD3    32
+#define MK_MOD4    64
+#define MK_MOD5    128
+#define MK_LBUTTON 256
+#define MK_MBUTTON 512
+#define MK_RBUTTON 1024
+#define MK_ROLLUP  2048
+#define MK_ROLLDN  4096
+#define MK_ALTGR   8192
 //#define MK_ANY     (1<<15)
 
 // a special TOAD modifier for double click events
