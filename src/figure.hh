@@ -29,7 +29,7 @@
 namespace toad {
 
 class TFigureEditor;
-class TFigurePreferences;
+class TFigureAttributes;
 class TMatrix2D;
 
 /**
@@ -49,7 +49,8 @@ class TFigure:
       SELECT,
       EDIT
     };
-    virtual void setFromPreferences(TFigurePreferences*);
+    virtual void setAttributes(const TFigureAttributes*);
+    virtual void getAttributes(TFigureAttributes*) const;
     
     //! Called to paint the gadget.
     virtual void paint(TPenBase& pen, EPaintType) = 0;
@@ -152,7 +153,8 @@ class TColoredFigure:
     bool restore(TInObjectStream &in);
 
   public:
-    virtual void setFromPreferences(TFigurePreferences*);
+    virtual void setAttributes(const TFigureAttributes*);
+    virtual void getAttributes(TFigureAttributes*) const;
 
     void setLineColor(const TRGB &color) {
       line_color = color;
@@ -254,7 +256,8 @@ class TFLine:
     unsigned arrowwidth;
 
     TFLine();
-    void setFromPreferences(TFigurePreferences*);
+    void setAttributes(const TFigureAttributes*);
+    void getAttributes(TFigureAttributes*) const;
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
 
@@ -360,6 +363,10 @@ class TFText:
     void setFont(const string &fontname) {
       this->fontname = fontname;
     }
+
+    void setAttributes(const TFigureAttributes*);
+    void getAttributes(TFigureAttributes*) const;
+
     void paint(TPenBase &, EPaintType);
 
     double distance(int x, int y);
@@ -385,7 +392,6 @@ class TFText:
     string fontname;
     virtual void calcSize();
     static int cx;  // cursor position while editing
-    void setFromPreferences(TFigurePreferences*);
 };
 
 /**

@@ -33,7 +33,7 @@ class TColorSelector:
 {
     typedef TWindow super;
 
-    TFigurePreferences *gedit;
+    TFigureAttributes *gedit;
     TRGB linecolor;
     TRGB fillcolor;
     bool filled;
@@ -44,7 +44,7 @@ class TColorSelector:
   public:
     TColorSelector(TWindow *parent, 
                    const string &title, 
-                   TFigurePreferences *gedit = 0);
+                   TFigureAttributes *gedit = 0);
     ~TColorSelector();
 
     bool dialogeditorhack;

@@ -243,17 +243,25 @@ TFText::mouseLUp(TFigureEditor*, int, int, unsigned)
 }
 
 void
-TFText::setFromPreferences(TFigurePreferences *preferences)
+TFText::setAttributes(const TFigureAttributes *preferences)
 {
-  super::setFromPreferences(preferences);
+  super::setAttributes(preferences);
   switch(preferences->reason) {
-    case TFigurePreferences::ALLCHANGED:
-    case TFigurePreferences::FONTNAME:
+    case TFigureAttributes::ALLCHANGED:
+    case TFigureAttributes::FONTNAME:
       fontname = preferences->fontname;
       calcSize();
       break;
   }
 }
+
+void
+TFText::getAttributes(TFigureAttributes *preferences) const
+{
+  super::getAttributes(preferences);
+  preferences->fontname = fontname;
+}
+
 void 
 TFText::store(TOutObjectStream &out) const
 {

@@ -132,38 +132,53 @@ TColoredFigure::TColoredFigure()
 }
 
 void
-TFigure::setFromPreferences(TFigurePreferences *preferences)
+TFigure::setAttributes(const TFigureAttributes *preferences)
 {
 }
 
 void
-TColoredFigure::setFromPreferences(TFigurePreferences *preferences)
+TFigure::getAttributes(TFigureAttributes *preferences) const
+{
+}
+
+void
+TColoredFigure::setAttributes(const TFigureAttributes *preferences)
 {
   switch(preferences->reason) {
-    case TFigurePreferences::ALLCHANGED:
+    case TFigureAttributes::ALLCHANGED:
       line_width = preferences->linewidth;
       line_style = preferences->linestyle;
       line_color = preferences->linecolor;
       fill_color = preferences->fillcolor;
       filled     = preferences->filled;
       break;
-    case TFigurePreferences::LINECOLOR:
+    case TFigureAttributes::LINECOLOR:
       line_color = preferences->linecolor;
       break;
-    case TFigurePreferences::FILLCOLOR:
+    case TFigureAttributes::FILLCOLOR:
       fill_color = preferences->fillcolor;
       filled     = preferences->filled;
       break;
-    case TFigurePreferences::UNSETFILLCOLOR:
+    case TFigureAttributes::UNSETFILLCOLOR:
       filled     = preferences->filled;
       break;
-    case TFigurePreferences::LINEWIDTH:
+    case TFigureAttributes::LINEWIDTH:
       line_width = preferences->linewidth;
       break;
-    case TFigurePreferences::LINESTYLE:
+    case TFigureAttributes::LINESTYLE:
       line_style = preferences->linestyle;
       break;
   }
+}
+
+void
+TColoredFigure::getAttributes(TFigureAttributes *preferences) const
+{
+  preferences->linewidth = line_width;
+  preferences->linestyle = line_style;
+  preferences->linecolor = line_color;
+  preferences->fillcolor = fill_color;
+  preferences->filled = filled;
 }
 
 /**

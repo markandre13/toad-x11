@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,22 +38,31 @@ TFLine::TFLine()
 }
 
 void
-TFLine::setFromPreferences(TFigurePreferences *preferences)
+TFLine::setAttributes(const TFigureAttributes *preferences)
 {
-  super::setFromPreferences(preferences);
+  super::setAttributes(preferences);
   switch(preferences->reason) {
-    case TFigurePreferences::ALLCHANGED:
+    case TFigureAttributes::ALLCHANGED:
       arrowmode = preferences->arrowmode;
       arrowtype = preferences->arrowtype;
       break;
-    case TFigurePreferences::ARROWMODE:
+    case TFigureAttributes::ARROWMODE:
       arrowmode = preferences->arrowmode;
       break;
-    case TFigurePreferences::ARROWSTYLE:
+    case TFigureAttributes::ARROWSTYLE:
       arrowtype = preferences->arrowtype;
       break;
   }
   filled = (arrowmode!=NONE); // for parents 'store' method
+}
+
+void
+TFLine::getAttributes(TFigureAttributes *preferences) const
+{
+  super::getAttributes(preferences);
+  preferences->arrowmode = arrowmode;
+  preferences->arrowtype = arrowtype;
+  preferences->filled    = filled;
 }
 
 void

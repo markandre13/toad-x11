@@ -27,7 +27,7 @@ using namespace toad;
 
 TColorSelector::TColorSelector(TWindow *parent,
                                const string &title,
-                               TFigurePreferences *gedit):
+                               TFigureAttributes *gedit):
   super(parent, title)
 {
   dialogeditorhack = false;

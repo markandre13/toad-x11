@@ -151,11 +151,11 @@ TFigureEditor::setWindow(TWindow *w)
     window->invalidateWindow();
 }
 
-void foobar(TFigurePreferences *p) {
+void foobar(TFigureAttributes *p) {
   p->sigChanged();
 }
 
-TFigurePreferences::TFigurePreferences()
+TFigureAttributes::TFigureAttributes()
 {
   linecolor.set(0,0,0);
   fillcolor.set(255,255,255);
@@ -174,60 +174,60 @@ TFigurePreferences::TFigurePreferences()
   current = 0;
 }
 
-TFigurePreferences::~TFigurePreferences()
+TFigureAttributes::~TFigureAttributes()
 {
 }
 
 void
-TFigurePreferences::setOperation(unsigned op)
+TFigureAttributes::setOperation(unsigned op)
 {
   if (current) current->setOperation(op);
 }
 
 void
-TFigurePreferences::setCreate(TFigure *figure)
+TFigureAttributes::setCreate(TFigure *figure)
 {
   if (current) current->setCreate(figure);
 }
 
 void
-TFigurePreferences::group()
+TFigureAttributes::group()
 {
   if (current) current->group();
 }
 
 void
-TFigurePreferences::ungroup()
+TFigureAttributes::ungroup()
 {
   if (current) current->ungroup();
 }
 
 void
-TFigurePreferences::selectionDown()
+TFigureAttributes::selectionDown()
 {
   if (current) current->selectionDown();
 }
 
 void
-TFigurePreferences::selection2Bottom()
+TFigureAttributes::selection2Bottom()
 {
   if (current) current->selection2Bottom();
 }
 
 void
-TFigurePreferences::selectionUp()
+TFigureAttributes::selectionUp()
 {
   if (current) current->selectionUp();
 }
 
 void
-TFigurePreferences::selection2Top()
+TFigureAttributes::selection2Top()
 {
   if (current) current->selection2Top();
 }
 
 void
-TFigurePreferences::applyAll()
+TFigureAttributes::applyAll()
 {
   if (current) current->applyAll();
 }
@@ -236,7 +236,7 @@ void
 TFigureEditor::init(TFigureModel *m)
 {
   preferences = 0;
-  setPreferences(new TFigurePreferences);
+  setPreferences(new TFigureAttributes);
   background_color.set(192,192,192);
   fuzziness = 2;
 
@@ -690,7 +690,7 @@ TFigureEditor::print(TPenBase &pen, bool withSelection)
 }
 
 void 
-TFigureEditor::setPreferences(TFigurePreferences *p) {
+TFigureEditor::setPreferences(TFigureAttributes *p) {
   if (preferences) {
     disconnect(preferences->sigChanged, this);
     if (preferences->getCurrent() == this)
@@ -712,16 +712,16 @@ TFigureEditor::preferencesChanged()
       p != selection.end();
       ++p)
   {
-    (*p)->setFromPreferences(preferences);
+    (*p)->setAttributes(preferences);
   }
   if (gtemplate)
-    gtemplate->setFromPreferences(preferences);
+    gtemplate->setAttributes(preferences);
 
   for(TFigureSet::iterator sp = selection.begin();
       sp != selection.end();
       ++sp)
   {
-    (*sp)->setFromPreferences(preferences);
+    (*sp)->setAttributes(preferences);
   }
   window->invalidateWindow();
 }
@@ -1067,8 +1067,8 @@ TFigureEditor::setCreate(TFigure *t)
     return;
   }
   gtemplate->removeable = true;
-  preferences->reason = TFigurePreferences::ALLCHANGED;
-  gtemplate->setFromPreferences(preferences);
+  preferences->reason = TFigureAttributes::ALLCHANGED;
+  gtemplate->setAttributes(preferences);
   setOperation(OP_CREATE);
 }
 
@@ -1076,12 +1076,12 @@ void
 TFigureEditor::applyAll()
 {
 cerr << "apply all" << endl;
-  preferences->reason = TFigurePreferences::ALLCHANGED;
+  preferences->reason = TFigureAttributes::ALLCHANGED;
   for(TFigureSet::iterator p=selection.begin();
       p!=selection.end();
       ++p)
   {
-    (*p)->setFromPreferences(preferences);
+    (*p)->setAttributes(preferences);
   }
   window->invalidateWindow();
 }

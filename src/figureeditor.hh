@@ -45,13 +45,13 @@ class TFigureEditorHeaderRenderer
     virtual void mouseEvent(TMouseEvent&);
 };
 
-class TFigurePreferences:
+class TFigureAttributes:
   public TModel
 {
     TFigureEditor *current;
   public:
-    TFigurePreferences();
-    ~TFigurePreferences();
+    TFigureAttributes();
+    virtual ~TFigureAttributes();
 
     void setCurrent(TFigureEditor *current) {
       if (this->current == current)
@@ -146,7 +146,7 @@ class TFigurePreferences:
     unsigned arrowwidth;
     unsigned arrowheight;
 };
-typedef GSmartPointer<TFigurePreferences> PFigurePreferences;
+typedef GSmartPointer<TFigureAttributes> PFigureAttributes;
 
 /**
  * \ingroup figure
@@ -166,8 +166,8 @@ class TFigureEditor:
     TFigureEditor(TWindow*, const string &title, TFigureModel *model=0);
     ~TFigureEditor();
     
-    void setPreferences(TFigurePreferences *p);
-    TFigurePreferences* getPreferences() const {
+    void setPreferences(TFigureAttributes *p);
+    TFigureAttributes* getPreferences() const {
       return preferences;
     }
     void preferencesChanged();
@@ -209,7 +209,7 @@ class TFigureEditor:
     }
 
   protected:
-    PFigurePreferences preferences;
+    PFigureAttributes preferences;
   
     TWindow *window;            // current window
     TMatrix2D *mat;             // transformation for the editor
