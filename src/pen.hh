@@ -44,15 +44,13 @@ class TPenBase:
 
     virtual ~TPenBase();
   
-    // rename this into EMode
-    enum EPenMode {
+    enum EMode {
       NORMAL=3,
       XOR=6,
       INVERT=10
     };
 
-    // rename this into ELineStyle
-    enum EPenLineStyle {
+    enum ELineStyle {
       SOLID=1,
       DASH,
       DOT,
@@ -107,9 +105,9 @@ class TPenBase:
     // more parameters
     //-----------------------
     virtual void setFont(const string&) = 0;
-    virtual void setMode(EPenMode) = 0;
+    virtual void setMode(EMode) = 0;
     virtual void setLineWidth(int) = 0;
-    virtual void setLineStyle(EPenLineStyle) = 0;
+    virtual void setLineStyle(ELineStyle) = 0;
     virtual void setColorMode(TColor::EDitherMode) = 0;
     virtual void setClipChildren(bool) = 0;
 
@@ -268,8 +266,20 @@ class TPenBase:
     virtual int getDescent() const = 0;
     virtual int getHeight() const = 0;
 
-    virtual void drawString(int x, int y, const char*, int len, bool transparent=true) = 0;
-    virtual void drawString(int x, int y, const string&, bool transparent=true) = 0;
+    void drawString(int x, int y, const char *str, int len = -1) {
+      vdrawString(x, y, str, len, true);
+    }
+    void drawString(int x, int y, const string &s) {
+      vdrawString(x, y, s.c_str(), s.size(), true);
+    }
+    void fillString(int x, int y, const char *str, int len = -1) {
+      vdrawString(x, y, str, len, true);
+    }
+    void fillString(int x, int y, const string &s) {
+      vdrawString(x, y, s.c_str(), s.size(), true);
+    }
+    virtual void vdrawString(int x, int y, const char *str, int len, bool transparent) = 0;
+
     virtual int drawTextWidth(int x, int y, const string &text, unsigned width) = 0;
     // void drawTextAspect(int x,int y,const char* text,double xa,double ya);
 
@@ -346,9 +356,9 @@ public:
 
     void setFont(const string &fontname);
     static TFont* lookupFont(const string &fontname);
-    void setMode(EPenMode);
+    void setMode(EMode);
     void setLineWidth(int);
-    void setLineStyle(EPenLineStyle);
+    void setLineStyle(ELineStyle);
     void setColorMode(TColor::EDitherMode);
     void setClipChildren(bool);
 
@@ -427,8 +437,7 @@ public:
     int getAscent() const;
     int getDescent() const;
     int getHeight() const;
-    void drawString(int x, int y, const char*, int len, bool transparent=true);
-    void drawString(int x, int y, const string&, bool transparent=true);
+    void vdrawString(int x, int y, const char*, int len, bool transparent);
     int drawTextWidth(int x, int y, const string &text, unsigned width);
     static int getHeightOfTextFromWidth(TFont *font, const string &text, int width);
     // void drawTextAspect(int x,int y,const char* text,double xa,double ya);
@@ -470,7 +479,7 @@ public:
     bool bDeleteRegion:1; // delete `region' in destructor
     TColor::EDitherMode cmode;
     int width;
-    EPenLineStyle style;
+    ELineStyle style;
     TWindow *wnd;
     TBitmap *bmp;
     PFont font;

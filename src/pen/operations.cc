@@ -1013,20 +1013,11 @@ TPen::getHeight() const
 #endif
 }
 
-/**
- * Draw string `str'. <VAR>x</VAR>, <VAR>y</VAR> is the upper left
- * coordinate of the string.<BR>
- * DrawString is a little bit slower than FillString.
- */
 void
-TPen::drawString(int x,int y, const string &str, bool transparent)
+TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 {
-  TPen::drawString(x,y,str.c_str(),(int)str.size(), transparent);
-}
-
-void
-TPen::drawString(int x,int y, const char *str, int strlen, bool transparent)
-{
+  if (strlen==-1)
+    strlen = ::strlen(str);
 #ifdef __X11__
   assert(font!=NULL);
   font->createFont(mat);

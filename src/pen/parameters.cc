@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -473,7 +473,7 @@ void TPen::getClipBox(TRectangle* r) const
  * \li TPen::XOR
  * \li TPen::INVERT
  */
-void TPen::setMode(EPenMode mode)
+void TPen::setMode(EMode mode)
 {
 #ifdef __X11__
   XSetFunction(x11display,o_gc,mode);
@@ -504,9 +504,9 @@ void TPen::setLineWidth(int n)
 /**
  * Set a line style.
  *
- * \sa EPenLineStyle
+ * \sa ELineStyle
  */
-void TPen::setLineStyle(EPenLineStyle n)
+void TPen::setLineStyle(ELineStyle n)
 {
   style=n;
 #ifdef __X11__
