@@ -1,4 +1,5 @@
 #include <toad/toad.hh>
+#include <toad/connect.hh>
 #include <toad/scrollbar.hh>
 
 using namespace toad;
