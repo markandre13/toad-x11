@@ -1233,20 +1233,19 @@ static Bool CheckEvent(Display*, XEvent *event, char *window)
  * Should be done asynchronusly for fewer and faster screen updates.
  */
 void
-TWindow::scrollWindow(int dx, int dy, bool bClrBG)
+TWindow::scrollWindow(int dx, int dy, bool clear)
 {
 #ifdef __X11__
   if (!x11window || (dx==0 && dy==0)) 
     return;
 
   if (abs(dx)>=_w || abs(dy)>=_h) {
-    invalidateWindow(bClrBG);
+    invalidateWindow(clear);
     return;
   }
 
   #ifdef SCROLL_WITH_SERVER_GRAB
   XGrabServer(x11display);
-  XFlush(x11display);
   #endif
 
   // move paint events from the queue to the update region
@@ -1267,22 +1266,17 @@ TWindow::scrollWindow(int dx, int dy, bool bClrBG)
   //-----------------------------
   XCopyArea(x11display, x11window, x11window, x11gc, 0,0, _w, _h, dx,dy);
   
-  // should do something like `*static_cast<TRegion*>(paint_rgn) & *this' here
-
-  // decide which parts of the window must be redrawn; the
-  // 'true' in 'XClearArea' will generate 'paint' events, but we
-  // could handle them localy
+  // decide which parts of the window must be redrawn
   //-------------------------------------------------------------
-  if (bClrBG) {
-    if (dy>0) // scroll down, clear top
-      XClearArea(x11display, x11window, 0,0, _w, dy, True);
-    else if (dy<0)  // scroll up, clear bottom
-      XClearArea(x11display, x11window, 0,_h+dy, _w, -dy, True);
-    if (dx>0) // scroll right, clear left
-      XClearArea(x11display, x11window, 0,0, dx, _h, True);
-    else if (dx<0)  // scroll left, clear right
-      XClearArea(x11display, x11window, _w+dx, 0, -dx, _h, True);
-  }
+  if (dy>0) // scroll down, clear top
+    invalidateWindow(0,0, _w, dy, clear);
+  else if (dy<0)  // scroll up, clear bottom
+    invalidateWindow(0,_h+dy, _w, -dy, clear);
+
+  if (dx>0) // scroll right, clear left
+    invalidateWindow(0,0, dx, _h, clear);
+  else if (dx<0)  // scroll left, clear right
+    invalidateWindow(_w+dx, 0, -dx, _h, clear);
 
   #ifdef SCROLL_WITH_SERVER_GRAB
   XUngrabServer(x11display);
@@ -1301,21 +1295,19 @@ TWindow::scrollWindow(int dx, int dy, bool bClrBG)
  * should be done asynchronly for fewer and faster screen updates
  */
 void
-TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool bClrBG)
+TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool clear)
 {
 #ifdef __X11__
   if (!x11window || (dx==0 && dy==0)) 
     return;
 
   if (abs(dx)>=r.w || abs(dy)>=r.h) {
-    if (bClrBG)
-      XClearArea(x11display, x11window, r.x,r.y, r.w, r.h, True);
+    invalidateWindow(clear);
     return;
   }
 
   #ifdef SCROLL_WITH_SERVER_GRAB
   XGrabServer(x11display);
-  XFlush(x11display);
   #endif
 
   // move paint events from the queue to the update region
@@ -1372,24 +1364,21 @@ TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool bClrBG)
     xs  = r.w;
   }
 
-  //printf("scroll %3i,%3i - %3i,%3i by %3i,%3i\n", r.x,r.y, r.x+r.w,r.y+r.h, dx,dy);
-  //printf("copy   %3i,%3i - %3i,%3i to %3i,%3i\n", r.x,r.y, r.x+xs,r.y+ys, d.x,d.y);
+//  printf("scroll %3i,%3i - %3i,%3i by %3i,%3i\n", r.x,r.y, r.x+r.w,r.y+r.h, dx,dy);
+//  printf("copy   %3i,%3i - %3i,%3i to %3i,%3i\n", r.x,r.y, r.x+xs,r.y+ys, d.x,d.y);
 
   XCopyArea(x11display, x11window, x11window, x11gc, s.x,s.y, xs, ys, d.x,d.y);
   
-  // decide which parts of the window must be painted again; the
-  // 'true' in 'XClearArea' will generate 'paint' events
+  // decide which parts of the window must be redrawn
   //-------------------------------------------------------------
-  if (bClrBG) {
-    if (dy>0) // scroll down, clear top
-      XClearArea(x11display, x11window, r.x,        r.y, _w, dy, True);
-    else if (dy<0)  // scroll up, clear bottom
-      XClearArea(x11display, x11window, r.x,r.y+r.h+dy, _w, r.y-dy, True);
-    if (dx>0) // scroll right, clear left
-      XClearArea(x11display, x11window, r.x,        r.y, dx, _h, True);
-    else if (dx<0)  // scroll left, clear right
-      XClearArea(x11display, x11window, r.x+r.w+dx, r.y, -dx, _h, True);
-  }
+  if (dy>0) // scroll down, clear top
+    invalidateWindow(r.x,        r.y, _w, dy, clear);
+  else if (dy<0)  // scroll up, clear bottom
+    invalidateWindow(r.x,r.y+r.h+dy, _w, r.y-dy, clear);
+  if (dx>0) // scroll right, clear left
+    invalidateWindow(r.x,        r.y, dx, _h, clear);
+  else if (dx<0)  // scroll left, clear right
+    invalidateWindow(r.x+r.w+dx, r.y, -dx, _h, clear);
 
   #ifdef SCROLL_WITH_SERVER_GRAB
   XUngrabServer(x11display);
