@@ -145,22 +145,22 @@ TIntegerModel::setValueIsAdjusting(bool b)
     sigChanged();
 }
 
-class TBoundedRangeTextModel:
+class TIntegerTextModel:
   public TTextModel
 {
     TIntegerModel * model;
     bool lock;
   public:
-    TBoundedRangeTextModel(TIntegerModel *m) {
+    TIntegerTextModel(TIntegerModel *m) {
       model = m;
       lock = false;
       if (model) {
-        connect(model->sigChanged, this, &TBoundedRangeTextModel::slaveChanged);
+        connect(model->sigChanged, this, &TIntegerTextModel::slaveChanged);
         slaveChanged();
       }
-//      connect(this->sigChanged, this, &TBoundedRangeTextModel::masterChanged);
+//      connect(this->sigChanged, this, &TIntegerTextModel::masterChanged);
     }
-    ~TBoundedRangeTextModel() {
+    ~TIntegerTextModel() {
       if (model)
         disconnect(model->sigChanged, this);
     }
@@ -184,7 +184,7 @@ DBM(cerr << "BoundedRangeTextModel filter detected '\\n', calling masterChanged\
       return c;
     }
     void focus(bool b) {
-DBM(cerr << "TBoundedRangeTextModel::focus(" << b << ")\n";)
+DBM(cerr << "TIntegerTextModel::focus(" << b << ")\n";)
       if (!b) {
 DBM(cerr << "-> calling master changed\n";)
         masterChanged();
@@ -192,7 +192,7 @@ DBM(cerr << "-> calling master changed\n";)
     }
     void masterChanged()
     {
-DBM(cerr << "TBoundedRangeTextModel::masterChanged()\n";)
+DBM(cerr << "TIntegerTextModel::masterChanged()\n";)
       if (lock) {
 DBM(cerr << "  locked => return\n";)
         return;
@@ -205,7 +205,7 @@ DBM(cerr << "  not locked => setValue\n";)
     }
     void slaveChanged()
     {
-DBM(cerr << "TBoundedRangeTextModel::slaveChanged()\n";)
+DBM(cerr << "TIntegerTextModel::slaveChanged()\n";)
       sigChanged();
       if (lock) {
 DBM(cerr << "  locked => return\n";)
@@ -227,7 +227,7 @@ DBM(cerr << "  not locked => getValue\n";)
 TTextModel *
 toad::createTextModel(TIntegerModel * m)
 {
-  return new TBoundedRangeTextModel(m);
+  return new TIntegerTextModel(m);
 }
 
 bool
