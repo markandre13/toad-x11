@@ -1481,8 +1481,7 @@ TFigureEditor::findGadgetAt(int mx, int my)
 #if VERBOSE
   cerr << "TFigureEditor::findGadgetAt(" << mx << ", " << my << ")\n";
 #endif
-  double distance = TFigure::OUT_OF_RANGE;
-//double distance = 0.5*fuzziness*TFigure::OUT_OF_RANGE;
+  double distance = INFINITY;
   TFigureModel::iterator p,b,found;
   p = found = model->end();
   b = model->begin();
