@@ -292,6 +292,12 @@ class TFText:
       this->text = text;
       calcSize();
     }
+    TFText(int x,int y, const string &text) {
+      p1.x = x;
+      p1.y = y;
+      this->text = text;
+      calcSize();
+    }
     void setText(const string &t) {
       text = t;
       calcSize();
