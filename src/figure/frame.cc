@@ -44,7 +44,7 @@ TFFrame::paint(TPenBase &pen, EPaintType type)
   if (!text.empty()) {
     int fh = TOADBase::getDefaultFont().getHeight();
     int tw = TOADBase::getDefaultFont().getTextWidth(text);
-    pen.setColor(TColor::LIGHTGRAY);
+    pen.setColor(TColor::DIALOG);
     pen.fillRectanglePC(r.x+5-1, r.y-fh/2, tw+2, fh);
     pen.setColor(line_color);
     pen.drawString(r.x+5, r.y-fh/2, text);
