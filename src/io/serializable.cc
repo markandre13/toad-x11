@@ -618,7 +618,7 @@ base64_encode24(ostream &out, int d, int n)
 int
 base64_encode(ostream &out, const char * ptr, unsigned len)
 {
-  int i, d, n;
+  unsigned i, d, n;
   while(true) {
     d = 0;
     n = 0;
@@ -627,7 +627,7 @@ base64_encode(ostream &out, const char * ptr, unsigned len)
         break;
       --len;
       d<<=8;
-      d|=*ptr;
+      d|=(unsigned char)*ptr;
       ++ptr;
       n+=8;
     }
@@ -691,12 +691,9 @@ TATVBase64Interpreter::interpret(TATVParser &in)
     return true;
   }
   if (in.what==ATV_VALUE) {
-//cerr << "base64 : " << in.value << endl;
-
     char buffer[in.value.size()*4/3+1];
     unsigned n;
     base64_decode(in.value.c_str(), buffer, &n);
-//cerr << "decoded: " << buffer << endl;
     *ptr = (char*)realloc(*ptr, size+n+1);
     memcpy(*ptr + size, buffer, n);
     size+=n;
@@ -721,9 +718,9 @@ restoreRaw(TInObjectStream &in, char **value, unsigned *n)
     return false;
   }
   *value = 0;
+  *n = 0;
   base64.setLocation(value, n);
   in.setInterpreter(&base64);
-  return true;
   return true;
 }
 
