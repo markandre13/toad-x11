@@ -344,10 +344,14 @@ class TFText:
 {
     typedef TFRectangle super;
   public:
-    TFText() {}
+    TFText() {
+      p1.x = p1.y = 0;
+      fontname = "arial,helvetica,sans-serif:size=12";
+    }
     TFText(int x,int y, const string &text) {
       p1.x = x;
       p1.y = y;
+      fontname = "arial,helvetica,sans-serif:size=12";
       this->text = text;
       calcSize();
     }
@@ -383,6 +387,7 @@ class TFText:
     string fontname;
     virtual void calcSize();
     static int cx;  // cursor position while editing
+    void setFromPreferences(TFigurePreferences*);
 };
 
 /**

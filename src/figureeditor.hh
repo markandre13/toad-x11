@@ -95,6 +95,7 @@ class TFigurePreferences:
       LINESTYLE,
       ARROWMODE,
       ARROWSTYLE,
+      FONTNAME,
       /**
        * This TPreferences was subclassed. Try dynamic_cast to get
        * more information.
