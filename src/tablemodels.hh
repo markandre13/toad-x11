@@ -132,7 +132,11 @@ class TTableCellRenderer_CString:
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
-        pen.setColor(TColor::SELECTED);
+        if (focus) {
+          pen.setColor(TColor::SELECTED);
+        } else {
+          pen.setColor(TColor::SELECTED_GRAY);
+        }
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
@@ -393,7 +397,11 @@ class GTableCellRenderer_String:
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
-        pen.setColor(TColor::SELECTED);
+        if (focus) {
+          pen.setColor(TColor::SELECTED);
+        } else {
+          pen.setColor(TColor::SELECTED_GRAY);
+        }
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
@@ -465,7 +473,11 @@ class GTableCellRenderer_Text:
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
-        pen.setColor(TColor::SELECTED);
+        if (focus) {
+          pen.setColor(TColor::SELECTED);
+        } else {
+          pen.setColor(TColor::SELECTED_GRAY);
+        }
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
@@ -539,7 +551,11 @@ class GTableCellRenderer_PText:
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
-        pen.setColor(TColor::SELECTED);
+        if (focus) {
+          pen.setColor(TColor::SELECTED);
+        } else {
+          pen.setColor(TColor::SELECTED_GRAY);
+        }
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
@@ -607,7 +623,11 @@ class GTableRowRenderer:
     }
     void renderItem(TPen &pen, int col, int index, int w, int h, bool selected, bool focus) {
       if (selected) {
-        pen.setColor(TColor::SELECTED);
+        if (focus) {
+          pen.setColor(TColor::SELECTED);
+        } else {
+          pen.setColor(TColor::SELECTED_GRAY);
+        }
         pen.fillRectangle(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
@@ -647,6 +667,13 @@ class GSTLRandomAccess:
   public GAbstractTableModel<TYPE>
 {
   public:
+    GSTLRandomAccess() {
+      cerr << __PRETTY_FUNCTION__ << endl;
+    }
+    ~GSTLRandomAccess() {
+      cerr << __PRETTY_FUNCTION__ << endl;
+    }
+  
     int getRows() {
       return size();
     }

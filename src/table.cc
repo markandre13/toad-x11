@@ -731,14 +731,15 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
   
   if (!visible.isInside(mx, my))
     return;
-  
   mx -= visible.x + fpx;
   my -= visible.y + fpy;
 
   pos1 = 0;
   for(x=ffx; ; x++) {
-    if (x>=cols || pos1>visible.x+visible.w)
+    if (x>=cols || pos1>visible.x+visible.w) {
+//cerr << __FILE__ << ':' << __LINE__ << endl;  
       return;
+    }
     int size = col_info[x].size;
     pos2 = pos1 + col_info[x].size;
     if (stretchLastColumn && x==cols-1)
@@ -751,8 +752,17 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
   
   pos1 = 0;
   for(y=ffy; ; y++) {
-    if (y>=rows || pos1>visible.y+visible.h)
+    if (y>=rows /* || pos1>visible.y+visible.h */) {
+/*
+cerr << __FILE__ << ':' << __LINE__ << endl;  
+cerr << " y=" << y
+     << " rows=" << rows
+     << " pos1=" << pos1
+     << " visible.y+visible.h=" << (visible.y+visible.h)
+     << endl;
       return;
+*/
+    }
     pos2 = pos1 + row_info[y].size;
     if (pos1 <= my && my < pos2) {
       break;
@@ -761,11 +771,12 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
   }
 
   if (per_row)
-    cx=0;
+    x=0;
   if (per_col)
-    cy=0;
+    y=0;
 
   cx = x; cy = y;
+
   bool perRow, perCol; // true when to select whole row/column
   perRow = perCol = false;
   if (renderer->getModel()) { // this looks like a stupid hack to me...
@@ -1084,7 +1095,11 @@ class TTableCellRenderer_CString:
     }
     virtual void renderItem(TPen &pen, int, int index, int w, int h, bool selected, bool focus) {
       if (selected) {
-        pen.setColor(TColor::SELECTED);
+        if (focus) {
+          pen.setColor(TColor::SELECTED);
+        } else {
+          pen.setColor(TColor::SELECTED_GRAY);
+        }
         pen.fillRectanglePC(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
@@ -1239,7 +1254,11 @@ class TTableCellRenderer_TNetObject:
     
     virtual void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
-        pen.setColor(TColor::SELECTED);
+        if (focus) {
+          pen.setColor(TColor::SELECTED);
+        } else {
+          pen.setColor(TColor::SELECTED_GRAY);
+        }
         pen.fillRectanglePC(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
