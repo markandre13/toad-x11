@@ -18,7 +18,10 @@
  * MA  02111-1307,  USA
  */
 
+#include <vector>
 #include <toad/undomanager.hh>
+
+#define DBM(CMD)
 
 using namespace toad;
 
@@ -30,20 +33,50 @@ using namespace toad;
  *
  * This class is an interactor so it gets deleted together with it's
  * parent.
+ *
+ * \todo
+ *   \li document how to use the undomanager (reference and manual)
+ *   \li static method to disable undo/redo for a model when it's
+ *       registered
+ *   \li handle overflow of TUndo::serial counter
+ *   \li limit number of stored undo event to a given maximum
+ *   \li grouping of undo events
  */
 
 namespace {
 
-typedef vector<TUndoManager*> TUndoManagerStorage;
-TUndoManagerStorage umstorage;
+typedef set<TUndoManager*> TUndoManagerStore;
+TUndoManagerStore undomanagers;
+
+} // namespace
+
+class toad::TModelUndoStore
+{
+  public:
+    // undomanager for the model
+    TUndoManagerStore undomanagers;
+
+    // undo/redo objects for the model
+    typedef vector<TUndo*> TUndoStack;
+    TUndoStack undostack, redostack;  
+
+    void addUndo(TModel *model, TUndo *undo);
+    void clearRedo();
+    void clear(TModel *model);
+};
+
+namespace {
+  
+typedef map<TModel*, TModelUndoStore> TModelStore;
+TModelStore models;
 
 } // namespace
 
 /**
  * The titles of the actions are "edit|undo" and "edit|redo".
  */
-TUndoManager::TUndoManager(TWindow *parent):
-  TInteractor(parent, "undomanager")
+TUndoManager::TUndoManager(TWindow *parent, const string &title):
+  TInteractor(parent, title)
 {
   undo = new TUndoAction(getParent(), "edit|undo", this, true);
   redo = new TUndoAction(getParent(), "edit|redo", this, false);
@@ -53,10 +86,11 @@ TUndoManager::TUndoManager(TWindow *parent):
 /**
  * TUndoManager with custom actions titles, ie. "go|back" and "go|forward".
  */
-TUndoManager::TUndoManager(TWindow *parent, 
+TUndoManager::TUndoManager(TWindow *parent,
+                           const string &title,
                            const string &undotext,
                            const string &redotext):
-  TInteractor(parent, "undomanager")
+  TInteractor(parent, title)
 {
   undo = new TUndoAction(getParent(), undotext, this, true);
   redo = new TUndoAction(getParent(), redotext, this, false);
@@ -66,71 +100,219 @@ TUndoManager::TUndoManager(TWindow *parent,
 void
 TUndoManager::init()
 {
+  undoing = redoing = false;
+  undomanagers.insert(this);
+  
   connect(undo->sigActivate, this, &TUndoManager::doUndo);
   undo->setEnabled(false);
-
+  
   connect(redo->sigActivate, this, &TUndoManager::doRedo);
   redo->setEnabled(false);
-  
-  umstorage.push_back(this);
 }
 
-/**
- * Locates an TUndoManger for 'parent' and adds 'undoable' to it or
- * deletes the object.
- */
-void
-TUndoManager::manage(TInteractor *parent, TUndoable *undoable)
+TUndoManager::~TUndoManager()
 {
-//cerr << "TUndoManager::manage undoable for '" << parent->getTitle() << "'" << endl;
-  TUndoManagerStorage::iterator p, e;
-  p = umstorage.begin();
-  e = umstorage.end();
-  while(p!=e) {
-//cerr << "  is it a child of '" << (*p)->getParent()->getTitle() << "'\n";
-    if (parent == (*p)->getParent() ||
-        parent->isChildOf((*p)->getParent()) )
-    {
-//      cerr << "  undoable is a child of '" << (*p)->getParent()->getTitle() << "'\n";
-      (*p)->add(undoable);
-      return;
-    }
-    ++p;
+  DBM(cerr << "destroy undomanager " << this << endl;)
+  for(TModelSet::iterator p=mmodels.begin();
+      p!=mmodels.end();
+      ++p)
+  {
+    TModelStore::iterator q = models.find(*p);
+    assert(q!=models.end());
+    TUndoManagerStore::iterator r = q->second.undomanagers.find(this);
+    assert(r!=q->second.undomanagers.end());
+    q->second.undomanagers.erase(r);
   }
-//cerr << "  found no one to manage the event, deleting it\n";
-  delete undoable;
+  undomanagers.erase(undomanagers.find(this));
+}
+
+bool TUndoManager::undoing = false;
+bool TUndoManager::redoing = false;
+
+/**
+ * Register model for an undomanager.
+ */
+/*static*/ void
+TUndoManager::registerModel(TWindow *window, TModel *model)
+{
+  DBM(cerr << "register model " << model << " for window " << window << endl;)
+  TUndoManagerStore::iterator p;
+  for(p=undomanagers.begin();   
+      p!=undomanagers.end();    
+      ++p)
+  {
+    DBM(cerr << "  check window '" << (*p)->getParent()->getTitle() << "'" << endl;)
+    if (window == (*p)->getParent() ||
+        window->isChildOf((*p)->getParent()))
+    {
+      goto found;
+    }
+  }  
+  DBM(cerr << "no undomanager found for model " << model << endl;)
+  return;
+  
+found:
+  // add reference from TUndoManager to TModel
+  DBM(cerr << "  add model " << model << " to undomanager " << *p << endl;)
+  (*p)->mmodels.insert(model);
+  
+  // add reference from TModelUndoStore to TUndoManager
+  TModelStore::iterator q = models.find(model);
+  if (q==models.end()) {
+    DBM(cerr << "  insert to new TModelUndoStore" << endl;)
+    models[model].undomanagers.insert(*p);
+    return;
+  }
+  DBM(cerr << "  insert to existing TModelUndoStore" << endl;)
+  q->second.undomanagers.insert(*p);
+}
+ 
+/*static*/ void
+TUndoManager::unregisterModel(TModel *model)
+{
+  DBM(cerr << "unregister model " << model << endl;)
+  TModelStore::iterator p = models.find(model);
+  if (p==models.end()) {
+    return;
+  }
+  p->second.clear(model);
+  models.erase(p);
+}
+
+/*static*/ void 
+TUndoManager::unregisterModel(TWindow *, TModel*)
+{
+  cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
+}
+
+/*static*/ void
+TUndoManager::registerUndo(TModel *model, TUndo *undo)
+{
+  DBM(cerr << "register undo " << undo << " for model " << model << endl;)
+  TModelStore::iterator p = models.find(model);
+  if (p==models.end()) {
+    DBM(cerr << "no model registered" << endl;)
+    delete undo;
+    return;
+  }
+  DBM(cerr << "found undomanager(s) for undo/redo" << endl;)
+  p->second.addUndo(model, undo);
 }
 
 void
 TUndoManager::doUndo()
 {
-//  cerr << "doUndo" << endl;
-  if (history.getBackSize()>0) {
-    history.getCurrent()->undo();
-    history.goBack();
+  DBM(cerr << "entering undomanager " << this << " undo" << endl;)
+  if (undoing) {
+    DBM(cerr << "  undo not possible, because i'm already undoing, please try later" << endl;)
+    return;
   }
-  if (history.getBackSize()==0)
-    undo->setEnabled(false);
-  redo->setEnabled(true);
+   
+  undoing = true;
+
+  // find next model to be undone
+  
+  DBM(cerr << "checking all " << mmodels.size() << " models\n";)
+  
+  TModelStore::iterator pms;
+  TUndo *undo = 0;
+  for(TModelSet::iterator p=mmodels.begin();
+      p!=mmodels.end();
+      ++p)
+  {
+    TModelStore::iterator q = models.find(*p);
+    assert(q!=models.end());
+    if (!q->second.undostack.empty()) {
+      TUndo *u = q->second.undostack.back();
+      if (!undo) {
+        undo = u; 
+        pms = q;  
+      } else {    
+        if (undo->serial < u->serial) {
+          undo = u;
+          pms = q; 
+        }
+      }  
+    }    
+  }      
+         
+  if (!undo) {
+    DBM(cerr << "  undo not possible, because there are no events to be undone" << endl;)
+  } else {
+    pms->second.undostack.pop_back();
+    undo->undo();
+  }
+   
+  undoing = false;
 }
 
 void
 TUndoManager::doRedo()
 {
-//  cerr << "doRedo" << endl;
-  if (history.getForwardSize()>0) {
-    history.goForward();
-    history.getCurrent()->redo();
+  DBM(cerr << "\nredo" << endl;)
+  if (redoing) {
+    DBM(cerr << "  redo not possible" << endl;)
+    return;
   }
-  if (history.getForwardSize()==0)
-    redo->setEnabled(false);
-  undo->setEnabled(true);
+   
+  redoing = true;
+
+  // find next model to be redone
+  
+  DBM(cerr << "checking all " << mmodels.size() << " models\n";)
+  
+  TModelStore::iterator pms;
+  TUndo *undo = 0;
+  for(TModelSet::iterator p=mmodels.begin();
+      p!=mmodels.end();
+      ++p)
+  {
+    TModelStore::iterator q = models.find(*p);
+    assert(q!=models.end());
+    DBM(cerr << "  check model " << *p << endl;)
+    if (!q->second.redostack.empty()) {
+      DBM(cerr << "    it's not empty" << endl;)
+      TUndo *u = q->second.redostack.back();
+      if (!undo) {
+        undo = u; 
+        pms = q;  
+      } else {    
+        if (undo->serial < u->serial) {
+          undo = u;
+          pms = q; 
+        }
+      }  
+    } else {
+      DBM(cerr << "    it's empty" << endl;)
+    }
+  }  
+     
+  if (!undo) {
+    DBM(cerr << "  redo not possible, because there are no events to be redone" << endl;)
+  } else {
+    pms->second.redostack.pop_back();
+    undo->undo();
+  }
+   
+  redoing = false;
 }
 
+bool
+TUndoManager::isUndoing()
+{
+  return undoing;
+}
+ 
+bool
+TUndoManager::isRedoing()
+{
+  return redoing;
+}
 
 bool
 TUndoManager::TUndoAction::getState(string *text, bool *active) const
 {
+#if 0
 //  cerr << __PRETTY_FUNCTION__ << endl;
   if (undo) {
     if (manager->history.getBackSize()>0)
@@ -143,5 +325,154 @@ TUndoManager::TUndoAction::getState(string *text, bool *active) const
       return b;
     }
   }
+#endif
   return false;
+}
+
+bool
+TUndoManager::canUndo() const
+{
+  if (undoing)
+    return false;
+    
+  // can be optimized with a counter in TUndoManager which tracks the
+  // number of possible undo's in case this method is called too much
+  for(TModelSet::const_iterator p=mmodels.begin();
+      p!=mmodels.end();
+      ++p)
+  {
+    TModelStore::const_iterator q = models.find(*p);
+    assert(q!=models.end());
+    if (!q->second.undostack.empty())
+      return true;
+  }
+  return false;
+}
+ 
+bool
+TUndoManager::canRedo() const
+{
+  if (redoing)
+    return false;
+    
+  // can be optimized with a counter in TUndoManager which tracks the
+  // number of possible undo's in case this method is called too much
+  for(TModelSet::const_iterator p=mmodels.begin();
+      p!=mmodels.end();
+      ++p)
+  {
+    TModelStore::const_iterator q = models.find(*p);
+    assert(q!=models.end());
+    if (!q->second.redostack.empty())
+      return true;
+  }
+  return false;
+}
+
+void
+TModelUndoStore::addUndo(TModel *model, TUndo *undo)
+{
+  DBM(cerr << "add undo " << undo << " to model " << model << endl;)
+  if (!TUndoManager::isUndoing() && !TUndoManager::isRedoing()) {   
+    DBM(cerr << "  not undoing, clear redostacks" << endl;)
+    // step 1: 'undomanagers' contains a list of all undo managers which
+    //         manage our current model, since we don't know for which  
+    //         one the new undo event was generated, we must traverse all
+    //         of them.
+    //         we now create a set of all models they manage
+    DBM(cerr << "    create list of all models managed by undo managers which also manage model " << model << endl;)
+    TModelSet xmodels;
+    for(TUndoManagerStore::iterator p=undomanagers.begin();
+        p!=undomanagers.end();
+        ++p)
+    {
+      DBM(cerr << "      add all models " << (*p)->mmodels.size() << " owned by undo manager " << *p << endl;)
+      xmodels.insert((*p)->mmodels.begin(), (*p)->mmodels.end());
+    }
+    DBM(
+      cerr << "    models to be cleared:";
+      for(TModelSet::iterator p=xmodels.begin();
+          p!=xmodels.end();
+          ++p)
+      {
+        cerr << " " << *p;
+      }
+      cerr << endl;
+    )
+     
+    // step 2: all the models found in the previous step be cleared
+    //         of their redo list
+    for(TModelSet::iterator p=xmodels.begin();
+        p!=xmodels.end();
+        ++p)
+    {
+      TModelStore::iterator q = models.find(*p);
+      assert(q!=models.end());
+      DBM(cerr << "  clear redo list of model " << *p << endl;)
+      q->second.clearRedo();
+    }
+  }  
+  assert(undomanagers.begin()!=undomanagers.end());
+  if (!TUndoManager::isUndoing()) {
+    DBM(cerr << "add undo to models undostack" << endl;)
+    undostack.push_back(undo);
+    for(TUndoManagerStore::iterator p=undomanagers.begin();
+        p!=undomanagers.end();
+        ++p)
+    {
+      DBM(cerr << "enabled undo for undomanager " << *p << endl;)
+      (*p)->undo->setEnabled(true);
+    }
+  } else {
+    DBM(cerr << "add undo to models redostack" << endl;)
+    redostack.push_back(undo);
+    for(TUndoManagerStore::iterator p=undomanagers.begin();
+        p!=undomanagers.end();
+        ++p)
+    {
+      DBM(cerr << "enabled redo for undomanager " << *p << endl;)
+      (*p)->redo->setEnabled(true);
+    }
+  }
+}  
+
+void
+TModelUndoStore::clearRedo() {
+  while(!redostack.empty()) { 
+    delete redostack.back();  
+    redostack.pop_back();     
+  }
+}  
+
+void
+TModelUndoStore::clear(TModel *model)
+{
+  for(TUndoStack::iterator p=undostack.begin();
+      p!=undostack.end();
+      ++p)
+  {
+    delete *p;
+  }
+  for(TUndoStack::iterator p=redostack.begin();
+      p!=redostack.end();
+      ++p)
+  {
+    delete *p;
+  }
+  for(TUndoManagerStore::iterator p=undomanagers.begin();
+      p!=undomanagers.end();
+      ++p)
+  {
+    DBM(
+      cerr << "  remove model " << model << " from undomanager " << *p << endl;
+      cerr << "    undomanager manages:";
+      for(TModelSet::iterator i=(*p)->mmodels.begin();
+          i!=(*p)->mmodels.end();
+          ++i) cerr << " " << *i << endl;
+      cerr << endl;
+    )
+    TModelSet::iterator q = (*p)->mmodels.find(model);
+    assert(q!=(*p)->mmodels.end());
+    (*p)->mmodels.erase(q);
+  }
 }

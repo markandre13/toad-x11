@@ -184,9 +184,6 @@ class TTextArea:
     void _selection_clear();
     void _delete_current_line();
     
-    void _undo();
-    void _redo();
-    
     // methods to handle screen
     void _catch_cursor();
     void _scroll_down(unsigned n=1);

@@ -23,12 +23,12 @@
 
 #include <toad/figure.hh>
 #include <toad/figureeditor.hh>
-#include <toad/undoable.hh>
+#include <toad/undo.hh>
 
 namespace toad {
 
 class TUndoableMove:
-  public TUndoable
+  public TUndo
 {
   public:
     TUndoableMove(int, int, const TFigureEditor::TFigureSet&);
@@ -37,7 +37,6 @@ class TUndoableMove:
     bool getRedoName(string *name) const { *name = "Redo: Move Object"; return true; }
     bool getUndoName(string *name) const { *name = "Undo: Move Object"; return true; }
     void undo();
-    void redo();
     
     int dx, dy;
     TFigure **gadgets;

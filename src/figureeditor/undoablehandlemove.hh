@@ -23,19 +23,18 @@
 
 #include <toad/figure.hh>
 #include <toad/figureeditor.hh>
-#include <toad/undoable.hh>
+#include <toad/undo.hh>
 
 namespace toad {
 
 class TUndoableHandleMove:
-  public TUndoable
+  public TUndo
 {
   public:
     TUndoableHandleMove(TFigure*, unsigned, const TPoint&, const TPoint&);
     bool getRedoName(string *name) const { *name = "Redo: Move"; return true; }
     bool getUndoName(string *name) const { *name = "Undo: Move"; return true; }
     void undo();
-    void redo();
     
     unsigned handle;
     TPoint oldpos;

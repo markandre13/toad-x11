@@ -18,25 +18,15 @@
  * MA  02111-1307,  USA
  */
 
-#include <toad/undoable.hh>
+#include <toad/undo.hh>
 
 using namespace toad;
 
 /**
- * \class toad::TUndoable
+ * \class toad::TUndo
  *
  * This class can be used together with TUndoManager to keep a list of
  * undoable and redoable events.
  */
 
-bool
-TUndoable::getRedoName(string*) const
-{
-  return false;
-}
-
-bool
-TUndoable::getUndoName(string*) const
-{
-  return false;
-}
+unsigned TUndo::counter = 0;

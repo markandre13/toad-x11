@@ -1855,23 +1855,21 @@ TParser::handleTag()
 }
 
 class TBrowserMovement:
-  public TUndoable
+  public TUndo
 {
     THTMLView *view;
-    string oldurl, newurl;
+    string oldurl;
   public:
-    TBrowserMovement(THTMLView*, const string &oldurl, const string &newurl);
+    TBrowserMovement(THTMLView*, const string &oldurl);
     
     void undo();
-    void redo();
 };
 
-TBrowserMovement::TBrowserMovement(THTMLView *view, const string &oldurl, const string &newurl)
+TBrowserMovement::TBrowserMovement(THTMLView *view, const string &oldurl)
 {
 //cerr << "new browser movement event" << endl;
   this->view = view;
   this->oldurl = oldurl;
-  this->newurl = newurl;
 }
 
 void
@@ -1881,13 +1879,6 @@ TBrowserMovement::undo()
   view->open(oldurl);
 }
 
-void
-TBrowserMovement::redo()
-{
-//  cerr << "redo" << endl;
-  view->open(newurl);
-}
-
 static void
 open_file(THTMLView *view)
 {
@@ -1895,10 +1886,12 @@ open_file(THTMLView *view)
   dlg.addFileFilter("HTML (*.html, *.htm)");
   dlg.doModalLoop();
   if (dlg.getResult()==TMessageBox::OK) {
-    TUndoManager::manage(view,
+    cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+/*
+    TUndoManager::registerUndo((view,
                          new TBrowserMovement(view,
-                                              view->getURL(),
-                                              dlg.getFilename()));
+                                              view->getURL()));
+*/
     view->open(dlg.getFilename());
   }
 }
@@ -1916,7 +1909,7 @@ THTMLView::THTMLView(TWindow *parent, const string &title):
   TAction *action = new TAction(this, "file|open");
   connect(action->sigActivate, open_file, this);
   
-  new TUndoManager(this, "go|back", "go|forward");
+  new TUndoManager(this, "undomanager", "go|back", "go|forward");
 }
 
 THTMLView::~THTMLView()
@@ -2091,8 +2084,11 @@ THTMLView::mouseLDown(int x,int y, unsigned modifier)
       setCursor(TCursor::DEFAULT);
 //      cerr << "goto: '" << (*p)->href << "'\n";
       if ( !(*p)->href.empty()) {
-        TUndoManager::manage(this,
-                             new TBrowserMovement(this, url, (*p)->href));
+cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+#if 0
+        TUndoManager::registerUndo(this,
+                             new TBrowserMovement(this, url);
+#endif
         open((*p)->href);
       }
       return;

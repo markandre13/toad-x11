@@ -24,8 +24,7 @@
 #include <toad/figure.hh>
 #include <toad/figuremodel.hh>
 #include <toad/scrollpane.hh>
-#include <toad/undoable.hh>
-#include <toad/util/history.hh>
+#include <toad/undo.hh>
 
 #include <toad/boolmodel.hh>
 #include <toad/textmodel.hh>
@@ -249,12 +248,6 @@ class TFigureEditor:
 
     void group();
     void ungroup();
-    
-    typedef GHistory<PUndoable> THistory;
-    THistory history;
-    void undo();
-    void redo();
-    void clearHistory() {history.clear();}
     
     TFigure* findFigureAt(int x, int y);
 

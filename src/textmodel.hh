@@ -23,8 +23,7 @@
 
 #include <iostream>
 #include <toad/model.hh>
-#include <toad/undoable.hh>
-#include <toad/util/history.hh>
+#include <toad/undo.hh>
 
 namespace toad {
 
@@ -97,53 +96,42 @@ class TTextModel:
       }
     }
     
-    void doUndo();
-    void doRedo();
-    
-    void insert(unsigned offset, int c, bool undo=true);
-    void insert(unsigned offset, const string&, bool undo=true);
-    void remove(unsigned offset, unsigned length=1, bool undo=true);
+    void insert(unsigned offset, int c);
+    void insert(unsigned offset, const string&);
+    void remove(unsigned offset, unsigned length=1);
 
     /** the model may not accept all characters or use other characters */
     virtual int filter(int);
     
     virtual void focus(bool);
     
-    typedef GHistory<PUndoable> THistory;
-    THistory *history;
-    //! 'true' track undo/redo history
-    bool undo;
-    
-    class TUndoableInsert:
-      public TUndoable
+    class TUndoInsert:
+      public TUndo
     {
         TTextModel *model;
         unsigned offset;
-        string text;
+        unsigned length;
       public:
-        TUndoableInsert(TTextModel *m, unsigned o, const string &t) {
+        TUndoInsert(TTextModel *m, unsigned o, unsigned l) {
           model  = m;
           offset = o;
-          text   = t;
+          length = l;
         }
         bool getRedoName(string *name) const { *name = "Redo: Insert"; return true; }
         bool getUndoName(string *name) const { *name = "Undo: Insert"; return true; }
         void undo() {
-          model->remove(offset, text.size(), false);
-        }
-        void redo() {
-          model->insert(offset, text, false);
+          model->remove(offset, length);
         }
     };
 
-    class TUndoableRemove:
-      public TUndoable
+    class TUndoRemove:
+      public TUndo
     {
         TTextModel *model;
         unsigned offset;
         string text;
       public:
-        TUndoableRemove(TTextModel *m, unsigned o, const string &t) {        
+        TUndoRemove(TTextModel *m, unsigned o, const string &t) {        
           model  = m;
           offset = o;
           text   = t;
@@ -151,10 +139,7 @@ class TTextModel:
         bool getRedoName(string *name) const { *name = "Redo: Delete"; return true; }
         bool getUndoName(string *name) const { *name = "Undo: Delete"; return true; }
         void undo() {
-          model->insert(offset, text, false);
-        }
-        void redo() {
-          model->remove(offset, text.size(), false);
+          model->insert(offset, text);
         }
     };
     

@@ -21,18 +21,55 @@
 #ifndef _TOAD_UNDOMANAGER_HH
 #define _TOAD_UNDOMANAGER_HH
 
+#include <set>
+
 #include <toad/interactor.hh>
 #include <toad/action.hh>
-#include <toad/undoable.hh>
-#include <toad/util/history.hh>
+#include <toad/undo.hh>
 
 namespace toad {
+
+typedef set<TModel*> TModelSet;
+
+class TModelUndoStore;
 
 class TUndoManager:
   public TInteractor
 {
-    friend class TUndoAction;
+    friend class TModelUndoStore;
+  public:
+    TUndoManager(TWindow *parent, const string &title);
+    TUndoManager(TWindow *parent, const string &title,
+                                  const string &undotext,
+                                  const string &redotext);
+    ~TUndoManager();
+    
+  protected:
+    void init();
 
+    static bool undoing;
+    static bool redoing;
+  
+  public:
+    static void registerModel(TWindow*, TModel*);
+    static void unregisterModel(TModel*);
+    static void unregisterModel(TWindow *, TModel*);
+    static void registerUndo(TModel*, TUndo*);
+    
+    bool canUndo() const;
+    bool canRedo() const;
+    void doUndo();
+    void doRedo();
+
+    static bool isUndoing();
+    static bool isRedoing();
+
+  protected:    
+    //! models managed by the undomanager
+    TModelSet mmodels;
+
+
+    friend class TUndoAction;
     class TUndoAction:
       public TAction
     {
@@ -51,22 +88,7 @@ class TUndoManager:
         bool getState(string*, bool*) const;
     };
     TUndoAction *undo, *redo;
-    GHistory<PUndoable> history;
 
-  public:
-    TUndoManager(TWindow*);
-    TUndoManager(TWindow*, const string &undotext, const string &redotext);
-    
-    static void manage(TInteractor *parent, TUndoable *undoable);
-    void add(TUndoable *undoable) {
-      undo->setEnabled(true);
-      history.add(undoable);
-    }
-  
-  protected:
-    void init();
-    void doUndo();
-    void doRedo();
 };
 
 } // namespace toad

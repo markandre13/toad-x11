@@ -37,8 +37,3 @@ void TUndoableHandleMove::undo()
 {
   gadget->translateHandle(handle, oldpos.x, oldpos.y);
 }
-
-void TUndoableHandleMove::redo()
-{
-  gadget->translateHandle(handle, newpos.x, newpos.y);
-}

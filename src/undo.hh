@@ -18,26 +18,22 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef _TOAD_UNDOABLE_HH
-#define _TOAD_UNDOABLE_HH
-
-#include <toad/pointer.hh>
+#ifndef _TOAD_UNDO_HH
+#define _TOAD_UNDO_HH
 
 namespace toad {
 
-class TUndoable:
-  public TSmartObject
+class TUndo
 {
-  public:
-    virtual bool getRedoName(string *name) const;
-    virtual bool getUndoName(string *name) const;
-       
+  public: 
+    TUndo() {
+      serial = counter++;
+    };
     virtual void undo() = 0;
-    virtual void redo() = 0;
-};
-
-typedef GSmartPointer<TUndoable> PUndoable;
-
+    static unsigned counter;
+    unsigned serial;
+}; 
+                            
 } // namespace toad
 
 #endif

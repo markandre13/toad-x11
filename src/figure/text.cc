@@ -23,7 +23,7 @@
 
 using namespace toad;
 
-int TFText::cx;
+int TFText::cx = 0;
 
 void 
 TFText::calcSize()

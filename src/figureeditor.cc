@@ -166,6 +166,7 @@ TFigureEditor::setWindow(TWindow *w)
     window->invalidateWindow();
 }
 
+#if 0
 class THistoryAction:
   public TAction
 {
@@ -195,6 +196,7 @@ class THistoryAction:
       return true;
     }
 };
+#endif
 
 void foobar(TFigurePreferences *p) {
   p->sigChanged();
@@ -305,11 +307,6 @@ TFigureEditor::init()
 */
   action = new TAction(this, "edit|delete");
   CONNECT(action->sigActivate, this, deleteSelection);
-
-  action = new THistoryAction(this, "edit|undo", &history, true);
-  CONNECT(action->sigActivate, this, undo);
-  action = new THistoryAction(this, "edit|redo", &history, false);
-  CONNECT(action->sigActivate, this, redo);
 }
 
 bool
@@ -872,7 +869,11 @@ void
 TFigureEditor::deleteSelection()
 {
 //cout << "delete selection" << endl;
+#if 1
+  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+#else
   history.add(new TUndoableDelete(*model, selection));
+#endif
 //cout << "selection size: " << selection.size() << endl;
 
   TFigureModel::iterator p,e,del;
@@ -1172,7 +1173,11 @@ TFigureEditor::stopOperation()
       clearSelection();
       if (gadget) {
         selection.insert(gadget);
+#if 1
+        cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+#else
         history.add(new TUndoableCreate(*model, selection));
+#endif
 //        clearSelection();
       }
       setMouseMoveMessages(TMMM_ANYBUTTON);
@@ -1780,8 +1785,12 @@ redo:
       memo_x += dx;
       memo_y += dy;
 #endif
+#if 1
+      cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+#else
       TUndoableMove *undo = new TUndoableMove(memo_x, memo_y, selection);
       history.add(undo);
+#endif
 #if 0
       while(p!=e) {
         invalidateFigure(*p);
@@ -1818,7 +1827,11 @@ redo:
       updateScrollbars();
       
       TPoint pt(x,y);
+#if 1
+      cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+#else
       history.add(new TUndoableHandleMove(*selection.begin(), handle, memo_pt, pt));
+#endif
     } break;
 
     case STATE_SELECT_RECT: {
@@ -2142,6 +2155,7 @@ TFigureEditor::scrolled(int dx, int dy)
   window->setOrigin(-x, -y);
 }
 
+#if 0
 void
 TFigureEditor::undo()
 {
@@ -2165,3 +2179,4 @@ TFigureEditor::redo()
     updateScrollbars();
   }
 }
+#endif

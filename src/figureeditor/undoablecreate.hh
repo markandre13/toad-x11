@@ -38,8 +38,7 @@ class TUndoableCreate:
                     
     bool getRedoName(string *name) const { *name = "Redo: New"; return true; }
     bool getUndoName(string *name) const { *name = "Undo: New"; return true; }
-    void undo() { TUndoableDelete::redo(); }
-    void redo() { TUndoableDelete::undo(); }
+    void undo() { }
 };
 
 } // namespace toad

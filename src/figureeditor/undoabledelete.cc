@@ -88,24 +88,3 @@ void TUndoableDelete::undo()
     pos++;
   }
 }
-  
-void TUndoableDelete::redo()
-{
-  done = true;
-  TFigureModel::iterator gp, p;
-  gp = gadgets.begin();
-  vector<TMemo>::iterator mp,me;
-  mp = memo.begin();
-  me = memo.end();
-  while(mp!=me) {
-    p = gp;
-    gp++;
-    if ((*p)==(*mp).gadget) {
-#if VERBOSE
-      cout << "removing gadget " << (*p) << endl;
-#endif
-      gadgets.erase(p);
-      mp++;
-    }
-  }
-}

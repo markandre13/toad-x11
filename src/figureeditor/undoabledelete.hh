@@ -23,12 +23,12 @@
 
 #include <toad/figure.hh>
 #include <toad/figureeditor.hh>
-#include <toad/undoable.hh>
+#include <toad/undo.hh>
 
 namespace toad {
 
 class TUndoableDelete:
-  public TUndoable
+  public TUndo
 {
   public:
     TUndoableDelete(TFigureModel&,
@@ -38,7 +38,6 @@ class TUndoableDelete:
     bool getRedoName(string *name) const { *name = "Redo: Delete"; return true; }
     bool getUndoName(string *name) const { *name = "Undo: Delete"; return true; }
     void undo();
-    void redo();
     
     bool done;
     TFigureModel &gadgets;

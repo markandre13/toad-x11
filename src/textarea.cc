@@ -20,6 +20,7 @@
 
 #include <toad/textarea.hh>
 #include <toad/simpletimer.hh>
+#include <toad/undomanager.hh>
 #include <toad/action.hh>
 #include <cstdio>
 #include <assert.h>
@@ -221,11 +222,6 @@ TTextArea::init()
   CONNECT(action->sigActivate, this, _selection_paste);
   action = new TAction(this, "edit|delete");
   CONNECT(action->sigActivate, this, _selection_erase);
-
-  action = new TAction(this, "edit|undo");
-  CONNECT(action->sigActivate, this, _undo);
-  action = new TAction(this, "edit|redo");
-  CONNECT(action->sigActivate, this, _redo);
 }
 
 TTextArea::~TTextArea()
@@ -277,13 +273,13 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       case 'Z':
         if (preferences->mode==TPreferences::NORMAL)
           _selection_clear();
-        _undo();
+//        TUndoManager::undo();
         return;
       case 'r':
       case 'R':
         if (preferences->mode==TPreferences::NORMAL)
           _selection_clear();
-        _redo();
+//        TUndoManager::redo();
         return;
       case 'a':
       case 'A':
@@ -561,8 +557,10 @@ TTextArea::focus(bool b)
 void
 TTextArea::_set_model(TTextModel *m)
 {
-  if (model)
+  if (model) {
     disconnect(model->sigTextArea, this);
+    TUndoManager::unregisterModel(this, model);
+  }
   model = m;
   _cx = 0;
   _cxpx = -1;
@@ -573,6 +571,7 @@ TTextArea::_set_model(TTextModel *m)
   if (model) {
     connect(model->sigTextArea, this, &TTextArea::modelChanged);
     _eol_from_bol();
+    TUndoManager::registerModel(this, model);
   }
   _bos = _eos = 0;
   if (vscroll)
@@ -1264,20 +1263,6 @@ TTextArea::_delete_current_line()
 }
 
 void
-TTextArea::_undo()
-{
-  MARK
-  model->doUndo();
-}
-
-void
-TTextArea::_redo()
-{
-  MARK
-  model->doRedo();
-}
-
-void
 TTextArea::mouseMDown(int,int,unsigned)
 {
   if (!model)
@@ -1775,9 +1760,7 @@ TTextArea::getLines() const
 TTextModel::TTextModel()
 {
   nlines = 0;
-  undo = true;
   _modified = false;
-  history = new THistory();
 }
 
 void
@@ -1852,17 +1835,17 @@ TTextModel::setValue(const char *d, unsigned len)
  * insert a single char
  */
 void
-TTextModel::insert(unsigned p, int c, bool undo)
+TTextModel::insert(unsigned p, int c)
 {
   c = filter(c);
   if (!c)
     return;
 
-  if (undo && history) {
-    string s;
-    s+=(char)c;
-    history->add(new TUndoableInsert(this, p, s));
-  }
+#if 0
+  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+#else
+  TUndoManager::registerUndo(this, new TUndoInsert(this, p, 1));
+#endif
   data.insert(p, 1, c);
   
   type = INSERT;
@@ -1881,7 +1864,7 @@ TTextModel::insert(unsigned p, int c, bool undo)
  * insert multiple chars
  */
 void
-TTextModel::insert(unsigned p, const string &aString, bool undo)
+TTextModel::insert(unsigned p, const string &aString)
 {
   string s(aString);
 
@@ -1896,9 +1879,12 @@ TTextModel::insert(unsigned p, const string &aString, bool undo)
 
   if (s.empty())
     return;
-                              
-  if (undo && history)
-    history->add(new TUndoableInsert(this, p, s));
+
+#if 0
+  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;                              
+#else
+  TUndoManager::registerUndo(this, new TUndoInsert(this, p, s.size()));
+#endif
 
   data.insert(p, s);
   
@@ -1926,11 +1912,14 @@ TTextModel::insert(unsigned p, const string &aString, bool undo)
  * \param undo store in undo history if true
  */
 void
-TTextModel::remove(unsigned p, unsigned l, bool undo)
+TTextModel::remove(unsigned p, unsigned l)
 {
   DBM(cout << "remove at " << p << endl;)
-  if (undo && history)
-    history->add(new TUndoableRemove(this, p, data.substr(p,l)));
+#if 0
+  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+#else
+  TUndoManager::registerUndo(this, new TUndoRemove(this, p, data.substr(p,l)));
+#endif
   lines = 0;
   for(unsigned i=p; i<p+l; ++i) {
     if (data[i]=='\n')
@@ -1955,22 +1944,4 @@ TTextModel::filter(int c)
 void
 TTextModel::focus(bool)
 {
-}
-
-void
-TTextModel::doUndo()
-{
-  if (history && history->getBackSize()>0) {
-     history->getCurrent()->undo();
-     history->goBack();
-  }
-}
-
-void
-TTextModel::doRedo()
-{
-  if (history && history->getForwardSize()>0) {
-     history->goForward();
-     history->getCurrent()->redo();
-  }
 }

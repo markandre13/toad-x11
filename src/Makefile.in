@@ -28,7 +28,7 @@ CXXFLAGS= @CXXFLAGS@ @X_CFLAGS@
 DEFINES	= @DEFS@
 LD	= $(CXX)
 LDFLAGS = @LDFLAGS@
-LIBS	= @X_LIBS@ @X_PRE_LIBS@ @X_EXTRA_LIBS@ @LIBS@
+# LIBS	= @X_LIBS@ @X_PRE_LIBS@ @X_EXTRA_LIBS@ @LIBS@
 
 # GNU Compiler specific options
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -86,7 +86,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		popupmenu.cc layout.cc tabbedlayout.cc popup.cc action.cc \
 		window.cc focusmanager.cc interactor.cc dialog.cc \
 		$(DND) toadbase.cc connect.cc toadmain.cc cursor.cc \
-		$(GRAPHIC) undoable.cc undomanager.cc htmlview.cc \
+		$(GRAPHIC) undo.cc undomanager.cc htmlview.cc \
 		region.cc polygon.cc rectangle.cc \
 		color.cc colormanager.cc font.cc \
 		bitmap.cc bitmapfilter.cc \

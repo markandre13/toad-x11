@@ -42,12 +42,3 @@ void TUndoableMove::undo()
     p++;
   }
 }
-  
-void TUndoableMove::redo()
-{
-  TFigure **p = gadgets;
-  while(*p!=NULL) {
-    (*p)->translate(dx, dy);
-    p++;
-  }
-}
