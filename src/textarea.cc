@@ -1331,11 +1331,8 @@ TTextArea::_cursor_home()
     bool flag = false;
     _pos=_bol;
     _cx=0;
-    if (flag) {
-      _invalidate_line(_cy);
-    } else {
-      invalidateWindow();
-    }
+    _invalidate_line(_cy);
+    _catch_cursor();
     _cxpx = -1;
     blink.visible=true;
   }
@@ -1447,50 +1444,20 @@ DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
     _scroll_up(-_cy);
   }
 
-#if 1
-
-  // |          |            |           |
-  //            _tx             tx
-  
-  // |          |            |           |
-  // |      tx  _tx
-
   const string line(model->getValue().substr(_bol, _pos-_bol));
   int tx = font->getTextWidth(line);
-  if (tx > _tx+getWidth()-5) {
-    _tx = tx-getWidth()+5;
+  
+  int width = getWidth() - 5;
+  if (vscroll)
+    width -= vscroll->getWidth() + vscroll->getBorder()*2;
+  
+  if (tx > _tx+width) {
+    _tx = tx-width;
     invalidateWindow(); // call scrollRectangle instead
   } else if (tx < _tx) {
     _tx = tx;
     invalidateWindow(); // call scrollRectangle instead
   }
-
-#else
-
-#if 0
-  const string line(model->getValue().substr(_bol, _eol-_bol));
-  int cx = 0;
-  for(unsigned i=0; i<_tx+_cx; i++) {
-    if (line[i]=='\t') {
-      cx+= (preferences->tabwidth-cx) % preferences->tabwidth;
-    } else {
-      cx++;
-    }
-  }
-  cx -= _tx;
-cout << "_cx+_tx=" << (_cx+_tx) << ", cx+_tx=" << (cx+_tx) << endl;
-cout << "_cx=" << _cx << ", cx=" << cx << endl;
-#else
-  int cx = _cx;
-#endif  
-  if (cx > tw+1) {
-    _scroll_right(cx - tw);
-  }
-  if (cx < 0) {
-    _scroll_left(-cx);
-  }
-#endif
-
 DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
 }
 
