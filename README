@@ -2,7 +2,7 @@
                       TOAD C++ GUI Library 0.64.0-preX
                          the "hacking again" release
 
-        Copyright (C) 1996-2002 by Mark-André Hopf <mhopf@mark13.de>
+        Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
                     
 CONTENTS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,14 +66,13 @@ CONTENTS
   - X Window System, Version 11, Release 6 or later
   - zlib 1.1.1
   - libpng 1.0.1
-  - libxml2
 
   The TOAD C++ GUI Library has been tested on the following platforms:
   - Debian GNU/Linux 3.0 (current)
   - AIX (as of TOAD 0.42.19 and 0.42.20)
   - SunOS (only the early releases)
-  and will probably run on any other Linux, Hurd or FreeBSD compatible 
-  system.
+  and will probably run on any other GNU/Linux, GNU/Hurd or FreeBSD
+  compatible systems.
 
 
 5. USING THE TOAD C++ GUI LIBRARY
@@ -119,7 +118,7 @@ CONTENTS
 
   - There's a WWW site regarding the TOAD C++ GUI Library:
   
-                         http://www.mark13.de/toad/
+                         http://www.mark13.org/toad/
 
     and a mailing list.
 
@@ -148,13 +147,10 @@ src/Makefile            : Makefile for the library
 examples/               : some example programs
 examples/<dir>/Makefile	: simplified Makefile for <dir> which includes
                           conf/MakefilePrg
-conf/MakefilePrg        : the Makefile to build programs
+conf/MakefilePrg        : the Makefile to build example programs
 
 doc/                    : some documentation
 
-construction/           : sources where new features are created and
-                          tested
-                          
 testsuite/              : programs that should compile for a valid release
 
 8. DEBUGGING
