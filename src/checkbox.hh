@@ -71,6 +71,13 @@ class TCheckBox:
       _init();
     }
 #endif
+
+    void setValue(bool b) {
+      getModel()->setValue(b);
+    }
+    bool getValue() const {
+      return getModel()->getValue();
+    }
     
     void setModel(TBoolModel *b);
     TBoolModel * getModel() const {
