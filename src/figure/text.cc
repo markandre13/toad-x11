@@ -216,7 +216,12 @@ TFText::restore(TInObjectStream &in)
     ::restore(in, "text", &text) ||
     ::restore(in, "fontname", &fontname) ||
     super::restore(in)
-  ) return true;
+  ) {
+    if (in.what == ATV_FINISHED) {
+      calcSize();
+    }
+    return true;
+  }
   ATV_FAILED(in)
   return false;
 }
