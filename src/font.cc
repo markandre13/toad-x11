@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -336,7 +336,8 @@ TFont::createX11Font(TMatrix2D *mat)
     // finaly load the font
     new_fs = XLoadQueryFont(x11display, xfn.getXLFD().c_str());
     if (!new_fs) {
-      cerr << "failed to load font structure" << endl;
+      cerr << "error while loading font '" << fontname << "':\n"
+           << "  failed to load X11 font structure '" << xfn.getXLFD() << "'\n";
       return;
     }
   }
@@ -362,7 +363,8 @@ TFont::createX11Font(TMatrix2D *mat)
     XSync(x11display, False);
     XSetErrorHandler(oldhandler);
     if (dummy) {
-      cerr << "failed to load font" << endl;
+      cerr << "error while loading font '" << fontname << "':\n"
+           << "  failed to load X11 font '" << xfn.getXLFD() << "'\n";
       if (new_fs) {
         XUnloadFont(x11display, new_fs->fid);
         XFreeFontInfo(NULL,new_fs,0);
