@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -335,6 +335,21 @@ TScrollBar::keyDown(TKey key,char*,unsigned)
     case TK_PAGEDOWN:
       pageDown();
       break;
+  }
+}
+
+void
+TScrollBar::mouseEvent(TMouseEvent &me)
+{
+  switch(me.type) {
+    case TMouseEvent::ROLL_UP:
+      decrement();
+      break;
+    case TMouseEvent::ROLL_DOWN:
+      increment();
+      break;
+    default:
+      TWindow::mouseEvent(me);
   }
 }
 
