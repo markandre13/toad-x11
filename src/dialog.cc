@@ -242,8 +242,8 @@ arrangeHelper(TFigureModel::iterator p,
 TDialogLayout::TDialogLayout()
 {
   editor = NULL;
-  width = 320;
-  height = 200;
+  width = 0;
+  height = 0;
   drawfocus = false;
   gadgets = new TFigureModel();
 }
@@ -258,7 +258,8 @@ TDialogLayout::~TDialogLayout()
 void
 TDialogLayout::arrange()
 {
-  window->setSize(width, height);
+  window->setSize(width ? width : TSIZE_PREVIOUS,
+                  height ? height : TSIZE_PREVIOUS);
 
   // create a map of all child windows
   //-----------------------------------
@@ -321,13 +322,8 @@ TDialogLayout::paint()
 void
 TDialogLayout::store(TOutObjectStream &out) const
 {
-  if (window) {
-    int width, height;
-    width = window->getWidth();
-    height = window->getHeight();
-    ::store(out, "width", width);
-    ::store(out, "height", height);
-  }
+  ::store(out, "width", width);
+  ::store(out, "height", height);
   ::store(out, "drawfocus", drawfocus);
   ::store(out, gadgets);
 }
