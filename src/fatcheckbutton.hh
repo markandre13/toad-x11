@@ -33,15 +33,7 @@ class TFatCheckButton:
   PBoolModel model;
 
   public:
-    TFatCheckButton(TWindow*, const string&);
-
-    template <class T>
-    TFatCheckButton(TWindow *p, const string &t, T *d):
-      TButtonBase(p, t)
-    {
-      _init();
-      putData(d);
-    }
+    TFatCheckButton(TWindow *p, const string &t, TBoolModel * model = 0);
 
     void setValue(bool b) {
       getModel()->setValue(b);
@@ -60,7 +52,7 @@ class TFatCheckButton:
     void mouseLDown(int,int,unsigned);
     void keyDown(TKey, char*, unsigned);
     void paint();
-    void _init();
+    void _init(TBoolModel*);
 };
 
 } // namespace toad

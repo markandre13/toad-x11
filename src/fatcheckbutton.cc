@@ -22,17 +22,19 @@
 
 using namespace toad;
 
-TFatCheckButton::TFatCheckButton(TWindow *p, const string &t):
+TFatCheckButton::TFatCheckButton(TWindow *p, const string &t, TBoolModel *m):
   TButtonBase(p, t)
 {
-  _init();
+  _init(m);
 }
 
 void
-TFatCheckButton::_init()
+TFatCheckButton::_init(TBoolModel *m)
 {
   model = 0;
-  setModel(new TBoolModel());
+  if (!m)
+    m = new TBoolModel();
+  setModel(m);
 }
 
 void
