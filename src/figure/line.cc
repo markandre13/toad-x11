@@ -138,9 +138,9 @@ TFLine::paint(TPenBase &pen, EPaintType)
   pen.drawLines(polygon);
 
   if (arrowmode == HEAD || arrowmode == BOTH)
-    drawArrow(pen, polygon[0], polygon[1], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
-  if (arrowmode == TAIL || arrowmode == BOTH)
     drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
+  if (arrowmode == TAIL || arrowmode == BOTH)
+    drawArrow(pen, polygon[0], polygon[1], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
 }
 
 double 
