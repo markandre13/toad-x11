@@ -45,6 +45,10 @@ void
 TScrollPane::resetScrollPane()
 {
   lx = ly = 0;
+  if (vscroll)
+    vscroll->setValue(0);
+  if (hscroll)
+    hscroll->setValue(0);
 }
 
 void
