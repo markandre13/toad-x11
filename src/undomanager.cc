@@ -135,13 +135,9 @@ TUndoManager::~TUndoManager()
 bool TUndoManager::undoing = false;
 bool TUndoManager::redoing = false;
 
-/**
- * Register model for an undomanager.
- */
-/*static*/ bool
-TUndoManager::registerModel(TWindow *window, TModel *model)
+static TUndoManagerStore::iterator
+findUndoManager(TWindow *window)
 {
-  DBM(cerr << "register model " << model << " for window " << window << endl;)
   TUndoManagerStore::iterator p;
   for(p=undomanagers.begin();   
       p!=undomanagers.end();    
@@ -151,13 +147,26 @@ TUndoManager::registerModel(TWindow *window, TModel *model)
     if (window == (*p)->getParent() ||
         window->isChildOf((*p)->getParent()))
     {
-      goto found;
+      return p;
     }
-  }  
-  DBM(cerr << "no undomanager found for model " << model << endl;)
-  return false;
+  }
+  return p;
+}
+
+/**
+ * Register model for an undomanager.
+ */
+/*static*/ bool
+TUndoManager::registerModel(TWindow *window, TModel *model)
+{
+  DBM(cerr << "register model " << model << " for window " << window << endl;)
+  TUndoManagerStore::iterator p = findUndoManager(window);
+  if (p==undomanagers.end())
+  {
+    DBM(cerr << "no undomanager found for model " << model << endl;)
+    return false;
+  }
   
-found:
   // add reference from TUndoManager to TModel
   DBM(cerr << "  add model " << model << " to undomanager " << *p << endl;)
   (*p)->mmodels.insert(model);
@@ -177,6 +186,8 @@ found:
 /*static*/ void
 TUndoManager::unregisterModel(TModel *model)
 {
+#warning "TUndoManager must be informed to update it's actions"
+#warning "must remove model from model-undo-store also"
   DBM(cerr << "unregister model " << model << endl;)
   TModelStore::iterator p = models.find(model);
   if (p==models.end()) {
@@ -186,11 +197,53 @@ TUndoManager::unregisterModel(TModel *model)
   models.erase(p);
 }
 
+//#undef DBM
+//#define DBM(CMD) CMD
+
 /*static*/ void 
-TUndoManager::unregisterModel(TWindow *, TModel*)
+TUndoManager::unregisterModel(TWindow *window, TModel *model)
 {
-  cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
+#warning "TUndoManager must be informed to update it's actions"
+  DBM(cerr << "unregister model " << model << " for window " << window << endl;)
+  TUndoManagerStore::iterator p = findUndoManager(window);
+  if (p==undomanagers.end())
+  {
+    DBM(cerr << "  no undomanager found for model " << model << endl;)
+    return;
+  }
+  
+  // remove reference from TUndoManager to TModel
+  DBM(cerr << "  remove model " << model << " from undomanager " << *p << endl;)
+  TModelSet::iterator r = (*p)->mmodels.find(model);
+  if (r==(*p)->mmodels.end()) {
+    DBM(cerr << "model not found in undomanager" << endl;)
+    return;
+  }
+  (*p)->mmodels.erase(r);
+  DBM(cerr << "    ok" << endl;)
+  
+  // add reference from TModelUndoStore to TUndoManager
+  TModelStore::iterator q = models.find(model);
+  if (q==models.end()) {
+    DBM(cerr << "  model not found in model-undo-store" << endl;)
+    return;
+  }
+  
+  DBM(cerr << "  remove from existing TModelUndoStore" << endl;)
+  TUndoManagerStore::iterator s = q->second.undomanagers.find(*p);
+  if (s==q->second.undomanagers.end()) {
+    DBM(cerr << "  undomanager not model-undo-store" << endl;)
+    return;
+  }
+  
+  q->second.undomanagers.erase(s);
+  DBM(
+    cerr << "    ok" << endl;
+    cerr << "  done" << endl;)
 }
+
+//#undef DBM
+//#define DBM(CMD)
 
 /*static*/ bool
 TUndoManager::registerUndo(TModel *model, TUndo *undo)

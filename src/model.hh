@@ -34,6 +34,7 @@ class TModel:
   public:
     TModel() {}
     TModel(const TModel &m) { }
+    ~TModel();
     TModel& operator=(const TModel&) { return *this; }
     
     void lock() { sigChanged.lock(); }
