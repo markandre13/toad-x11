@@ -33,6 +33,7 @@
 #define TTableModel_CString TTableModel_CString
 
 #include <toad/table.hh>
+#include <toad/stacktrace.hh>
 #include <string>
 #include <vector>
 #include <set>

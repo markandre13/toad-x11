@@ -52,7 +52,7 @@ LIBNAME		= libtoad.so
 LIBFULLNAME	= $(LIBNAME).$(VERSION)
 
 # this one is for libstd++ <= 3 (should be set by configure)
-DEFINES         += -DOLDLIBSTD
+# DEFINES         += -DOLDLIBSTD
 
 # TOAD sources (sorted by module)
 #----------------------------------------------------------------------------

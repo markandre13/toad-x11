@@ -338,9 +338,18 @@ TPen::drawLines(const TPoint *s, int n) const
 
 #ifdef __WIN32__
   activateW32();
-  POINT wp[n];
+  POINT wp[n+1];
   tpoint2wpoint(s, wp, n, mat);
-  ::Polyline(w32hdc, wp, n);
+  
+  ::MoveToEx(w32hdc, wp[0].x, wp[0].y, NULL);
+  for(int i=1; i<n; ++i)
+    ::LineTo(w32hdc, wp[i].x, wp[i].y);
+  ::LineTo(w32hdc, wp[n-1].x+1, wp[n-1].y);
+/*
+  wp[n].x = wp[n-1].x;
+  wp[n].y = wp[n-1].y;
+  ::Polyline(w32hdc, wp, n+0);
+*/
 #endif
 }
 
@@ -359,7 +368,10 @@ TPen::drawLines(const TPolygon &polygon) const
   unsigned n = polygon.size();
   POINT pts[n];
   polygon2wpoint(polygon, pts, mat);
-  ::Polyline(w32hdc, pts, 5);
+  ::MoveToEx(w32hdc, pts[0].x, pts[0].y, NULL);
+  for(int i=1; i<n; ++i)
+    ::LineTo(w32hdc, pts[i].x, pts[i].y);
+  ::LineTo(w32hdc, pts[n-1].x+1, pts[n-1].y);
 #endif
 }
 
@@ -413,7 +425,11 @@ TPen::vdrawRectangle(int x, int y, int w, int h) const
     p->x = pts->x;
     p->y = pts->y;
   }
-  ::Polyline(w32hdc, pts, 5);
+//  ::Polyline(w32hdc, pts, 5);
+  ::MoveToEx(w32hdc, pts[0].x, pts[0].y, NULL);
+  for(int i=1; i<5; ++i)
+    ::LineTo(w32hdc, pts[i].x, pts[i].y);
+  ::LineTo(w32hdc, pts[5-1].x+1, pts[5-1].y);
 #endif
 }
 
@@ -447,7 +463,7 @@ TPen::vfillRectangle(int x, int y, int w, int h) const
 #ifdef __WIN32__
   activateW32();
   if (!mat) {
-    ::Rectangle(w32hdc, x, y, w, h);
+    ::Rectangle(w32hdc, x, y, x+w+1, y+h+1);
   } else {
     POINT pts[5];
     POINT *p = pts;
@@ -692,8 +708,23 @@ void
 TPen::drawPolygon(const TPoint points[], int n) const
 {
 #ifdef __X11__
-  drawLines(points, n);
-  drawLine(points[0].x,points[0].y,points[n-1].x,points[n-1].y);
+  XPoint d[n+1];
+  tpoint2xpoint(s, d, n, mat);
+  d[n].x=d[0].x;
+  d[n].y=d[0].y;
+  drawLines(d, n+1);
+#endif
+
+#ifdef __WIN32__
+  POINT pts[n+1];
+  tpoint2wpoint(points, pts, n, mat);
+  pts[n].x=pts[0].x;
+  pts[n].y=pts[0].y;
+//  ::Polyline(w32hdc, pts, n+1);
+  ::MoveToEx(w32hdc, pts[0].x, pts[0].y, NULL);
+  for(int i=1; i<=n; ++i)
+    ::LineTo(w32hdc, pts[i].x, pts[i].y);
+  ::LineTo(w32hdc, pts[n-1].x+1, pts[n-1].y);
 #endif
 }
 
@@ -711,6 +742,12 @@ TPen::fillPolygon(const TPoint s[], int n) const
      d[0].x,d[0].y,
      d[n-1].x,d[n-1].y);
 #endif
+
+#ifdef __WIN32__
+  POINT d[n];
+  tpoint2wpoint(s, d, n, mat);
+  ::Polygon(w32hdc, d, n);
+#endif
 }
 
 void
@@ -726,6 +763,19 @@ TPen::drawPolygon(const TPolygon &polygon) const
   XDrawLine(x11display, x11drawable, o_gc,
     d[0].x, d[0].y,
     d[n-1].x, d[n-1].y);
+#endif
+
+#ifdef __WIN32__
+  unsigned n = polygon.size();
+  POINT pts[n+1];
+  polygon2wpoint(polygon, pts, mat);
+  pts[n].x=pts[0].x;
+  pts[n].y=pts[0].y;
+  // ::Polyline(w32hdc, pts, n+1);
+  ::MoveToEx(w32hdc, pts[0].x, pts[0].y, NULL);
+  for(int i=1; i<=n; ++i)
+    ::LineTo(w32hdc, pts[i].x, pts[i].y);
+  ::LineTo(w32hdc, pts[n-1].x+1, pts[n-1].y);
 #endif
 }
 
@@ -744,6 +794,13 @@ TPen::fillPolygon(const TPolygon &polygon) const
   XDrawLine(x11display, x11drawable, o_gc,
     d[0].x, d[0].y,
     d[n-1].x, d[n-1].y);
+#endif
+
+#ifdef __WIN32__
+  unsigned n = polygon.size();
+  POINT d[n];
+  polygon2wpoint(polygon, d, mat);
+  ::Polygon(w32hdc, d, n);
 #endif
 }
 
@@ -860,13 +917,25 @@ TPenBase::draw3DRectanglePC(int x, int y, int w, int h, bool inset) const
 int
 TPen::getTextWidth(const string &str) const
 {
+#ifndef __WIN32__
   return font->getTextWidth(str.c_str());
+#else
+  SIZE size;
+  ::GetTextExtentPoint(w32hdc, str.c_str(), str.size(), &size);
+  return size.cx;
+#endif
 }
 
 int
 TPen::getTextWidth(const char *str) const
 {
+#ifndef __WIN32__
   return font->getTextWidth(str);
+#else
+  SIZE size;
+  ::GetTextExtentPoint(w32hdc, str, strlen(str), &size);
+  return size.cx;
+#endif
 }
 
 /**
@@ -875,7 +944,13 @@ TPen::getTextWidth(const char *str) const
 int
 TPen::getTextWidth(const char *str, int len) const
 {
+#ifndef __WIN32__
   return font->getTextWidth(str,len);
+#else
+  SIZE size;
+  ::GetTextExtentPoint(w32hdc, str, len, &size);
+  return size.cx;
+#endif
 }
 
 /**
@@ -884,7 +959,13 @@ TPen::getTextWidth(const char *str, int len) const
 int
 TPen::getAscent() const
 {
+#ifndef __WIN32__
   return font->getAscent();
+#else
+  TEXTMETRIC tm;
+  ::GetTextMetrics(w32hdc, &tm);
+  return tm.tmAscent;
+#endif
 }
 
 /**
@@ -893,7 +974,13 @@ TPen::getAscent() const
 int
 TPen::getDescent() const
 {
+#ifndef __WIN32__
   return font->getDescent();
+#else
+  TEXTMETRIC tm;
+  ::GetTextMetrics(w32hdc, &tm);
+  return tm.tmDescent;
+#endif
 }
 
 /**
@@ -902,7 +989,13 @@ TPen::getDescent() const
 int
 TPen::getHeight() const
 {
+#ifndef __WIN32__
   return font->getHeight();
+#else
+  TEXTMETRIC tm;
+  ::GetTextMetrics(w32hdc, &tm);
+  return tm.tmAscent+tm.tmDescent;
+#endif
 }
 
 /**
@@ -933,7 +1026,16 @@ TPen::drawString(int x,int y, const char *str, int strlen) const
   if (mat) {
     mat->map(x, y, &x, &y);
   }
+  
+  ::SetBkMode(w32hdc, TRANSPARENT);
   ::TextOut(w32hdc, x,y, str, strlen);
+//  ::ExtTextOut(w32hdc, x, y, 0, 0, str, strlen, 0);
+//  RECT r;
+//  r.left = x;
+//  r.top  = y;
+//  r.right = 320;
+//  r.bottom = 200;
+//  ::DrawText(w32hdc, str, strlen, &r, 0);
 #endif
 }
 
@@ -966,6 +1068,7 @@ TPen::fillString(int x,int y, const char *str, int strlen) const
 #endif
 
 #ifdef __WIN32__
+  ::SetBkMode(w32hdc, OPAQUE);
   ::TextOut(w32hdc, x,y, str, strlen);
 #endif
 }

@@ -41,8 +41,8 @@ class TFont:
       SERIF=1, 
       TYPEWRITER=3
     };
-      enum EStyle
-      {
+    enum EStyle
+    {
       PLAIN = 0, 
       REGULAR = 0,
       BOLD = 1,
@@ -50,7 +50,7 @@ class TFont:
       BOLD_ITALIC = 3,
       OBLIQUE = 4,
       BOLD_OBLIQUE = 5
-      };
+    };
     TFont();
     TFont(EFamily,EStyle,int);
     TFont(const string &family, EStyle, int);

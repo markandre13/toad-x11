@@ -482,12 +482,12 @@ class TPen:
 //#warning "'TRegion *region' is public"
     TRegion *region;
 //  private:
-    void _setLineAttributes();
     void _init();
     
     #ifdef __X11__    
     _TOAD_GC o_gc, f_gc;
     _TOAD_DRAWABLE x11drawable; // either window or pixmap
+    void _setLineAttributes();
     #endif
     
     #ifdef __WIN32__

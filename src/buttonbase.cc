@@ -99,6 +99,7 @@ TButtonBase::drawLabel(TPen &pen,const string &text, bool bDown, bool bEnabled)
       if (isFocus()) {
         pen.setLineStyle(TPen::DOT);
         pen.drawRectanglePC(x+n-3,y+n-1,pen.getTextWidth(text)+6,pen.getHeight()+1);
+        pen.setLineStyle(TPen::SOLID);
       }
     } else {
       pen.setColor(TColor::BTNLIGHT);

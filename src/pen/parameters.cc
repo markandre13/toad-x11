@@ -428,7 +428,15 @@ void TPen::setLineWidth(int n)
     width=0;
   else
     width=n;
+
+#ifdef __X11__
   _setLineAttributes();
+#endif
+
+#ifdef __WIN32__
+  w32logpen.lopnWidth.x = width;
+  updateW32Pen();
+#endif
 }
 
 /**
@@ -439,12 +447,35 @@ void TPen::setLineWidth(int n)
 void TPen::setLineStyle(EPenLineStyle n)
 {
   style=n;
+#ifdef __X11__
   _setLineAttributes();
+#endif
+
+#ifdef __WIN32__
+  switch(style) {
+    case SOLID:
+      w32logpen.lopnStyle = PS_SOLID;
+      break;
+    case DASH:
+      w32logpen.lopnStyle = PS_DASH;
+      break;
+    case DOT:
+      w32logpen.lopnStyle = PS_DOT;
+      break;
+    case DASHDOT:
+      w32logpen.lopnStyle = PS_DASHDOT;
+      break;
+    case DASHDOTDOT:
+      w32logpen.lopnStyle = PS_DASHDOTDOT;
+      break;
+  }
+  updateW32Pen();
+#endif
 }
 
+#ifdef __X11__
 void TPen::_setLineAttributes()
 {
-#ifdef __X11__
   char dash[6];
   int w = width ? width : 1;
   for(int i=1;i<6;i++)
@@ -472,8 +503,8 @@ void TPen::_setLineAttributes()
   XSetLineAttributes(x11display,o_gc,width,
          style==SOLID ? LineSolid : LineOnOffDash,
          CapButt,JoinMiter);
-#endif
 }
+#endif
 
 #ifdef COLORREF
 #undef COLORREF

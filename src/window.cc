@@ -685,16 +685,16 @@ TWindow::_interactor_create()
   RECT rect;
   rect.left = _x;
   rect.top  = _y;
-  rect.right = _x+_w-1;
-  rect.bottom = _y+_h-1;
+  rect.right = _x+_w-1 + _b*2;
+  rect.bottom = _y+_h-1 + _b*2;
   if ( !getParent() || bShell ) {
     ::AdjustWindowRect(&rect, style, false);
   }
-
+#if 0
 cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w << "," << _h << " -> "
      << (rect.right - rect.left + 1) << "," << (rect.bottom - rect.top + 1)
      << endl;
-
+#endif
   w32window = ::CreateWindow(
     "TOAD:BASE",
     getTitle().c_str(),
@@ -1200,6 +1200,10 @@ TWindow::invalidateWindow(const TRegion &r, bool clear)
   (*paint_rgn)|=r;
   bEraseBe4Paint |= clear;
 #endif
+
+#ifdef __WIN32__
+  invalidateWindow(clear);
+#endif
 }
 
 
@@ -1286,6 +1290,7 @@ TWindow::scrollWindow(int dx, int dy, bool bClrBG)
 #endif
 
 #ifdef __WIN32__
+  ::ScrollWindow(w32window, dx, dy, NULL, NULL);
 #endif
 }
 
@@ -1392,6 +1397,12 @@ TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool bClrBG)
 #endif
 
 #ifdef __WIN32__
+  RECT wr;
+  wr.left  = r.x;
+  wr.right = r.x+r.w-1;
+  wr.top   = r.y;
+  wr.bottom= r.y+r.h-1;
+  ::ScrollWindow(w32window, dx, dy, &wr, &wr);
 #endif
 
 }
@@ -1778,8 +1789,8 @@ TWindow::setSize(int w,int h)
   RECT rect;
   rect.left = _y;
   rect.top  = _x;
-  rect.right = _x+_w-1;
-  rect.bottom = _y+_h-1;
+  rect.right = _x+_w-1+_b*2;
+  rect.bottom = _y+_h-1+_b*2;
   ::AdjustWindowRect(&rect, style, false);
 
     ::MoveWindow(w32window, _x, _y, rect.right - rect.left+1, rect.bottom - rect.top+1, FALSE);
