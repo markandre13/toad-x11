@@ -232,7 +232,8 @@ static TDropSite *dropsite = NULL;
  *   <LI>CTRL selects a link operation
  * </UL>
  */
-void TOADBase::startDrag(TDnDObject *source, unsigned modifier)
+void
+TOADBase::startDrag(TDnDObject *source, unsigned modifier)
 {
   PDnDObject dummy = source;
 
@@ -319,7 +320,7 @@ DBM(cout << __FILE__ << ":" << __LINE__ << endl;)
   unsigned n;
 
   x11_message_enter.xclient.data.l[0] = x11_drag_source_window;
-  x11_message_enter.xclient.data.l[1] |= 0x03000000; // source version
+  x11_message_enter.xclient.data.l[1] |= 0x03000000;
 
   n = source->typelist.size();
   if (ntypes>3) {
@@ -597,6 +598,7 @@ void ReceivedXdndStatus(XEvent &event)
     target_action = None;
 #endif
     
+  // need to handle rectangle here...
     
 DBM(cout << __FILE__ << ":" << __LINE__ << endl;)
   UpdateCursor();
@@ -739,6 +741,7 @@ void SendXdndDrop(Time time)
   cout << "sending XdndDrop..." << endl;
   cout << "  to window  : " << x11_current_window << endl;
   cout << "  from window: " << x11_drag_source_window << endl;
+  cout << "  time       : " << time << endl;
 #endif
   XEvent event;
   PrepareXdndClientMessage(event, x11_current_window, xaXdndDrop);
@@ -753,7 +756,7 @@ void SendXdndDrop(Time time)
  */
 bool TOADBase::DnDSelectionRequest(XEvent &event)
 {
-  if (event.xselectionrequest.property!=xaXdndSelection)
+  if (event.xselectionrequest.selection!=xaXdndSelection)
     return false;
   if (!drag_object) {
     cerr << "toad: warning, received unexpected SelectionRequest for XdndSelection, ignoring" << endl;
@@ -766,6 +769,7 @@ bool TOADBase::DnDSelectionRequest(XEvent &event)
   cout << "  selection       : " << AtomName(event.xselectionrequest.selection) << endl;
   cout << "  target          : " << AtomName(event.xselectionrequest.target) << endl;
   cout << "  property        : " << AtomName(event.xselectionrequest.property) << endl;
+  cout << "  time            : " << event.xselectionrequest.time << endl;
 #endif
 
   string mime = AtomName(event.xselectionrequest.target);
@@ -787,13 +791,14 @@ bool TOADBase::DnDSelectionRequest(XEvent &event)
 #endif
     drag_object->flatdata.erase();
     drag_object->flatten();
+#warning "must also retrieve data format from drag object, currently fixed to 16"    
     XChangeProperty(x11display,
                     event.xselectionrequest.requestor,
                     event.xselectionrequest.property,
-                    event.xselectionrequest.target, 8,
+                    event.xselectionrequest.target, 16,
                     PropModeReplace,
                     (ubyte*)drag_object->flatdata.c_str(),
-                    drag_object->flatdata.size());
+                    drag_object->flatdata.size()/2);
   } else {
     cerr << "toad: warning, failed to convert property" << endl;
   }
@@ -806,13 +811,13 @@ bool TOADBase::DnDSelectionRequest(XEvent &event)
   sevent.xselection.selection = event.xselectionrequest.selection;
   sevent.xselection.target    = 
     drag_object->type ? event.xselectionrequest.target : None;
-  sevent.xselection.property  = None;
+  sevent.xselection.property  = event.xselectionrequest.property;
   sevent.xselection.time      = event.xselectionrequest.time;
 #if VERBOSE
-    cout << "sending SelectionNotify" << endl;
-    cout << "  to window: " << x11_current_window << endl;
+  cout << "sending SelectionNotify" << endl;
+  cout << "  to window: " << event.xselectionrequest.requestor/*x11_current_window*/ << endl;
 #endif
-  if (XSendEvent(x11display, x11_current_window, 
+  if (XSendEvent(x11display, event.xselectionrequest.requestor/*x11_current_window*/,
       False, NoEventMask, &sevent)==0)
   {
     cerr << __FILE__ << ":" << __LINE__ << ": XSendEvent failed\n";
@@ -821,7 +826,7 @@ bool TOADBase::DnDSelectionRequest(XEvent &event)
   return true;
 }
 
-void ReceivedXdndFinished()
+void ReceivedXdndFinished(XEvent &event)
 {
   if (!drag_object) {
     cerr << "toad: received unexpected XdndFinished message, ignoring" << endl;
@@ -829,6 +834,13 @@ void ReceivedXdndFinished()
   }
 WHERE
   drag_object = NULL;
+
+#if VERBOSE
+  cout << "  from window      : " << event.xclient.data.l[0] << endl;
+  cout << "  accepted         : " << (event.xclient.data.l[1]&1 ? "yes" : "no") << endl;
+  cout << "  action           : " <<  AtomName(event.xclient.data.l[2]) << endl;
+#endif
+  
 }
 
 //---------------------------------------------------------------------------
@@ -1441,7 +1453,7 @@ bool TOADBase::DnDClientMessage(XEvent &event)
   } else if (event.xclient.message_type == xaXdndDrop) {
     ReceivedXdndDrop(event);
   } else if (event.xclient.message_type == xaXdndFinished) {
-    ReceivedXdndFinished();
+    ReceivedXdndFinished(event);
   } else if (event.xclient.message_type == xaXdndLeave) {
     ReceivedXdndLeave(event);
   }
