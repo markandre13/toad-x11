@@ -32,8 +32,8 @@ install:
 	$(INSTALL) bin/toadtrace $(DESTDIR)/$(bindir)
 	$(INSTALL) bin/toadbin2c $(DESTDIR)/$(bindir)
 	$(INSTALL) -m 0755 conf/toad-config $(DESTDIR)/$(bindir)
-	$(INSTALL) -d $(libdir)/pkgconfig
-	$(INSTALL) toad.pc $(libdir)/pkgconfig
+	$(INSTALL) -d $(DESTDIR)/$(libdir)/pkgconfig
+	$(INSTALL) toad.pc $(DESTDIR)/$(libdir)/pkgconfig
 	
 doc:
 	cd doc ; make
