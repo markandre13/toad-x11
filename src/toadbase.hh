@@ -211,7 +211,6 @@ class TOADBase
     static void terminate();
     static void initColor();
     static void initIO(int);
-    static void initThreads();
     static void initXInput();
     static void initDnD();
     static void select();
