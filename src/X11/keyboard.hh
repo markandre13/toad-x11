@@ -41,9 +41,9 @@
 #define MK_LBUTTON (1<<8)
 #define MK_MBUTTON (1<<9)
 #define MK_RBUTTON (1<<10)
-// Button4Mask (1<<11)
-// Button5Mask (1<<12)
-// AnyModifier (1<<15)
+#define MK_ROLLUP  (1<<11)
+#define MK_ROLLDN  (1<<12)
+//#define MK_ANY     (1<<15)
 
 // a special TOAD modifier for double click events
 #define MK_DOUBLE  (1<<14)
