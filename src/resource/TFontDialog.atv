@@ -164,5 +164,14 @@ toad::TDialogLayout{
       h = 73
       text = "Font"
     }
+    toad::TFWindow {
+      x = 4
+      y = 232
+      w = 97
+      h = 25
+      title = "table"
+      label = "Show Font"
+      taborder = 0
+    }
   }
 }

@@ -1,4 +1,6 @@
 #warning "Webdings results in a complete different (Andale Mono IPA) font under Freetype"
+#warning "should create font on-demand during drawString!!!"
+#warning "the true type renderer is better, prefer arial over helvetica"
 
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
@@ -53,64 +55,6 @@ using namespace toad;
 
 // http://fontconfig.org/
 
-/*
- * X11 provides 2d transformations for text
- *
- * + : plus
- * ~ : minus
- *                  / a b 0 \
- *  [ a b c d ] <-> | c d 0 |
- *                  \ 0 0 1 /
- */
-string
-d2s(double d)
-{
-  string s;
-  
-  if (d<0.0) {
-    s+='~';
-    d=-d;
-  } else {
-    s+='+';
-  }
-  
-  double a = 1.0;
-  while(a<=d) a*=10.0;
-
-  bool b;
-
-  a/=10.0;
-
-  if (a>=1.0) {
-    while(a>=1.0) {
-      int digit=0; 
-      while(d>=a) {
-        digit++;
-        d-=a;
-      }
-      a/=10.0;
-      s+='0'+digit;
-    }
-  } else {
-    s+='0';
-  }
-  
-  if (d>=0.0001) {
-    s+='.';
-    while(d>=0.0001) {
-      int digit=0; 
-      while(d>=a) {
-        digit++;
-        d-=a;
-      }
-      a/=10.0;
-      s+='0'+digit;
-    }
-  }
-
-  return s;
-}
-
 class TFontStyle {
   public:
     TFontStyle() {}
@@ -135,6 +79,113 @@ class TFontStyle {
     string weight, slant, set_width, adj_style;
 };
     
+class TFontFamily {
+  public:
+    TFontFamily();
+    TFontFamily(TFontFamily const&);
+    TFontFamily(const string &vendor, const string &family);
+
+    // operator to allow sorting in STL container
+    bool operator<(const TFontFamily &f) const {
+      return name < f.name;
+    }
+
+    // operator to allow display in TTable renderer
+    operator const string&() const {
+      return name;
+    }
+    
+    string name;
+    
+    string vendor;
+    string family;
+    
+    TStringSet bitmap_size;
+    
+    bool type_bitmap;
+    bool type_scaleable_x11;
+    bool type_scaleable_ft;
+    
+    TStringSet size_px;
+    TStringSet size_pt;
+};
+
+class TFont2
+{
+  public:
+    enum ESizeType {
+      SIZE_POINT,
+      SIZE_PIXEL
+    };
+    enum ERenderType {
+      RENDER_BITMAP,
+      RENDER_SCALEABLE,
+      RENDER_FREETYPE
+    };
+//  private:
+    XFontStruct * x11fs;
+    Font x11font; // only used for rotated fonts
+    void createX11Font(TMatrix2D*);
+
+#ifdef HAVE_LIBXFT    
+    XftFont * xftfont;
+    void createXftFont(TMatrix2D*);
+#endif
+
+    void clear();
+
+    TFontFamily family;
+    TFontStyle style;
+    
+    ESizeType sizetype;
+    unsigned size;
+    unsigned hdpi, vdpi;
+    ERenderType rendertype;
+
+  public:
+    TFont2();
+    ~TFont2();
+
+    void setFamily(const TFontFamily &f) { family = f; clear(); }
+    const TFontFamily& getFamily() const { return family; }
+
+    void setStyle(const TFontStyle &s) { style = s; clear(); }
+    const TFontStyle& getStyle() const { return style; }
+
+    void setSizeType(ESizeType st) { sizetype = st; clear(); }
+    ESizeType getSizeType() const { return sizetype; }
+
+    void setSize(unsigned s) { size = s; clear(); }
+    unsigned getSize() const { return size; }
+
+    void setDPI(unsigned h, unsigned v) { hdpi=h; vdpi=v; clear(); }
+
+    void setRenderType(ERenderType rt) { rendertype=rt; clear(); }
+    ERenderType getRenderType() const { return rendertype; }
+    
+    void createFont(TMatrix2D*);
+    
+    Font getX11Font() const {
+      return x11font ? x11font : x11fs->fid;
+    }
+    
+#ifdef HAVE_LIBXFT
+    XftFont * getXftFont() const {
+      return xftfont;
+    }
+#endif    
+
+    int getTextWidth(const string&) const;
+    int getTextWidth(const char*) const;
+    int getTextWidth(const char*,int len) const;
+    int getTextWidth(const unsigned char *s) const { return getTextWidth((const char*)s); }
+    int getTextWidth(const unsigned char *s,int len) const { return getTextWidth((const char*)s,len); }
+    int getAscent() const;
+    int getDescent() const;
+    int getHeight() const {return getAscent()+getDescent();}
+};
+
+
 TFontStyle::TFontStyle(const string &weight,
                        const string &slant,
                        const string &set_width,
@@ -167,36 +218,6 @@ TFontStyle::TFontStyle(const string &weight,
 typedef GSTLMap<map<string, TFontStyle>, string, TFontStyle> TFontStyleMap;
 typedef GTableCellRenderer_String<TFontStyleMap> TTableCellRenderer_FontStyleMap;
 
-class TFontFamily {
-  public:
-    TFontFamily();
-    TFontFamily(TFontFamily const&);
-    TFontFamily(const string &vendor, const string &family);
-
-    // operator to allow sorting in STL container
-    bool operator<(const TFontFamily &f) const {
-      return name < f.name;
-    }
-
-    // operator to allow display in TTable renderer
-    operator const string&() const {
-      return name;
-    }
-    
-    string name;
-    
-    string vendor;
-    string family;
-    
-    TStringSet bitmap_size;
-    
-    bool type_bitmap;
-    bool type_scaleable_x11;
-    bool type_scaleable_ft;
-    
-    TStringSet size_px;
-    TStringSet size_pt;
-};
 
 typedef GSTLMap<map<string, TFontFamily>, string, TFontFamily> TFontFamilyMap;
 typedef GTableCellRenderer_String<TFontFamilyMap> TTableCellRenderer_FontFamilyMap;
@@ -215,6 +236,8 @@ class TFontDialog:
     void updateRendertype();
     void updateFont();
     
+    void showFontTable();
+    
     void paint();
 
     TTable *tfont;
@@ -224,23 +247,14 @@ class TFontDialog:
     TFontFamilyMap ff;
     TFontStyleMap fs;
 
-    enum ESizeType {
-      SIZE_POINT,
-      SIZE_PIXEL
-    };
-    
-    GRadioStateModel<ESizeType> sizetype;
+    GRadioStateModel<TFont2::ESizeType> sizetype;
 
     TTextModel size;
     TTextModel dpi;
 
-    enum ERenderType {
-      RENDER_BITMAP,
-      RENDER_SCALEABLE,
-      RENDER_FREETYPE
-    };
+    GRadioStateModel<TFont2::ERenderType> rendertype;
     
-    GRadioStateModel<ERenderType> rendertype;
+    TFont2 font;
 };
 
 int
@@ -251,7 +265,6 @@ main(int argc, char **argv, char **envv)
     toad::mainLoop();
   } toad::terminate();
 }
-
 
 TFontFamily::TFontFamily()
 {
@@ -297,6 +310,9 @@ TX11FontName::setWildcards()
   vendor = family = weight = slant = set_width = adj_style =
   pixels = points = hdpi = vdpi = spacing = avg_width =
   registry = encoding = "*";
+  
+//  registry = "iso10646";
+//  encoding = "1";
 }
 
 void
@@ -416,8 +432,8 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
    */
   size = "12";
   dpi = "100";
-  sizetype = SIZE_POINT;
-  rendertype = RENDER_BITMAP;
+  sizetype = TFont2::SIZE_POINT;
+  rendertype = TFont2::RENDER_BITMAP;
 
   /*
    * retrieve Xft (X FreeType Extension) font names
@@ -434,7 +450,6 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
     cerr << "XFT isn't supported by server" << endl;
   }
 
-#if 1
   XftFontSet * xftfl;
   xftfl = XftListFonts(x11display, x11screen,
                        0, // XftPattern
@@ -476,20 +491,23 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
   }
   XftFontSetDestroy(xftfl);
 #endif
-#endif
   
   /*
    * retrieve X11 server font names
    */
-#if 1
   int count;
-  char **fl = XListFonts(x11display, "-*-*-*-*-*-*-*-*-*-*-*-*-*-*", 8192, &count);
-//  char **fl = XListFonts(x11display, "-*-times new roman-*-*-*-*-*-*-*-*-*-*-*-*", 8192, &count);
+  TX11FontName xfn;
+  xfn.setWildcards();
+  char **fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
 
   for(int i=0; i<count; ++i) {
     TX11FontName xfn;
     xfn.setXLFD(fl[i]);
     
+if (xfn.family=="fixed") {
+  cerr << "fixed vendor '" << xfn.vendor << "' -> '" << xfn.registry << "-" << xfn.encoding << endl;
+}
+
     /* hack to provide better sorting for humans: */
     if (!xfn.family.empty())
       xfn.family[0] = toupper(xfn.family[0]);
@@ -500,8 +518,15 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
     
     ffsp = ff.begin();
     while(ffsp!=ff.end()) {
-      if (strcasecmp(xfn.family.c_str(), ffsp->second.family.c_str())==0) {
-        xfn.family = ffsp->second.family;
+      if (strcasecmp(xfn.family.c_str(), ffsp->second.family.c_str())==0)
+      {
+        xfn.family = ffsp->second.family; // use FreeType name
+        
+        if (!ffsp->second.vendor.empty()) { // not a pure freetype name
+          if (strcasecmp(xfn.vendor.c_str(), ffsp->second.vendor.c_str())!=0) {
+            ffsp=ff.end();
+          }
+        }
         break;
       }
       ++ffsp;
@@ -529,7 +554,6 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
   }
 
   XFreeFontNames(fl);
-#endif  
 
   /*
    * create widgets
@@ -552,15 +576,17 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
 
   tsize = new TTable(this, "font size table");
   
-  sizetype.add(new TRadioButton(this, "metric pt"), SIZE_POINT);
-  sizetype.add(new TRadioButton(this, "metric px"), SIZE_PIXEL);
+  sizetype.add(new TRadioButton(this, "metric pt"), TFont2::SIZE_POINT);
+  sizetype.add(new TRadioButton(this, "metric px"), TFont2::SIZE_PIXEL);
   connect(sizetype.sigChanged, this, &This::updateFont);
 
-  rendertype.add(new TRadioButton(this, "type bitmap"), RENDER_BITMAP);
-  rendertype.add(new TRadioButton(this, "type scaleable x11"), RENDER_SCALEABLE);
-  rendertype.add(new TRadioButton(this, "type scaleable ft"), RENDER_FREETYPE);
+  rendertype.add(new TRadioButton(this, "type bitmap"), TFont2::RENDER_BITMAP);
+  rendertype.add(new TRadioButton(this, "type scaleable x11"), TFont2::RENDER_SCALEABLE);
+  rendertype.add(new TRadioButton(this, "type scaleable ft"), TFont2::RENDER_FREETYPE);
   connect(rendertype.sigChanged, this, &This::updateStyle);
-  
+
+  pb = new TPushButton(this, "table");
+  connect(pb->sigActivate, this, &This::showFontTable);  
   pb = new TPushButton(this, "ok");
   pb = new TPushButton(this, "abort");
 
@@ -593,44 +619,52 @@ TFontDialog::updateRendertype()
 {
   const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
 
-  rendertype.getButton(RENDER_BITMAP)->setEnabled(f.type_bitmap);
-  rendertype.getButton(RENDER_SCALEABLE)->setEnabled(f.type_scaleable_x11);
-  rendertype.getButton(RENDER_FREETYPE)->setEnabled(f.type_scaleable_ft);
+  rendertype.getButton(TFont2::RENDER_BITMAP)->setEnabled(f.type_bitmap);
+  rendertype.getButton(TFont2::RENDER_SCALEABLE)->setEnabled(f.type_scaleable_x11);
+  rendertype.getButton(TFont2::RENDER_FREETYPE)->setEnabled(f.type_scaleable_ft);
 
   bool change = false;
 
   switch(rendertype) {
-    case RENDER_BITMAP:
+    case TFont2::RENDER_BITMAP:
       if (!f.type_bitmap) change = true;
       break;
-    case RENDER_SCALEABLE:
+    case TFont2::RENDER_SCALEABLE:
       if (!f.type_scaleable_x11) change = true;
       break;
-    case RENDER_FREETYPE:
+    case TFont2::RENDER_FREETYPE:
       if (!f.type_scaleable_ft) change = true;
       break;
   }
 
   if (change) {
     if (f.type_bitmap)
-      rendertype = RENDER_BITMAP;
+      rendertype = TFont2::RENDER_BITMAP;
     else if (f.type_scaleable_x11)
-      rendertype = RENDER_SCALEABLE;
+      rendertype = TFont2::RENDER_SCALEABLE;
     else
-      rendertype = RENDER_FREETYPE;
+      rendertype = TFont2::RENDER_FREETYPE;
   }
 }
 
 void
 TFontDialog::updateStyle()
 {
+  if (tfont->getSelectionModel()->begin() ==
+      tfont->getSelectionModel()->end() ) 
+  {
+    cerr << "no font selected" << endl;
+    return;
+  }
+
+cerr << "updateStyle()" << endl;
   const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
 
-  if (rendertype!=RENDER_FREETYPE) {
+  if (rendertype!=TFont2::RENDER_FREETYPE) {
     TX11FontName xfn;
     xfn.setWildcards();
     xfn.set(f);
-    if (sizetype==SIZE_PIXEL) {
+    if (sizetype==TFont2::SIZE_PIXEL) {
       xfn.pixels = size;
     } else {
       xfn.points = size + "0";
@@ -727,10 +761,22 @@ TFontDialog::styleSelected()
 void
 TFontDialog::updateFont()
 {
+  font.setFamily(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
+  font.setStyle(fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY()));
+  font.setSizeType(sizetype);
+  font.setSize(atoi(size.c_str()));
+  font.setDPI( atoi(dpi.c_str()), atoi(dpi.c_str()) );
+  font.setRenderType(rendertype);
+#if 0
   const TFontFamily &f(
     ff.getElementAt(0, tfont->getSelectionModel()->begin().getY())
   );
   TFontFamily &f2(const_cast<TFontFamily&>(f));
+
+  if (fs.begin() == fs.end()) {
+    cerr << __FILE__ << ':' << __LINE__ << endl;
+    cerr << "  font style list is empty" << endl;
+  }
   
   const TFontStyle &s(
     fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY())
@@ -746,7 +792,6 @@ TFontDialog::updateFont()
     xfn.points = size + "0";
     xfn.hdpi = xfn.vdpi = dpi;
   }
-#if 0 
   #warning "encoding isn't selected" 
 //  cerr << "mask: '" << xfn.getXLFD() << "'\n";
   int count;
@@ -762,152 +807,344 @@ TFontDialog::updateFont()
   invalidateWindow();
 }
 
-void
-TFontDialog::paint()
+TFont2::TFont2()
 {
-  TPen pen(this);
-  pen.rotate(15);
+  x11font = 0;
+  x11fs = 0;
+#ifdef HAVE_LIBXFT
+  xftfont = 0;
+#endif
+}
+
+TFont2::~TFont2() {
+  clear();
+}
+
+void
+TFont2::clear()
+{
+  if (x11font) {
+    XUnloadFont(x11display, x11font);
+    x11font = 0;
+  }
+  if (x11fs) {
+    XUnloadFont(x11display, x11fs->fid);
+    XFreeFontInfo(NULL,x11fs,0);
+    x11fs = 0;
+  }
+#ifdef HAVE_LIBXFT
+  if (xftfont) {
+    XftFontClose(x11display, xftfont);
+    xftfont = 0;
+  }
+#endif
+}
+
+int
+TFont2::getAscent() const
+{
+  if (x11fs)
+    return x11fs->ascent;
+#ifdef HAVE_LIBXFT
+  if (xftfont)
+    return xftfont->ascent;
+#endif
+  return 0;
+}
+
+int
+TFont2::getDescent() const
+{
+  if (x11fs)
+    return x11fs->ascent;
+#ifdef HAVE_LIBXFT
+  if (xftfont)
+    return xftfont->ascent;
+#endif
+  return 0;
+}
+
+int
+TFont2::getTextWidth(const string &str) const
+{
+  return getTextWidth(str.c_str(),str.size());
+}
+ 
+int
+TFont2::getTextWidth(const char *str) const
+{
+  return getTextWidth(str,strlen(str));
+}
+ 
+int
+TFont2::getTextWidth(const char *str, int len) const
+{
+  if (x11fs)
+    return XTextWidth(x11fs,str,len);
+#ifdef HAVE_LIBXFT
+  if (xftfont) {
+    XGlyphInfo gi;
+    XftTextExtents8(x11display, xftfont, (XftChar8*)str, len, &gi);
+    return gi.width;
+  }
+#endif
+  return 0;
+}
+
+void
+TFont2::createFont(TMatrix2D *mat)
+{
+  switch(rendertype) {
+    case RENDER_BITMAP:
+    case RENDER_SCALEABLE:
+      createX11Font(mat);
+      break;
+#ifdef HAVE_LIBXFT
+    case RENDER_FREETYPE:
+      createXftFont(mat);
+      break;
+#endif
+  }
+}
+              
+/*
+ * X11 provides 2d transformations for text
+ *
+ * + : plus
+ * ~ : minus
+ *                  / a b 0 \
+ *  [ a b c d ] <-> | c d 0 |
+ *                  \ 0 0 1 /
+ */
+static string
+d2s(double d)
+{
+  string s;
   
-  int x, y;
-  x = 8; y=160;
-  string text("abcxyz ABCXYZ 123 `'´!?${}. áäæçëß ÂÄÆÇË");
+  if (d<0.0) {
+    s+='~';
+    d=-d;
+  } else {
+    s+='+';
+  }
+  
+  double a = 1.0;
+  while(a<=d) a*=10.0;
 
-  const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
-  const TFontStyle &s(fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY()));
+  bool b;
 
-  if (rendertype!=RENDER_FREETYPE) {
-    TX11FontName xfn;
-    xfn.setWildcards();
-    xfn.set(f);
-    xfn.set(s);
-    if (sizetype==SIZE_PIXEL) {
-      if(!pen.mat) {
-        xfn.pixels = size;
-      } else {
-        double d = atof(size.c_str());
-        string s;
-        s = "[";
-        s += d2s(pen.mat->a11 * d);
-        s += d2s(pen.mat->a12 * d);
-        s += d2s(pen.mat->a21 * d);
-        s += d2s(pen.mat->a22 * d);
-        s += "]";
-        xfn.pixels = s;
-      }
-    } else {
-      if (!pen.mat) {
-        xfn.points = size + "0";
-      } else {
-        double d = atof(size.c_str());
-        string s;
-        s = "[";
-        s += d2s(pen.mat->a11 * d);
-        s += d2s(pen.mat->a12 * d);
-        s += d2s(pen.mat->a21 * d);
-        s += d2s(pen.mat->a22 * d);
-        s += "]";
-        xfn.points = s;
-      }
-      xfn.hdpi = xfn.vdpi = dpi;
-    }
+  a/=10.0;
 
-    cerr << "paint X11 fontmask: " << xfn.getXLFD() << endl;
-
-    TFont font;
-    int count;
-    char **fl;
-    
-    fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
-//    cerr << "paint X11 fontmask: " << xfn.getXLFD() << endl;
-    for(int i=0; i<count; ++i) {
-        if (i==0)
-          font.setFont(fl[i]);
-//      cerr << fl[i] << endl;
-    }
-    XFreeFontNames(fl);
-    pen.setFont(&font);
-    
-    if (!pen.mat) {
-      pen.drawString(x, y, text);
-    } else {
-      if (sizetype==SIZE_PIXEL) {
-        xfn.pixels = size;
-      } else {
-        xfn.points = size + "0";
+  if (a>=1.0) {
+    while(a>=1.0) {
+      int digit=0; 
+      while(d>=a) {
+        digit++;
+        d-=a;
       }
-      TFont font_normal;
-      fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
-//      cerr << "paint X11 fontmask: " << xfn.getXLFD() << endl;
-      for(int i=0; i<count; ++i) {
-          if (i==0)
-            font_normal.setFont(fl[i]);
-//        cerr << fl[i] << endl;
-      }
-      XFreeFontNames(fl);
-      
-      y-=font.getAscent();
-      y+=font_normal.getAscent();
-
-      string::iterator p(text.begin()), e(text.end());
-      while(p!=e) {
-        char buffer[2];
-        buffer[0]=*p;
-        buffer[1]=0;
-        pen.drawString(x,y, buffer);
-        x+=font_normal.getTextWidth(buffer);
-        ++p;
-      }
+      a/=10.0;
+      s+='0'+digit;
     }
   } else {
-    cerr << "render freetype" << endl;
+    s+='0';
+  }
+  
+  if (d>=0.0001) {
+    s+='.';
+    while(d>=0.0001) {
+      int digit=0; 
+      while(d>=a) {
+        digit++;
+        d-=a;
+      }
+      a/=10.0;
+      s+='0'+digit;
+    }
+  }
 
-    XGlyphInfo gi;
-    XftDraw *xftdraw = XftDrawCreate(x11display, x11window, x11visual, x11colormap);
-    if (!xftdraw) {
-      cerr << "failed to create xftdraw" << endl;
+  return s;
+}
+
+void
+TFont2::createX11Font(TMatrix2D *mat)
+{
+  if (x11fs)
+    return;
+    
+cerr << "allocate new X11Font" << endl;
+
+  // build an XLFD mask
+  TX11FontName xfn;
+  xfn.setWildcards();
+  xfn.set(family);
+  xfn.set(style);
+
+  if (sizetype==SIZE_PIXEL) {
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%i", size);
+printf("'%s' = %i\n", buffer ,size);
+    xfn.pixels = buffer;
+  } else {
+    char buffer[11];
+    snprintf(buffer, sizeof(buffer), "%i", size * 10);
+printf("'%s' = %i\n", buffer ,size);
+    xfn.points = buffer;
+    
+    snprintf(buffer, sizeof(buffer), "%i", hdpi);
+    xfn.hdpi = buffer;
+    snprintf(buffer, sizeof(buffer), "%i", vdpi);
+    xfn.vdpi = buffer;
+  }
+
+  // locate fonts matching this mask
+  cerr << "createX11Font: fontmask: " << xfn.getXLFD() << endl;
+
+  int count;
+  char **fl;
+    
+  fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
+  for(int i=0; i<count; ++i) {
+    cerr << "found " << fl[i] << endl;
+  }
+
+  // complete missing values
+  TX11FontName xfn_new;
+  xfn_new.setXLFD(fl[0]);
+/* // leave a wildcard
+  if (sizetype==SIZE_PIXEL) {
+    xfn.points = xfn_new.points;
+  } else {
+    xfn.pixels = xfn_new.pixels;
+  }
+*/
+  xfn.spacing   = xfn.spacing;
+  xfn.avg_width = xfn.avg_width;
+  xfn.registry  = xfn_new.registry;
+  xfn.encoding  = xfn_new.encoding;
+  
+  XFontStruct *new_fs = XLoadQueryFont(x11display, xfn.getXLFD().c_str());
+  if (!new_fs) {
+    cerr << "failed to load font structure" << endl;
+    return;
+  }
+  XFreeFontNames(fl);
+  
+  Font new_font = 0;
+  if (mat) {
+    if (sizetype==SIZE_PIXEL) {
+      double d = size;
+      string s;
+      s = "[";
+      s += d2s(mat->a11 * d);
+      s += d2s(mat->a12 * d);
+      s += d2s(mat->a21 * d);
+      s += d2s(mat->a22 * d);
+      s += "]";
+      xfn.pixels = s;
+    } else {
+      double d = size;
+      string s;
+      s = "[";
+      s += d2s(mat->a11 * d);
+      s += d2s(mat->a12 * d);
+      s += d2s(mat->a21 * d);
+      s += d2s(mat->a22 * d);
+      s += "]";
+      xfn.points = s;
+    }
+    new_font = XLoadFont(x11display, xfn.getXLFD().c_str());
+    if (!new_font) {
+      cerr << "failed to load font" << endl;
+      XUnloadFont(x11display, new_fs->fid);
+      XFreeFontInfo(NULL,new_fs,0);
       return;
     }
-    XftDrawSetClip(xftdraw, getUpdateRegion()->x11region);
+  }
+  
+  // set new font
+  clear();
+  x11font = new_font;
+  x11fs = new_fs;
+}
+
+#ifdef HAVE_LIBXFT
+void
+TFont2::createXftFont(TMatrix2D *mat)
+{
+  if (xftfont)
+    return;
+cerr << "allocate new XftFont" << endl;
+  XftPattern *pattern = XftPatternCreate();
+
+  XftPatternAddString(pattern, XFT_FAMILY, family.family.c_str());
+
+  XftMatrix xftmat;
+  if (mat) {
+    XftMatrixInit(&xftmat);
+    xftmat.xx = mat->a11;
+    xftmat.yx = mat->a12;
+    xftmat.xy = mat->a21;
+    xftmat.yy = mat->a22;
+    XftPatternAddMatrix(pattern, XFT_MATRIX, &xftmat);
+  }
     
-    XftFont *font;
-    XftPattern *pattern = XftPatternCreate();
-    XftPatternAddString(pattern, XFT_FAMILY, f.family.c_str());
+  if (sizetype==TFont2::SIZE_PIXEL) {
+    double s = size;
+    XftPatternAddDouble(pattern, XFT_PIXEL_SIZE, s);
+  } else {
+    double s = size;
+    double d = hdpi;
+    XftPatternAddDouble(pattern, XFT_SIZE, s);
+    XftPatternAddDouble(pattern, XFT_DPI, d);
+  }
 
-    XftMatrix xftmat;
-    if (pen.mat) {
-      XftMatrixInit(&xftmat);
-      xftmat.xx = pen.mat->a11;
-      xftmat.yx = pen.mat->a12;
-      xftmat.xy = pen.mat->a21;
-      xftmat.yy = pen.mat->a22;
-      XftPatternAddMatrix(pattern, XFT_MATRIX, &xftmat);
-    }
+  XftPatternAddString(pattern, XFT_STYLE, style.name.c_str());
+
+  XftResult result;
+  XftPattern *pattern2 = XftFontMatch(x11display, x11screen,
+    pattern, &result);
     
-    if (sizetype==SIZE_PIXEL) {
-      double s = atoi(size.c_str());
-      XftPatternAddDouble(pattern, XFT_PIXEL_SIZE, s);
-    } else {
-      double s = atoi(size.c_str());
-      double d = atoi(dpi.c_str());
-      XftPatternAddDouble(pattern, XFT_SIZE, s);
-      XftPatternAddDouble(pattern, XFT_DPI, d);
-    }
+  XftFont *new_font = XftFontOpenPattern(x11display, pattern2);
+  if (new_font) {
+    clear();
+    xftfont = new_font;
+  }
+  #warning "xft structures not destroyed"
+}
+#endif
 
-    const TFontStyle &style(
-      fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY())
-    );
-    XftPatternAddString(pattern, XFT_STYLE, style.name.c_str());
+void
+drawString(TPen &pen,
+           TFont2 &font,
+           XftDraw *xftdraw,
+           int x, int y, const string &text)
+{
+  font.createFont(pen.mat);
 
-    XftResult result;
-    XftPattern *pattern2 = XftFontMatch(x11display, x11screen,
-      pattern, &result);
-    
-    font = XftFontOpenPattern(x11display, pattern2);
-
-    if (font) {
-      XGlyphInfo gi;
-      XftTextExtents8(x11display, font, (XftChar8*)text.c_str(), text.size(), &gi);
-       y+=font->ascent;
+  switch(font.getRenderType()) {
+    case TFont2::RENDER_BITMAP:
+    case TFont2::RENDER_SCALEABLE:
+      XSetFont(x11display, pen.o_gc, font.getX11Font());
+      y+=font.getAscent();
+      if (!pen.mat) {
+        XDrawString(x11display, pen.x11drawable, pen.o_gc, x,y,
+          text.c_str(), text.size() );
+      } else {
+        int x2, y2;
+        string::const_iterator p(text.begin()), e(text.end());
+        while(p!=e) {
+          char buffer[2];
+          buffer[0]=*p;
+          buffer[1]=0;
+          pen.mat->map(x, y, &x2, &y2);
+          XDrawString(x11display, pen.x11drawable, pen.o_gc, x2,y2, buffer, 1);
+          x+=font.getTextWidth(buffer);
+          ++p;
+        }
+      }
+      break;
+    case TFont2::RENDER_FREETYPE: {
+      y+=font.getAscent();
       if (pen.mat)
         pen.mat->map(x, y, &x, &y);
       XftColor color;
@@ -915,14 +1152,201 @@ TFontDialog::paint()
       color.color.green = 0;
       color.color.blue = 0;
       color.color.alpha = 0xffff;
-
-      XftDrawString8(xftdraw, &color, font, x,y, (XftChar8*)text.c_str(), text.size());
-      XftFontClose(x11display, font);
-    } else {
-      cerr << "no font!" << endl;
-    }
-  
-//  XftColorFree(x11display, x11visual, x11colormap, &color);
-
+      XftDrawString8(xftdraw, &color, font.getXftFont(), x,y, (XftChar8*)text.c_str(), text.size());
+      } break;
   }
+}
+
+void
+drawString16(TPen &pen,
+             TFont2 &font,
+             XftDraw *xftdraw,
+             int x, int y,
+             XChar2b *text,
+             unsigned len )
+{
+  font.createFont(pen.mat);
+
+  switch(font.getRenderType()) {
+    case TFont2::RENDER_BITMAP:
+    case TFont2::RENDER_SCALEABLE:
+      XSetFont(x11display, pen.o_gc, font.getX11Font());
+      y+=font.getAscent();
+      if (!pen.mat) {
+        XDrawString16(x11display, pen.x11drawable, pen.o_gc, x,y, text, len );
+cerr << __LINE__ << endl;
+      } else {
+#if 1
+        pen.mat->map(x, y, &x, &y);
+        XDrawString16(x11display, pen.x11drawable, pen.o_gc, x,y, text, len );
+#else
+        int x2, y2;
+        string::const_iterator p(text.begin()), e(text.end());
+        while(p!=e) {
+          XChar2b buffer[2];
+          buffer[0]=*p;
+          buffer[1]=0;
+          pen.mat->map(x, y, &x2, &y2);
+          XDrawString16(x11display, pen.x11drawable, pen.o_gc, x2,y2, buffer, 1);
+          x+=font.getTextWidth(buffer);
+          ++p;
+        }
+#endif
+      }
+      break;
+    case TFont2::RENDER_FREETYPE: {
+#if 0
+      y+=font.getAscent();
+      if (pen.mat)
+        pen.mat->map(x, y, &x, &y);
+      XftColor color;
+      color.color.red = 0;
+      color.color.green = 0;
+      color.color.blue = 0;
+      color.color.alpha = 0xffff;
+      XftDrawString8(xftdraw, &color, font.getXftFont(), x,y, (XftChar8*)text.c_str(), text.size());
+#endif
+      } break;
+  }
+}
+
+void
+TFontDialog::paint()
+{
+  TPen pen(this);
+  pen.translate(8, 160);
+//  pen.rotate(15);
+
+  XftDraw *xftdraw = XftDrawCreate(x11display, pen.x11drawable, x11visual, x11colormap);
+  XftDrawSetClip(xftdraw, getUpdateRegion()->x11region);
+
+  drawString(pen, font, xftdraw, 0, 0, "abcxyz ABCXYZ 123 `'´!?${}. áäæçëß ÂÄÆÇË");
+
+  XftDrawDestroy(xftdraw);
+}
+
+class TFontTable:
+  public TDialog
+{
+    TFont2 &font;
+  public:
+    TFontTable(TWindow *parent, const string &title, TFont2 &font);
+    void paint();
+    
+    void table(int dx);
+    int ct;
+};
+
+TFontTable::TFontTable(TWindow *parent, const string &title, TFont2 &aFont):
+  TDialog(parent, title), font(aFont)
+{
+  setLayout(0);
+  setSize(16*24+10, 16*24+30+10);
+  
+  TPushButton *pb;
+  
+  pb = new TPushButton(this, "<");
+  connect(pb->sigActivate, this, &TFontTable::table, -1);
+  pb->setShape(5,5,80,25);
+
+  pb = new TPushButton(this, ">");
+  connect(pb->sigActivate, this, &TFontTable::table, 1);
+  pb->setShape(5+80+5,5,80,25);
+  
+  ct = 0;
+  table(0);
+}
+
+#ifdef X_HAVE_UTF8_STRING
+#endif
+
+void
+TFontTable::table(int dx)
+{
+  ct+=dx;
+  if (ct<0)
+    ct=0;
+  if (ct>255)
+    ct=255;
+  invalidateWindow();
+}
+
+void
+TFontTable::paint()
+{
+  TPen pen(this);
+  
+  unsigned i, j, x, y, c;
+  int s = 24;
+
+cerr << "table: " << ct << endl;
+if (font.x11fs) {
+  cerr << "  first char: " << font.x11fs->min_char_or_byte2 << endl;
+  cerr << "  last  char: " << font.x11fs->max_char_or_byte2 << endl;
+  cerr << "  first row : " << font.x11fs->min_byte1 << endl;
+  cerr << "  last row  : " << font.x11fs->max_byte1 << endl;
+  cerr << "  direction : " << font.x11fs->direction << endl;
+  cerr << "  all_chars_exist: " << font.x11fs->all_chars_exist << endl;
+  cerr << "  default char   : " << font.x11fs->default_char << endl;
+}
+  pen.translate(5,35);
+  
+  x = y = 0;
+  c = 0;
+  
+  XftDraw *xftdraw = XftDrawCreate(x11display, pen.x11drawable, x11visual, x11colormap);
+  XftDrawSetClip(xftdraw, getUpdateRegion()->x11region);
+
+  pen.setColor(226, 145, 145);
+  for(i=0; i<16; ++i) {
+    for(j=0; j<16; ++j) {
+      unsigned word = (ct<<8) + c;
+      if (word<=0x007f) {
+        pen.fillRectangle(x, y, s, s);
+      }
+      x+=s;
+      c++;
+    }
+    x=0;
+    y+=s;
+  }
+  pen.setColor(0, 0, 0);
+  
+  x = y = 0;
+  c = 0;
+  for(i=0; i<16; ++i) {
+    pen.drawLine(i*s,0,i*s,s*16);
+    pen.drawLine(0,i*s,s*16,i*s);
+    for(j=0; j<16; ++j) {
+#if 0
+      char buffer[2];
+      buffer[0]=c;
+      buffer[1]=0;
+      drawString(pen, font, xftdraw, x+2, y+2, buffer);
+#endif
+#if 1
+      XChar2b buffer[2];
+      buffer[0].byte1 = ct;
+      buffer[0].byte2 = c;
+      drawString16(pen, font, xftdraw, x+2, y+2, buffer, 1);
+#endif
+      x+=s;
+      c++;
+    }
+    x=0;
+    y+=s;
+  }
+  pen.drawLine(i*s,0,i*s,s*16);
+  pen.drawLine(0,i*s,s*16,i*s);
+
+
+  XftDrawDestroy(xftdraw);
+}
+
+void
+TFontDialog::showFontTable()
+{
+  cerr << "show font table" << endl;
+  TFontTable dlg(this, "Font Table", font);
+  dlg.doModalLoop();
 }
