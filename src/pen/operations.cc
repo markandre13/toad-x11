@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1022,8 +1022,10 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 #ifdef __X11__
   assert(font!=NULL);
   font->createFont(mat);
-  switch(font->getRenderType()) {
 
+  XftColor color;
+
+  switch(font->getRenderType()) {
     case TFont::RENDER_X11:
 #ifdef TOAD_OLD_FONTCODE
       if (!font->getX11Font()) {
@@ -1032,15 +1034,47 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
       }
       XSetFont(x11display, o_gc, font->getX11Font());
 #endif
-      y+=font->getAscent();
-
       if (!transparent && using_bitmap) {
         XSetFillStyle(x11display, o_gc, FillSolid);
       }
-      
-      if (!mat || mat->isIdentity()) {
-        if (mat)
-          mat->map(x, y, &x, &y);
+      break;
+    case TFont::RENDER_FREETYPE:
+#ifdef HAVE_LIBXFT
+      if (!transparent) {
+        bool b = two_colors; 
+        GC gc;
+        if (b) {
+          two_colors = false;
+          gc = o_gc; o_gc = f_gc;
+        }
+        fillRectanglePC(x,y,getTextWidth(str,strlen),getHeight());
+        if (b) {
+          two_colors = true;
+          o_gc = gc;
+        }
+      }
+      color.color.red   = (o_color.r << 8) | o_color.r;
+      color.color.green = (o_color.g << 8) | o_color.g;
+      color.color.blue  = (o_color.b << 8) | o_color.b;
+      color.color.alpha = 0xffff;
+      if (!xftdraw) {
+        *(const_cast<XftDraw**>(&xftdraw)) = XftDrawCreate(x11display, x11drawable, x11visual, x11colormap);
+        if (wnd)
+          XftDrawSetClip(xftdraw, wnd->getUpdateRegion()->x11region);
+      }
+      break;
+#else
+      return;
+#endif
+  }
+
+  y+=font->getAscent();
+
+  if (!mat || mat->isIdentity()) {
+    if (mat)
+      mat->map(x, y, &x, &y);
+    switch(font->getRenderType()) {
+      case TFont::RENDER_X11:
 #ifdef TOAD_OLD_FONTCODE
         if (transparent)
           XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
@@ -1053,30 +1087,37 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
         else
           XUtf8DrawImageString(x11display, x11drawable, font->xutf8font, o_gc, x, y, str, strlen);
 #endif
-      } else {
-        int x2, y2;
-        const char *p = str;
-        int len=0;
-        while(*p && len<strlen) {
-          char buffer[5];
-          unsigned clen=1;
-          buffer[0]=*p;
-          ++p;
-          ++len;
-#ifdef HAVE_LIBXUTF8
-          while( ((unsigned char)*p & 0xC0) == 0x80) {
-            buffer[clen]=*p;
-            ++len;
-            ++p;
-            ++clen;
-          }
-#endif          
+        break;
+      case TFont::RENDER_FREETYPE:
+#ifdef HAVE_LIBXFT
+        XftDrawStringUtf8(xftdraw, &color, font->getXftFont(), x,y, (XftChar8*)str, strlen);
+#endif
+        break;
+    }
+  } else {
 
-          int direction, fasc, fdesc;
-
-          mat->map(x,
-              y,
-            &x2, &y2);
+    int x2, y2;
+    const char *p = str;
+    int len=0;
+    while(*p && len<strlen) {
+      char buffer[5];
+      unsigned clen=1;
+      buffer[0]=*p;
+      ++p;
+      ++len;
+  
+      while( ((unsigned char)*p & 0xC0) == 0x80) {
+        buffer[clen]=*p;
+        ++len;
+        ++p;
+        ++clen;
+      }
+  
+      int direction, fasc, fdesc;
+  
+      mat->map(x, y, &x2, &y2);
+      switch(font->getRenderType()) {
+        case TFont::RENDER_X11:
 #ifdef TOAD_OLD_FONTCODE
           if (transparent)
             XDrawString(x11display, x11drawable, o_gc, x2,y2, buffer, 1);
@@ -1093,47 +1134,23 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
             XUtf8DrawImageString(x11display, x11drawable, font->xutf8font_r, o_gc, x2, y2, buffer, clen);
           x+=font->x11scale * XUtf8TextWidth(font->xutf8font,buffer,clen);
 #endif
-        }
+          break;
+        case TFont::RENDER_FREETYPE:
+#ifdef HAVE_LIBXFT
+          XftDrawStringUtf8(xftdraw, &color, font->xftfont_r, x2,y2, (XftChar8*)buffer, clen);
+          x+=font->getTextWidth(buffer, clen);
+#endif
+          break;
       }
+    }
+  }
 
+  switch(font->getRenderType()) {
+    case TFont::RENDER_X11:  
       if (!transparent && using_bitmap) {
         XSetFillStyle(x11display, o_gc, FillTiled);
       }
-
       break;
-
-#ifdef HAVE_LIBXFT
-    case TFont::RENDER_FREETYPE: {
-      if (!transparent) {
-        bool b = two_colors; 
-        GC gc;
-        if (b) {
-          two_colors = false;
-          gc = o_gc; o_gc = f_gc;
-        }
-        fillRectanglePC(x,y,getTextWidth(str,strlen),getHeight());
-        if (b) {
-          two_colors = true;
-          o_gc = gc;
-        }
-      }
-      y+=font->getAscent();
-      if (mat)
-        mat->map(x, y, &x, &y);
-      XftColor color;
-      color.color.red   = (o_color.r << 8) | o_color.r;
-      color.color.green = (o_color.g << 8) | o_color.g;
-      color.color.blue  = (o_color.b << 8) | o_color.b;
-      color.color.alpha = 0xffff;
-      if (!xftdraw) {
-        *(const_cast<XftDraw**>(&xftdraw)) = XftDrawCreate(x11display, x11drawable, x11visual, x11colormap);
-        if (wnd)
-          XftDrawSetClip(xftdraw, wnd->getUpdateRegion()->x11region);
-#warning "clipping required!!!"
-      }
-      XftDrawStringUtf8(xftdraw, &color, font->getXftFont(), x,y, (XftChar8*)str, strlen);
-      } break;
-#endif
   }
 #endif
 

@@ -146,6 +146,7 @@ TFont::init()
 #endif
 #ifdef HAVE_LIBXFT
   xftfont = 0;
+  xftfont_r = 0;
 #endif
 
   fontname = default_font;
@@ -181,6 +182,10 @@ TFont::clear()
     XftFontClose(x11display, xftfont);
     xftfont = 0;
   }
+  if (xftfont_r) {
+    XftFontClose(x11display, xftfont_r);
+    xftfont_r = 0;
+  }
 #endif
 }
 
@@ -199,7 +204,7 @@ TFont::getAscent() const
 #endif
 #ifdef HAVE_LIBXFT
   if (xftfont) {
-    return ascent;
+    return xftfont->ascent;
   }
 #endif
 cerr << __PRETTY_FUNCTION__ << ": empty font" << endl;
@@ -221,7 +226,7 @@ TFont::getDescent() const
 #endif
 #ifdef HAVE_LIBXFT
   if (xftfont) {
-    return descent;
+    return xftfont->descent;
   }
 #endif
 cerr << __PRETTY_FUNCTION__ << ": empty font" << endl;
@@ -259,7 +264,7 @@ TFont::getTextWidth(const char *str, int len) const
   if (xftfont) {
     XGlyphInfo gi;
     XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
-    return gi.xOff * x11scale;
+    return gi.xOff;
   }
 #endif
   return 0;
@@ -558,6 +563,9 @@ TFont::createXftFont(TMatrix2D *mat)
 
   XftResult result;
   XftPattern *found;
+  
+  XftFont *new_font = 0;
+  XftFont *new_font_r = 0;
 
   if (mat && !mat->isIdentity()) {
     
@@ -576,12 +584,7 @@ TFont::createXftFont(TMatrix2D *mat)
     // ascent and descent are wrong for rotated fonts, so we retrieve
     // these values here for an unrotated font.
     found = XftFontMatch(x11display, x11screen, pattern, &result);
-    XftFont *new_font = XftFontOpenPattern(x11display, found);
-    if (new_font) {
-      ascent  = new_font->ascent;
-      descent = new_font->descent;
-      XftFontClose(x11display, new_font);
-    }
+    new_font = XftFontOpenPattern(x11display, found);
 
     XftMatrix xftmat;
     XftMatrixInit(&xftmat);
@@ -590,21 +593,19 @@ TFont::createXftFont(TMatrix2D *mat)
     xftmat.xy = mat->a21;
     xftmat.yy = mat->a22;
     XftPatternAddMatrix(pattern, XFT_MATRIX, &xftmat);
-
+    
+    found = XftFontMatch(x11display, x11screen, pattern, &result);
+    new_font_r = XftFontOpenPattern(x11display, found);
   } else {
     x11scale = 1.0;
+    found = XftFontMatch(x11display, x11screen, pattern, &result);
+    new_font = XftFontOpenPattern(x11display, found);
   }
 
-  found = XftFontMatch(x11display, x11screen, pattern, &result);
-
-  XftFont *new_font = XftFontOpenPattern(x11display, found);
   if (new_font) {
     clear();
     xftfont = new_font;
-    if (!mat || mat->isIdentity()) {
-      ascent  = xftfont->ascent;
-      descent = xftfont->descent;
-    }
+    xftfont_r = new_font_r;
   }
 
   XftPatternDestroy(pattern);
