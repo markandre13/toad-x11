@@ -33,6 +33,7 @@
 #include <toad/toadbase.hh>
 #include <toad/font.hh>
 #include <toad/pen.hh>
+#include <toad/utf8.hh>
 
 #ifdef HAVE_LIBXFT
 
@@ -344,8 +345,19 @@ TFont::getTextWidth(const char *str, int len) const
 #ifdef HAVE_LIBXFT
   if (xftfont) {
     XGlyphInfo gi;
-    XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
-    return gi.xOff;
+    if (getHeight()<=64) {
+      XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
+      return gi.xOff;
+    }
+    int w = 0;
+    for(int i=0; i<len;) {
+      XGlyphInfo gi;
+      int n = utf8bytecount(str, i, 1);
+      XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str+i, n, &gi);
+      w+=gi.xOff;
+      i+=n;
+    }
+    return w;
   }
 #endif
   return 0;
@@ -386,6 +398,14 @@ static int
 dummyhandler(Display *, XErrorEvent *)
 {
   dummy = true;
+}
+
+double
+TFont::getPoints() const
+{
+  double d = 12.0;
+  FcPattern *pattern = FcNameParse((FcChar8*)fontname.c_str());
+  FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
 }
 
 void
