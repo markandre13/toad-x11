@@ -258,12 +258,7 @@ TFont::getTextWidth(const char *str, int len) const
   if (xftfont) {
     XGlyphInfo gi;
     XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
-    if (str[len-1]==' ') {
-      XGlyphInfo gi2;
-      XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)"  ", 2, &gi2);
-      return (gi.width+gi2.width)*x11scale;
-    }
-    return gi.width*x11scale;
+    return gi.xOff * x11scale;
   }
 #endif
   return 0;
