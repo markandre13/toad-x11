@@ -503,7 +503,13 @@ TTable::invalidateCursor()
     size = visible.x+visible.w-xp;
   }
   
-  invalidateWindow(xp, yp, size, row_info[cy].size+1);
+  if (per_row) {
+    invalidateWindow(visible.x, yp, visible.w, row_info[cy].size+1);
+  } else if (per_col) {
+    invalidateWindow(xp, visible.y, size, visible.h);
+  } else {
+    invalidateWindow(xp, yp, size, row_info[cy].size+1);
+  }
 }
 
 /**
@@ -648,12 +654,16 @@ DBSCROLL({
     return;
 
   bool perRow, perCol; // true when to select whole row/column
+#if 0
   perRow = perCol = false;
   if (renderer->getModel()) { // this looks like a stupid hack to me...
     perRow = renderer->getCols()!=renderer->getModel()->getCols();
     perCol = renderer->getRows()!=renderer->getModel()->getRows();
   }
-  
+#else
+  perRow = per_row;
+  perCol = per_col;
+#endif  
   xp = fpx + visible.x;
   for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
     yp = fpy + visible.y;
@@ -678,12 +688,18 @@ DBSCROLL(
   pen.fillRectanglePC(0,0,col_info[x].size, row_info[y].size);
   pen.setColor(0,0,0);
 )
+        bool focus = false;
+        if (isFocus()) {
+          focus = (cx == x && cy == y) ||
+                  (per_row && cy==y) ||
+                  (per_col && cx==x);
+        }
         renderer->renderItem(
             pen,
             x, y,
             size, row_info[y].size,
             selected,
-            cx == x && cy == y && isFocus()
+            focus
         );
       }
       yp += row_info[y].size + border;
@@ -743,6 +759,11 @@ TTable::mouseLDown(int mx, int my, unsigned)
     }
     pos1 = pos2;
   }
+
+  if (per_row)
+    cx=0;
+  if (per_col)
+    cy=0;
 
   cx = x; cy = y;
   bool perRow, perCol; // true when to select whole row/column
@@ -819,7 +840,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
 {
   switch(key) {
     case TK_DOWN:
-      if (cy<rows-1) {
+      if (!per_col && cy<rows-1) {
         if (!selecting) {
           invalidateCursor();
           cy++;
@@ -832,7 +853,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       }
       break;
     case TK_UP:
-      if (cy>0) {
+      if (!per_col && cy>0) {
         if (!selecting) {
           invalidateCursor();
           cy--;
@@ -845,7 +866,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       }
       break;
     case TK_RIGHT:
-      if (cx<cols-1) {
+      if (!per_row && cx<cols-1) {
         if (!selecting) {
           invalidateCursor();
           cx++;
@@ -858,7 +879,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       }
       break;
     case TK_LEFT:
-      if (cx>0) {
+      if (!per_row && cx>0) {
         if (!selecting) {
           invalidateCursor();
           cx--;
@@ -916,8 +937,13 @@ TTable::handleNewModel()
   fpx = fpy = 0;
   selecting = false;
 
+  assert(renderer!=NULL);
+
   rows = renderer->getRows();
   cols = renderer->getCols();
+  
+  per_row = renderer->per_row;
+  per_col = renderer->per_col;
 
   row_info = rows ? static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*rows)) : 0;
   col_info = cols ? static_cast<TRCInfo*>(realloc(col_info, sizeof(TRCInfo)*cols)) : 0;

@@ -172,10 +172,15 @@ class TAbstractTableCellRenderer:
   public TModel
 {
   public:
+    TAbstractTableCellRenderer() {
+      per_row = per_col = false;
+    }
+  
     virtual int getRows() = 0;
     virtual int getCols() = 0;
     virtual int getRowHeight(int row) = 0;
     virtual int getColWidth(int col) = 0;
+
     /**
      * Return the model associated with this renderer.
      *
@@ -190,6 +195,8 @@ class TAbstractTableCellRenderer:
     void modelChanged() {
       sigChanged();
     }
+    
+    bool per_row, per_col;
 };
 
 typedef GSmartPointer<TAbstractTableCellRenderer> PAbstractTableCellRenderer;
@@ -280,6 +287,7 @@ class TTable:
     
     TSignal sigCursor;
     
+    //! 'true': expand the last column to match the table's width
     bool stretchLastColumn;
     
   protected:
@@ -294,6 +302,7 @@ class TTable:
     // precalculated values for optimization
     void handleNewModel();
     int rows, cols;     // table size in rows & columns
+    bool per_row, per_col;
     
     // getRowHeight & getColWidth are expensive operation so call 'em
     // once and store their values in row_info and col_info
