@@ -37,6 +37,7 @@ class TFigureEditorHeaderRenderer
   public:
     virtual void render(TPen &pen, int pos, int size, TMatrix2D *mat) = 0;
     virtual int getSize() = 0;
+    virtual void mouseEvent(TMouseEvent&);
 };
 
 /**
@@ -184,6 +185,7 @@ class TFigureEditor:
     void paint();
     void print(TPenBase&);
     void resize();
+    void mouseEvent(TMouseEvent&);
     void mouseLDown(int,int,unsigned);
     void mouseMove(int,int,unsigned);
     void mouseLUp(int,int,unsigned);

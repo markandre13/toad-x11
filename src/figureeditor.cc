@@ -1047,6 +1047,49 @@ TFigureEditor::mouse2sheet(int mx, int my, int *sx, int *sy)
 }
 
 void
+TFigureEditor::mouseEvent(TMouseEvent &me)
+{
+  int x = me.x + getOriginX();
+  int y = me.y + getOriginY();
+  
+  switch(me.type) {
+    case TMouseEvent::LDOWN:
+    case TMouseEvent::MDOWN:
+    case TMouseEvent::RDOWN:
+/*
+    // the would require some kind of grab emulation...
+    case TMouseEvent::LUP:
+    case TMouseEvent::MUP:
+    case TMouseEvent::RUP:
+    ...
+*/
+      if (row_header_renderer &&
+          x < visible.x &&
+          y >= visible.y ) 
+      {
+        me.x = x;
+        row_header_renderer->mouseEvent(me);
+      } else
+      if (col_header_renderer &&
+          x >= visible.x &&
+          y < visible.y ) 
+      {
+        me.y = y;
+        row_header_renderer->mouseEvent(me);
+      } else
+        super::mouseEvent(me);
+      break;
+    default:
+      super::mouseEvent(me);
+  }
+}
+
+void
+TFigureEditorHeaderRenderer::mouseEvent(TMouseEvent &me)
+{
+}
+
+void
 TFigureEditor::mouseLDown(int mx,int my, unsigned m)
 {
   #if VERBOSE
