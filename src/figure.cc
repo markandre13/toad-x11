@@ -130,6 +130,9 @@ TFigure::paintSelection(TPenBase &pen)
       pen.mat->map(pt.x, pt.y, &x, &y);
       pen.push();
       pen.identity();
+    } else {
+      x = pt.x;
+      y = pt.y;
     }
     pen.fillRectanglePC(x-2,y-2,5,5);
     if (pen.mat)
