@@ -39,6 +39,7 @@ class TRGBModel:
       set(rgb.r, rgb.g, rgb.b);
       return *this; 
     }
+    operator TRGB() const { TRGB c(r, g, b); return c; }
     TBoundedRangeModel r, g, b;
     
     void set(int r, int g, int b) {
