@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 #include <toad/io/urlstream.hh>
 
 #include <cstdio>
+#include <cassert>
 
 #ifndef OLDLIBSTD
 #  include <streambuf>
@@ -47,6 +48,8 @@
 #include <errno.h>
 
 using namespace toad;
+
+namespace {
 
 /**
  * A streambuf class for UNIX file descriptors.
@@ -76,6 +79,10 @@ class fdbuf:
       fclose(cfile);
     }
     
+    int fgetc() {
+      return ::fgetc(cfile);
+    }
+    
   protected:
     FILE *cfile;
     
@@ -99,6 +106,8 @@ class fdbuf:
     int_type overflow(int_type c);
     streamsize xsputn(const char_type* s, streamsize n);
 };
+
+} // namespace
 
 fdbuf::fdbuf(int fd, ios_base::openmode om)
 {
@@ -170,27 +179,27 @@ fdbuf::int_type
 fdbuf::underflow(void)
 {
 //  cout << "[underflow]" << endl;
-  return fgetc(cfile);
+  return ::fgetc(cfile);
 }
 
 fdbuf::int_type
 fdbuf::uflow(void)
 {
 //  cout << "[uflow]" << endl;
-  return fgetc(cfile);
+  return ::fgetc(cfile);
 }
 
 streamsize 
 fdbuf::xsgetn(char_type* s, streamsize n)
 {
 //  cout << "[xsgetn n="<<n<<"]" << endl;
-  return fread(s, 1, n, cfile);
+  return ::fread(s, 1, n, cfile);
 }
 
 int
 fdbuf::pbackfail(int c)
 {
-  return ungetc(c, cfile);
+  return ::ungetc(c, cfile);
 }
 
 // output
@@ -214,7 +223,6 @@ fdbuf::xsputn(const char_type* s, streamsize n)
 {
   return fwrite(s, 1, n, cfile);
 }
-
 
 
 
@@ -250,7 +258,7 @@ urlstreambase::close()
 
 void urlstreambase::parse(const string &url)
 {
-  protocol = NONE;
+  protocol = P_NONE;
   port = 0;
   hostname.erase();
   filename.erase();
@@ -261,11 +269,11 @@ void urlstreambase::parse(const string &url)
     const char *name;
     bool  with_hostname;
   } typetable[] = {
-    { MEMORY, "memory", false },
-    { FILE,   "file",   false },
+    { P_MEMORY, "memory", false },
+    { P_FILE,   "file",   false },
 #ifdef __X11__
-    { HTTP,   "http",   true },
-    { FTP,    "ftp",    true },
+    { P_HTTP,   "http",   true },
+    { P_FTP,    "ftp",    true },
 #endif
   };
   unsigned p,l;
@@ -291,10 +299,10 @@ void urlstreambase::parse(const string &url)
   
   // get hostname
   //--------------------
-  if (protocol==HTTP)
+  if (protocol==P_HTTP)
     port=80;
   
-  if (protocol!=NONE &&
+  if (protocol!=P_NONE &&
       typetable[type].with_hostname) {
     l = url.substr(p).find_first_of(":/ \t");
     if (l==string::npos) {
@@ -314,7 +322,7 @@ void urlstreambase::parse(const string &url)
     }
   }
 
-  if (protocol!=NONE)
+  if (protocol!=P_NONE)
     filename = url.substr(p);
   else
     filename = url;
@@ -323,16 +331,16 @@ void urlstreambase::parse(const string &url)
 void urlstreambase::iopen()
 {
   switch(protocol) {
-    case NONE:
-    case FILE:
+    case P_NONE:
+    case P_FILE:
       iopen_file();
       break;
 #ifdef __X11__
-    case HTTP:
+    case P_HTTP:
       iopen_http();
       break;
 #endif
-    case MEMORY:
+    case P_MEMORY:
       iopen_memory();
       break;
     default:
@@ -343,8 +351,8 @@ void urlstreambase::iopen()
 void urlstreambase::oopen()
 {
   switch(protocol) {
-    case NONE:
-    case FILE:
+    case P_NONE:
+    case P_FILE:
       oopen_file();
       break;
     default:
@@ -360,6 +368,8 @@ void urlstreambase::iopen_http()
   char sport[256];
   snprintf(sport, 255, "%d", port);
   string fn = hostname+":"+sport;
+  fdbuf *fd;
+  unsigned r, n;
 
   int sock = socket (AF_INET, SOCK_STREAM, 0);
   if (sock < 0) {
@@ -390,13 +400,40 @@ void urlstreambase::iopen_http()
   }
 
   cmd = "GET ";
-  cmd+=filename;
-  cmd+="\r\n";
+  cmd+=url;
+  cmd+=" HTTP/1.0\r\n\r\n";
   if (write(sock, cmd.c_str(), cmd.size())!=(int)cmd.size()) {
     error = "failed to send HTTP request to " + fn;
     goto error5;
   }
   set_buffer(sock, ios::in);
+
+  // skip HTTP header
+  fd = dynamic_cast<fdbuf*>(fb);
+  assert(fd!=NULL);
+  
+  r=0;
+  n=0;
+  while(true) {
+    if (n==2)
+      break;
+    int c = fd->fgetc();
+    if (c==EOF)
+      break;
+    if (c=='\n') {
+//cerr << "\\n";
+      ++n;
+      continue;
+    }
+    if (c=='\r') {
+//cerr << "\\r";
+      ++r;
+      continue;
+    }
+//cerr << (char)c;
+    r = n = 0;
+  }
+
   return;
 
 error5:

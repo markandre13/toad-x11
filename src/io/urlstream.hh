@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 #include <iostream>
 #include <string>
 
+#include <toad/os.hh>
+
 namespace toad {
 
 using namespace std;
@@ -35,25 +37,25 @@ class urlstreambase
                                const char* data, unsigned len);
   protected:
     urlstreambase() {
-      protocol = NONE;
-      fb = NULL;
+      protocol = P_NONE;
+      fb = 0;
     }
     virtual ~urlstreambase() {
       close();
     }
     string url;
     enum EProtocol {
-      NONE,
-      MEMORY,
-      FILE,
-      HTTP,
-      FTP
+      P_NONE,
+      P_MEMORY,
+      P_FILE,
+      P_HTTP,
+      P_FTP
     } protocol;
     string hostname;
     int port;
     string filename;
 
-    streambuf *fb;
+    std::streambuf *fb;
 
     void parse(const string&);
     void iopen();
