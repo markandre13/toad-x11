@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -95,6 +95,8 @@ TModel
 void 
 TAbstractTableCellRenderer::renderCell(TPen &pen, int col, int row, int w, int h, bool cursor, bool selected, bool focus)
 {
+  pen.setLineStyle(TPen::SOLID);
+  pen.setLineWidth(1);
   if (selected) {
     if (focus) {
       pen.setColor(TColor::SELECTED);
@@ -105,12 +107,15 @@ TAbstractTableCellRenderer::renderCell(TPen &pen, int col, int row, int w, int h
     pen.setColor(TColor::WHITE);
   }
   pen.fillRectanglePC(0,0,w,h);
-  pen.setColor(TColor::SELECTED_TEXT);
-  renderItem(pen, col, row, w, h, cursor, selected, focus);
-  if (selected) {
+  if (selected)
+    pen.setColor(TColor::SELECTED_TEXT);
+  else 
     pen.setColor(TColor::BLACK);
-  }
+  renderItem(pen, col, row, w, h, cursor, selected, focus);
   if (cursor) {
+    pen.setColor(TColor::BLACK);
+    pen.setLineStyle(TPen::SOLID);
+    pen.setLineWidth(1);
     pen.drawRectanglePC(0,0,w, h);
   }
 }
