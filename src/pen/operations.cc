@@ -268,11 +268,16 @@ TPen::setMatrix(double a11, double a12, double a21, double a22, double tx, doubl
   mat->set(a11, a12, a21, a22, tx, ty);
 }
 
+#warning "TPen push and pop use a list..."
+
 void
 TPen::push()
 {
-  TMatrix2D *mnew = new TMatrix2D(*mat);
-  mnew->next = mat;
+  TMatrix2D *mnew;
+  if (mat)
+    mnew = new TMatrix2D(*mat);
+  else
+    mnew = new TMatrix2D();
   mat = mnew;
 }
 
