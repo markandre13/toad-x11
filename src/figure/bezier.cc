@@ -198,7 +198,7 @@ cerr << "delete menu " << this << endl;
 };
 
 unsigned
-TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned)
+TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
 {
   cerr << "TFBezierline::mouseRDown" << endl;
 cerr << " at (" << x << ", " << y << ")\n";
@@ -243,7 +243,7 @@ cerr << "create tree " << dummy << endl;
   menu = new TMyPopupMenu(editor, "popup");
   menu->tree = dummy;
   menu->setScopeInteractor(dummy);
-  menu->open();
+  menu->open(x, y, modifier);
   return 0;
 }
 

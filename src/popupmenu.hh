@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,13 @@ class TPopupMenu:
   public:
     TPopupMenu(TWindow *parent, const string &title);
     ~TPopupMenu();
-    void open();
+    void open(TMouseEvent &event);
+    void open(int x, int y, unsigned modifier);
     void addFilter();
+
+    //! the x,y and modifier values given to the last 'open' method call
+    int x, y;
+    unsigned modifier;
 };
 
 } // namespace toad
