@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,6 +62,8 @@ TBoundedRangeModel::setMaximum(int max)
   maximum = max;
   if (value+extent-1>maximum)
     value=maximum-extent+1;
+  if (value<minimum)
+    value = minimum;
   if (!adjusting)
     sigChanged();
 }
@@ -81,12 +83,12 @@ TBoundedRangeModel::setMinimum(int min)
 void
 TBoundedRangeModel::setRangeProperties(int value, int extent, int min, int max, bool adjusting)
 {
-  if (value<min)
-    value = min;
   if (extent<1)
     extent = 1;
   if (value+extent-1>max)
     value = max - extent + 1;
+  if (value<min)
+    value = min;
 
   if (
     this->value   == value &&
