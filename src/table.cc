@@ -1523,11 +1523,12 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
     case TK_SHIFT_L:
     case TK_SHIFT_R:
       sx=cx; sy=cy;
-      if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::MULTIPLE_INTERVAL)
+      if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::MULTIPLE_INTERVAL) 
         selection->clearSelection();
       else
         selectionChanged();
-      selecting=true;
+      if (selection)
+        selecting=true;
       invalidateCursor();
       break;
   }
