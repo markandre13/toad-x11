@@ -708,11 +708,11 @@ void
 TPen::drawPolygon(const TPoint points[], int n) const
 {
 #ifdef __X11__
-  XPoint d[n+1];
-  tpoint2xpoint(s, d, n, mat);
-  d[n].x=d[0].x;
-  d[n].y=d[0].y;
-  drawLines(d, n+1);
+  XPoint pts[n+1];
+  tpoint2xpoint(points, pts, n, mat);
+  pts[n].x=pts[0].x;
+  pts[n].y=pts[0].y;
+  XDrawLines(x11display, x11drawable, o_gc, pts, n+1, CoordModeOrigin);
 #endif
 
 #ifdef __WIN32__
