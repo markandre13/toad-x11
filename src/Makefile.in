@@ -91,13 +91,13 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		labelowner.cc buttonbase.cc pushbutton.cc \
 		radiobuttonbase.cc fatradiobutton.cc radiobutton.cc \
 		fatcheckbutton.cc \
-		scrollbar.cc arrowbutton.cc \
+		scrollbar.cc arrowbutton.cc gauge.cc \
 		checkbox.cc scrollpane.cc \
 		messagebox.cc tooltip.cc \
 		select.cc pointer.cc \
 		dialogeditor.cc colordialog.cc \
-		table.cc tablemodels.cc combobox.cc textarea.cc \
-		model.cc integermodel.cc rgbmodel.cc \
+		table.cc tablemodels.cc combobox.cc textarea.cc textfield.cc \
+		model.cc integermodel.cc rgbmodel.cc textmodel.cc \
 		resource.cc utf8.cc \
 		$(MDI) \
 		$(GADGET) $(IO) $(NEW_CHECKER) $(FILTER) \
@@ -151,7 +151,7 @@ depend:
 #---------------------------------------------------------------------------
 # Compiling
 #---------------------------------------------------------------------------
-.SUFFIXES: .cc
+.SUFFIXES: .cc .o
 
 .cc.o:
 	@echo compiling $*.cc ...
