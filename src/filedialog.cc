@@ -54,6 +54,7 @@ using namespace toad;
 TFileDialog::TFileDialog(TWindow *p,const string &t)
   :TDialog(p,t)
 {
+  setLayout(0);
   result = TMessageBox::ABORT;
   filter = "";
 

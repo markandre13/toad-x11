@@ -79,6 +79,7 @@ hsv2rgb(double h, double s, double v, int *red, int *green, int *blue)
 void
 TColorDialog::_init()
 {
+  setLayout(0);
   apply = false; // set to 'false' in case of closeWindow
   setSize(478, 8+256+8+25+8);
   setMouseMoveMessages(TMMM_LBUTTON); // only mouseMove when left button down
