@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -174,83 +174,24 @@ TMessageBox::paint()
     return;
   }
 
-  // draw icon  
-  switch(type & 0xF000)
-  {
-    case ICON_INFORMATION: {
-      pen.setColor(0,0,128);
-      pen.fillCircle(x,y,32,32);
-      pen.setColor(0,0,0);
-      pen.drawCircle(x,y,32,32);
-      
-      pen.setColor(255,255,255);
-      #define TPOINT(a,b,c) p[a].x=b+x;p[a].y=c+y;
-      TPoint p[10];
-      TPOINT(0,11,11);
-      TPOINT(1,19,11);
-      TPOINT(2,19,25);
-      TPOINT(3,22,25);
-      TPOINT(4,22,27);
-      TPOINT(5,11,27);
-      TPOINT(6,11,25);
-      TPOINT(7,14,25);
-      TPOINT(8,14,12);
-      TPOINT(9,11,12);
-      #undef TPOINT
-      pen.fillPolygon(p,10);
-      pen.fillRectanglePC(x+14,y+2,4,7);
-      pen.fillRectanglePC(x+13,y+3,6,5);
-      pen.fillRectanglePC(x+12,y+4,8,3);
-      } break;
+  // draw icon
 
-    case ICON_EXCLAMATION:
-      pen.setColor(255,255,0);
-      pen.fillCircle(x,y,32,32);
-      pen.setColor(0,0,0);
-      pen.drawCircle(x,y,32,32);
-      pen.fillRectanglePC(x+12,y+3,8,18);
-      pen.fillRectanglePC(x+15,y+22,2,8);
-      pen.fillRectanglePC(x+13,y+23,6,6);
-      pen.fillRectanglePC(x+12,y+25,8,2);
-      break;
-
-    case ICON_STOP:
-      pen.setColor(255,0,0);
-      pen.fillCircle(x,y,32,32);
-      pen.setColor(0,0,0);
-      pen.drawCircle(x,y,32,32);
-      pen.setColor(255,255,255);
-      pen.fillRectanglePC(x+3,y+13,26,6);
-      break;
-
-    case ICON_QUESTION:
-      pen.setColor(0,128,0);
-      pen.fillCircle(x,y,32,32);
-      pen.setColor(0,0,0);
-      pen.drawCircle(x,y,32,32);
-      pen.setColor(255,255,255);
-      static struct {int x,y,w,h;} r[17]={
-      {7,7,6,5},
-      {19,7,6,6},
-      {13,2,6,6},
-      {11,3,10,5},
-      {18,4,5,5},
-      {9,4,5,5},
-      {8,5,16,2},
-      {12,19,8,3},
-      {13,17,7,2},
-      {14,16,7,2},
-      {15,15,7,1},
-      {16,14,7,1},
-      {17,13,7,1},
-      {18,12,2,2},
-      {12,25,8,3},
-      {13,24,6,5},
-      {14,23,4,7}};
-      for(int i=0; i<17; i++)
-        pen.fillRectanglePC(r[i].x+x,r[i].y+y,r[i].w,r[i].h);
-      break;
+  unsigned idx = ((type & 0xF000) >> 12)-1;
+  if (idx>4)
+    return;
+  static TBitmap *bmp[5] = { 0, 0, 0, 0, 0 };
+  static const char *filename[5] = {
+    "memory://toad/exclamation.png",
+    "memory://toad/hand.png",
+    "memory://toad/stop.png",
+    "memory://toad/information.png",
+    "memory://toad/question.png"
+  };
+  if (bmp[idx]==0) {
+    bmp[idx] = new TBitmap();
+    bmp[idx]->load(filename[idx]);
   }
+  pen.drawBitmap(x, y, bmp[idx]);
 }
 
 /**
