@@ -25,7 +25,7 @@
 using namespace toad;
 
 TUndoableDelete::TUndoableDelete(TFigureModel& g,
-                                 const TFigureEditor::TGadgetSet& selection):
+                                 const TFigureEditor::TFigureSet& selection):
   gadgets(g)
 {
   done = true;

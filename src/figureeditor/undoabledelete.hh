@@ -32,7 +32,7 @@ class TUndoableDelete:
 {
   public:
     TUndoableDelete(TFigureModel&,
-                    const TFigureEditor::TGadgetSet&);
+                    const TFigureEditor::TFigureSet&);
     ~TUndoableDelete();
     void undo();
     void redo();

@@ -42,6 +42,10 @@ using namespace toad;
  * TMenuHelper is a base class for TMenuBar and similar classes.
  *
  * \todo
+ *   \li
+ *     popup menu's are outside the screen when opened at the left or
+ *     right screen side
+ *   \li
  *    down on menubutton, move to next button, up, popup closes, but the
  *    next click to open the menu fails
  *    toad::TMenuButton::mouseLDown(int, int, unsigned int): unexpected state 5

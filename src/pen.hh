@@ -24,6 +24,7 @@
 #include <toad/font.hh>
 #include <toad/color.hh>
 #include <toad/bitmap.hh>
+#include <toad/matrix2d.hh>
 
 namespace toad {
 
@@ -33,6 +34,8 @@ class TPenBase:
   public TOADBase
 {
   public:
+    TMatrix2D *mat;
+
     virtual ~TPenBase();
   
     // rename this into EMode
@@ -67,6 +70,7 @@ class TPenBase:
     virtual void rotate(double) = 0;
     virtual void scale(double, double) = 0;
     virtual void shear(double, double) = 0;
+    virtual void multiply(const TMatrix2D*) = 0;
     virtual void setMatrix(double a11, double a12, double a21, double a22, double tx, double ty) = 0;
     virtual void push() = 0;
     virtual void pop() = 0;
@@ -286,8 +290,6 @@ class TPenBase:
     virtual void curveTo(double x2, double y2, double x3, double y3, double x4, double y4) = 0;
 };
 
-class TMatrix2D;
-
 class TPen:
   public TPenBase
 {
@@ -296,23 +298,18 @@ class TPen:
     friend class TColor;
 
   public:
-    TMatrix2D *mat;
-
-  public:
     TPen(TBitmap*);
     TPen(TWindow*);
     virtual ~TPen();
 /*
-    void setOrigin(int x,int y);
     void translate(int dx,int dy);
-    int originX() const;
-    int originY() const;
 */
     void identity();
     void translate(double dx, double dy);
     void rotate(double);
     void scale(double, double);
     void shear(double, double);
+    void multiply(const TMatrix2D*);
     void setMatrix(double a11, double a12, double a21, double a22, double tx, double ty);
     void push();
     void pop();

@@ -58,7 +58,7 @@ DEFINES         += -DOLDLIBSTD
 #----------------------------------------------------------------------------
 OS_GUI          =
 OS_SYS          =
-GRAPHIC		= pen/parameters.cc pen/operations.cc pen/bezier.cc
+GRAPHIC		= pen/parameters.cc pen/operations.cc pen/bezier.cc matrix2d.cc
 
 NEW_CHECKER	= new.cc
 

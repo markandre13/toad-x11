@@ -73,6 +73,13 @@ TFGroup::paint(TPenBase &pen, EPaintType)
 bool 
 TFGroup::getHandle(unsigned n, TPoint &p)
 {
+cerr << "group, query handle " << n << endl;
+if (super::getHandle(n, p)) {
+  cerr << "  ok" << endl;
+  return true;
+} else {
+  cerr << "  no" << endl;
+}
   return false;
 }
 

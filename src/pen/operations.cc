@@ -36,8 +36,6 @@
  *   \li
  *     make TMatrix2D map virtual in for more complicated transformation
  *   \li
- *     add TPenBase::push(TMatrix2D*)
- *   \li
  *     make TMatrix2D serializable
  *   \li
  *     allow multiplication of TMatrix2Ds
@@ -55,6 +53,7 @@
 
 #include <toad/toadbase.hh>
 #include <toad/pen.hh>
+#include <toad/matrix2d.hh>
 #include <toad/window.hh>
 #include <toad/region.hh>
 #include <iostream>
@@ -86,34 +85,6 @@ using namespace toad;
     h=-h; \
     y-=h; \
   }
-
-class toad::TMatrix2D
-{
-  public:
-    TMatrix2D();
-  
-    double a11, a12;
-    double a21, a22;
-    double tx, ty;
-
-    void identity();
-    void rotate(double);
-    void translate(double, double);
-    void scale(double, double);
-    void shear(double, double);
-    void set(double a11, double a12, double a21, double a22, double tx, double ty) {
-      this->a11 = a11;
-      this->a12 = a12;
-      this->a21 = a21;
-      this->a22 = a22;
-      this->tx  = tx;
-      this->ty  = ty;
-    }
-    
-    void map(int inX, int inY, short int *outX, short int *outY) const;
- 
-    TMatrix2D *next;
-};
 
 namespace {
 
@@ -160,96 +131,6 @@ polygon2xpoint(const TPolygon &in, XPoint *out, const TMatrix2D *mat) {
 
 } // namespace
 
-TMatrix2D::TMatrix2D()
-{
-  identity();
-  next = 0;  
-}
-
-void
-TMatrix2D::identity()
-{
-  a11 = a22 = 1.0;
-  a21 = a12 = tx = ty = 0.0;
-}
- 
-/**
- * \pre
-   / a11 a12  tx \       / a11 a12  tx \     / r11 r12 0.0 \
-  |  a21 a22  ty  | :=  |  a21 a22  ty  | * |  r21 r22 0.0  |
-   \ 0.0 0.0 1.0 /       \ 0.0 0.0 1.0 /     \ 0.0 0.0 1.0 / 
-   \endpre
- */
-void
-TMatrix2D::rotate(double degree)
-{
-  double a = degree / 360.0 * 2.0 * M_PI;
-  double r11, r12, r21, r22;
-  r11 = r22 = cos(a);
-  r21 = sin(a);
-  r12 = -r21;  
-
-  double n11 = a11 * r11 + a12 * r21;
-  double n21 = a21 * r11 + a22 * r21;
-
-  double n12 = a11 * r12 + a12 * r22;
-  double n22 = a21 * r12 + a22 * r22;
-
-  double ntx = tx;
-  double nty = ty;
-  
-  a11 = n11;
-  a21 = n21;
-  a12 = n12;
-  a22 = n22;
-  tx = ntx; 
-  ty = nty; 
-}
-
-/**
- * \pre
-   / a11 a12  tx \      / a11 a12  tx \     / 1.0 0.0   x \
-  |  a21 a22  ty  | := |  a21 a22  ty  | * |  0.0 1.0   y  |
-   \ 0.0 0.0 1.0 /      \ 0.0 0.0 1.0 /     \ 0.0 0.0 1.0 / 
-   \endpre
- */
-void
-TMatrix2D::translate(double x, double y)
-{
-  tx += a11 * x + a12 * y;
-  ty += a21 * x + a22 * y;
-}
- 
-void
-TMatrix2D::scale(double xfactor, double yfactor)
-{
-  a11 *= xfactor;
-  a12 *= xfactor;
-  a21 *= yfactor;
-  a22 *= yfactor;
-}
-
-void
-TMatrix2D::shear(double, double)
-{
-}
- 
-/**
- * \pre
-   / outY \      / a11 a12  tx \     / inX \
-  |  outX  | := |  a21 a22  ty  | * |  inY  |
-   \ 1.0  /      \ 0.0 0.0 1.0 /     \ 1.0 / 
-   \endpre
- */
-void
-TMatrix2D::map(int inX, int inY, short int *outX, short int *outY) const
-{
-  double x, y;
-  x = inX; y=inY;
-  *outX = a11 * x + a12 * y + tx;
-  *outY = a21 * x + a22 * y + ty;
-}
-
 void
 TPen::identity()
 {
@@ -287,6 +168,17 @@ TPen::scale(double xfactor, double yfactor)
 void
 TPen::shear(double, double)
 {
+}
+
+void
+TPen::multiply(const TMatrix2D *m)
+{
+  assert(m!=0);
+  if (!mat) {
+    mat = new TMatrix2D(*m);
+  } else {
+    mat->multiply(m);
+  }
 }
 
 void

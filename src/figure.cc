@@ -61,7 +61,7 @@ using namespace toad;
  *   or DELETE.
  */
 
-#if 1
+#if 0
 const double TFigure::OUT_OF_RANGE;
 const double TFigure::RANGE;
 const double TFigure::INSIDE;
@@ -75,6 +75,7 @@ void TFigure::initStorage()
   serialize.registerObject(new TMenuLayout());
   serialize.registerObject(new TMenuEntry());
   serialize.registerObject(new TMenuSeparator());
+  serialize.registerObject(new TMatrix2D());
   serialize.registerObject(new TFText());
   serialize.registerObject(new TFFrame());
   serialize.registerObject(new TFLine());
@@ -100,6 +101,7 @@ TFigure::TFigure()
 {
   filled = false;
   removeable = true;
+  mat = 0;
 }
 
 TFigure::~TFigure()
@@ -123,7 +125,12 @@ TFigure::paintSelection(TPenBase &pen)
   while(true) {
     if ( !getHandle(h, pt) )
       break;
-    pen.fillRectanglePC(pt.x-2,pt.y-2,5,5);
+    short x, y;
+    pen.mat->map(pt.x, pt.y, &x, &y);
+    pen.push();
+    pen.identity();
+    pen.fillRectanglePC(x-2,y-2,5,5);
+    pen.pop();
     h++;
   }
   if (h==0) {
@@ -157,8 +164,10 @@ void TFigure::translateHandle(unsigned handle, int x, int y)
 void
 TFigure::store(TOutObjectStream &out) const
 {
+  if (mat) {
+    ::store(out, "trans", mat);
+  }
   ::store(out, "linecolor", line_color);
-  ::store(out, "filled", filled);
   if (filled) {
     ::store(out, "fillcolor", fill_color);
   }
@@ -168,15 +177,19 @@ bool
 TFigure::restore(TInObjectStream &in)
 {
   bool b;
-  if (in.what==ATV_START)
+  if (in.what==ATV_START) {
+    filled = false;
     return true;
-  if (::restore(in, "filled", &b)) {
-    filled = b;
+  }
+  if (::restore(in, "filled", &b))
+    return true;
+  if (::restore(in, "fillcolor", &fill_color)) {
+    filled = true;
     return true;
   }
   if (
+    ::restorePtr(in, "trans", &mat) ||
     ::restore(in, "linecolor", &line_color) ||
-    ::restore(in, "fillcolor", &fill_color) ||
     finished(in)
   ) return true;
   ATV_FAILED(in)

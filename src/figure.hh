@@ -28,6 +28,7 @@
 namespace toad {
 
 class TFigureEditor;
+class TMatrix2D;
 
 /**
  * \ingroup figure
@@ -66,7 +67,17 @@ class TFigure:
     TRGB line_color;
     TRGB fill_color;
     bool filled:1;        // true when filled
-    bool removeable:1;    // true when object is removeable (for gadgeteditor)
+    
+    /**
+     * 'true' when TFigureEditor is allowed to delete this object.
+     */
+    bool removeable:1;
+    
+    /**
+     * Transformation matrix to be applied before this object is painted
+     * or 0.
+     */
+    TMatrix2D *mat;
   
     // editor related stuff per gadget for manipulation
     //-------------------------------------------------
@@ -374,6 +385,7 @@ class TFWindow:
 class TFGroup:
   public TFRectangle
 {
+    typedef TFRectangle super;
   public:
     TFGroup() {
     }

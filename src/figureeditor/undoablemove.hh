@@ -31,7 +31,7 @@ class TUndoableMove:
   public TUndoable
 {
   public:
-    TUndoableMove(int, int, const TFigureEditor::TGadgetSet&);
+    TUndoableMove(int, int, const TFigureEditor::TFigureSet&);
     ~TUndoableMove();
     void undo();
     void redo();

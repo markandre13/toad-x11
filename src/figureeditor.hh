@@ -61,6 +61,7 @@ class TFigureEditor:
   public:
     static const unsigned OP_SELECT = 0;
     static const unsigned OP_CREATE = 1;
+    static const unsigned OP_ROTATE = 2;
     void setOperation(unsigned);
     void setCreate(TFigure*);
 
@@ -113,6 +114,7 @@ class TFigureEditor:
     static const unsigned STATE_MOVE_HANDLE = 2;    // move handle
     static const unsigned STATE_SELECT_RECT = 3;    // select rectangular area
     static const unsigned STATE_EDIT = 4;           // edit object
+    static const unsigned STATE_ROTATE = 5;         // rotate object
     
     // states for OP_CREATE
     static const unsigned STATE_START_CREATE = 5;   // set during `startCreate' and first `mouseLDown'
@@ -130,8 +132,8 @@ class TFigureEditor:
     // triggered after `selection' was modified
     TSignal sigSelectionChanged;
 
-    typedef set<TFigure*> TGadgetSet;
-    TGadgetSet selection;
+    typedef set<TFigure*> TFigureSet;
+    TFigureSet selection;
 
     void paint();
     void resize();
