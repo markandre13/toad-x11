@@ -59,7 +59,7 @@ class TTableModel_CString:
     int getRows() {
       return size;
     }
-    const char* getElementAt(int, int index) {
+    const TElement& getElementAt(int, int index) {
       assert(index<size);
       return list[index];
     }
@@ -141,7 +141,9 @@ class TStringVector:
     int getRows() {
       return size();
     }
-    string getElementAt(int, int index) {
+    
+    const TElement&
+    getElementAt(int, int index) {
       assert(index<size());
       return (*this)[index];
     }
@@ -156,20 +158,22 @@ typedef GTableSelectionModel<TStringVector> TStringVectorSelectionModel;
 
 typedef less<string> less_string;
 
-class TStringSet:
-  public set<string, less_string>,
-  public GAbstractTableModel<string>
+template <class C, class D>
+class GSTLSet:
+  public C,
+  public GAbstractTableModel<D>
 {
-    typedef set<string> container;
+    typedef C container;
     
     int idx;
-    container::iterator ptr;
+    typename container::iterator ptr;
     
   public:
     int getRows() {
       return size();
     }
-    string getElementAt(int, int index) {
+    typename container::const_reference 
+    getElementAt(int, int index) {
       assert(index<size());
       while(idx<index) {
         ++idx;
@@ -180,15 +184,51 @@ class TStringSet:
         --ptr;
       }
       return *ptr;
-      // return (*this)[index];
     }
-    void insert(const string &s) {
+    void insert(typename container::const_reference s) {
       container::insert(s);
       idx = 0;
       ptr = begin();
       sigChanged();
     }
 };
+
+template <class C, class K, class D>
+class GSTLMap:
+  public C,
+  public GAbstractTableModel<D>
+{
+    typedef C container;
+    
+    int idx;
+    typename container::iterator ptr;
+    
+  public:
+    int getRows() {
+      return size();
+    }
+    const D& getElementAt(int, int index) {
+      assert(index<size());
+      while(idx<index) {
+        ++idx;
+        ++ptr;
+      }
+      while(idx>index) {
+        --idx;
+        --ptr;
+      }
+      return ptr->second;
+    }
+    D& operator[](const K &key) {
+      container *p = this;
+      D &d( (*p)[key] );
+      idx = 0;
+      ptr = begin();
+      return d;
+    }
+};
+
+typedef GSTLSet<set<string>, string> TStringSet;
 
 template <class T>
 class GTableCellRenderer_String:
@@ -202,6 +242,8 @@ class GTableCellRenderer_String:
     GTableCellRenderer_String(T *m)
     {
       setModel(m);
+    }
+    ~GTableCellRenderer_String() {
     }
     // implements 'virtual TAbstractTableModel * getModel() = 0;'
     T * getModel() {
@@ -227,7 +269,9 @@ class GTableCellRenderer_String:
       int n = model->getRows();
       int max = 0;
       for(int i=0; i<n; i++) {
-        int w = TOADBase::getDefaultFont().getTextWidth(model->getElementAt(0, i));
+        int w = TOADBase::getDefaultFont().getTextWidth(
+          model->getElementAt(0, i)
+        );
         if (w>max)
           max = w;
       }

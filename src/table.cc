@@ -896,9 +896,9 @@ TTable::handleNewModel()
 
   rows = renderer->getRows();
   cols = renderer->getCols();
-  
-  row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*rows));
-  col_info = static_cast<TRCInfo*>(realloc(col_info, sizeof(TRCInfo)*cols));
+
+  row_info = rows ? static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*rows)) : 0;
+  col_info = cols ? static_cast<TRCInfo*>(realloc(col_info, sizeof(TRCInfo)*cols)) : 0;
   
   TRCInfo *info;
 
@@ -969,7 +969,7 @@ class TTableModel_CString:
     int getRows() {
       return size;
     }
-    const char* getElementAt(int, int index) {
+    TElement& getElementAt(int, int index) const {
       return list[index];
     }
 };
@@ -1108,7 +1108,7 @@ class TTableModel_TNetObject:
     int getRows() {
       return size;
     }
-    const TNetObject* getElementAt(int, int index) {
+    TElement& getElementAt(int, int index) const {
       return &list[index];
     }
 };

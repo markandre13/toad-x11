@@ -132,7 +132,7 @@ class GAbstractTableModel:
 {
   public:
     typedef T TElement;
-    virtual T getElementAt(int xindex, int yindex) = 0;
+    virtual const TElement& getElementAt(int xindex, int yindex) = 0;
 };
 
 template <class T>
@@ -158,7 +158,7 @@ class GTableSelectionModel:
         }
         iterator(TRegion *r, bool b, TModel *m):
            TTableSelectionModel::iterator(r, b), model(m) {}
-        TElement operator*() { return model->getElementAt(getX(), getY()); }
+        const TElement& operator*() { return model->getElementAt(getX(), getY()); }
     };
     iterator begin() {
       return iterator(&region, true, model);
