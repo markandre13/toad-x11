@@ -22,6 +22,13 @@
 
 using namespace toad;
 
+/**
+ * \class toad::TUndoable
+ *
+ * This class can be used together with TUndoManager to keep a list of
+ * undoable and redoable events.
+ */
+
 bool
 TUndoable::getRedoName(string*) const
 {

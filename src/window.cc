@@ -1487,6 +1487,9 @@ TWindow::doResize()
   if (layout)
     layout->arrange();
   resize();
+  if (getParent()) {
+     _childNotify(TCHILD_RESIZE);
+  }
   flag_wm_resize = false;
 }
 
@@ -1812,9 +1815,6 @@ TWindow::setSize(int w,int h)
     return;
   }
   doResize();
-  if (getParent()) {
-    _childNotify(TCHILD_RESIZE);
-  }
 }
 
 /**

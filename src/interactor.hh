@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,58 +25,10 @@
 
 namespace toad {
 
-class TMouseEvent {
-  public:
-    enum EType {
-      MOVE, ENTER, LEAVE, LDOWN, MDOWN, RDOWN, LUP, MUP, RUP
-    } type;
-    TWindow *window;
-    int x, y;
-    unsigned modifier;
-};
-
-class TKeyEvent {
-  public:
-    enum EType {
-      DOWN, UP
-    } type;
-    TWindow *window;
-    TKey key;
-    char * string;
-    unsigned modifier;
-
-    TKey getKey() const { return key; }
-    unsigned getModifier() const { return modifier; }
-    const char* getString() const { return string; }
-};
-
-#ifdef __WIN32__
-#ifdef NEW
-#undef NEW
-#endif
-
-#ifdef DELETE
-#undef DELETE
-#endif
-#endif
-
-class TWindowEvent {
-  public:
-    enum {
-      NEW,
-      DELETE,
-      CREATE,
-      CREATED,
-      DESTROY,
-      MAPPED,
-      UNMAPPED,
-      PAINT,
-      ADJUST,
-      RESIZE,
-      FOCUS
-    } type;
-    TWindow *window;
-};  
+class TWindow;
+class TMouseEvent;
+class TKeyEvent;
+class TWindowEvent;
 
 class TInteractor
 {

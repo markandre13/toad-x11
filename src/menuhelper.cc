@@ -167,6 +167,9 @@ DBM2(cerr << "+ TMenuHelper::resize\n");
     DBM2(cerr << "  isn't realized yet, forget it\n";)
     return;
   }
+
+//printStackTrace();
+
   menu_width_icon = menu_width_text = menu_width_short = menu_width_sub = 0;
   TInteractor *i;
   TWindowEvent we;
