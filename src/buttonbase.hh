@@ -50,7 +50,7 @@ class TButtonBase:
   protected:
     TBitmap *bitmap;
     bool bDown,bInside;
-    void drawShadow(TPen&,bool);
+    void drawShadow(TPen &pen, bool down, bool onwhite=false);
     void drawLabel(TPen&,const string&,bool,bool bEnabled=true);
 };
 

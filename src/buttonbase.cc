@@ -37,6 +37,7 @@ TButtonBase::TButtonBase(TWindow *parent, const string &title)
 {
   bitmap = NULL;
   bDown=false;
+  setBorder(false);
   setBackground(TColor::BTNFACE);
   setSize(100, getDefaultFont().getHeight() + 8);
 }
@@ -92,7 +93,7 @@ TButtonBase::drawLabel(TPen &pen,const string &text, bool bDown, bool bEnabled)
   int n=bDown?1:0;
   if (!bitmap) {
     int x = (getWidth()-pen.getTextWidth(text)) >> 1;
-    int y = (getHeight()-pen.getAscent()) >> 1;
+    int y = (getHeight()-pen.getHeight()) >> 1;
     if(isEnabled() && bEnabled) {
       pen.setColor(TColor::BTNTEXT);
       pen.drawString(x+n, y+n, text);
@@ -119,7 +120,7 @@ TButtonBase::drawLabel(TPen &pen,const string &text, bool bDown, bool bEnabled)
  * Draws the buttons shadow.
  */
 void
-TButtonBase::drawShadow(TPen &pen, bool bDown)
+TButtonBase::drawShadow(TPen &pen, bool down, bool onwhite)
 {
   if (!isEnabled())
     return;
@@ -127,30 +128,53 @@ TButtonBase::drawShadow(TPen &pen, bool bDown)
   int a=isFocus()?1:0;
 
   TPoint p[6];
-  if (bDown) {
+  if (down) {
     pen.setColor(TColor::BTNSHADOW);
-    p[0].set(a,getHeight()-a);
-    p[1].set(a,a);
-    p[2].set(getWidth()-a,a);
-    pen.drawLines(p, 3);
+//    p[0].set(a,getHeight()-a);
+//    p[1].set(a,a);
+//    p[2].set(getWidth()-a,a);
+//    pen.drawLines(p, 3);
+    pen.drawRectanglePC(a,a,getWidth()-a*2, getHeight()-a*2);
   } else {
-    pen.setColor(TColor::BTNSHADOW);
-    p[0].set(a,getHeight()-a-1);
-    p[1].set(getWidth()-a-1, getHeight()-a-1  );
-    p[2].set(getWidth()-a-1,  a           );
-    p[3].set(getWidth()-a-2, a+1        );
-    p[4].set(getWidth()-a-2, getHeight()-a-2  );
-    p[5].set(a+2        , getHeight()-a-2 );
-    pen.drawLines(p, 6);
+    if (!onwhite) {
+      pen.setColor(0,0,0);
+      p[0].set(a             , getHeight()-a-1);
+      p[1].set(getWidth()-a-1, getHeight()-a-1);
+      p[2].set(getWidth()-a-1, a);
+      pen.drawLines(p, 3);
+      pen.setColor(TColor::BTNSHADOW);
+      p[0].set(a+2           , getHeight()-a-2);
+      p[1].set(getWidth()-a-2, getHeight()-a-2);
+      p[2].set(getWidth()-a-2, a+1);
+      pen.drawLines(p, 3);
+    } else {
+      pen.setColor(TColor::BTNSHADOW);
+      p[0].set(a,getHeight()-a-1);
+      p[1].set(getWidth()-a-1, getHeight()-a-1  );
+      p[2].set(getWidth()-a-1,  a           );
+      p[3].set(getWidth()-a-2, a+1        );
+      p[4].set(getWidth()-a-2, getHeight()-a-2  );
+      p[5].set(a+2        , getHeight()-a-2 );
+      pen.drawLines(p, 6);
+    }
 
-    pen.setColor(TColor::BTNLIGHT);
+    if (!onwhite) {
+      pen.setColor(TColor::BTNLIGHT);
+    } else {
+      pen.setColor(TColor::BTNFACE);
+    }
     p[0].set(a          , getHeight()-a-1 );
     p[1].set(a          , a           );
-    p[2].set(getWidth()-a-1,  a           );
-    p[3].set(getWidth()-a-2, a+1          );
-    p[4].set(a+1        , a+1         );
-    p[5].set(a+1        , getHeight()-a-2 );
-    pen.drawLines(p, 6);
+    p[2].set(getWidth()-a-2,  a           );
+    pen.drawLines(p, 3);
+    
+    if (onwhite) {
+      pen.setColor(TColor::BTNLIGHT);
+      p[0].set(getWidth()-a-2, a+1          );
+      p[1].set(a+1        , a+1         );
+      p[2].set(a+1        , getHeight()-a-2 );
+      pen.drawLines(p, 3);
+    }
   }
 
   if (isFocus()) {
