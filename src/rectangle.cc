@@ -46,11 +46,11 @@ void TRectangle::set(const TPoint &p1, const TPoint &p2)
   h = p2.y-p1.y;
   if (w<0) {
     w=-w;
-    x-=w-1;
+    x-=w;
   }
   if (h<0) {
     h=-h;
-    y-=h-1;
+    y-=h;
   }
   w++;
   h++;    
