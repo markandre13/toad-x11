@@ -380,7 +380,7 @@ TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
     }
   }
   
-  if (!found && ( (i%3)!=0 || polygon.size()<=4))
+  if (found && ( (i%3)!=0 || polygon.size()<=4))
     return 0;
 
   TInteractor *dummy = new TInteractor(0, "dummy interactor");

@@ -225,7 +225,7 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
     }
   }
   
-  if (!found && polygon.size()<=2)
+  if (found && polygon.size()<=2)
     return NOTHING;
 
   TInteractor *dummy = new TInteractor(0, "dummy interactor");
