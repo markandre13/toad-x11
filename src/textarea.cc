@@ -750,7 +750,7 @@ TTextArea::paint()
   TPen pen(this);
   pen.draw3DRectangle(
     visible.x-2, visible.y-2,
-    visible.w+4, visible.h+4);
+    visible.w+4-1, visible.h+4-1);
 
   TRectangle clipbox;
   pen.getClipBox(&clipbox);
