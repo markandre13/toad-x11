@@ -28,6 +28,7 @@ namespace toad {
 class TTextField: 
   public TTextArea
 {
+    typedef TTextArea super;
   public:
     TTextField(TWindow *p, const string &t):
       TTextArea(p, t)
