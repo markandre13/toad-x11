@@ -191,7 +191,6 @@ TLayout::toFile()
     catch(exception &e) {
       cerr << "TLayout::toFile: exception while storing dialog layout: " << e.what() << endl;
     }
-    setModified(false);
   }
 }
 
