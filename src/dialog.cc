@@ -69,16 +69,20 @@ class TLayoutEditDialog:
     TEventFilter * getFilter();
     
     TDialogLayout * layout;
+    TWindow * forWindow;
     TFigureEditor gedit;
     
     void paint();
+
     string selectionname;
     TTextModel label;
+    TBoundedRangeModel width, height;
     TLabelOwner * labelowner;
     
     void enabled();
     void selectionChanged();
     void labelChanged();
+    void sizeChanged();
 };
 
 } // namespace
@@ -363,6 +367,7 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
   gedit.setWindow(forWindow);
   gedit.setModel(layout->gadgets);
   connect(gedit.sigSelectionChanged, this, &TLayoutEditDialog::selectionChanged);
+  this->forWindow = forWindow;
 
   // let the layout redirect it's paint event to our gadget editor...
   layout->editor = this;
@@ -469,10 +474,34 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
   TTextField *tf;
   
   tf = new TTextField(this, "label", &label);
-  tf->setShape(x, y, 80,18);
+  tf->setShape(x+40, y, 145,18);
   connect(label.sigChanged, this, &TLayoutEditDialog::labelChanged);
   
+  y+=30;
+  tf = new TTextField(this, "width", &width);
+  tf->setShape(x+40, y, 40,18);
+  tf = new TTextField(this, "height", &height);
+  tf->setShape(x+40+40+10, y, 40,18);
+  
+  width = layout->width;
+  height = layout->height;
+  
+  connect(width.sigChanged, this, &TLayoutEditDialog::sizeChanged);
+  connect(height.sigChanged, this, &TLayoutEditDialog::sizeChanged);
+
   setSize(5+320+5, hmax+5);
+}
+
+void
+TLayoutEditDialog::paint()
+{
+  TPen pen(this);
+  
+  pen.drawString(128+15+40, 63, selectionname);
+  pen.drawString(128+15, 63, "Title:");
+  pen.drawString(128+15, 63+20, "Label:");
+  pen.drawString(128+15, 63+50, "Size:");
+  pen.drawString(128+15+82, 63+50, "x");
 }
 
 TLayoutEditDialog::~TLayoutEditDialog()
@@ -524,9 +553,9 @@ TLayoutEditDialog::labelChanged()
 }
 
 void
-TLayoutEditDialog::paint()
+TLayoutEditDialog::sizeChanged()
 {
-  TPen pen(this);
-  
-  pen.drawString(128+15, 63, selectionname);
+  layout->width = width;
+  layout->height = height;
+  forWindow->setSize(width, height);
 }
