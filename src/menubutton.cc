@@ -46,7 +46,8 @@ TMenuButton::TMenuButton(TMenuHelper *p, TMenuHelper::TNode *n):
   assert(master!=NULL);
 //cout << "MENUBUTTON: CREATE  " << this << endl;
   setBorder(0);
-  bNoBackground = true;
+//  bNoBackground = true;
+  setBackground(TColor::MENU);
   _down = false;
   popup = NULL;
   idx = 0;
@@ -173,8 +174,8 @@ TMenuButton::paint()
   const string& shortcut = node->getShortcut();
 
   if (node->type==TMenuHelper::TNode::SEPARATOR) {
-    pen.setColor(TColor::MENU);
-    pen.fillRectanglePC(0,0,getWidth(), getHeight());
+//    pen.setColor(TColor::MENU);
+//    pen.fillRectanglePC(0,0,getWidth(), getHeight());
     int y = getHeight()/2;
     pen.setColor(TColor::BTNSHADOW);
     pen.drawLine(0, y, getWidth(), y);
@@ -189,16 +190,25 @@ TMenuButton::paint()
   int x_short= x_text + master->menu_width_text+8;
   
   if (node->isEnabled()) {
+#if 1
+    if (mark) {
+      pen.setLineColor(TColor::MENUTEXT);
+      pen.setFillColor(TColor::SELECTED);
+      pen.fillRectanglePC(1,1,getWidth()-2,getHeight()-2);
+    }
+    pen.setColor(TColor::MENUTEXT);
+#else
     pen.setColor(mark ? TColor::MENUTEXT : TColor::MENU);
     pen.fillRectanglePC(0,0, getWidth(),getHeight());
     pen.setColor(mark ? TColor::MENU : TColor::MENUTEXT);
+#endif
     drawIcon(&pen, x_icon, y);
     pen.drawString(x_text, y, label);
     if (!shortcut.empty())
       pen.drawString(x_short, y, shortcut);
   } else {
-    pen.setColor(TColor::MENU);
-    pen.fillRectanglePC(0,0,getWidth(), getHeight());
+//    pen.setColor(TColor::MENU);
+//    pen.fillRectanglePC(0,0,getWidth(), getHeight());
 
     pen.setColor(TColor::BTNLIGHT);
     pen.drawString(x_text+1, y+1, label);
