@@ -96,9 +96,10 @@
  * loose their reference on the object.
  */
 
-#include <malloc.h>
+#include <cstdlib>
 #include <cassert>
-#include <iostream>
+#include <cstdio>
+// #include <iostream>
 
 namespace toad {
 
