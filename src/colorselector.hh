@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,7 @@ class TColorSelector:
     TColorSelector(TWindow *parent, 
                    const string &title, 
                    TFigurePreferences *gedit = 0);
+    ~TColorSelector();
 
     bool dialogeditorhack;
   protected:
@@ -56,6 +57,8 @@ class TColorSelector:
     void dropColor(const PDnDColor&);
     void openColorDialog();
     void openColorPalette();
+    
+    void preferencesChanged();
 };
 
 } // namespace toad

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,9 +59,26 @@ TColorSelector::TColorSelector(TWindow *parent,
   connect(pb2->sigActivate, this, &TColorSelector::openColorDialog);
 
   ds = new TDropSiteColor(this, TRectangle(0,0,w2,h));
-  connect_value(ds->sigDrop,
-                this, &TColorSelector::dropColor, ds);
+  connect_value(ds->sigDrop, this, &TColorSelector::dropColor, ds);
+  if (gedit)                
+    connect(gedit->sigChanged, this, &TColorSelector::preferencesChanged);
 }
+
+TColorSelector::~TColorSelector()
+{
+  if (gedit)
+    disconnect(gedit->sigChanged, this);
+}
+
+void
+TColorSelector::preferencesChanged()
+{
+  filled = gedit->filled;
+  linecolor = gedit->linecolor;
+  fillcolor = gedit->fillcolor;
+  invalidateWindow();
+}
+
 
 void
 TColorSelector::resize()
