@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,13 +25,15 @@ using namespace toad;
 
 TFGroup::TFGroup()
 {
-//  mat = new TMatrix2D();
   connect(gadgets.sigChanged, this, &TFGroup::modelChanged);
 }
 
-TFGroup::TFGroup(const TFGroup &g)
+TFGroup::TFGroup(const TFGroup &g):
+  gadgets(g.gadgets)
 {
-//  mat = new TMatrix2D();
+  if (g.mat && !mat)
+    mat = new TMatrix2D(*g.mat);
+  calcSize();
   connect(gadgets.sigChanged, this, &TFGroup::modelChanged);
 }
 
