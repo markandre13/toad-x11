@@ -366,7 +366,7 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       if ((unsigned char)str[0]>=32 && str[1]==0) {
         if (preferences->mode==TPreferences::NORMAL)
           _selection_clear();
-        _insert(str[0]);
+        _insert(str);
       }
 //      else
 //        printf("unhandled character '%s'\n", str);
@@ -404,8 +404,31 @@ TTextArea::mouseLDown(int x, int y, unsigned)
   x /= w;
   y /= h;
   setCursor(x + _tx, y + _ty);
+  _bos = _eos = _pos;
   blink.visible=true;
   setFocus();
+}
+
+void
+TTextArea::mouseMove(int x, int y, unsigned)
+{
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  int h = font->getHeight();
+  int w = font->getTextWidth("x");
+  x /= w;
+  y /= h;
+  
+  if (_cx==x && _cy==y)
+    return;
+  setCursor(x + _tx, y + _ty);
+  _eos = _pos;
+  invalidateWindow(true);
+  // _invalidate_line(_cy);
+}
+
+void
+TTextArea::mouseLUp(int x, int y, unsigned)
+{
 }
 
 void
