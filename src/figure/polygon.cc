@@ -207,8 +207,9 @@ class TMyPopupMenu:
 unsigned
 TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
 {
-  if (editor->state != TFigureEditor::STATE_NONE)
+  if (editor->state != TFigureEditor::STATE_NONE) {
     return NOTHING;
+  }
 
   unsigned i=0;
   bool found=false;
@@ -225,9 +226,6 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
     }
   }
   
-  if (found && polygon.size()<=2)
-    return NOTHING;
-
   TInteractor *dummy = new TInteractor(0, "dummy interactor");
 //cerr << "create tree " << dummy << endl;
   TAction *action;
@@ -250,8 +248,12 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
       figure, this,
       edit, editor,
       _i, i,
-      edit->invalidateFigure(figure);
-      figure->deletePoint(_i);
+      if (figure->polygon.size()<=2) {
+        edit->deleteFigure(figure);
+      } else {
+        edit->invalidateFigure(figure);
+        figure->deletePoint(_i);
+      }
       edit->invalidateFigure(figure);
     )
   }
@@ -266,6 +268,12 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
 void
 TFPolygon::insertPointNear(int x, int y)
 {
+  _insertPointNear(x, y, true);
+}
+
+void
+TFPolygon::_insertPointNear(int x, int y, bool filled)
+{
   unsigned i=0;
   double min;
 
@@ -276,6 +284,8 @@ TFPolygon::insertPointNear(int x, int y)
                         polygon[j  ].x, polygon[j  ].y,
                         polygon[j+1].x, polygon[j+1].y);
     } else {
+      if (!filled)
+        break;
       d = distance2Line(x, y,
                         polygon[j  ].x, polygon[j  ].y,
                         polygon[0].x, polygon[0].y);

@@ -202,6 +202,12 @@ TFLine::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
   return super::mouseLDown(editor, mx, my, m);
 }
 
+void
+TFLine::insertPointNear(int x, int y)
+{
+  _insertPointNear(x, y, false);
+}
+
 // storage
 //---------------------------------------------------------------------------
 namespace {

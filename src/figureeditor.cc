@@ -1918,7 +1918,14 @@ TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
       selection.insert(f);
       invalidateFigure(f);
     }
-    f->mouseRDown(this, mx, my, modifier);
+    unsigned op = f->mouseRDown(this, mx, my, modifier);
+    if (op & TFigure::STOP) {
+      stopOperation();
+      clearSelection();
+    }
+    if (op & TFigure::DELETE) {
+      deleteSelection();
+    }
   }
 }
 

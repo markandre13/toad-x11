@@ -230,6 +230,7 @@ class TFPolygon:
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);
     unsigned keyDown(TFigureEditor *editor, TKey key, char *str, unsigned);
     unsigned mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier);
+    virtual void _insertPointNear(int, int, bool filled);
   public:
     virtual void insertPointNear(int, int);
     virtual void deletePoint(unsigned);
@@ -272,6 +273,7 @@ class TFLine:
                           int w, int h,
                           EArrowType type);
     
+    virtual void insertPointNear(int, int);
   protected:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
     SERIALIZABLE_INTERFACE(toad::, TFLine);

@@ -380,8 +380,8 @@ TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
     }
   }
   
-  if (found && ( (i%3)!=0 || polygon.size()<=4))
-    return 0;
+  if (found && (i%3)!=0)
+    return NOTHING;
 
   TInteractor *dummy = new TInteractor(0, "dummy interactor");
 //cerr << "create tree " << dummy << endl;
@@ -406,8 +406,12 @@ TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
       figure, this,
       edit, editor,
       _i, i,
-      edit->invalidateFigure(figure);
-      figure->deletePoint(_i);
+      if (figure->polygon.size()<=4) {
+        edit->deleteFigure(figure);
+      } else {
+        edit->invalidateFigure(figure);
+        figure->deletePoint(_i);
+      }
       edit->invalidateFigure(figure);
     )
     action = new TAction(dummy, "split");
@@ -419,7 +423,7 @@ TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
   menu->tree = dummy;
   menu->setScopeInteractor(dummy);
   menu->open(x, y, modifier);
-  return 0;
+  return NOTHING;
 }
 
 namespace {
