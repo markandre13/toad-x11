@@ -73,10 +73,7 @@ GADGET		= figure.cc figuremodel.cc figurewindow.cc \
 		  figure/circle.cc figure/group.cc figure/rectangle.cc \
 		  figure/text.cc figure/frame.cc figure/bezier.cc \
 		  figure/polygon.cc figure/line.cc figure/window.cc figure/image.cc \
-		  figureeditor.cc figureeditor/undoablemove.cc \
-		  figureeditor/undoablehandlemove.cc \
-		  figureeditor/undoabledelete.cc \
-		  colorselector.cc
+		  figureeditor.cc colorselector.cc
 
 MDI		= mdiwindow.cc mdishell.cc
 

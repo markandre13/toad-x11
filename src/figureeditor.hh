@@ -163,7 +163,7 @@ class TFigureEditor:
     void setWindow(TWindow*);
     TWindow* getWindow() const { return window; }
 
-    TFigureEditor(TWindow*, const string &title);
+    TFigureEditor(TWindow*, const string &title, TFigureModel *model=0);
     ~TFigureEditor();
     
     void setPreferences(TFigurePreferences *p);
@@ -196,6 +196,16 @@ class TFigureEditor:
     void setModel(TFigureModel *m);
     TFigureModel * getModel() const {
       return model;
+    }
+    
+    void setModified(bool m) {
+      assert(model!=0);
+      model->setModified(m);
+    }
+    bool isModified() const {
+      if (!model)
+        return false;
+      return model->isModified();
     }
 
   protected:
@@ -312,7 +322,7 @@ class TFigureEditor:
     void store(TOutObjectStream&) const;
 
   protected:
-    void init();
+    void init(TFigureModel *m);
     
     TRGB background_color;
     

@@ -52,15 +52,26 @@ class TFigureModel:
     /**
      * Kind of modification that took place.
      */
-    enum { MODIFIED, DELETE, 
-           ADD, REMOVE,
+    enum { MODIFY,    // before modification (figures)
+           MODIFIED,  // after modification (figures)
+           DELETE, 
+           ADD,       // after figures are added
+           REMOVE,    // before figures are removed
            GROUP, UNGROUP,
            TRANSLATE,
            ROTATE,
            _UNDO_GROUP
     } type;
+    //! additional information for type attribute
     TFigureSet figures;
+    //! additional information for type attribute
     TFigure *figure;
+    
+    bool _modified;
+    bool isModified() const { return _modified; }
+    void setModified(bool m) {
+      _modified = m;
+    }
     
     class iterator
     {
@@ -112,6 +123,8 @@ class TFigureModel:
     void erase(TFigureSet&);
     
     void insert(TFigureAtDepthList &store);
+
+    void translate(const TFigureSet&, int dx, int dy);
     
     TFigure* group(TFigureSet &);
     void _undoGroup(TFGroup*, TFigureAtDepthList &figures);

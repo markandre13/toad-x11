@@ -26,10 +26,6 @@
 #include <toad/checkbox.hh>
 #include <toad/action.hh>
 #include <toad/undomanager.hh>
-#include <toad/figureeditor/undoablemove.hh>
-#include <toad/figureeditor/undoablehandlemove.hh>
-#include <toad/figureeditor/undoabledelete.hh>
-#include <toad/figureeditor/undoablecreate.hh>
 
 #include <cmath>
 #include <algorithm>
@@ -118,16 +114,16 @@ using namespace toad;
 TFigureEditor::TFigureEditor():
   super(NULL, "(TFigureEditor: no window)")
 {
-  init();
+  init(NULL);
   bExplicitCreate = true; // don't create, see TWindow::createParentless()
   window = NULL;
   row_header_renderer = col_header_renderer = 0;
 }
 
-TFigureEditor::TFigureEditor(TWindow *p, const string &t):
+TFigureEditor::TFigureEditor(TWindow *p, const string &t, TFigureModel *m):
   super(p, t)
 {
-  init();
+  init(m);
   setMouseMoveMessages(TMMM_LBUTTON);
   bNoBackground = true;
   window = this;
@@ -160,38 +156,6 @@ TFigureEditor::setWindow(TWindow *w)
   if (window)
     window->invalidateWindow();
 }
-
-#if 0
-class THistoryAction:
-  public TAction
-{
-    TFigureEditor::THistory *history;
-    bool undo;
-  public:
-    THistoryAction(TWindow *w, const string &t, TFigureEditor::THistory *h, bool u):
-      TAction(w, t), history(h), undo(u)
-    {
-    }
-    
-    bool getState(string *text, bool *active) const {
-      if (undo) {
-        if (history->getBackSize()>0)
-          history->getCurrent()->getUndoName(text);
-        else
-          *text = "(Undo)";
-      } else {
-        if (history->getForwardSize()>0) {
-          history->goForward();
-          history->getCurrent()->getRedoName(text);
-          history->goBack();
-        } else {
-          *text = "(Redo)";
-        }
-      }
-      return true;
-    }
-};
-#endif
 
 void foobar(TFigurePreferences *p) {
   p->sigChanged();
@@ -275,7 +239,7 @@ TFigurePreferences::applyAll()
 }
 
 void
-TFigureEditor::init()
+TFigureEditor::init(TFigureModel *m)
 {
   preferences = 0;
   setPreferences(new TFigurePreferences);
@@ -291,10 +255,11 @@ TFigureEditor::init()
 //  vscroll = NULL;
 //  hscroll = NULL;
   model = 0;
-  setModel(new TFigureModel());
+  if (!m)
+    m=new TFigureModel();
+  setModel(m);
   x1=y1=x2=y2=0;
   update_scrollbars = false;
-  
 
   TAction *action;
 
@@ -774,6 +739,8 @@ void
 TFigureEditor::modelChanged()
 {
   switch(model->type) {
+    case TFigureModel::MODIFY:
+    case TFigureModel::MODIFIED:
     case TFigureModel::ADD:
       update_scrollbars = true;
       for(TFigureSet::iterator p=model->figures.begin();
@@ -1463,6 +1430,7 @@ redo:
                 } else {
                   memo_x = memo_y = 0;
                   state = STATE_MOVE;
+                  TUndoManager::beginUndoGrouping();
                 }
               } else {
                 if (m&MK_SHIFT) {
@@ -1495,7 +1463,7 @@ redo:
             select_x = x;
             select_y = y;
           }
-        } break;
+        } break; // end of OP_SELECT
 
         case OP_ROTATE: {
           if (gadget) {
@@ -1528,7 +1496,7 @@ redo:
 //            cerr << "state = STATE_ROTATE" << endl;
           }
           return; 
-        } break;
+        } break; // end of OP_ROTATE
 
         case OP_CREATE: {
           #if VERBOSE
@@ -1553,7 +1521,7 @@ redo:
         } break;
         
       }
-    } break;
+    } break; // end of STATE_NONE
     
     case STATE_CREATE: 
     case STATE_EDIT: {
@@ -1645,25 +1613,9 @@ redo:
 #endif
       int dx = x-down_x; down_x=x;
       int dy = y-down_y; down_y=y;
-      TFigureSet::iterator p,e;
-      p = selection.begin();
-      e = selection.end();
       memo_x+=dx;
       memo_y+=dy;
-      while(p!=e) {
-        invalidateFigure(*p);
-        if ( !(*p)->mat) {
-          (*p)->translate(dx, dy);
-        } else {
-          TMatrix2D m;
-          m.translate(dx, dy);
-          m.multiply((*p)->mat);
-          *(*p)->mat = m;
-        }
-        invalidateFigure(*p);
-        p++;
-      }
-      updateScrollbars();
+      model->translate(selection, dx, dy);
     } break;
 
     case STATE_MOVE_HANDLE: {
@@ -1787,32 +1739,7 @@ redo:
       #if VERBOSE
         cout << "  STATE_MOVE => STATE_NONE" << endl;
       #endif
-#if 0
-      int dx = x-down_x; down_x=x;
-      int dy = y-down_y; down_y=y;
-      TFigureSet::iterator p,e;
-      p = selection.begin();
-      e = selection.end();
-      memo_x += dx;
-      memo_y += dy;
-#endif
-      if (memo_x!=0 || memo_y!=0) {
-#if 1
-        cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
-#else
-        TUndoableMove *undo = new TUndoableMove(memo_x, memo_y, selection);
-        history.add(undo);
-#endif
-      }
-#if 0
-      while(p!=e) {
-        invalidateFigure(*p);
-        (*p)->translate(dx, dy);
-        invalidateFigure(*p);
-        p++;
-      }
-      updateScrollbars();
-#endif
+      TUndoManager::endUndoGrouping();
       state = STATE_NONE;
     } break;
 

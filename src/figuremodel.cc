@@ -268,6 +268,66 @@ TFigureModel::erase(TFigureSet &set)
   TUndoManager::registerUndo(this, undo);
 }
 
+class TUndoTranslate:
+  public TUndo
+{
+    TFigureModel *model;
+    TFigureSet figures;
+    int dx, dy;
+  public:
+    TUndoTranslate(TFigureModel *model, const TFigureSet &set, int dx, int dy) {
+      this->model = model;
+      this->figures.insert(set.begin(), set.end());
+      this->dx = dx;
+      this->dy = dy;
+    }
+  protected:
+    void undo() {
+//cout << "undo translate " << dx << ", " << dy << endl;
+      model->translate(figures, dx, dy);
+    }
+    bool getUndoName(string *name) const {
+      *name = "Undo: Move";
+      return true;
+    }
+    bool getRedoName(string *name) const {
+      *name = "Redo: Move";
+      return true;
+    }
+};
+
+void
+TFigureModel::translate(const TFigureSet &set, int dx, int dy)
+{
+  if (dx==0 && dy==0)
+    return;
+
+//cout << "translate " << dx << ", " << dy << endl;
+  figures.clear();
+  figures.insert(set.begin(), set.end());
+  type = MODIFY;
+  sigChanged();
+  for(TFigureSet::iterator p = set.begin();
+      p!=set.end();
+      ++p)
+  {
+    if ( !(*p)->mat) {
+      (*p)->translate(dx, dy);
+    } else {
+      TMatrix2D m;
+      m.translate(dx, dy);
+      m.multiply((*p)->mat);
+      *(*p)->mat = m;
+    }
+  }
+  type = MODIFIED;
+  sigChanged();
+
+  TUndoTranslate *undo = new TUndoTranslate(this, set, -dx, -dy);
+  TUndoManager::registerUndo(this, undo);
+
+  _modified = true;
+}
 
 /**
  * Group a given set of figures.
