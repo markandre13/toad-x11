@@ -55,7 +55,11 @@ extern void createTOADResource();
 
 namespace {
 
+#ifdef HAVE_LIBXFT
+string fontengine("freetype");
+#else
 string fontengine("x11");
+#endif
 string fontname("arial,helvetica,sans-serif");
 
 void
