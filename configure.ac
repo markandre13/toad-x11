@@ -59,8 +59,15 @@ LIBS="$X_LIBS $FONTCONFIG_LIBS $XFT_LIBS $X_PRE_LIBS $X_EXTRA_LIB $LIBS"
 # the order of libraries is important so when removing libraries, we must
 # keep the last '-l', which we do with the two loops below:
 z=""
+u=""  
 for x in $LIBS ; do
-  z="$x $z"
+  if test "${x#-L}" != "$x" ; then
+    if test `echo "$u" | grep -ce "$x" -` = 0 ; then
+      u="$u $x"
+    fi
+  else
+    z="$x $z"
+  fi
 done
 
 y=""
@@ -69,7 +76,7 @@ for x in $z ; do
     y="$x $y"
   fi
 done
-LIBS="`echo $y`"
+LIBS="$u $y"
 
 y=""
 for x in $CXXFLAGS ; do
@@ -77,7 +84,7 @@ for x in $CXXFLAGS ; do
     y="$y $x"
   fi
 done
-CXXFLAGS="`echo $y`"
+CXXFLAGS="$y"
 
 y=""
 for x in $CFLAGS ; do
@@ -85,7 +92,7 @@ for x in $CFLAGS ; do
     y="$y $x"
   fi
 done
-CFLAGS="`echo $y`"
+CFLAGS="$y"
 
 cat<<EOF
 
