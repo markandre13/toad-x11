@@ -21,7 +21,7 @@
 #ifndef _TOAD_FIGUREMODEL_HH
 #define _TOAD_FIGUREMODEL_HH
 
-#include <list>
+#include <vector>
 #include <toad/toad.hh>
 #include <toad/model.hh>
 #include <toad/io/serializable.hh>
@@ -37,7 +37,7 @@ class TFigureModel:
   public TModel, public TSerializable
 {
     friend class TFigureWindow; // debugging
-    typedef std::list<TFigure*> TStorage;
+    typedef std::vector<TFigure*> TStorage;
   public:
     /**
      * Kind of modification that took place.
