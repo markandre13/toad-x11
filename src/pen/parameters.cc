@@ -51,9 +51,11 @@ TPenBase::~TPenBase()
  *
  * \todo
  *   \li
+ *     clean up the clipping methods
+ *   \li
  *     have look at libpango for text rendering
  *   \li
- *     provide an interface to the X Render extension
+ *     provide an interface to the Xft and Xr extensions
  */
 
 // constructor & destructor
@@ -217,6 +219,9 @@ void TPen::setClipRegion(TRegion *rgn)
 
 /**
  * Sets a clipping rectangle.
+ *
+ * This method should be obsolete as it's incompatible with
+ * clipping regions!
  */
 void TPen::setClipRect(const TRectangle &r)
 {
