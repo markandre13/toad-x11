@@ -1,4 +1,9 @@
-#warning "Webdings results in a complete different (Andale Mono IPA) font under Freetype"
+
+// Q: Webdings results in a complete different (Andale Mono IPA) font under
+//    Freetype
+// A: This is a bug in the freetype library. Update to a newer version.
+
+#warning "should separate Xft and X11 fonts"
 #warning "should create font on-demand during drawString!!!"
 #warning "the true type renderer is better, prefer arial over helvetica"
 
@@ -30,8 +35,18 @@
 #include <toad/radiobutton.hh>
 #include <toad/textfield.hh>
 #include <toad/config.h>
+
 #ifdef HAVE_LIBXFT
+
+#ifdef _XFT_NO_COMPAT_
+#undef _XFT_NO_COMPAT_
+#endif
+
 #include <X11/Xft/Xft.h>
+#ifdef FC_VERSION
+#define HAVE_FONTCONFIG
+#endif
+
 #endif
 
 #include <toad/tablemodels.hh>
@@ -54,6 +69,12 @@ using namespace toad;
 // - env QT_XFT=true konqueror
 
 // http://fontconfig.org/
+// /etc/fonts/*
+
+// cd /usr/X11R6/lib/X11/fonts/TrueType ; fc-cache
+// man font-config
+// man fontconfig
+// man xft
 
 class TFontStyle {
   public:
@@ -118,8 +139,7 @@ class TFont2
       SIZE_PIXEL
     };
     enum ERenderType {
-      RENDER_BITMAP,
-      RENDER_SCALEABLE,
+      RENDER_X11,
       RENDER_FREETYPE
     };
 //  private:
@@ -166,7 +186,11 @@ class TFont2
     void createFont(TMatrix2D*);
     
     Font getX11Font() const {
-      return x11font ? x11font : x11fs->fid;
+      if (x11font)
+        return x11font;
+      if (x11fs)
+        return x11fs->fid;
+      return 0;
     }
     
 #ifdef HAVE_LIBXFT
@@ -433,127 +457,9 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
   size = "12";
   dpi = "100";
   sizetype = TFont2::SIZE_POINT;
-  rendertype = TFont2::RENDER_BITMAP;
+  rendertype = TFont2::RENDER_X11;
 
-  /*
-   * retrieve Xft (X FreeType Extension) font names
-   * We do this before retrieving the names from the X11 server as the
-   * names delivered by FreeType have correct upper and lower case names
-   * and we will adjust the X11 names to these ones.
-   */
-#ifdef HAVE_LIBXFT
-  cerr << "XFT - X FreeType interface library" << endl;
-  // calling this function causes XftFontOpen to fail, but why?
-  if (XftDefaultHasRender(x11display)) {
-    cerr << "XFT supported by server" << endl;
-  } else {
-    cerr << "XFT isn't supported by server" << endl;
-  }
-
-  XftFontSet * xftfl;
-  xftfl = XftListFonts(x11display, x11screen,
-                       0, // XftPattern
-                       XFT_FAMILY, 0);
-  if (xftfl) {
-    // XftFontSetPrint(xftfl);
-    cerr << "nfont " << xftfl->nfont << endl;
-    for(int i=0; i<xftfl->nfont; ++i) {
-      string family;
-
-      XftPattern *pt = xftfl->fonts[i];
-      for(int j=0; j<pt->num; ++j) {
-        XftPatternElt *e = pt->elts+j;
-        if (strcmp(e->object, XFT_FAMILY)==0) {
-          XftValueList *vl = e->values;
-          while(vl) {
-            switch(vl->value.type) {  
-              case XftTypeString:
-                family = vl->value.u.s;
-//                cerr << "found '" << vl->value.u.s << "'\n";
-                break;
-//              deault:
-//                cerr << "(unhandled type)" << endl;
-            }
-            vl=vl->next;
-          }
-        }
-      }
-      TFontFamily thisfamily("*", family);
-      thisfamily.type_scaleable_ft=true;
-      TFontFamilyMap::iterator ffsp = ff.find(thisfamily);
-      if (ffsp==ff.end()) {
-        ff[thisfamily]=thisfamily;
-        ffsp = ff.find(thisfamily);
-      }
-    }
-  } else {
-    cerr << "XftListFonts failed" << endl;
-  }
-  XftFontSetDestroy(xftfl);
-#endif
-  
-  /*
-   * retrieve X11 server font names
-   */
-  int count;
-  TX11FontName xfn;
-  xfn.setWildcards();
-  char **fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
-
-  for(int i=0; i<count; ++i) {
-    TX11FontName xfn;
-    xfn.setXLFD(fl[i]);
-    
-if (xfn.family=="fixed") {
-  cerr << "fixed vendor '" << xfn.vendor << "' -> '" << xfn.registry << "-" << xfn.encoding << endl;
-}
-
-    /* hack to provide better sorting for humans: */
-    if (!xfn.family.empty())
-      xfn.family[0] = toupper(xfn.family[0]);
-    if (!xfn.vendor.empty())
-      xfn.vendor[0] = toupper(xfn.vendor[0]);
-
-    TFontFamilyMap::iterator ffsp;
-    
-    ffsp = ff.begin();
-    while(ffsp!=ff.end()) {
-      if (strcasecmp(xfn.family.c_str(), ffsp->second.family.c_str())==0)
-      {
-        xfn.family = ffsp->second.family; // use FreeType name
-        
-        if (!ffsp->second.vendor.empty()) { // not a pure freetype name
-          if (strcasecmp(xfn.vendor.c_str(), ffsp->second.vendor.c_str())!=0) {
-            ffsp=ff.end();
-          }
-        }
-        break;
-      }
-      ++ffsp;
-    }
-    TFontFamily thisfamily(xfn.vendor, xfn.family);
-    
-//    ffsp = ff.find(index);
-    if (ffsp==ff.end()) {
-      ff[thisfamily]=thisfamily;
-      ffsp = ff.find(thisfamily);
-    } else {
-      ffsp->second.vendor = xfn.vendor;
-      ffsp->second.name   = xfn.family;
-    }
-
-    if (xfn.isScaleable()) {
-      ffsp->second.type_scaleable_x11 = true;
-    } else {
-      ffsp->second.type_bitmap = true;
-      if (xfn.points!="0")
-        ffsp->second.size_pt.insert(xfn.points);
-      if (xfn.pixels!="0")
-        ffsp->second.size_px.insert(xfn.pixels);
-    }
-  }
-
-  XFreeFontNames(fl);
+  updateRendertype();
 
   /*
    * create widgets
@@ -580,10 +486,8 @@ if (xfn.family=="fixed") {
   sizetype.add(new TRadioButton(this, "metric px"), TFont2::SIZE_PIXEL);
   connect(sizetype.sigChanged, this, &This::updateFont);
 
-  rendertype.add(new TRadioButton(this, "type bitmap"), TFont2::RENDER_BITMAP);
-  rendertype.add(new TRadioButton(this, "type scaleable x11"), TFont2::RENDER_SCALEABLE);
-  rendertype.add(new TRadioButton(this, "type scaleable ft"), TFont2::RENDER_FREETYPE);
-  connect(rendertype.sigChanged, this, &This::updateStyle);
+  rendertype.add(new TRadioButton(this, "type x11"), TFont2::RENDER_X11);
+  rendertype.add(new TRadioButton(this, "type freetype"), TFont2::RENDER_FREETYPE);
 
   pb = new TPushButton(this, "table");
   connect(pb->sigActivate, this, &This::showFontTable);  
@@ -599,6 +503,10 @@ if (xfn.family=="fixed") {
 void
 TFontDialog::familySelected()
 {
+  if (ff.empty()) { // ff.begin()==ff.end()) {
+    cerr << "no font families" << endl;
+    return;
+  }
   const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
   
   // we don't want a copy here!! reference or iterator would be fine!!!
@@ -606,17 +514,158 @@ TFontDialog::familySelected()
   
   TFontFamily &f2(const_cast<TFontFamily&>(f));
 
-  tsize->setRenderer(new TTableCellRenderer_StringSet(&f2.size_pt));
+//  tsize->setRenderer(new TTableCellRenderer_StringSet(&f2.size_pt));
   
   updateRendertype();
   updateStyle();
   
-  tsize->getSelectionModel()->setSelection(0, 0);
+//  tsize->getSelectionModel()->setSelection(0, 0);
 }
 
 void
 TFontDialog::updateRendertype()
 {
+  ff.erase(ff.begin(), ff.end());
+
+  /*
+   * retrieve Xft (X FreeType Extension) font names
+   * We do this before retrieving the names from the X11 server as the
+   * names delivered by FreeType have correct upper and lower case names
+   * and we will adjust the X11 names to these ones.
+   */
+#ifdef HAVE_LIBXFT
+  if (rendertype==TFont2::RENDER_FREETYPE) {
+    cerr << "XFT - X FreeType interface library" << endl;
+    // calling this function causes XftFontOpen to fail, but why?
+    if (XftDefaultHasRender(x11display)) {
+      cerr << "XFT supported by server" << endl;
+    } else {
+      cerr << "XFT isn't supported by server" << endl;
+    }
+#ifdef HAVE_FONTCONFIG
+    XftFontSet * xftfl;
+#else
+    FcFontSet * xftfl;
+#endif
+    xftfl = XftListFonts(x11display, x11screen,
+                         0, // XftPattern
+                         XFT_FAMILY, 0);
+    if (xftfl) {
+      // XftFontSetPrint(xftfl);
+      cerr << "nfont " << xftfl->nfont << endl;
+      for(int i=0; i<xftfl->nfont; ++i) {
+        string family;
+#ifdef HAVE_FONTCONFIG
+        FcPattern *pt = xftfl->fonts[i];
+        FcChar8 *s;
+
+        FcPatternGetString(pt, XFT_FAMILY, 0, &s);
+        cerr << "found family " << s << endl;
+        family = (char*)s;
+      
+        FcPatternGetString(pt, XFT_FOUNDRY, 0, &s);
+        cerr << "  foundry " << s << endl;
+#else
+        XftPattern *pt = xftfl->fonts[i];
+        for(int j=0; j<pt->num; ++j) {
+          XftPatternElt *e = pt->elts+j;
+          if (strcmp(e->object, XFT_FAMILY)==0) {
+            XftValueList *vl = e->values;
+            while(vl) {
+              switch(vl->value.type) {  
+                case XftTypeString:
+                  family = vl->value.u.s;
+//                cerr << "found '" << vl->value.u.s << "'\n";
+                  break;
+//              deault:
+//                cerr << "(unhandled type)" << endl;
+              }
+              vl=vl->next;
+            }
+          }
+        }
+#endif
+        TFontFamily thisfamily("*", family);
+        thisfamily.type_scaleable_ft=true;
+        TFontFamilyMap::iterator ffsp = ff.find(thisfamily);
+        if (ffsp==ff.end()) {
+          ff[thisfamily]=thisfamily;
+          ffsp = ff.find(thisfamily);
+        }
+      }
+    } else {
+      cerr << "XftListFonts failed" << endl;
+    }
+    XftFontSetDestroy(xftfl);
+#endif
+  }
+  
+  /*
+   * retrieve X11 server font names
+   */
+  if (rendertype==TFont2::RENDER_X11) {
+    int count;
+    TX11FontName xfn;
+    xfn.setWildcards();
+    char **fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
+  
+    for(int i=0; i<count; ++i) {
+      TX11FontName xfn;
+      xfn.setXLFD(fl[i]);
+    
+if (xfn.family=="fixed") {
+  cerr << "fixed vendor '" << xfn.vendor << "' -> '" << xfn.registry << "-" << xfn.encoding << endl;
+}
+
+      /* hack to provide better sorting for humans: */
+      if (!xfn.family.empty())
+        xfn.family[0] = toupper(xfn.family[0]);
+      if (!xfn.vendor.empty())
+        xfn.vendor[0] = toupper(xfn.vendor[0]);
+
+      TFontFamilyMap::iterator ffsp;
+    
+      ffsp = ff.begin();
+      while(ffsp!=ff.end()) {
+        if (strcasecmp(xfn.family.c_str(), ffsp->second.family.c_str())==0)
+        {
+          xfn.family = ffsp->second.family; // use FreeType name
+          
+          if (!ffsp->second.vendor.empty()) { // not a pure freetype name
+            if (strcasecmp(xfn.vendor.c_str(), ffsp->second.vendor.c_str())!=0) {
+              ffsp=ff.end();
+            }
+          }
+          break;
+        }
+        ++ffsp;
+      }
+      TFontFamily thisfamily(xfn.vendor, xfn.family);
+    
+//    ffsp = ff.find(index);
+      if (ffsp==ff.end()) {
+        ff[thisfamily]=thisfamily;
+        ffsp = ff.find(thisfamily);
+      } else {
+        ffsp->second.vendor = xfn.vendor;
+        ffsp->second.name   = xfn.family;
+      }
+
+      if (xfn.isScaleable()) {
+        ffsp->second.type_scaleable_x11 = true;
+      } else {
+        ffsp->second.type_bitmap = true;
+        if (xfn.points!="0")
+          ffsp->second.size_pt.insert(xfn.points);
+        if (xfn.pixels!="0")
+          ffsp->second.size_px.insert(xfn.pixels);
+      }
+    }
+
+    XFreeFontNames(fl);
+  }
+
+#if 0
   const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
 
   rendertype.getButton(TFont2::RENDER_BITMAP)->setEnabled(f.type_bitmap);
@@ -645,6 +694,7 @@ TFontDialog::updateRendertype()
     else
       rendertype = TFont2::RENDER_FREETYPE;
   }
+#endif
 }
 
 void
@@ -657,7 +707,6 @@ TFontDialog::updateStyle()
     return;
   }
 
-cerr << "updateStyle()" << endl;
   const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
 
   if (rendertype!=TFont2::RENDER_FREETYPE) {
@@ -694,8 +743,6 @@ cerr << "updateStyle()" << endl;
     XFreeFontNames(fl);
     fs.unlock();
   } else {
-//    cerr << "getting freetype style's" << endl;
-    
     XftPattern *pattern = XftPatternCreate();
     XftPatternAddString(pattern, XFT_FAMILY, f.family.c_str());
 /*
@@ -714,17 +761,29 @@ cerr << "updateStyle()" << endl;
     // XftObjectSetAdd(os, XFT_SLANT);
     // XftObjectSetAdd(os, XFT_WEIGHT);
     
+#ifdef HAVE_FONTCONFIG
+    static FcConfig *fc = 0;
+    if (fc==0)
+      fc = FcInitLoadConfigAndFonts();
+    FcFontSet *xftfl = FcFontList(fc, pattern, os);
+#else
     XftFontSet *xftfl = XftListFontsPatternObjects(
       x11display, x11screen,
       pattern, os);
-      
-//    XftFontSetPrint(xftfl);
-
+#endif
     fs.lock();
     fs.clear();
     for(int i=0; i<xftfl->nfont; ++i) {
       XftPattern *pt = xftfl->fonts[i];
       TFontStyle thisstyle("", "", "", "");
+#ifdef HAVE_FONTCONFIG
+      FcChar8 *s;
+      for(int j=0; FcPatternGetString(pt, XFT_STYLE, j, &s)==FcResultMatch; ++j) {
+        cerr << "found style " << s << endl;
+        thisstyle.name = (char*)s;
+        fs[thisstyle]=thisstyle;
+      }
+#else
       for(int j=0; j<pt->num; ++j) {
         XftPatternElt *e = pt->elts+j;
         if (strcmp(e->object, XFT_STYLE)==0) {
@@ -740,13 +799,13 @@ cerr << "updateStyle()" << endl;
           }
         }
       }
+#endif
     }
     fs.unlock();
 
     XftObjectSetDestroy(os);
     XftFontSetDestroy(xftfl);
   }
-  
   tstyle->getSelectionModel()->setSelection(0, 0);
   invalidateWindow();
 }
@@ -761,6 +820,9 @@ TFontDialog::styleSelected()
 void
 TFontDialog::updateFont()
 {
+  if (ff.empty() || fs.empty())
+    return;
+
   font.setFamily(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
   font.setStyle(fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY()));
   font.setSizeType(sizetype);
@@ -811,6 +873,8 @@ TFont2::TFont2()
 {
   x11font = 0;
   x11fs = 0;
+  size = 12;
+  hdpi = vdpi = 100;
 #ifdef HAVE_LIBXFT
   xftfont = 0;
 #endif
@@ -895,8 +959,7 @@ void
 TFont2::createFont(TMatrix2D *mat)
 {
   switch(rendertype) {
-    case RENDER_BITMAP:
-    case RENDER_SCALEABLE:
+    case RENDER_X11:
       createX11Font(mat);
       break;
 #ifdef HAVE_LIBXFT
@@ -982,12 +1045,12 @@ cerr << "allocate new X11Font" << endl;
   if (sizetype==SIZE_PIXEL) {
     char buffer[10];
     snprintf(buffer, sizeof(buffer), "%i", size);
-printf("'%s' = %i\n", buffer ,size);
+cerr << size << "px" << endl;
     xfn.pixels = buffer;
   } else {
     char buffer[11];
     snprintf(buffer, sizeof(buffer), "%i", size * 10);
-printf("'%s' = %i\n", buffer ,size);
+cerr << size << "pt, hdpi=" << hdpi <<", vdpi=" << vdpi << endl;
     xfn.points = buffer;
     
     snprintf(buffer, sizeof(buffer), "%i", hdpi);
@@ -1002,9 +1065,41 @@ printf("'%s' = %i\n", buffer ,size);
   int count;
   char **fl;
     
-  fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
-  for(int i=0; i<count; ++i) {
-    cerr << "found " << fl[i] << endl;
+  for(int i=0; i<=20; ++i) {
+    fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
+    for(int j=0; j<count; ++j) {
+      cerr << "found " << fl[j] << endl;
+    }
+  
+    if (count==0) {
+      cerr << "no font found for " << xfn.getXLFD() << endl;
+      switch(i) {
+        case 0:
+          xfn.vendor = "*";
+          break;
+        case 1:
+          xfn.adj_style = "*";
+          break;
+        case 2:
+          xfn.set_width = "*";
+          break;
+        case 3:
+          xfn.slant = "*";
+          break;
+        case 4:
+          xfn.weight = "*";
+          break;
+        case 5:
+          xfn.family = "fixed";
+          break;
+        case 6:
+          xfn.family = "*";
+          break;
+        case 7:
+          cerr << "stopped searching for a font" << endl;
+          return;
+      }
+    }
   }
 
   // complete missing values
@@ -1122,8 +1217,9 @@ drawString(TPen &pen,
   font.createFont(pen.mat);
 
   switch(font.getRenderType()) {
-    case TFont2::RENDER_BITMAP:
-    case TFont2::RENDER_SCALEABLE:
+    case TFont2::RENDER_X11:
+      if (!font.getX11Font())
+        return;
       XSetFont(x11display, pen.o_gc, font.getX11Font());
       y+=font.getAscent();
       if (!pen.mat) {
@@ -1168,8 +1264,9 @@ drawString16(TPen &pen,
   font.createFont(pen.mat);
 
   switch(font.getRenderType()) {
-    case TFont2::RENDER_BITMAP:
-    case TFont2::RENDER_SCALEABLE:
+    case TFont2::RENDER_X11:
+      if (!font.getX11Font())
+        return;
       XSetFont(x11display, pen.o_gc, font.getX11Font());
       y+=font.getAscent();
       if (!pen.mat) {
@@ -1195,7 +1292,6 @@ cerr << __LINE__ << endl;
       }
       break;
     case TFont2::RENDER_FREETYPE: {
-#if 0
       y+=font.getAscent();
       if (pen.mat)
         pen.mat->map(x, y, &x, &y);
@@ -1204,8 +1300,12 @@ cerr << __LINE__ << endl;
       color.color.green = 0;
       color.color.blue = 0;
       color.color.alpha = 0xffff;
-      XftDrawString8(xftdraw, &color, font.getXftFont(), x,y, (XftChar8*)text.c_str(), text.size());
-#endif
+for(int i=0; i<len; ++i) {
+  int a = text[i].byte1;
+  text[i].byte1 = text[i].byte2;
+  text[i].byte2 = a;
+}
+      XftDrawString16(xftdraw, &color, font.getXftFont(), x,y, (XftChar16*)text, len);
       } break;
   }
 }
