@@ -1,10 +1,10 @@
 #
 # Autoconf file for TOAD
 #
-# Copyright (C) 2002-2004 by Mark-André Hopf <mhopf@mark13.de>
+# Copyright (C) 2002-2004 by Mark-André Hopf <mhopf@mark13.org>
 #
 
-AC_INIT(libtoad, 0.64.0, toad-bug@mark13.de)
+AC_INIT(libtoad, 0.64.0, toad-bug@mark13.org)
 
 AC_CONFIG_SRCDIR([src/toadbase.cc])
 AC_CONFIG_HEADER([src/config.h])
@@ -17,6 +17,13 @@ AC_PROG_MAKE_SET
 
 # Checks for libraries.
 AC_PATH_XTRA
+
+# libjpeg (optional)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AC_CHECK_LIB([jpeg], [jpeg_start_decompress],,,$LIBS)
+
+# X11 libs
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 XLIBS="${X_LIBS} ${X_PRE_LIBS} ${X_EXTRA_LIBS}"
 
 # AC_CHECK_LIB([MesaGL], [main])
@@ -72,9 +79,6 @@ AC_CHECK_LIB([z], [zlibVersion],,
 AC_CHECK_LIB([png], [png_create_read_struct],, 
   AC_MSG_ERROR(Could not link with libpng),$XLIBS)
 
-# libjpeg (optional)
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AC_CHECK_LIB([jpeg], [jpeg_start_decompress],,,$XLIBS)
 
 # libXutf8 (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
