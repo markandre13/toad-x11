@@ -99,7 +99,7 @@ class GRadioStateModel:
     }
     
     const T& getValue() const {
-      if (!getCurrent)
+      if (!getCurrent())
         return memo;
     
       typename TBtnValueVec::const_iterator p, e;
@@ -112,6 +112,10 @@ class GRadioStateModel:
       }
       return (*p).value;
     }
+    
+    T& operator=(T &v) { setValue(v); return v; }
+    const T& operator=(const T &v) { setValue(v); return v; }
+    operator const T&() const { return getValue(); }
     
     void setValueEnabled(const T& v, bool b) {
       TRadioButtonBase* btn = getButton(v);

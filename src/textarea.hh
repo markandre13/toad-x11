@@ -79,6 +79,7 @@ class TTextModel:
     void setValue(const char *data, unsigned len);
     const string& getValue() const { return data; }
     
+    string& operator=(string &s) { setValue(s); return s; }
     const string& operator=(const string &s) { setValue(s); return s; }
     operator const string&() const { return getValue(); }
     
@@ -160,6 +161,11 @@ class TTextModel:
 
 inline ostream& operator<<(ostream &s, const TTextModel& m) {
   return s<<m.getValue();
+}
+
+template <class T>
+inline string operator+(const T &l, const TTextModel &r) {
+  return l + r.getValue();
 }
 
 typedef GSmartPointer<TTextModel> PTextModel;
