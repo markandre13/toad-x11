@@ -123,8 +123,14 @@ Atom      TOADBase::xaWMMotifHints;
 
 // TOAD data
 //---------------------------------------------------------------------------
-TFont*    TOADBase::default_font = NULL;
-TFont*    TOADBase::bold_font = NULL;
+PFont    toad::default_font;
+PFont    toad::bold_font;;
+
+TFont& 
+TOADBase::getDefaultFont() {
+  return *default_font;
+}
+
 int       nStatus;
 bool      TOADBase::bAppIsRunning;
 TWindow*  TOADBase::wndTopPopup;
@@ -294,13 +300,9 @@ TOADBase::closeTOAD()
   TFigure::loseStorage();
   TBitmap::close();
 
-  if (default_font) {
-    delete default_font;
-    default_font = NULL;
-  }
-  if (bold_font) {
-    delete bold_font;
-  }
+  default_font = 0;
+  bold_font = 0;
+
   closeXInput();
 
   //  close connection to the X11 server

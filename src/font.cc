@@ -36,6 +36,7 @@ using namespace toad;
 TFont::TFont()
 {
   fs = NULL;
+  setFont(TFont::SANS, TFont::PLAIN, 12);
 }
 
 /**
@@ -199,17 +200,21 @@ void TFont::setFont(const string &family, EStyle style, int size)
   cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
 }
 
-void TFont::setFont(const string &x11fontname)
+void
+TFont::setFont(const string &x11fontname)
 {
+  XFontStruct *new_fs = XLoadQueryFont(x11display, x11fontname.c_str());
+  if (!new_fs) {
+    // the name might have been wrong for a 'font.scale' or 'font.dir' file
+    // pointed to a non-existend file
+    cerr << "TFont::setFont: failed to load font '" << x11fontname << "'\n";
+    return;
+  }
   if (fs) {
     XUnloadFont(x11display, fs->fid);
     XFreeFontInfo(NULL,fs,0);
   }
-  fs = NULL;
-  fs = XLoadQueryFont(x11display, x11fontname.c_str());
-  if (!fs) {
-    fprintf(stderr, "no such font\n");
-  }
+  fs = new_fs;
 }
 
 /**

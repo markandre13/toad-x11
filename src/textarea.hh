@@ -199,10 +199,10 @@ class TTextArea:
           WORDSTAR
         } mode;
         
-        void setFont(TFont *aFont) { if (font) delete font; font = aFont; }
+        void setFont(TFont *aFont) { font = aFont; }
         TFont* getFont() const { return font; }
       protected:
-        TFont *font;
+        PFont font;
     };
     
     TPreferences *preferences;

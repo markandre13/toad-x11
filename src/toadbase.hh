@@ -157,10 +157,8 @@ class TOADBase
 {
     friend class TWindow;
     static bool lock_paint_queue;
-    static class TFont *default_font;
 
   public:
-    static class TFont* bold_font;
     virtual ~TOADBase();
     static int argc;
     static char **argv, **envv;
@@ -168,10 +166,7 @@ class TOADBase
     static bool bAppIsRunning;
     static TWindow* wndTopPopup;
     static bool bSimulatedAutomaticGrab;
-    static TFont& getDefaultFont() {
-      assert(default_font!=NULL);
-      return *default_font;
-    }
+    static TFont& getDefaultFont();
     static void setDefaultFont(TFont*);
     static void setColorLimit(unsigned);
     static void setResourcePrefix(const string &);

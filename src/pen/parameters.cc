@@ -175,13 +175,16 @@ TPen::~TPen()
     delete region;
 }
 
-//. Sets a new font for DrawString and return the old font.
-TFont* TPen::setFont(TFont *f)
+/**
+ * Sets a new font for drawString.
+ */
+void
+TPen::setFont(TFont *newfont)
 {
-  TFont *of = font;
-  font = f;
+  assert(newfont!=0);
+  TFont *oldfont = font;
+  font = newfont;
   XSetFont(x11display, o_gc, font->fs->fid);
-  return of;
 }
 
 /**

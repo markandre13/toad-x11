@@ -106,7 +106,7 @@ class TPenBase:
 
     // more parameters
     //-----------------------
-    virtual TFont* setFont(TFont*) = 0;
+    virtual void setFont(TFont*) = 0;
     virtual void setMode(EPenMode) = 0;
     virtual void setLineWidth(int) = 0;
     virtual void setLineStyle(EPenLineStyle) = 0;
@@ -347,7 +347,7 @@ class TPen:
 
     // more parameters
     //-----------------------
-    TFont* setFont(TFont*);
+    void setFont(TFont*);
     void setMode(EPenMode);
     void setLineWidth(int);
     void setLineStyle(EPenLineStyle);
@@ -476,7 +476,7 @@ class TPen:
     EPenLineStyle style;
     TWindow *wnd;
     TBitmap *bmp;
-    TFont *font;
+    PFont font;
   public:
 //#warning "'TRegion *region' is public"
     TRegion *region;

@@ -192,7 +192,7 @@ void
 TMDIShell::TTitleBar::paint()
 {
   TPen pen(this);
-  pen.setFont(TOADBase::bold_font); // hack !!!
+  pen.setFont(toad::bold_font); // hack !!!
   if (getParent()->isFocus()) {
     setBackground(TColor::CAPTION);
     pen.setColor(TColor::CAPTIONTEXT);

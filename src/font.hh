@@ -22,13 +22,14 @@
 #define TFont TFont
 
 #include <toad/toadbase.hh>
+#include <toad/pointer.hh>
 
 namespace toad {
 
 class TPen;
 
 class TFont:
-  public TOADBase
+  public TSmartObject, public TOADBase
 {
   friend class TPen;
   
@@ -83,6 +84,11 @@ class TFont:
     void count_words_and_lines(const char*, unsigned*, unsigned*) const;
     TWord* make_wordlist(const char*,unsigned) const;
 };
+
+typedef GSmartPointer<TFont> PFont;
+
+extern PFont default_font;
+extern PFont bold_font;
 
 } // namespace toad
 
