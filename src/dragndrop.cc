@@ -272,12 +272,16 @@ DBM(cout << __FILE__ << ":" << __LINE__ << endl;)
     throw runtime_error("XGrabPointer failed\n");
   }
 
-  if (TWindow::getParentlessCount()==0 || 
-      TWindow::getParentless(0)->x11window==0) {
-    cerr << __FILE__ << ":" << __LINE__ << " not implemented yet, sorry" << endl;
+  x11_drag_source_window = 0;
+  for(unsigned i=0; i<TWindow::getParentlessCount(); ++i) {
+    x11_drag_source_window = TWindow::getParentless(i)->x11window;
+    if (x11_drag_source_window!=0)
+      break;
+  }
+  if (x11_drag_source_window == 0) {
+    cerr << "toad: couldn't find an X11 window to use as my drag source => stopped" << endl;
     return;
   }
-  x11_drag_source_window = TWindow::getParentless(0)->x11window;
 
   x11_message_enter.xclient.data.l[1] = 0;
   x11_message_enter.xclient.data.l[2] = 0;
@@ -903,6 +907,18 @@ static void ConvertNextTypeOrFinish(Time);
 static TDnDType *requested_type;
 static Time request_time;
 
+static bool dummy;
+
+static int
+dummyhandler(Display *display, XErrorEvent *ev)
+{
+  dummy = true;
+  char buffer[2048];
+  
+  XGetErrorText(display, ev->error_code, buffer, sizeof(buffer));
+  cerr << buffer << endl;
+}
+
 void ReceivedXdndEnter(XEvent &event)
 {
 #if VERBOSE
@@ -928,6 +944,7 @@ void ReceivedXdndEnter(XEvent &event)
 
   x11_drop_target_window = event.xclient.window;
   x11_drop_source_window = event.xclient.data.l[0];
+
   requested_type = NULL;
   dropsite = NULL;
 
@@ -953,8 +970,22 @@ void ReceivedXdndEnter(XEvent &event)
   }
 
   if (drop_request.typelist.empty()) {
-    cerr << "toad: received XdndEnter without types, ignoring" << endl;
+    cerr << "toad: received XdndEnter without types or illegal window id, ignoring" << endl;
+
+    XErrorHandler oldhandler;
+    oldhandler = XSetErrorHandler(dummyhandler);
+    dummy = false;
+
     XSelectInput(x11display, x11_drop_source_window, 0);
+    XSync(x11display, False);
+
+    XSetErrorHandler(oldhandler);
+    if (dummy) {
+      cerr << "toad: received XdndEnter with illegal window id, ignoring" << endl;
+    } else {
+      cerr << "toad: received XdndEnter without types, ignoring" << endl;
+    }
+
     x11_drop_target_window = None;
     x11_drop_source_window = None;
     return;
