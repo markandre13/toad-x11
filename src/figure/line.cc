@@ -40,22 +40,14 @@ TFLine::TFLine()
 void
 TFLine::setFromPreferences(TFigurePreferences *preferences)
 {
+  super::setFromPreferences(preferences);
   switch(preferences->reason) {
     case TFigurePreferences::ALLCHANGED:
-      line_color = preferences->linecolor;
-      fill_color = preferences->fillcolor;
       arrowmode = preferences->arrowmode;
       arrowtype = preferences->arrowtype;
       break;
-    case TFigurePreferences::LINEWIDTH:
-      break;
-    case TFigurePreferences::LINESTYLE:
-      break;
     case TFigurePreferences::ARROWMODE:
       arrowmode = preferences->arrowmode;
-      filled = (arrowmode!=NONE);
-      if (filled)
-        fill_color == preferences->fillcolor;
       break;
     case TFigurePreferences::ARROWSTYLE:
       arrowtype = preferences->arrowtype;
@@ -143,7 +135,11 @@ void
 TFLine::paint(TPenBase &pen, EPaintType)
 {
   pen.setLineColor(line_color);
+  pen.setLineStyle(line_style);
+  pen.setLineWidth(line_width);
   pen.drawLines(polygon);
+  pen.setLineStyle(TPen::SOLID);
+  pen.setLineWidth(0);
 
   if (arrowmode == HEAD || arrowmode == BOTH)
     drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, arrowwidth, arrowheight, arrowtype);

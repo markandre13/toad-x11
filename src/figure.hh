@@ -83,6 +83,8 @@ class TFigure:
     TSerializableRGB line_color;
     TSerializableRGB fill_color;
     bool filled:1;        // true when filled
+    TPen::ELineStyle line_style;
+    unsigned line_width;
   
   public:    
     /**

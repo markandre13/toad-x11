@@ -180,7 +180,7 @@ TFPolygon::restore(TInObjectStream &in)
   if (in.what == ATV_START)
     flag = false;
 
-  if (::restore(in, &y)) {
+  if (in.attribute.empty() && ::restore(in, &y)) {
     if (flag) {
       polygon.addPoint(x, y);
     } else {

@@ -20,6 +20,7 @@
 
 #include <toad/figure.hh>
 #include <toad/figuremodel.hh>
+#include <toad/figureeditor.hh>
 #include <cmath>
 
 #include <toad/dialog.hh>
@@ -101,6 +102,8 @@ TInObjectStream TFigure::serialize;
 TFigure::TFigure()
 {
   filled = false;
+  line_style = TPen::SOLID;
+  line_width = 0;
   removeable = true;
   mat = 0;
 }
@@ -115,8 +118,23 @@ TFigure::setFont(const string&)
 }
 
 void
-TFigure::setFromPreferences(TFigurePreferences*)
+TFigure::setFromPreferences(TFigurePreferences *preferences)
 {
+  switch(preferences->reason) {
+    case TFigurePreferences::ALLCHANGED:
+      line_width = preferences->linewidth;
+      line_style = preferences->linestyle;
+      line_color = preferences->linecolor;
+      fill_color = preferences->fillcolor;
+      filled     = preferences->filled;
+      break;
+    case TFigurePreferences::LINEWIDTH:
+      line_width = preferences->linewidth;
+      break;
+    case TFigurePreferences::LINESTYLE:
+      line_style = preferences->linestyle;
+      break;
+  }
 }
 
 /**
@@ -241,6 +259,23 @@ TFigure::mouseRDown(TFigureEditor*, int, int, unsigned)
   return CONTINUE;
 }
 
+namespace {
+
+struct TStylePair {
+  TPen::ELineStyle code;
+  const char *name;
+};
+
+TStylePair sp[] = {
+  { TPen::SOLID, "solid" },
+  { TPen::DASH,  "dash" },
+  { TPen::DOT, "dot" },
+  { TPen::DASHDOT, "dashdot" },
+  { TPen::DASHDOTDOT, "dashdotdot" }
+};
+
+} // namespace
+
 void
 TFigure::store(TOutObjectStream &out) const
 {
@@ -250,6 +285,17 @@ TFigure::store(TOutObjectStream &out) const
   ::store(out, "linecolor", line_color);
   if (filled) {
     ::store(out, "fillcolor", fill_color);
+  }
+  if (line_width>0) {
+    ::store(out, "linewidth", line_width);
+  }
+  if (line_style!=TPen::SOLID) {
+    for(unsigned i=0; i<5; ++i) {
+      if (sp[i].code == line_style) {
+        ::store(out, "linestyle", sp[i].name);
+        break;
+      }
+    }
   }
 }
 
@@ -267,9 +313,21 @@ TFigure::restore(TInObjectStream &in)
     filled = true;
     return true;
   }
+  string style;
+  if (::restore(in, "linestyle", &style)) {
+    for(unsigned i=0; i<5; ++i) {
+      if (style == sp[i].name) {
+        line_style = sp[i].code;
+        return true;
+      }
+    }
+    return false;
+  }
+  
   if (
     ::restorePtr(in, "trans", &mat) ||
     ::restore(in, "linecolor", &line_color) ||
+    ::restore(in, "linewidth", &line_width) ||
     finished(in)
   ) return true;
   ATV_FAILED(in)
