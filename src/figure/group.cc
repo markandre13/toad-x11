@@ -23,10 +23,51 @@
 
 using namespace toad;
 
-TFGroup::~TFGroup()
+TFGroup::TFGroup()
 {
+//  mat = new TMatrix2D();
+  connect(gadgets.sigChanged, this, &TFGroup::modelChanged);
 }
 
+TFGroup::TFGroup(const TFGroup &g)
+{
+//  mat = new TMatrix2D();
+  connect(gadgets.sigChanged, this, &TFGroup::modelChanged);
+}
+
+/**
+ * Adds a transformation matrix to the group in case one of the
+ * groups figures contains a transformation matrix.
+ *
+ * This is to avoid unwanted calls to 'translate'.
+ */
+void
+TFGroup::modelChanged()
+{
+  if (mat)
+    return;
+
+  TFigureModel::iterator p,e;
+  p = gadgets.begin();
+  e = gadgets.end();
+  while(p!=e) {
+    if ( (*p)->mat ) {
+      mat = new TMatrix2D();
+      return;
+    }
+    ++p;
+  }
+}
+
+TFGroup::~TFGroup()
+{
+  disconnect(gadgets.sigChanged, this);
+}
+
+/**
+ * Calculate the size.
+ *
+ */
 void 
 TFGroup::calcSize()
 {
@@ -36,25 +77,50 @@ TFGroup::calcSize()
   if (p==e)
     return;
   TRectangle r;
-  (*p)->getShape(r);
-  p1.x=r.x;
-  p1.y=r.y;
-  p2.x=r.x+r.w-1;
-  p2.y=r.y+r.h-1;
-  p++;
+  TMatrix2D m;
+  bool first = true;
+  
   while(p!=e) {
-    (*p)->getShape(r);
-    if (r.x < p1.x)
-      p1.x = r.x;
-    if (r.y < p1.y)
-      p1.y = r.y;
-    int ix2 = r.x + r.w-1;
-    int iy2 = r.y + r.h-1;
-    if (p2.x < ix2)
-      p2.x=ix2;
-    if (p2.y < iy2)
-      p2.y=iy2;
-    p++;
+    TFigure *f = *p;
+    f->getShape(r);
+    if (mat)
+      m = *mat;
+    else
+      m.identity();
+    if (f->mat)
+      m.multiply(f->mat);
+    for(int i=0; i<4; ++i) {
+      short x, y;
+      switch(i) {
+        case 0:
+          m.map(r.x, r.y, &x, &y);
+          break;
+        case 1:
+          m.map(r.x+r.w, r.y, &x, &y);
+          break;
+        case 2:
+          m.map(r.x+r.w, r.y+r.h, &x, &y);
+          break;
+        case 3:
+          m.map(r.x, r.y+r.h, &x, &y);
+          break;
+      }
+      if (first) {
+        p1.x = p2.x = x;
+        p1.y = p2.y = y;
+        first = false;
+      } else {
+        if (p1.x>x)
+          p1.x=x;
+        if (p2.x<x)
+          p2.x=x;
+        if (p1.y>y) 
+          p1.y=y;
+        if (p2.y<y)
+          p2.y=y;
+      }
+    }
+    ++p;
   }
 }
 
@@ -65,7 +131,14 @@ TFGroup::paint(TPenBase &pen, EPaintType)
   p = gadgets.begin();
   e = gadgets.end();
   while(p!=e) {
-    (*p)->paint(pen, NORMAL);
+    if ((*p)->mat) {
+      pen.push();
+      pen.multiply((*p)->mat);
+      (*p)->paint(pen, NORMAL);
+      pen.pop();
+    } else {
+      (*p)->paint(pen, NORMAL);
+    }
     p++;
   }
 }

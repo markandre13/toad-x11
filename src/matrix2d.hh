@@ -32,6 +32,11 @@ class TMatrix2D:
   public:
     TMatrix2D();
     TMatrix2D(const TMatrix2D&);
+    TMatrix2D& operator=(const TMatrix2D&);
+    TMatrix2D& operator*(const TMatrix2D &m) {
+      multiply(&m);
+      return *this;
+    }
   
     double a11, a12;
     double a21, a22;

@@ -31,13 +31,20 @@ TMatrix2D::TMatrix2D()
 
 TMatrix2D::TMatrix2D(const TMatrix2D &m)
 {
+  *this = m;
+  next = 0;  
+}
+
+TMatrix2D&
+TMatrix2D::operator=(const TMatrix2D &m)
+{
   a11 = m.a11;
   a12 = m.a12;
   a21 = m.a21;
   a22 = m.a22;
   tx  = m.tx;
   ty  = m.ty;
-  next = 0;  
+  return *this;
 }
 
 /**

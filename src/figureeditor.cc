@@ -63,6 +63,10 @@ using namespace toad;
  *      rectangle selection is so slow because the rectangle is painted
  *      during mouseMove which avoids compression of paint events
  *   \li
+ *      ungroup must take care of the groups transformation matrix
+ *   \li
+ *      resize groups
+ *   \li
  *      adjust getShape to check transformations
  *   \li
  *      adjust finding gadget & handles for transformations

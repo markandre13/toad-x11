@@ -387,15 +387,8 @@ class TFGroup:
 {
     typedef TFRectangle super;
   public:
-    TFGroup() {
-    }
-    TFGroup(const TFGroup &g) {
-#if 0
-      gadgets.insert(gadgets.begin(), 
-                     g.gadgets.begin(), 
-                     g.gadgets.end());
-#endif
-    }
+    TFGroup();
+    TFGroup(const TFGroup &g);
     ~TFGroup();
     void paint(TPenBase&, EPaintType);
     double distance(int x, int y);
@@ -410,6 +403,9 @@ class TFGroup:
     const char * name() const { return "toad::TFGroup"; }
     void store(TOutObjectStream&) const;
     bool restore(TInObjectStream&);
+
+  protected:
+    void modelChanged();
 };
 
 } // namespace toad
