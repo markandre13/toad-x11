@@ -361,6 +361,46 @@ restore(TInObjectStream &in, unsigned *value)
   return true;
 }
 
+// float
+//---------------------------------------------------------------------------
+void
+store(TOutObjectStream &out, const float &value)
+{
+  out << ' ' << value;
+}
+
+bool
+restore(TInObjectStream &in, float *value)
+{
+  if (in.what != ATV_VALUE)
+    return false;
+  char *endptr;
+  *value = strtof(in.value.c_str(), &endptr);
+  if (endptr!=0 && *endptr!=0)
+    return false;
+  return true;
+}
+
+// double
+//---------------------------------------------------------------------------
+void
+store(TOutObjectStream &out, const double &value)
+{
+  out << ' ' << value;
+}
+
+bool
+restore(TInObjectStream &in, double *value)
+{
+  if (in.what != ATV_VALUE)
+    return false;
+  char *endptr;
+  *value = strtod(in.value.c_str(), &endptr);
+  if (endptr!=0 && *endptr!=0)
+    return false;
+  return true;
+}
+
 // bool
 //---------------------------------------------------------------------------
 void

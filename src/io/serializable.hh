@@ -161,6 +161,14 @@ bool restore(atv::TInObjectStream &in, int *value);
 void store(atv::TOutObjectStream &out, unsigned value);
 bool restore(atv::TInObjectStream &in, unsigned *value);
 
+// float
+void store(atv::TOutObjectStream &out, const float &value);
+bool restore(atv::TInObjectStream &in, float *value);
+
+// double
+void store(atv::TOutObjectStream &out, const double &value);
+bool restore(atv::TInObjectStream &in, double *value);
+
 // bool
 void store(atv::TOutObjectStream &out, bool value);
 bool restore(atv::TInObjectStream &in, bool *value);
@@ -206,9 +214,6 @@ restoreRaw(atv::TInObjectStream &in, const char *attribute, char **v, unsigned *
     return false;
   return restoreRaw(in, v, n);
 }
-
-// float
-// double
 
 // vector<T>
 
