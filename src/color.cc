@@ -63,6 +63,7 @@ TColor sysrgb[TColor::MAX]=
   TColor(127,127,191),  // SELECTED
   TColor(  0,  0,  0),  // SELECTED_TEXT
   TColor(215,215,215),  // SELECTED_GRAY
+  TColor( 79,128,255),  // FIGURE_SELECTION
 };
 
 TColor::TColor()

@@ -45,7 +45,7 @@ using namespace toad;
 
 /**
  * \class toad::TFigureEditor
- * TFigureEditor is a common graphical editor for TFigure objects.
+ * TFigureEditor is a graphical editor for TFigure objects.
  * 
  * It's still experimental so expect major changes in the future before
  * using it. One major goal is to make it possible to edit scaleable and
@@ -528,31 +528,18 @@ TFigureEditor::paint()
   
   print(pen);
 
-  // draw the selection marks over all gadgets
-  pen.setColor(0,0,0);
-  TFigureSet::iterator sp,se;
-  sp = selection.begin();
-  se = selection.end();
-  while(sp!=se) {
-    unsigned pushs = 0;
+  // draw the selection marks over all figures
+  for(TFigureSet::iterator sp = selection.begin();
+      sp != selection.end();
+      ++sp)
+  {
     if ((*sp)->mat) {
       pen.push();
-      pushs++;
       pen.multiply( (*sp)->mat );
     }
-    if (gadget==*sp && state==STATE_ROTATE) {
-        pen.push();
-        pushs++;
-        pen.translate(rotx, roty);
-        pen.rotate(rotd);
-        pen.translate(-rotx, -roty);
-    }
     (*sp)->paintSelection(pen);
-    while(pushs) {
+    if ((*sp)->mat)
       pen.pop();
-      pushs--;
-    }
-    ++sp;
   }
 
   if (state==STATE_SELECT_RECT) {
@@ -562,18 +549,64 @@ TFigureEditor::paint()
   }
 
   // draw rotation center  
-  if (operation==OP_ROTATE) {
-    int r1=10;
-    pen.setColor(0,0,0);
-    pen.fillCirclePC(rotx-r1, roty-r1, r1*2, r1*2);
+  if (gadget && operation==OP_ROTATE) {
+
+    // draw center of rotation
+    int x, y;
+    if (pen.mat) {
+      pen.mat->map(rotx, roty, &x, &y);
+      pen.push();
+      pen.identity();
+    } else {
+      x = rotx;
+      y = roty;
+    }
     
-    r1-=2;
-    pen.setColor(255,255,255);
-    pen.fillCirclePC(rotx-r1, roty-r1, r1*2, r1*2);
+    pen.setLineColor(TColor::FIGURE_SELECTION);
+    pen.setFillColor(TColor::WHITE);
+    pen.drawCirclePC(x-3,y-3,7,7);
+    pen.drawLine(x,y+3,x,y+6);
+    pen.drawLine(x+3,y,x+6,y);
+    pen.drawLine(x,y-3,x,y-6);
+    pen.drawLine(x-3,y,x-6,y);
+    if (pen.mat)
+      pen.pop();
     
-    r1-=2;
-    pen.setColor(0,0,0);
-    pen.fillCirclePC(rotx-r1, roty-r1, r1*2, r1*2);
+    // draw handles for rotated figure
+    pen.push();
+    if (state==STATE_ROTATE) {
+      pen.translate(rotx, roty);
+      pen.rotate(rotd);
+      pen.translate(-rotx, -roty);
+    }
+    if (gadget->mat)
+      pen.multiply(gadget->mat);
+
+    TRectangle r;
+    gadget->getShape(r);
+    for(int i=0; i<=4; ++i) {
+      switch(i) {
+        case 0: x = r.x;       y = r.y;       break;
+        case 1: x = r.x+r.w-1; y = r.y;       break;
+        case 2: x = r.x+r.w-1; y = r.y+r.h-1; break;
+        case 3: x = r.x;       y = r.y+r.h-1; break;
+        case 4: x = r.x+r.w/2; y = r.y+r.h/2; break;
+      }
+      if (pen.mat) {
+        pen.mat->map(x, y, &x, &y);
+        pen.push();
+        pen.identity();
+      }
+      if (i!=4) {
+        pen.fillRectanglePC(x-2,y-2,5,5);
+      } else {
+        pen.drawLine(x-2, y-2, x+2, y+2);
+        pen.drawLine(x+2, y-2, x-2, y+2);
+      }
+      if (pen.mat)
+        pen.pop();
+    }
+    pen.pop();
   }
 
   // put the result onto the screen
@@ -628,13 +661,9 @@ TFigureEditor::print(TPenBase &pen)
   while(p!=e) {
     TFigure::EPaintType pt = TFigure::NORMAL;
     unsigned pushs = 0;
-    if ((*p)->mat) {
-      pen.push();
-      pushs++;
-      pen.multiply( (*p)->mat );
-    }
     if (gadget==*p) {
       if (state==STATE_ROTATE) {
+//cerr << "paint figure for rotation edited figure at rotd=" << rotd << endl;
         pen.push();
         pushs++;
         pen.translate(rotx, roty);
@@ -643,7 +672,14 @@ TFigureEditor::print(TPenBase &pen)
       } else {
         pt = TFigure::EDIT;
       }
-    } else if (selection.find(*p)!=selection.end()) {
+    }
+    if ((*p)->mat) {
+      pen.push();
+      pushs++;
+      pen.multiply( (*p)->mat );
+    }
+    
+    if (gadget!=*p && selection.find(*p)!=selection.end()) {
       pt = TFigure::SELECT;
     }
     (*p)->paint(pen, pt);
@@ -1130,6 +1166,12 @@ TFigureEditor::keyDown(TKey key, char *s, unsigned m)
 {
   if (!window)
     return;
+    
+  if (key == TK_ESCAPE) {
+    stopOperation();
+    deleteSelection();
+    return;
+  }
 
 redo:
   switch(operation) {
@@ -1226,7 +1268,7 @@ TFigureEditor::sheet2grid(int sx, int sy, int *gx, int *gy)
     *gy = sy;
     return;
   }
-  if (state!=STATE_ROTATE) {
+  if (state!=STATE_ROTATE && state!=STATE_MOVE_ROTATE) {
     int g = preferences->gridsize;
     *gx = ((sx+g/2)/g)*g;
     *gy = ((sy+g/2)/g)*g;
@@ -1288,7 +1330,7 @@ redo:
               cout << "      mouse @ " << mx << ", " << my << endl;
             #endif
 
-/* copied from findGadgetAt */            
+/* copied from findFigureAt */            
       int x, y;
       if ((*p)->mat) {
         TMatrix2D m(*(*p)->mat);
@@ -1331,7 +1373,7 @@ redo:
 
           // selection, start movement, start edit
           //--------------------------------------
-          TFigure *g = findGadgetAt(mx, my);
+          TFigure *g = findFigureAt(mx, my);
           if (g) {
             #if VERBOSE
               cout << "      gadget at cursor";
@@ -1425,6 +1467,39 @@ redo:
           }
         } break;
 
+        case OP_ROTATE: {
+          if (gadget) {
+            if (rotx-fuzziness*2 <= mx && mx<=rotx+fuzziness*2 &&
+                roty-fuzziness*2 <= my && my<=roty+fuzziness*2)
+            {
+//              cerr << "going to move rotation center" << endl;
+              state = STATE_MOVE_ROTATE;
+              return;
+            }
+          }
+        
+          TFigure *g2 = gadget;
+          gadget = 0;
+          TFigure *g = findFigureAt(mx, my);
+          gadget = g2;
+          if (g) {
+            state = STATE_ROTATE;
+            TRectangle r;
+            g->getShape(r);
+            if (gadget!=g) {
+              rotx = r.x + r.w/2;
+              roty = r.y + r.h/2;
+              gadget = g;
+            }
+            rotd0=atan2(static_cast<double>(my - roty), 
+                        static_cast<double>(mx - rotx)) * 360.0 / (2.0 * M_PI);
+            rotd = 0.0;
+            invalidateWindow();
+//            cerr << "state = STATE_ROTATE" << endl;
+          }
+          return; 
+        } break;
+
         case OP_CREATE: {
           #if VERBOSE
             cout << "    OP_CREATE => STATE_CREATE" << endl;
@@ -1447,25 +1522,6 @@ redo:
           return;
         } break;
         
-        case OP_ROTATE: {
-          TFigure *g = findGadgetAt(mx, my);
-          if (g) {
-            clearSelection();
-            state = STATE_ROTATE;
-            gadget = g;
-            TRectangle r;
-            g->getShape(r);
-            rotx = r.x + r.w/2;
-            roty = r.y + r.h/2;
-            rotd0=atan2(static_cast<double>(y - roty), 
-                  static_cast<double>(x - rotx)) * 360.0 / (2.0 * M_PI);
-            rotd = rotd0;
-            cerr << "state = STATE_ROTATE" << endl;
-          } else {
-            cerr << "no gadget found for rotation" << endl;
-          }
-          return; 
-        } break;
       }
     } break;
     
@@ -1583,7 +1639,7 @@ redo:
         cout << "  STATE_MOVE_HANDLE => moving handle" << endl;
       #endif
 
-/* copied from findGadgetAt */
+/* copied from findFigureAt */
       int x2, y2;
       if (f->mat) {
         TMatrix2D m(*f->mat);
@@ -1628,12 +1684,18 @@ redo:
     } break;
     
     case STATE_ROTATE: {
-      rotd=atan2(static_cast<double>(y - roty), 
-                 static_cast<double>(x - rotx)) * 360.0 / (2.0 * M_PI);
+      rotd=atan2(static_cast<double>(my - roty), 
+                 static_cast<double>(mx - rotx)) * 360.0 / (2.0 * M_PI);
 //      cerr << "rotd="<<rotd<<", rotd0="<<rotd0<<" -> " << (rotd-rotd0) << "\n";
       rotd-=rotd0;
       invalidateWindow();
-    }
+    } break;
+    
+    case STATE_MOVE_ROTATE: {
+      rotx = mx;
+      roty = my;
+      invalidateWindow();
+    } break;
   }
 }
 
@@ -1713,7 +1775,7 @@ redo:
       #endif
       TFigure *f = *selection.begin();
 
-/* copied from findGadgetAt */            
+/* copied from findFigureAt */            
       int x2, y2;
       if (f->mat) {
         TMatrix2D m(*f->mat);
@@ -1771,11 +1833,34 @@ redo:
     } break;
     
     case STATE_ROTATE: {
+#if 1
+      TMatrix2D *m = new TMatrix2D();
+      m->translate(rotx, roty);
+      m->rotate(rotd);
+      m->translate(-rotx, -roty);
+      if (gadget->mat) {
+        m->multiply(gadget->mat);
+        delete gadget->mat;
+      }
+      gadget->mat = m;
+#else
       if (!gadget->mat)
         gadget->mat = new TMatrix2D();
       gadget->mat->translate(rotx, roty);
       gadget->mat->rotate(rotd);
       gadget->mat->translate(-rotx, -roty);
+#endif
+      state = STATE_NONE;
+      invalidateWindow();
+    } break;
+    
+    case STATE_MOVE_ROTATE: {
+/*      if (!gadget->mat)
+        gadget->mat = new TMatrix2D();
+      gadget->mat->translate(rotx, roty);
+      gadget->mat->rotate(rotd);
+      gadget->mat->translate(-rotx, -roty);
+*/
       state = STATE_NONE;
     } break;
   }
@@ -1788,10 +1873,10 @@ TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
     return;
 
   stopOperation();
-  clearSelection();
+//  clearSelection();
   setFocus();
   mouse2sheet(mx, my, &mx, &my);
-  TFigure *f = findGadgetAt(mx, my);
+  TFigure *f = findFigureAt(mx, my);
   if (f)
     f->mouseRDown(this, mx, my, modifier);
 }
@@ -1859,10 +1944,10 @@ TFigureEditor::invalidateFigure(TFigure* figure)
  * This method doesn't find gadgets which are currently created or edited.
  */
 TFigure*
-TFigureEditor::findGadgetAt(int mx, int my)
+TFigureEditor::findFigureAt(int mx, int my)
 {
 #if VERBOSE
-  cerr << "TFigureEditor::findGadgetAt(" << mx << ", " << my << ")\n";
+  cerr << "TFigureEditor::findFigureAt(" << mx << ", " << my << ")\n";
 #endif
   double distance = INFINITY;
   TFigureModel::iterator p,b,found;

@@ -130,7 +130,8 @@ TFigure::setFromPreferences(TFigurePreferences*)
 void
 TFigure::paintSelection(TPenBase &pen)
 {
-  pen.setColor(0,0,0);
+  pen.setLineColor(TColor::FIGURE_SELECTION);
+  pen.setFillColor(TColor::WHITE);
   unsigned h=0;
   TPoint pt;
   while(true) {

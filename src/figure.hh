@@ -291,6 +291,8 @@ class TFBezierline:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);
 
+    void addPoint(int, int);
+
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
     void translateHandle(unsigned handle, int mx, int my);

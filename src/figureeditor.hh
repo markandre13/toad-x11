@@ -260,7 +260,7 @@ class TFigureEditor:
     void redo();
     void clearHistory() {history.clear();}
     
-    TFigure* findGadgetAt(int x, int y);
+    TFigure* findFigureAt(int x, int y);
 
     static const unsigned STATE_NONE = 0;
     
@@ -270,10 +270,11 @@ class TFigureEditor:
     static const unsigned STATE_SELECT_RECT = 3;    // select rectangular area
     static const unsigned STATE_EDIT = 4;           // edit object
     static const unsigned STATE_ROTATE = 5;         // rotate object
+    static const unsigned STATE_MOVE_ROTATE = 6;
     
     // states for OP_CREATE
-    static const unsigned STATE_START_CREATE = 5;   // set during `startCreate' and first `mouseLDown'
-    static const unsigned STATE_CREATE = 6;
+    static const unsigned STATE_START_CREATE = 20;   // set during `startCreate' and first `mouseLDown'
+    static const unsigned STATE_CREATE = 21;
     
     int fuzziness; // fuzziness to catch handles
     unsigned state;

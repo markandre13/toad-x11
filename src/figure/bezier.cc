@@ -30,8 +30,8 @@ void
 TFBezierline::paint(TPenBase &pen, EPaintType type)
 {
   if (type==EDIT || type==SELECT) {
-    pen.setColor(0,0,255);
-//    pen.setLineStyle(TPen::DOT);
+    pen.setColor(TColor::FIGURE_SELECTION);
+    // pen.setLineStyle(TPen::DOT);
     TPolygon::const_iterator p(polygon.begin());
     unsigned n = polygon.size();
     while(true) {
@@ -48,7 +48,7 @@ TFBezierline::paint(TPenBase &pen, EPaintType type)
       p+=3;
       n-=3;
     }
-//    pen.setLineStyle(TPen::SOLID);
+    // pen.setLineStyle(TPen::SOLID);
   }
 
   pen.setColor(line_color);
@@ -175,21 +175,82 @@ TFBezierline::translateHandle(unsigned handle, int x, int y)
   }
 }
 
+class TMyPopupMenu:
+  public TPopupMenu
+{
+  public:
+    TMyPopupMenu(TWindow *p, const string &t): TPopupMenu(p, t)
+    {
+cerr << "create menu " << this << endl;
+    }
+    ~TMyPopupMenu() {
+cerr << "delete tree " << tree << endl;
+      delete tree;
+    }
+    
+    void closeRequest() {
+      TPopupMenu::closeRequest();
+cerr << "delete menu " << this << endl;
+      delete this;
+    }
+    
+    TInteractor *tree;
+};
+
 unsigned
-TFBezierline::mouseRDown(TFigureEditor *editor, int, int, unsigned)
+TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned)
 {
   cerr << "TFBezierline::mouseRDown" << endl;
+cerr << " at (" << x << ", " << y << ")\n";
+cerr << " 1s point at (" << polygon[0].x << ", " << polygon[0].y << ")\n";
+
+cerr << "editor->fuzziness = " << editor->fuzziness << endl;
+  unsigned i=0;
+  bool found=false;
+  for(TPoints::iterator p=polygon.begin();
+      p!=polygon.end();
+      ++p, ++i)
+  {
+    if (p->x-editor->fuzziness<=x && x<=p->x+editor->fuzziness && 
+        p->y-editor->fuzziness<=y && y<=p->y+editor->fuzziness) 
+    {
+      cerr << "found handle " << i << endl;
+      found = true;
+      break;
+    }
+  }
 
   TInteractor *dummy = new TInteractor(0, "dummy interactor");
+cerr << "create tree " << dummy << endl;
   TAction *action;
-  action = new TAction(dummy, "add point");
-  action = new TAction(dummy, "delete point");
-  action = new TAction(dummy, "sharp edge");
-  action = new TAction(dummy, "no edge");
-  TPopupMenu *menu;
-  menu = new TPopupMenu(editor, "popup");
+  if (!found) {
+    action = new TAction(dummy, "add point");
+    connect(action->sigActivate, this, &TFBezierline::addPoint, x, y);
+  } else {
+/*
+    GIMP: normal: edit curve symmetric
+          shift : edit curve sharp
+          ctrl  : move curve corner
+*/
+    action = new TAction(dummy, "symmetric");
+    action = new TAction(dummy, "smooth corner");
+    action = new TAction(dummy, "sharp corner");
+    action = new TAction(dummy, "delete point");
+  }
+  // action = new TAction(dummy, "sharp edge");
+  // action = new TAction(dummy, "no edge");
+  TMyPopupMenu *menu;
+  menu = new TMyPopupMenu(editor, "popup");
+  menu->tree = dummy;
   menu->setScopeInteractor(dummy);
   menu->open();
+  return 0;
+}
+
+void
+TFBezierline::addPoint(int x, int y)
+{
+  cerr << "add point" << endl;
 }
 
 void
@@ -203,7 +264,7 @@ TFBezier::paint(TPenBase &pen, EPaintType type)
     pen.fillPolyBezier(polygon);
   }
   if (type==EDIT || type==SELECT) {
-    pen.setColor(0,0,255);
+    pen.setColor(TColor::FIGURE_SELECTION);
 //    pen.setLineStyle(TPen::DOT);
     TPolygon::const_iterator p(polygon.begin());
     unsigned n = polygon.size();

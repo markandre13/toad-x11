@@ -149,6 +149,7 @@ class TColor
       SELECTED,             // background for selected text when focus
       SELECTED_TEXT,        // color for selected text
       SELECTED_GRAY,        // background for selected text when no focus
+      FIGURE_SELECTION,     // used by figureeditor to mark selections
       MAX
     };
 
