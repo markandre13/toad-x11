@@ -756,7 +756,7 @@ TTable::mouse2field(int mx, int my, int *fx, int *fy)
     // code to handle this event outside the visible area is missing
     return false;
   }
-  
+
   // transform (mx, my) from screen pixel to table pixel coordinates
   mx -= visible.x + fpx;
   my -= visible.y + fpy;
@@ -806,18 +806,19 @@ cerr << " y=" << y
 
   *fx = x;
   *fy = y;
+  
+  return true;
 }
 
 void
 TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
+//cerr << __PRETTY_FUNCTION__ << endl;
   setFocus();
 
   int x, y;
   if (!mouse2field(mx, my, &x, &y))
     return;
-
-  cout << "mouse down on field " << x << ", " << y << endl;
 
   DBM(cout << "click on item " << x << ", " << y << endl;)
 
@@ -846,10 +847,11 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
 void
 TTable::mouseMove(int mx, int my, unsigned)
 {
+//cerr << __PRETTY_FUNCTION__ << endl;
   int x, y;
   if (!mouse2field(mx, my, &x, &y))
     return;
-  cout << "mouse move on field " << x << ", " << y << endl;
+//  cout << "mouse move on field " << x << ", " << y << endl;
 
   invalidateChangedArea(sx,sy,cx,cy,cx,cy);
 
@@ -866,10 +868,10 @@ TTable::mouseMove(int mx, int my, unsigned)
 void
 TTable::mouseLUp(int mx, int my, unsigned)
 {
+//cerr << __PRETTY_FUNCTION__ << endl;
   int x, y;
   if (!mouse2field(mx, my, &x, &y))
     return;
-  cout << "mouse up on field " << x << ", " << y << endl;
 
   if (selecting) {
     selecting=false;
