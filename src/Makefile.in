@@ -117,16 +117,16 @@ SUBDIRS=. io dnd pen util figure dialogeditor figureeditor X11
 
 install:
 	for dir in $(SUBDIRS); do \
-		install -d $(DESTDIR)/$(includedir)/toad/$$dir ; \
+		install -d $(DESTDIR)$(includedir)/toad/$$dir ; \
 	done
 	find . -name "*.hh" -exec \
-    install -D -m 0644 {} $(DESTDIR)/$(includedir)/toad/{} \;
+    install -D -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
 	find . -name "*.h" -exec \
-    install -D -m 0644 {} $(DESTDIR)/$(includedir)/toad/{} \;
-	install -d $(DESTDIR)/$(libdir)
-	install $(LIBNAME).$(VERSION) $(DESTDIR)/$(libdir)/$(LIBNAME).$(VERSION)
-	cd $(DESTDIR)/$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
-	cd $(DESTDIR)/$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)	
+    install -D -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
+	install -d $(DESTDIR)$(libdir)
+	install $(LIBNAME).$(VERSION) $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION)
+	cd $(DESTDIR)$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
+	cd $(DESTDIR)$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)
 
 # recreate `connect.hh'
 #-----------------------

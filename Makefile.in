@@ -28,12 +28,12 @@ all:
 
 install:
 	cd src ; $(MAKE) install DESTDIR=$(DESTDIR)
-	$(INSTALL) -d $(DESTDIR)/$(bindir)
-	$(INSTALL) bin/toadtrace $(DESTDIR)/$(bindir)
-	$(INSTALL) bin/toadbin2c $(DESTDIR)/$(bindir)
-	$(INSTALL) -m 0755 conf/toad-config $(DESTDIR)/$(bindir)
-	$(INSTALL) -d $(DESTDIR)/$(libdir)/pkgconfig
-	$(INSTALL) toad.pc $(DESTDIR)/$(libdir)/pkgconfig
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) bin/toadtrace $(DESTDIR)$(bindir)
+	$(INSTALL) bin/toadbin2c $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 conf/toad-config $(DESTDIR)$(bindir)
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) toad.pc $(DESTDIR)$(libdir)/pkgconfig
 	
 doc:
 	cd doc ; make
@@ -63,7 +63,7 @@ snapshot: changelog
 clean:
 	cd src ; make clean
 	cd doc ; make clean
-	rm conf/toad-config
+	rm -f conf/toad-config
 
 distclean: clean
 	rm -rf config.status config.log
