@@ -1,6 +1,6 @@
 #
 # TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
-# Copyright (C) 1995-2004 by Mark-André Hopf <mhopf@mark13.org>
+# Copyright (C) 1995-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
 #
 # @configure_input@
 
@@ -45,10 +45,11 @@ debian:
 	dpkg-buildpackage -b -rfakeroot
 
 clean:
-	cd src ; make clean
-	cd doc ; make clean
+	-cd src ; make clean
+	-cd doc ; make clean
 	rm -f conf/toad-config
 
 distclean: clean
-	rm -rf config.status config.log
-	rm -rf Makefile src/Makefile conf/MakefilePrg testsuite/Makefile
+	rm -rf config.status config.log config.guess config.sub configure ltmain.sh
+	rm -rf libtool autom4te.cache toad.pc *~ config.log
+	rm -rf Makefile src/Makefile conf/MakefilePrg testsuite/Makefile *~
