@@ -543,8 +543,8 @@ TPen::fillPolygon(const TPoint s[], int n) const
   XDrawLines(x11display, x11drawable, o_gc, 
       d, n, CoordModeOrigin);
   XDrawLine(x11display, x11drawable, o_gc,
-     s[0].x,s[0].y,
-     s[n-1].x,s[n-1].y);
+     d[0].x,d[0].y,
+     d[n-1].x,d[n-1].y);
 }
 
 void
