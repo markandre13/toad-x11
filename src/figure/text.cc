@@ -31,8 +31,8 @@ TFText::calcSize()
   int w=0, h=0;
   unsigned l,r;
   l = 0;
+  PFont font = TPen::lookupFont(fontname);
   while(true) {
-    PFont font = TPen::lookupFont(fontname);
     h+=font->getHeight();
     r = text.find('\n', l);
     int wl = font->getTextWidth(text.substr(l,r==string::npos ? r : r-l));
@@ -42,6 +42,7 @@ TFText::calcSize()
       break;
     l = r+1;
   }
+//cout << "  size="<<w<<","<<h<<endl;
   p2.x=p1.x+w+1;
   p2.y=p1.y+h+1;
 }
