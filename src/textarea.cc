@@ -180,7 +180,7 @@ TTextArea::TPreferences::TPreferences()
   tabwidth = 8;
   singleline = false;
   password = false;
-  fontname = "sans-serif:size=12";
+  fontname = "arial,helvetica,sans-serif:size=12";
 }
 
 TTextArea::TPreferences::~TPreferences()
