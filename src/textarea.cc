@@ -157,7 +157,7 @@ TTextArea::TBlink blink;
 void
 TTextArea::TBlink::tick()
 {
-return;
+//return;
   if (!current) {      // sanity check, not needed
     cout << "  no current => " << endl;
     return;
