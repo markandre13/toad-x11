@@ -1,7 +1,7 @@
 #
 # Autoconf file for TOAD
 #
-# Copyright (C) 2002-2005 by Mark-André Hopf <mhopf@mark13.org>
+# Copyright (C) 2002-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
 #
 
 AC_INIT(libtoad, 0.64.0, toad-bug@mark13.org)
@@ -50,14 +50,23 @@ PKG_CHECK_MODULES(XFT, xft, AC_DEFINE(HAVE_LIBXFT, 1))
 # merge all found compiler and linker flags and remove duplicates
 #
 
+echo "LIBS=$LIBS"
+
 CFLAGS="$CPPFLAGS $DEFS $CFLAGS $X_CFLAGS $FONTCONFIG_CFLAGS $XFT_CFLAGS"
 CXXFLAGS="$CPPFLAGS $DEFS $CXXFLAGS $X_CFLAGS $FONTCONFIG_CFLAGS $XFT_CFLAGS"
 LIBS="$X_LIBS $FONTCONFIG_LIBS $XFT_LIBS $X_PRE_LIBS $X_EXTRA_LIB $LIBS"
 
-y=""
+# the order of libraries is important so when removing libraries, we must
+# keep the last '-l', which we do with the two loops below:
+z=""
 for x in $LIBS ; do
+  z="$x $z"
+done
+
+y=""
+for x in $z ; do
   if test `echo "$y" | grep -ce "$x" -` = 0 ; then
-    y="$y $x"
+    y="$x $y"
   fi
 done
 LIBS="`echo $y`"
