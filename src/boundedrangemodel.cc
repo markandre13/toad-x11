@@ -19,9 +19,12 @@
  */
 
 #include <toad/boundedrangemodel.hh>
+#include <toad/textmodel.hh>
 #include <limits.h>
 
 using namespace toad;
+
+#define DBM(CMD)
 
 /**
  * \class TBoundedRangeModel
@@ -101,8 +104,11 @@ TBoundedRangeModel::setRangeProperties(int value, int extent, int min, int max, 
 void
 TBoundedRangeModel::setValue(int value) 
 {
-  if (this->value == value)
+DBM(cerr << "TBoundedRangeModel::setValue(" << value << ")\n";)
+  if (this->value == value) {
+DBM(cerr << "-> not changed" << endl;)
     return;
+  }
   out_of_range = false;
   if (value<minimum) {
     out_of_range = true;
@@ -113,9 +119,12 @@ TBoundedRangeModel::setValue(int value)
     value = maximum-extent;
   }
   if (this->value != value) {
+DBM(cerr << "-> changed (previous value was " << this->value << ")\n";)
     this->value = value;
     if (!adjusting)
       sigChanged();
+  } else {
+DBM(cerr << "-> not changed" << endl;)
   }
 }
 
@@ -127,4 +136,81 @@ TBoundedRangeModel::setValueIsAdjusting(bool b)
   adjusting = b;
   if (b == false)
     sigChanged();
+}
+
+class TBoundedRangeTextModel:
+  public TTextModel
+{
+    TBoundedRangeModel * model;
+    bool lock;
+  public:
+    TBoundedRangeTextModel(TBoundedRangeModel *m) {
+      model = m;
+      lock = false;
+      if (model) {
+        connect(model->sigChanged, this, &TBoundedRangeTextModel::slaveChanged);
+        slaveChanged();
+      }
+//      connect(this->sigChanged, this, &TBoundedRangeTextModel::masterChanged);
+    }
+    ~TBoundedRangeTextModel() {
+      if (model)
+        disconnect(model->sigChanged, this);
+    }
+    int filter(int c) {
+      if (c=='\n') {
+DBM(cerr << "BoundedRangeTextModel filter detected '\\n', calling masterChanged\n";)
+        masterChanged();
+        return 0;
+      }
+      if ( (c<'0' || c>'9') && c!='-') {
+        return 0;
+      }
+      return c;
+    }
+    void focus(bool b) {
+DBM(cerr << "TBoundedRangeTextModel::focus(" << b << ")\n";)
+      if (!b) {
+DBM(cerr << "-> calling master changed\n";)
+        masterChanged();
+      }
+    }
+    void masterChanged()
+    {
+DBM(cerr << "TBoundedRangeTextModel::masterChanged()\n";)
+      if (lock) {
+DBM(cerr << "  locked => return\n";)
+        return;
+      }
+DBM(cerr << "  not locked => setValue\n";)
+      int a = atoi(data.c_str());
+      lock = true;
+      model->setValue(a);
+      lock = false;
+    }
+    void slaveChanged()
+    {
+DBM(cerr << "TBoundedRangeTextModel::slaveChanged()\n";)
+      sigChanged();
+      if (lock) {
+DBM(cerr << "  locked => return\n";)
+        return;
+      }
+DBM(cerr << "  not locked => getValue\n";)
+      char buffer[16];
+#ifndef __WIN32__
+      snprintf(buffer, sizeof(buffer), "%i", model->getValue());
+#else
+      sprintf(buffer, "%i", model->getValue());
+#endif
+      lock = true;
+      setValue(buffer);
+      lock = false;
+    }
+};
+
+TTextModel *
+toad::createTextModel(TBoundedRangeModel * m)
+{
+  return new TBoundedRangeTextModel(m);
 }

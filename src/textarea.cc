@@ -40,57 +40,6 @@ toad::createTextModel(TTextModel *m)
   return m;
 }
 
-class TBoundedRangeTextModel:
-  public TTextModel
-{
-    TBoundedRangeModel * model;
-  public:
-    TBoundedRangeTextModel(TBoundedRangeModel *m) {
-      model = m;
-      if (model) {
-        connect(model->sigChanged, this, &TBoundedRangeTextModel::slaveChanged);
-        slaveChanged();
-      }
-//      connect(this->sigChanged, this, &TBoundedRangeTextModel::masterChanged);
-    }
-    ~TBoundedRangeTextModel() {
-      if (model)
-        disconnect(model->sigChanged, this);
-    }
-    int filter(int c) {
-      if ( (c<'0' || c>'9') && c!='-') {
-        return 0;
-      }
-      return c;
-    }
-    void focus(bool b) {
-      if (!b) {
-        masterChanged();
-      }
-    }
-    void masterChanged()
-    {
-      int a = atoi(data.c_str());
-      model->setValue(a);
-    }
-    void slaveChanged()
-    {
-      char buffer[16];
-#ifndef __WIN32__
-      snprintf(buffer, sizeof(buffer), "%i", model->getValue());
-#else
-      sprintf(buffer, "%i", model->getValue());
-#endif
-      setValue(buffer);
-    }
-};
-
-TTextModel *
-toad::createTextModel(TBoundedRangeModel * m)
-{
-  return new TBoundedRangeTextModel(m);
-}
-
 /**
  * \ingroup control
  * \class toad::TTextArea
@@ -161,7 +110,6 @@ TTextArea::TBlink::tick()
     visible = blink;   
     current->_invalidate_line(current->_cy, false);
     current->paintNow();
-  } else {
   }
 }  
 
@@ -174,7 +122,7 @@ TTextArea::TPreferences::TPreferences()
   tabwidth = 8;
   singleline = false;
   password = false;
-  fontname = "monospace-12";
+  fontname = "fixed,monospace:size=12";
 }
 
 TTextArea::TPreferences::~TPreferences()
@@ -317,7 +265,7 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
         if (_eos!=_pos) {
           invalidateWindow();
           _bos = _eos = _pos;
-cerr << "start selection at _pos = " << _pos << endl;
+//cerr << "start selection at _pos = " << _pos << endl;
         }
         break;
     }
@@ -358,7 +306,12 @@ cerr << "start selection at _pos = " << _pos << endl;
       if (!preferences->singleline) {
         if (preferences->mode==TPreferences::NORMAL)
           _selection_clear();
-          _return();
+        _return();
+      } else {
+        // some models, ie TBoundedRangeTextModel or TColorTextModel
+        // want perform some action when RETURN is pressed and need to
+        // be informed
+        model->filter('\n'); 
       }
       break;
     case TK_DELETE:
@@ -410,7 +363,7 @@ cerr << "start selection at _pos = " << _pos << endl;
       }
       break;
     default:
-      if ((unsigned char)str[0]>=32 && (unsigned char)str[0]<=255 && str[1]==0) {
+      if ((unsigned char)str[0]>=32 && str[1]==0) {
         if (preferences->mode==TPreferences::NORMAL)
           _selection_clear();
         _insert(str[0]);
@@ -493,6 +446,7 @@ TTextArea::_set_model(TTextModel *m)
   _bos = _eos = 0;
   if (vscroll)
     vscroll->setValue(_ty);
+  adjustScrollbars();
   invalidateWindow(true);
 }
 
@@ -686,6 +640,9 @@ TTextArea::adjustScrollbars()
   visible.set(2,2,getWidth()-4,getHeight()-4);
 //  cerr << "'" << getTitle() << "', adjustScrollbars: visible = " << visible << endl;
 
+  if (!preferences || !model)
+    return;
+
   if (preferences->singleline)
     return;
 
@@ -821,18 +778,24 @@ TTextArea::paint()
           i+=m;
         }
       }
-      // draw text
 
+//cerr << "draw line: '" << line << "'\n";
+//cerr << "  line     : " << bol << " - " << eol << endl;
+//cerr << "  selection: " << _bos << " - " << _eos << endl;
+      // draw text
       bool part=false;
       if (_bos <= bol && eol <= _eos) {
+//cerr << "    line is inside selection\n";
         // inside selection
         pen.setLineColor(255,255,255);
         pen.setFillColor(0,0,0);
       } else if (eol < _bos || bol > _eos) {
+//cerr << "    line is outside selection\n";
         // outside selection
         pen.setLineColor(0,0,0);
         pen.setFillColor(255,255,255);
       } else {
+//cerr << "    line and selection true intersection\n";
         pen.setLineColor(0,0,0);
         pen.setFillColor(255,255,255);
         part = true;
@@ -846,8 +809,8 @@ TTextArea::paint()
       }
       
       if (part) {
-#if 0       
-        cout<<"bol  = "<<bol<<endl
+#if 0
+        cerr<<"bol  = "<<bol<<endl
             <<"_bos = "<<_bos<<endl
             <<"bos  = "<<bos<<endl
             <<"eol  = "<<eol<<endl
@@ -857,23 +820,22 @@ TTextArea::paint()
 #endif            
         int x=0;
         unsigned pos = 0;
-        unsigned len = string::npos;
-
+        unsigned len = eol-bol;
         if (bol < _bos) { // start is inside
-//          cout << "start is inside" << endl;
+//cerr << "start is inside" << endl;
           pos = bos-bol;
         }
         if (_eos < eol) { // end is inside
-//          cout << "end is inside" << endl;
+//cerr << "end is inside" << endl;
           len = eos - bol;
         }
         if (bol < _bos) { // start is inside
-//          cout << "start is inside" << endl;
+//cerr << "start is inside" << endl;
           pos = bos-bol;
           len-=pos;
         }
         // cut pos & len to _tx
-// cout << "pos = " << pos << endl << "_tx = " << _tx << endl;
+//cerr << "pos = " << pos << endl << "_tx = " << _tx << endl;
         if (pos<_tx) {
           unsigned d = _tx - pos;
           pos=_tx;
@@ -885,9 +847,9 @@ TTextArea::paint()
           x=0;
         } else {
           x = pen.getTextWidth(line.substr(_tx,pos-_tx));
-//          cout << "  \"" << line.substr(_tx,pos-_tx) << "\"" << endl;
+//cerr << "  \"" << line.substr(_tx,pos-_tx) << "\"" << endl;
         }
-// cout << "x   = " << x << endl << "len = " << len << endl;
+//cerr << "x   = " << x << endl << "len = " << len << endl;
         if (len>0 && pos<line.size()) {
           pen.setLineColor(255,255,255);
           pen.setFillColor(0,0,0);
@@ -898,7 +860,7 @@ TTextArea::paint()
       // draw cursor
       if (blink.visible && blink.current==this && sy==_cy) {
         pen.setColor(0,0,0);
-//        sx = pen.getTextWidth(line.substr(0, sx));
+        // sx = pen.getTextWidth(line.substr(0, sx));
         sx = pen.getTextWidth("x") * (sx-_tx);
         pen.setMode(TPen::INVERT);
         pen.drawLine(sx,y,sx,y+pen.getHeight()-1);
@@ -1005,14 +967,14 @@ void
 TTextArea::_undo()
 {
   MARK
-  model->undo();
+  model->doUndo();
 }
 
 void
 TTextArea::_redo()
 {
   MARK
-  model->redo();
+  model->doRedo();
 }
 
 void
@@ -1206,8 +1168,10 @@ void
 TTextArea::_backspace()
 {
   MARK
-  _cursor_left();
-  _delete();
+  if (_pos>0) {
+    _cursor_left();
+    _delete();
+  }
 }
 
 void
@@ -1485,6 +1449,7 @@ TTextArea::getLines() const
 TTextModel::TTextModel()
 {
   nlines = 0;
+  undo = true;
   _modified = false;
   history = new THistory();
 }
@@ -1492,8 +1457,11 @@ TTextModel::TTextModel()
 void
 TTextModel::setValue(const string &d)
 {
-  if (data==d)
+//cerr << "TTextModel[" << this << "]::setValue(string)\n";
+  if (data==d) {
+//    cerr << "-> not changed\n";
     return;
+  }
 //  DBM(cout << __PRETTY_FUNCTION__ << endl;)
 
   offset = 0;
@@ -1520,12 +1488,17 @@ TTextModel::setValue(const string &d)
 void
 TTextModel::setValue(const char *d, unsigned len)
 {
+//cerr << "TTextModel[" << this << "]::setValue(char*)\n";
 #ifndef OLDLIBSTD
-  if (data.compare(0, string::npos, d, len)==0)
+  if (data.compare(0, string::npos, d, len)==0) {
+//    cerr << "-> not changed\n";
     return;
+  }
 #else
-  if (data.compare(d, len)==0)
+  if (data.compare(d, len)==0) {
+//    cerr << "-> not changed\n";
     return;
+  }
 #endif
 
   offset = 0;
@@ -1659,7 +1632,7 @@ TTextModel::focus(bool)
 }
 
 void
-TTextModel::undo()
+TTextModel::doUndo()
 {
   if (history && history->getBackSize()>0) {
      history->getCurrent()->undo();
@@ -1668,7 +1641,7 @@ TTextModel::undo()
 }
 
 void
-TTextModel::redo()
+TTextModel::doRedo()
 {
   if (history && history->getForwardSize()>0) {
      history->goForward();

@@ -94,8 +94,8 @@ class TTextModel:
       }
     }
     
-    void undo();
-    void redo();
+    void doUndo();
+    void doRedo();
     
     void insert(unsigned offset, int c, bool undo=true);
     void insert(unsigned offset, const string&, bool undo=true);
@@ -108,6 +108,8 @@ class TTextModel:
     
     typedef GHistory<PUndoable> THistory;
     THistory *history;
+    //! 'true' track undo/redo history
+    bool undo;
     
     class TUndoableInsert:
       public TUndoable

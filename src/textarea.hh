@@ -78,29 +78,29 @@ class TTextArea:
       super(p, t)
     {
       vscroll = 0;
+      init();
 #ifndef OLDLIBSTD
       setModel(new TTextModel());
 #endif
-      init();
     }
     TTextArea(TWindow *p, const string &t, TTextModel *m):
       super(p, t)
     {
       vscroll = 0;
+      init();
 #ifndef OLDLIBSTD
       setModel(m);
 #endif
-      init();
     }
     template <class T> 
     TTextArea(TWindow *p, const string &t, T * m):
       super(p, t)
     {
       vscroll = 0;
+      init();
 #ifdef OLDLIBSTD
       setModel(m);
 #endif
-      init();
     }
     ~TTextArea();
 
