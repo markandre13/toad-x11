@@ -77,7 +77,22 @@ TComboBox::paint()
   }
 #if 1
   // checks which should already be handled in TTable...
-  if (table->getRenderer()->getRows() <= table->getLastSelectionRow()) {
+  int col, row;
+  TSingleSelectionModel *sm = 0;
+  if (table->getSelectionModel())
+    sm = dynamic_cast<TSingleSelectionModel*>(table->getSelectionModel());
+  if (sm) {
+    col = sm->getCol();
+    row = sm->getRow();
+  } else {
+    // this is a hack, the right way would be to find the first selected
+    // entry but the current selection model API doesn't provide such an
+    // interface...
+    col = table->getLastSelectionCol();
+    row = table->getLastSelectionRow();
+  }
+
+  if (table->getRenderer()->getRows() <= row) {
     cerr << "TComboBox '"<<getTitle()<<"': tables selection model was out of renderer range" << endl;
     pen.setColor(128,64,64);
     pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
@@ -86,8 +101,8 @@ TComboBox::paint()
 #endif
   pen.translate(2, 2);
   TTableEvent te;
-  te.col = table->getLastSelectionCol();
-  te.row = table->getLastSelectionRow();
+  te.col = col;
+  te.row = row;
   te.w = btn->getXPos()-2;
   te.h = getHeight()-4;
   te.cursor = false;
@@ -220,12 +235,14 @@ void
 TComboBox::_rendererChanged()
 {
 //  cerr << "TComboBox '"<<getTitle()<<"': the tables renderer triggered sigChanged" << endl;
+  invalidateWindow();
 }
 
 void
 TComboBox::_selectionChanged()
 {
 //  cerr << "TComboBox '"<<getTitle()<<"': the tables selection model triggered sigChanged()" << endl;
+  invalidateWindow();
 }
 
 //----------------
