@@ -98,9 +98,11 @@ class TFileDialog:
     void setFilename(const string &s);
     string getFilename() const;
     
-    
     void addFileFilter(TFileFilter *);
     void addFileFilter(const string &name);
+    const TFileFilter* getFileFilter() const {
+      return filter;
+    }
 
     unsigned getResult() const {
       return result;
