@@ -627,7 +627,7 @@ TWindow::_interactor_create()
   mask|=CWColormap;
   attr.colormap = x11colormap;
 
-  if (_cursor!=TCursor::DEFAULT) {
+  if (_cursor!=TCursor::PARENT) {
     mask|=CWCursor;
     attr.cursor = TCursor::X11Cursor(static_cast<TCursor::EType>(_cursor));
   }
@@ -636,9 +636,10 @@ TWindow::_interactor_create()
     mask|=CWOverrideRedirect;
     attr.override_redirect = true;
     // the override redirect option results in a 'X' cursor but we 
-    // still want the default cursor:
+    // still want the windows cursor:
     mask|=CWCursor;
-    attr.cursor = TCursor::X11Cursor(TCursor::DEFAULT);
+    // attr.cursor = TCursor::X11Cursor(TCursor::DEFAULT);
+    attr.cursor = TCursor::X11Cursor(static_cast<TCursor::EType>(_cursor));
   }
 
   // 'createX11Window' messsage is needed for things like OpenGL support
