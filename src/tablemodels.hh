@@ -616,13 +616,13 @@ class GTableRowRenderer:
  * \ingroup table
  * A wrapper for STL random access containers like vector or deque.
  *
- * \pre
+ * \code
 typedef GSTLRandomAccess<deque<string>, string> TStrings;
 TStrings strings;
 strings.push_back("Hello");
 strings.push_back("You");
 table->setRenderer(new GTableCellRenderer_String<TStrings>(&strings));
-   \endpre
+   \endcode
  */
 template <class CONTAINER, class TYPE>
 class GSTLRandomAccess:

@@ -1,4 +1,5 @@
 all:
+	cd reference/img && ln -f ../../../src/resource/*.png .
 	./build.sh
 	doxygen
 	

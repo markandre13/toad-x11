@@ -196,66 +196,53 @@ TMessageBox::paint()
 
 /**
  * This function creates and displays a modal dialog that contains a text,
- * an icon and pushbuttons.<P>
+ * an icon and pushbuttons.
+ *
  *  The following values define <VAR>type</VAR> and can be joined by the
- *  '|' operator:<P>
- *  <TABLE BORDER=1 WIDTH=100%>
- *  <TR><TH>
- *  ICON_EXCLAMATION
- *  </TH><TD>
- *  <IMG SRC="img/icon_exclamation.gif">
- *  </TD></TR><TR><TH>
- *  ICON_HAND
- *  </TH><TD>
- *  <IMG SRC="img/icon_hand.gif">
- *  </TD></TR><TR><TH>
- *  ICON_STOP
- *  </TH><TD>
- *  <IMG SRC="img/icon_stop.gif">
- *  </TD></TR><TR><TH>
- *  ICON_INFORMATION
- *  </TH><TD>
- *  <IMG SRC="img/icon_information.gif">
- *  </TD></TR><TR><TH>
- *  ICON_QUESTION
- *  </TH><TD>
- *  <IMG SRC="img/icon_question.gif">
- *  </TD></TR><TR><TH>
- *  ABORTRETRYIGNORE
- *  </TH><TD>
- *  </TD></TR><TR><TH>
- *  OK
- *  </TH><TD>
- *  </TD></TR><TR><TH>
- *  OKCANCEL
- *  </TH><TD>
- *  </TD></TR><TR><TH>
- *  RETRYCANCEL
- *  </TH><TD>
- *  </TD></TR><TR><TH>
- *  YESNO
- *  </TH><TD>
- *  </TD></TR><TR><TH>
- *  YESNOCANCEL
- *  </TH><TD>
- *  </TD></TR><TR><TH>
- *  DEFBUTTON1
- *  </TH><TD>
- *  The 1st button is the default button, which is the default
- *  setting.
- *  </TD></TR><TR><TH>
- *  DEFBUTTON2
- *  </TH><TD>
- *  The 2nd button is the default button.
- *  </TD></TR><TR><TH>
- *  DEFBUTTON3
- *  </TH><TD>
- *  The 3rd button is the default button.
- *  </TD></TR>
- *  </TABLE>
- *  <P>
- *  Possible return values are: <B>IDACCEPT, IDABORT, IDOK, IDRETRY, IDYES,
- *  IDNO, IDCANCEL</B> and <B>IDIGNORE</B>.
+ *  '|' operator:
+ *
+ *  \li
+ *    <img src="img/information.png"> ICON_INFORMATION:
+ *    Just informational, you may ignore it.
+ *  \li
+ *    <img src="img/question.png"> ICON_QUESTION:
+ 
+ *  \li
+ *    <img src="img/exclamation.png"> ICON_EXCLAMATION:
+ *  \li
+ *    <img src="img/hand.png"> ICON_HAND:
+ *    Wait a moment and think about what you're going to do.
+ *  \li
+ *    <img src="img/stop.png"> ICON_STOP
+ *    Don't do it!
+ *
+ *  The following button combinations are supported:
+ *
+ *  \li ABORTRETRYIGNORE
+ *  \li OKCANCEL
+ *  \li RETRYCANCEL
+ *  \li YESNO
+ *  \li YESNOCANCEL
+ *
+ *  When the message box opens, the first button is selected and
+ *  you should keep it like this to avoid to confuse the user. Anyway
+ *  you can also select another button with the following values:
+ *
+ *  \li DEFBUTTON1
+ *  \li DEFBUTTON2
+ *  \li DEFBUTTON3
+ *
+ *  The function returns which button was pressed with one of the values
+ *  below or '0' (Null, Zero), in case the dialog was closed without a button
+ *  being pressed, which you should treat as 'CANCEL':
+ *
+ *  \li ACCEPT
+ *  \li ABORT
+ *  \li RETRY
+ *  \li YES
+ *  \li NO
+ *  \li CANCEL
+ *  \li IGNORE
  */
 unsigned 
 toad::messageBox(TWindow* parent, 

@@ -95,9 +95,6 @@ class TMessageBox:
     TBitmap *bitmap;
 };
 
-/**
- * Utility function to ease the creation of a messagebox.
- */
 unsigned messageBox(TWindow* parent, 
                     const string& title,
                     const string &text, 
