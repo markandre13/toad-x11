@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -837,7 +837,15 @@ DBSCROLL({
   for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
     xp = fpx + visible.x;
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
+
       TRectangle check(xp,yp,col_info[x].size, row_info[y].size);
+      if (stretchLastColumn && 
+          x==cols-1 && 
+          xp+col_info[x].size<visible.x+visible.w) 
+      {
+        check.w = visible.x+visible.w-xp;
+      }
+
       if (!getUpdateRegion() ||
           getUpdateRegion()->isInside(check)!=TRegion::OUT)
       {
@@ -862,9 +870,6 @@ DBM2(cerr << "  selecting is enabled, fake selected" << endl;)
           if (per_col && x>=x1 && x<=x2)
             selected = true;
         }
-        int size = col_info[x].size;
-        if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
-          size = visible.x+visible.w-xp;
 
 DBSCROLL(
   pen.setColor(255,255,255);
@@ -881,7 +886,7 @@ DBSCROLL(
         renderer->renderCell(
             pen,
             x, y,
-            size, row_info[y].size,
+            check.w, check.h,
             cursor && !noCursor,
             selected,
             isFocus()
@@ -893,13 +898,10 @@ DBSCROLL(
   }
   // clear unused window region (we must do it on our own because
   // background is disabled to reduce flicker)
-//cout << "visible = " << visible << endl;
-
-//cout << xp << "<=" << (xp<=visible.x+visible.w) << endl;
   if (!stretchLastColumn && xp<=visible.x+visible.w) {
     pen|=dummy;
     pen.identity();
-    // pen.setColor(128,64,64);
+    pen.setColor(128,64,64);
     pen.setColor(getBackground());
     xp--;
     pen.fillRectanglePC(xp,0,visible.x+visible.w-xp,getHeight());
@@ -907,7 +909,7 @@ DBSCROLL(
   if (yp<=visible.y+visible.h) {
     pen|=dummy;
     pen.identity();
-    // pen.setColor(64,64,128);
+    pen.setColor(64,64,128);
     pen.setColor(getBackground());
     yp--;
     pen.fillRectanglePC(0,yp,getWidth(),visible.y+visible.h-yp);
@@ -1452,8 +1454,6 @@ TTable::handleNewModel()
 void
 TTable::adjustPane()
 {
-  DBM(cout << "pane.h: " << pane.h << endl;)
-
   if (row_header_renderer) {
     visible.x = row_header_renderer->getWidth();
     visible.w -= visible.x;
