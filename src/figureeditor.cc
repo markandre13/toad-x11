@@ -1073,10 +1073,21 @@ TFigureEditor::ungroup()
     if (selection.find(*p)!=selection.end()) {
       TFGroup *group = dynamic_cast<TFGroup*>(*p);
       if (group) {
-        TFigureModel::iterator vp,ve;
-        vp = group->gadgets.begin();
-        ve = group->gadgets.end();
-        model->insert(p, vp,ve);
+        if (group->mat) {
+          TFigureModel::iterator vp,ve;
+          vp = group->gadgets.begin();
+          ve = group->gadgets.end();
+          while(vp!=ve) {
+            TMatrix2D *m = new TMatrix2D(*group->mat);
+            if ((*vp)->mat) {
+              m->multiply((*vp)->mat);
+              delete((*vp)->mat);
+            }
+            (*vp)->mat = m;
+            ++vp;
+          }
+        }
+        model->insert(p, group->gadgets.begin(), group->gadgets.end());
         group->gadgets.erase(group->gadgets.begin(),group->gadgets.end());
         delete group;
         TFigureModel::iterator del = p;
