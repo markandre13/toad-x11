@@ -362,7 +362,7 @@ TUndoManager::endUndoGrouping()
 {
   DBM(cerr << __PRETTY_FUNCTION__ << endl;)
   if (groupstack.empty()) {
-    DBM(cerr << "TUndoManager::endUndoGrouping called but no group to be closed" << endl;)
+    cerr << "TUndoManager::endUndoGrouping called but no group to be closed" << endl;
     // printStackTrace();
     return;
   }
@@ -513,6 +513,30 @@ TUndoManager::doIt(bool back)
       // execute undo
       undo->undo();
       delete undo;
+    } else {
+
+      // after handling an undo/redo group we need to recalculate the
+      // 'undocount' variable
+      undocount = 0;
+      for(TModelSet::iterator p=mmodels.begin();
+          p!=mmodels.end();
+          ++p)
+      {
+        TModelStore::iterator q = models.find(*p);
+        assert(q!=models.end());
+        
+        if (back) {
+          if (!q->second.undostack.empty()) {
+            undocount = 2;
+            break;
+          }
+        } else {
+          if (!q->second.redostack.empty()) {
+            undocount = 2;
+            break;
+          }
+        }
+      }
     }
   } else {
     DBM(cerr << "  undo not possible, because there are no events to be undone" << endl;)
@@ -524,6 +548,7 @@ TUndoManager::doIt(bool back)
     else
       this->redo->setEnabled(false);
   }
+
   if (back)
     undoing = false;
   else
@@ -613,16 +638,19 @@ TUndoManager::TUndoAction::getState(string *text, bool *active) const
   unsigned count = 0;
 
   if (this->undo) {
-
+    DBM(cerr << "  get state for undo" << endl;)
     for(TModelSet::iterator p=manager->mmodels.begin();
         p!=manager->mmodels.end();
         ++p)
     {
       TModelStore::iterator q = models.find(*p);
       assert(q!=models.end());
+      DBM(cerr << "  check model " << *p << endl;)
       if (!q->second.undostack.empty()) {
         count += q->second.undostack.size();
+        DBM(cerr << "    it's not empty" << endl;)
         TUndo *u = q->second.undostack.back();
+        DBM(cerr << "      found undo " << u << " for model " << *p << endl;)
         if (!undo) {
           undo = u; 
           pms = q;  
@@ -639,7 +667,7 @@ TUndoManager::TUndoAction::getState(string *text, bool *active) const
     }
 
   } else {
-
+    DBM(cerr << "  get state for redo" << endl;)
     for(TModelSet::iterator p=manager->mmodels.begin();
         p!=manager->mmodels.end();
         ++p)
@@ -651,6 +679,7 @@ TUndoManager::TUndoAction::getState(string *text, bool *active) const
         count += q->second.redostack.size();
         DBM(cerr << "    it's not empty" << endl;)
         TUndo *u = q->second.redostack.back();
+        DBM(cerr << "      found redo " << u << " for model " << *p << endl;)
         if (!undo) {
           undo = u; 
           pms = q;  
@@ -669,6 +698,7 @@ TUndoManager::TUndoAction::getState(string *text, bool *active) const
     }
 
   }
+  DBM(cerr << "    it's empty" << endl;)
   return false;
 }
 
