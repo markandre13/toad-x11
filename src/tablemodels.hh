@@ -18,12 +18,25 @@
  * MA  02111-1307,  USA
  */
 
+/**
+ * \file tablemodels.hh
+ *
+ * This file contains some predefined model for the TTable widget
+ * based on STL containers.
+ *
+ * \todo
+ *   \li Not all STL containers are covered.
+ *   \li Not all methods of the provided containers are covered.
+ */
+
 #ifndef TTableModel_CString
 #define TTableModel_CString TTableModel_CString
 
 #include <toad/table.hh>
 #include <string>
 #include <vector>
+#include <set>
+#include <functional>
 
 namespace toad {
 
@@ -141,27 +154,65 @@ class TStringVector:
 typedef GSmartPointer<TStringVector> PStringVector;
 typedef GTableSelectionModel<TStringVector> TStringVectorSelectionModel;
 
-class TTableCellRenderer_String:
+typedef less<string> less_string;
+
+class TStringSet:
+  public set<string, less_string>,
+  public GAbstractTableModel<string>
+{
+    typedef set<string> container;
+    
+    int idx;
+    container::iterator ptr;
+    
+  public:
+    int getRows() {
+      return size();
+    }
+    string getElementAt(int, int index) {
+      assert(index<size());
+      while(idx<index) {
+        ++idx;
+        ++ptr;
+      }
+      while(idx>index) {
+        --idx;
+        --ptr;
+      }
+      return *ptr;
+      // return (*this)[index];
+    }
+    void insert(const string &s) {
+      container::insert(s);
+      idx = 0;
+      ptr = begin();
+      sigChanged();
+    }
+};
+
+template <class T>
+class GTableCellRenderer_String:
   public TAbstractTableCellRenderer
 {
   private:
-    PStringVector model;
+    GSmartPointer<T> model;
+    typedef GTableCellRenderer_String<T> This;
+    
   public:
-    TTableCellRenderer_String(TStringVector *m)
+    GTableCellRenderer_String(T *m)
     {
       setModel(m);
     }
     // implements 'virtual TAbstractTableModel * getModel() = 0;'
-    TStringVector * getModel() {
+    T * getModel() {
       return model;
     }
-    void setModel(TStringVector *m) {
+    void setModel(T *m) {
       if (model)
         disconnect(model->sigChanged, this);
       model = m;
       if (model)
-        connect(model->sigChanged,
-                this, &TTableCellRenderer_String::modelChanged);
+        connect(model->sigChanged, this, &This::modelChanged);
     }
     int getRows() {
       return model->getRows();
@@ -199,6 +250,9 @@ class TTableCellRenderer_String:
       }
     }
 };
+
+typedef GTableCellRenderer_String<TStringVector> TTableCellRenderer_StringVector;
+typedef GTableCellRenderer_String<TStringSet> TTableCellRenderer_StringSet;
 
 } // namespace toad
 

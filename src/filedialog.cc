@@ -77,7 +77,7 @@ TFileDialog::TFileDialog(TWindow *p,const string &t)
   table = new TTable(this, "dirbox");
     sel = new GTableSelectionModel<TStringVector>(&directory);
     table->setSelectionModel(sel);
-    table->setRenderer(new TTableCellRenderer_String(&directory));
+    table->setRenderer(new TTableCellRenderer_StringVector(&directory));
     table->setShape(8,68,161,197);
     connect(sel->sigChanged,
       this, &TFileDialog::selectDir,
@@ -86,7 +86,7 @@ TFileDialog::TFileDialog(TWindow *p,const string &t)
   table = new TTable(this, "filebox");
     sel = new GTableSelectionModel<TStringVector>(&file);
     table->setSelectionModel(sel);
-    table->setRenderer(new TTableCellRenderer_String(&file));
+    table->setRenderer(new TTableCellRenderer_StringVector(&file));
     table->setShape(176,68,161,197);
     connect(sel->sigChanged,
       this, &TFileDialog::selectFile,
