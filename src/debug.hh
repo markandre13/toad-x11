@@ -24,7 +24,7 @@
 
 // uncomment this to compile a secure version of TOAD (extra parameter checks)
 #define SECURE
-#define TOAD_SECURE
+//#define TOAD_SECURE
 
 // Use event objects instead of argument lists for the mouse & keyboard
 // methods (see HISTORY for more information)
