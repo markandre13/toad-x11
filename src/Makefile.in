@@ -120,6 +120,8 @@ install:
 	done
 	find . -name "*.hh" -exec \
     install -D -m 0644 {} $(DESTDIR)/$(includedir)/toad/{} \;
+	find . -name "*.h" -exec \
+    install -D -m 0644 {} $(DESTDIR)/$(includedir)/toad/{} \;
 	install -d $(DESTDIR)/$(libdir)
 	install $(LIBNAME).$(VERSION) $(DESTDIR)/$(libdir)/$(LIBNAME).$(VERSION)
 	cd $(DESTDIR)/$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
