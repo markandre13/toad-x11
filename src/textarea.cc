@@ -1797,11 +1797,17 @@ TTextModel::insert(unsigned p, int c)
   if (!c)
     return;
 
-#if 0
-  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
-#else
+  // group undo events until...
+  if (type==CHANGE ||       // ...the whole model was changed,
+      type==REMOVE ||       // we were removing before,
+      p!=offset+length ||   // insert at a new cursor position or
+      c=='\n')              // we start a new line
+  {
+    //cout << "* new undo group for textarea" << endl;
+    TUndoManager::endUndoGrouping(this);
+  }
+  TUndoManager::beginUndoGrouping(this);
   TUndoManager::registerUndo(this, new TUndoInsert(this, p, 1));
-#endif
   data.insert(p, 1, c);
   
   type = INSERT;
@@ -1836,11 +1842,12 @@ TTextModel::insert(unsigned p, const string &aString)
   if (s.empty())
     return;
 
-#if 0
-  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;                              
-#else
+  if (type==CHANGE || type==REMOVE || p!=offset+length || s=="\n" || s.size()>1) {
+    //cout << "* new undo group for textarea" << endl;
+    TUndoManager::endUndoGrouping();
+  }
+  TUndoManager::beginUndoGrouping(this);
   TUndoManager::registerUndo(this, new TUndoInsert(this, p, s.size()));
-#endif
 
   data.insert(p, s);
   
@@ -1871,11 +1878,13 @@ void
 TTextModel::remove(unsigned p, unsigned l)
 {
   DBM(cout << "remove at " << p << endl;)
-#if 0
-  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
-#else
+  if (type==CHANGE || type==INSERT || p!=offset-length) {
+    //cout << "* new undo group for textarea" << endl;
+    TUndoManager::endUndoGrouping();
+  }
+  TUndoManager::beginUndoGrouping(this);
   TUndoManager::registerUndo(this, new TUndoRemove(this, p, data.substr(p,l)));
-#endif
+
   lines = 0;
   for(unsigned i=p; i<p+l; ++i) {
     if (data[i]=='\n')

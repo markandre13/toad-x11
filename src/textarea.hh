@@ -135,6 +135,8 @@ class TTextArea:
     //! Called by the model when it was changed.
     void modelChanged();
     
+    bool undogroup_is_open:1;
+    
     void preferencesChanged();
     
     void adjustScrollbars();
