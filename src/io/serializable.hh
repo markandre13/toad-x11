@@ -134,6 +134,14 @@ class TSerializable:
     virtual bool restore(TInObjectStream&);
 };
 
+#define SERIALIZABLE_INTERFACE(PREFIX, CLASS) \
+  public:\
+    TCloneable* clone() const { return new CLASS(*this); }\
+    const char * name() const { return #PREFIX #CLASS ;} \
+  protected:\
+    void store(TOutObjectStream&) const;\
+    bool restore(TInObjectStream&);
+
 class TATVNullInterpreter:
   public TATVInterpreter
 {
