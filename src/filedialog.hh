@@ -115,7 +115,7 @@ class TFileDialog:
     unsigned result;
     bool first_chdir;
 
-    TTableSingleSelectionModel entrychoice;
+    TSingleSelectionModel entrychoice;
     TDirectoryEntrySet entries;
 
     TBoolModel show_hidden;

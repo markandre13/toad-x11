@@ -28,7 +28,7 @@ namespace toad {
 
 class TScrollBar;
 
-class TAbstractTableSelectionModel:
+class TAbstractSelectionModel:
   public TModel
 {
   public:
@@ -38,6 +38,17 @@ class TAbstractTableSelectionModel:
       SINGLE
     };
 
+    enum ERowColMode {
+      FIELD,
+      WHOLE_ROW,
+      WHOLE_COL
+    } rowcolmode;
+
+    void setRowColMode(ERowColMode rowcolmode) {
+      this->rowcolmode = rowcolmode;
+    }
+    virtual bool perRow() const { return rowcolmode == WHOLE_ROW; }
+    virtual bool perCol() const { return rowcolmode == WHOLE_COL; }
     virtual ESelectionMode getSelectionMode() const;
     
     /** 
@@ -54,19 +65,19 @@ class TAbstractTableSelectionModel:
     virtual bool isEmpty() const;
 };
 
-typedef GSmartPointer<TAbstractTableSelectionModel> PAbstractTableSelectionModel;
+typedef GSmartPointer<TAbstractSelectionModel> PAbstractSelectionModel;
 
 /**
  * A basic selection model for a single position.
  */
-class TTableSingleSelectionModel:
-  public TAbstractTableSelectionModel
+class TSingleSelectionModel:
+  public TAbstractSelectionModel
 {
     int col, row;
     bool selected;
 
   public:
-    TTableSingleSelectionModel() {
+    TSingleSelectionModel() {
       selected = false;
       clearSelection();
     }
@@ -83,14 +94,74 @@ class TTableSingleSelectionModel:
     virtual bool isEmpty() const;
 };
 
-class TTableSelectionModel:
-  public TAbstractTableSelectionModel
+class TRectangleSelectionModel:
+  public TAbstractSelectionModel
+{
+    int x1, x2, y1, y2;
+    bool empty;
+  public:
+
+    TRectangleSelectionModel() {
+      empty = true;
+      rowcolmode = FIELD;
+    }
+    ESelectionMode getSelectionMode() const {
+      return SINGLE_INTERVAL;
+    }
+
+
+    void setSelection(int col, int row) {
+      setSelection(col, row, 1, 1);
+    }
+    bool isSelected(int col, int row) const {
+      if (empty)
+        return false;
+      return (x1<=col && col<=x2 && y1<=row && row<=y2);
+    }
+    void setSelection(int col, int row, int w, int h) {
+      if (!empty && x1==col && x2==col+w-1 && y1==row && y2==row+h-1)
+        return;
+      empty = false;
+      x1 = col;
+      x2 = col+w-1;
+      y1 = row;
+      y2 = row+h-1;
+      sigChanged();
+    }
+    void toggleSelection(int col, int row) {
+      if (x1<=col && col<=x2 &&
+          y1<=row && row<=y1)
+      {
+        empty = !empty;
+      } else {
+        empty = false;
+      }
+      x1=x2=col;
+      y1=y2=row;
+      sigChanged();
+    }
+    void clearSelection() {
+      if (empty)
+        return;
+      empty = true;
+      sigChanged();
+    }
+    bool isEmpty() const {
+      return empty;
+    }
+    void getSelection(TRectangle *r) {
+      r->set(x1, y1, x2-x1+1, y2-y1+1);
+    }
+};
+
+class TSelectionModel:
+  public TAbstractSelectionModel
 {
   protected:
     TRegion region;
 
   public:
-    TTableSelectionModel() {
+    TSelectionModel() {
       selection_mode = MULTIPLE_INTERVAL;
     }
     
@@ -151,19 +222,29 @@ class TTableSelectionModel:
     ESelectionMode selection_mode;
 };
 
-typedef GSmartPointer<TTableSelectionModel> PTableSelectionModel;
+typedef GSmartPointer<TSelectionModel> PSelectionModel;
 
-inline bool operator==(const TTableSelectionModel::iterator &a,
-                const TTableSelectionModel::iterator &b)
+inline bool operator==(const TSelectionModel::iterator &a,
+                const TSelectionModel::iterator &b)
 {
   return a.n == b.n && a.x == b.x && a.y == b.y;
 }
 
-inline bool operator!=(const TTableSelectionModel::iterator &a,
-                const TTableSelectionModel::iterator &b)
+inline bool operator!=(const TSelectionModel::iterator &a,
+                const TSelectionModel::iterator &b)
 {
   return !(a == b);
 }
+
+struct TTableEvent
+{
+  int col, row;   // current field
+  int w, h;       // field size in pixels
+  int cols, rows; // table size in fields
+  bool cursor;    // show cursor
+  bool selected;  // field is selected
+  bool focus;     // table has keyboard focus
+};
 
 class TAbstractTableCellRenderer:
   public TModel
@@ -178,8 +259,8 @@ class TAbstractTableCellRenderer:
     /**
      * Render cell background, cursor and invoke renderItem.
      */
-    virtual void renderCell(TPen&, int xindex, int yindex, int w, int h, bool cursor, bool selected, bool focus);
-    virtual void renderItem(TPen&, int xindex, int yindex, int w, int h, bool cursor, bool selected, bool focus) = 0;
+    virtual void renderCell(TPen&, const TTableEvent&);
+    virtual void renderItem(TPen&, const TTableEvent&) = 0;
     virtual void mouseEvent(TMouseEvent &, int xindex, int yindex, int w, int h);
 
     // this method is to enable signals to trigger our signal:
@@ -198,7 +279,7 @@ class TAbstractTableCellRenderer:
     int where;
     int size;
 
-    bool per_row, per_col;
+//    bool per_row, per_col;
 };
 
 typedef GSmartPointer<TAbstractTableCellRenderer> PAbstractTableCellRenderer;
@@ -233,7 +314,7 @@ class TTable:
 {
     typedef TScrollPane super;
     PAbstractTableCellRenderer renderer;
-    PAbstractTableSelectionModel selection;
+    PAbstractSelectionModel selection;
     PAbstractTableHeaderRenderer row_header_renderer;
     PAbstractTableHeaderRenderer col_header_renderer;
 
@@ -269,8 +350,8 @@ class TTable:
     void setRenderer(TAbstractTableCellRenderer *r);
     TAbstractTableCellRenderer* getRenderer() const { return renderer; }
     
-    void setSelectionModel(TAbstractTableSelectionModel *m);
-    TAbstractTableSelectionModel* getSelectionModel() const { return selection; }
+    void setSelectionModel(TAbstractSelectionModel *m);
+    TAbstractSelectionModel* getSelectionModel() const { return selection; }
     void selectionChanged();
     TSignal sigSelection;
     
@@ -329,6 +410,7 @@ class TTable:
     
   protected:
     void _moveCursor(int newcx, int newcy, unsigned modifier);
+    void _setSXSY(int x, int y);
     static const int CENTER_VERT=1;
     static const int CENTER_HORZ=2;
     static const int CENTER_BOTH=3;
@@ -346,7 +428,7 @@ class TTable:
     // precalculated values for optimization
     void handleNewModel();
     int rows, cols;     // table size in rows & columns
-    bool per_row, per_col;
+//    bool per_row, per_col;
     
     // getRowHeight & getColWidth are expensive operations so call 'em
     // once and store their values in row_info and col_info

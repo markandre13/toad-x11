@@ -68,7 +68,10 @@ class TFont:
     _TOAD_FONT       x11font; // only used for rotated fonts
 #endif
 
-#ifdef HAVE_LIBXUTF8
+#ifndef HAVE_LIBXUTF8
+    XFontSet x11fs;
+    XFontSet x11fs_r;
+#else
     XUtf8FontStruct *xutf8font;   // horizontal
     XUtf8FontStruct *xutf8font_r; // rotated
 #endif

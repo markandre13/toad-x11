@@ -49,14 +49,14 @@ class TComboBox:
       return table->getRenderer(); 
     }
 
-    void setSelectionModel(TAbstractTableSelectionModel *m) {
+    void setSelectionModel(TAbstractSelectionModel *m) {
       if (table->getSelectionModel())
         disconnect(table->getSelectionModel()->sigChanged, this);
       table->setSelectionModel(m);
       if (m)
         connect(m->sigChanged, this, &TComboBox::_selectionChanged);
     }
-    TAbstractTableSelectionModel* getSelectionModel() const {
+    TAbstractSelectionModel* getSelectionModel() const {
       return table->getSelectionModel();
     }
     TSignal sigSelection;

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -61,8 +61,8 @@ class GAbstractTableModel:
 };
 
 template <class T>
-class GTableSelectionModel:
-  public TTableSelectionModel
+class GSelectionModel:
+  public TSelectionModel
 {
   public:
     typedef T TModel;
@@ -70,19 +70,19 @@ class GTableSelectionModel:
    
     TModel *model;
  
-    GTableSelectionModel(TModel *m):model(m) { }
+    GSelectionModel(TModel *m):model(m) { }
   
     class iterator:
-      public TTableSelectionModel::iterator
+      public TSelectionModel::iterator
     {
         TModel *model;
-        typedef TTableSelectionModel::iterator super;
+        typedef TSelectionModel::iterator super;
       public:
         iterator() {
           model = 0;
         }
         iterator(TRegion *r, bool b, TModel *m):
-           TTableSelectionModel::iterator(r, b), model(m) {}
+           TSelectionModel::iterator(r, b), model(m) {}
         const TElement& operator*() { return model->getElementAt(getX(), getY()); }
     };
     iterator begin() {
@@ -92,8 +92,6 @@ class GTableSelectionModel:
       return iterator(&region, false, model);
     }
 };
-
-
 
 /**
  * \ingroup table
@@ -127,7 +125,7 @@ class TTableModel_CString:
 };
 
 typedef GSmartPointer<TTableModel_CString> PTableModel_CString;
-typedef GTableSelectionModel<TTableModel_CString> TCStringSelectionModel;
+typedef GSelectionModel<TTableModel_CString> TCStringSelectionModel;
 
 /**
  * \ingroup table
@@ -184,8 +182,8 @@ class TTableCellRenderer_CString:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      pen.drawString(1, 1, model->getElementAt(x, y));
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      pen.drawString(1, 1, model->getElementAt(te.col, te.row));
     }
 };
 
@@ -217,7 +215,7 @@ class TStringVector:
 };
 
 typedef GSmartPointer<TStringVector> PStringVector;
-typedef GTableSelectionModel<TStringVector> TStringVectorSelectionModel;
+typedef GSelectionModel<TStringVector> TStringVectorSelectionModel;
 
 /**
  * \ingroup table
@@ -432,8 +430,8 @@ class GTableCellRenderer_String:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      pen.drawString(1, 1, model->getElementAt(x, y));
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      pen.drawString(1, 1, model->getElementAt(te.col, te.row));
     }
 };
 
@@ -491,8 +489,8 @@ class GTableCellRenderer_Text:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      pen.drawString( 1, 1, model->getElementAt(0, y).toText(x));
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      pen.drawString( 1, 1, model->getElementAt(0, te.row).toText(te.col));
     }
 };
 
@@ -552,8 +550,8 @@ class GTableCellRenderer_PText:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      pen.drawString( 1, 1, model->getElementAt(0, y)->toText(x));
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      pen.drawString( 1, 1, model->getElementAt(0, te.row)->toText(te.col));
     }
 };
 
@@ -572,7 +570,7 @@ class GTableRowRenderer:
   public:
     GTableRowRenderer(T *m) { 
       setModel(m);
-      per_row = true;
+//      per_row = true;
     }
     ~GTableRowRenderer() {
       setModel(0);
@@ -607,8 +605,8 @@ class GTableRowRenderer:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int col, int index, int w, int h, bool cursor, bool selected, bool focus) {
-      model->getElementAt(0, index).renderItem(pen, col, w, h);
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      model->getElementAt(0, te.row).renderItem(pen, te.col, te.w, te.h);
     }
 };
 

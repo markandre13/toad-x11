@@ -190,6 +190,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   tfiles->noCursor = true;
   tfiles->selectionFollowsMouse = true;
   tfiles->setRenderer(new TTableRowRenderer_DirectoryEntrySet(&entries));
+  entrychoice.setRowColMode(TRectangleSelectionModel::WHOLE_ROW);
   tfiles->setSelectionModel(&entrychoice);
   connect(tfiles->sigSelection, this, &This::fileSelected);
   connect(tfiles->sigDoubleClicked, this, &This::doubleClick);

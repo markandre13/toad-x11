@@ -93,8 +93,13 @@ void
 TRegion::clear()
 {
 #ifdef __X11__
+#if 0
+  XDestroyRegion(x11region);
+  x11region = XCreateRegion();
+#else
   static const TRegion empty;
   XIntersectRegion(x11region, empty.x11region, x11region);
+#endif
 #endif
 }
 

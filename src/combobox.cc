@@ -85,13 +85,15 @@ TComboBox::paint()
   }
 #endif
   pen.translate(2, 2);
-  table->getRenderer()->renderItem(
-    pen,
-    table->getLastSelectionCol(), table->getLastSelectionRow(),
-    btn->getXPos()-2, getHeight()-4,
-    false,
-    false,
-    isFocus());
+  TTableEvent te;
+  te.col = table->getLastSelectionCol();
+  te.row = table->getLastSelectionRow();
+  te.w = btn->getXPos()-2;
+  te.h = getHeight()-4;
+  te.cursor = false;
+  te.selected = false;
+  te.focus = true;
+  table->getRenderer()->renderItem(pen, te);
 
   if (isFocus()) {
     pen.setColor(0,0,0);
