@@ -896,6 +896,20 @@ TTable::selectAtCursor()
   }
 }
 
+void
+TTable::clickAtCursor()
+{
+  selectAtCursor();
+  sigClicked();
+}
+
+void
+TTable::doubleClickAtCursor()
+{
+  selectAtCursor();
+  sigClicked();
+}
+
 /**
  * Convert mouse position into a field position and return 'true' 
  * or return 'false' in case it isn't possible.
@@ -1039,6 +1053,7 @@ TTable::mouseLUp(int mx, int my, unsigned)
     y2 = max(sy, cy);
     selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
   }
+  sigClicked();
 /*
   if (cx!=x && cy!=y)
     return;

@@ -56,7 +56,7 @@ TComboBox::TComboBox(TWindow * parent, const string &title):
   connect(btn->sigDisarm, this, &TComboBox::button);
   
   table = new TTable(this, "table");
-  connect(table->sigSelection, this, &TComboBox::selected);
+  connect(table->sigClicked, this, &TComboBox::selected);
 
   table->bExplicitCreate = true;
   table->bPopup = true;

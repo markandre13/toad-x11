@@ -203,7 +203,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   cb_filter->setRenderer(
     new GTableCellRenderer_PText<TFilterList, 1>(&filterlist)
   );
-  cb_filter->selectAtCursor();
+  cb_filter->clickAtCursor();
 
   new TCheckBox(this, "show hidden", &show_hidden);
   connect(show_hidden.sigChanged, this, &This::hidden);
@@ -219,7 +219,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
 
   cb_prev = new TComboBox(this, "previous");
   cb_prev->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
-  cb_prev->selectAtCursor();
+  cb_prev->clickAtCursor();
 
   // don't connect earlier to avoid loadDirectory being called unneccessary
   connect(cb_filter->sigSelection, this, &This::filterSelected);
@@ -236,7 +236,7 @@ TFileDialog::create()
   // between the constructor and window creation new file filters may
   // have been added, so we invoke loadDirectory (by selecting the
   // first filter) here:
-  cb_filter->selectAtCursor();
+  cb_filter->clickAtCursor();
 }
 
 /**
@@ -519,7 +519,7 @@ TFileDialog::doubleClick()
     }
     previous_cwds.sigChanged();
     cb_prev->setCursor(0,0);
-    cb_prev->selectAtCursor();
+    cb_prev->clickAtCursor();
 
     loadDirectory();
     lock=false;

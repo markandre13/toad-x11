@@ -53,6 +53,8 @@ class TComboBox:
     int getCursorCol() const { return table->getCursorCol(); }
     int getCursorRow() const { return table->getCursorRow(); }
     void selectAtCursor() { table->selectAtCursor(); }
+    void clickAtCursor() { table->clickAtCursor(); }
+    void doubleClickAtCursor() { table->doubleClickAtCursor(); }
 
   protected:
     void resize();

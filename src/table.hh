@@ -283,6 +283,8 @@ class TTable:
     int getCursorCol() const { return cx; }
     int getCursorRow() const { return cy; }
     void selectAtCursor();
+    void clickAtCursor();
+    void doubleClickAtCursor();
 
     int getLastSelectionCol() const { return sx; }
     int getLastSelectionRow() const { return sy; }
