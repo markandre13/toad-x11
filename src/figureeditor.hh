@@ -176,7 +176,6 @@ class TFigureEditor:
     void enableScroll(bool);
     void enableGrid(bool);
     void setGrid(int gridsize);
-    void setBackground(int,int,int);
 
     void setRowHeaderRenderer(TFigureEditorHeaderRenderer *r) {
       row_header_renderer = r;
@@ -239,7 +238,22 @@ class TFigureEditor:
     void unsetFillColor();
     void setFont(const string &fontname);
 
-    void invalidateWindow() { if (window) window->invalidateWindow(); }
+    void invalidateWindow(bool b=true) { 
+      if (window) 
+        window->invalidateWindow(b); 
+    }
+    void invalidateWindow(int x, int y, int w, int h, bool b=true) {
+      if (window)
+        window->invalidateWindow(x, y, w, h, b);
+    }
+    void invalidateWindow(const TRectangle &r, bool b=true) {
+      if (window)
+        window->invalidateWindow(r, b);
+    }
+    void invalidateWindow(const TRegion &r, bool b=true) {
+      if (window)
+        window->invalidateWindow(r, b);
+    }
     void invalidateFigure(TFigure*);
     void getFigureShape(TFigure*, TRectangle*, TMatrix2D*);
 
@@ -329,8 +343,6 @@ class TFigureEditor:
 
   protected:
     void init(TFigureModel *m);
-    
-    TRGB background_color;
     
     unsigned operation;
     

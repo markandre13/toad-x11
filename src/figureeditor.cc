@@ -239,7 +239,6 @@ TFigureEditor::init(TFigureModel *m)
 {
   preferences = 0;
   setPreferences(new TFigureAttributes);
-  background_color.set(192,192,192);
   fuzziness = 2;
 
   handle = -1;
@@ -339,7 +338,8 @@ void TFigureEditor::scale(double sx, double sy)
   fuzziness = static_cast<int>(2.0 / sx);
   
   updateScrollbars();
-  invalidateWindow();
+  if (window)
+    window->invalidateWindow();
 }
 
 /**
@@ -392,17 +392,6 @@ TFigureEditor::setGrid(int gridsize) {
     window->invalidateWindow(visible);
 }
 
-/**
- * Set the background color.   
- */
-void
-TFigureEditor::setBackground(int r,int g,int b)
-{
-  background_color.set(r,g,b);
-  if (window)
-    window->invalidateWindow(visible);
-}
-
 void
 TFigureEditor::resize()
 {
@@ -437,7 +426,7 @@ TFigureEditor::paint()
   TBitmap bmp(r.w, r.h, TBITMAP_SERVER);
   TPen pen(&bmp);
 
-  pen.setColor(background_color);
+  pen.setColor(window->getBackground());
   pen.identity();
   pen.fillRectanglePC(0,0,r.w,r.h);
   pen.translate(window->getOriginX()+visible.x-r.x, 
@@ -461,6 +450,7 @@ void
 TFigureEditor::paintGrid(TPenBase &pen)
 {
   if (preferences->drawgrid && preferences->gridsize) {
+    const TColor &background_color = window->getBackground();
     pen.setColor(
       background_color.r > 128 ? background_color.r-64 : background_color.r+64,
       background_color.g > 128 ? background_color.g-64 : background_color.g+64,
@@ -617,7 +607,9 @@ TFigureEditor::paintSelection(TPenBase &pen)
 void
 TFigureEditor::paintDecoration(TPenBase &scr)
 {
-  paintCorner(scr);
+  if (window==this)
+    paintCorner(scr);
+  // else ... not implemented yet
   
   if (row_header_renderer) {
     TRectangle clip(0, visible.y, visible.x, visible.h);
@@ -672,7 +664,7 @@ TFigureEditor::print(TPenBase &pen, bool withSelection)
     if (!r.intersects(cb)) {
       continue;
     }
-    
+
     TFigure::EPaintType pt = TFigure::NORMAL;
     unsigned pushs = 0;
     if (gadget==*p) {
@@ -1033,7 +1025,8 @@ TFigureEditor::setModel(TFigureModel *m)
     TUndoManager::registerModel(this, model);
   }
   if (isRealized()) {
-    invalidateWindow();
+    if (window)
+      window->invalidateWindow();
     updateScrollbars();
   }
 }
