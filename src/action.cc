@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,9 +33,15 @@ TAbstractChoice::~TAbstractChoice()
 /**
  * \class toad::TAction
  *
- * An action adds itself to TAction::actions where it can be found by
- * menubars, popup menus and other widgets which can present the
- * various actions to the user.
+ * TAction is a kind of invisible button widget and was introduced to
+ * decouple the widgets from the menubar.
+ *
+ * For example, the TTextArea widget creates TAction children for cut, copy
+ * and paste and connects their signals to its methods.
+ *
+ * Other widgets with a visual representation like TMenuBar or TToolBar will
+ * use a list of all available actions (provided in TAction::actions) and
+ * trigger the actions signal.
  *
  * \todo
  *   \li
@@ -43,11 +49,13 @@ TAbstractChoice::~TAbstractChoice()
  *     wrong.
  */
 
-TAction::TAction(TInteractor *parent, const string &id)
+TAction::TAction(TInteractor *parent, const string &id, EActivation a)
   :TInteractor(parent, id)
 {
-  focus = true;
+  has_focus = false;
+  has_domain_focus = true;
   enabled = true;
+  activation = a;
   bitmap = 0;
   type = BUTTON;
   actions.push_back(this);
@@ -58,13 +66,22 @@ TAction::~TAction()
   actions.erase(this);
 }
 
+void
+TAction::focus(bool b)
+{
+  bool oldstate = isEnabled();
+  has_focus = b;
+  if (isEnabled()!=oldstate) {
+    sigChanged();
+  }
+}
+
 void 
 TAction::domainFocus(bool b)
 {
-//  cout << ( b ? "received" : "lost") << " domain focus for " << getTitle() << endl;
-  bool oldstate = focus && enabled;
-  focus = b;
-  if ( (focus && enabled) != oldstate ) {
+  bool oldstate = isEnabled();
+  has_domain_focus = b;
+  if (isEnabled()!=oldstate) {
     sigChanged();
   }
 }
@@ -72,10 +89,9 @@ TAction::domainFocus(bool b)
 void 
 TAction::setEnabled(bool b)
 {
-//  cout << ( b ? "received" : "lost") << " domain focus for " << getTitle() << endl;
-  bool oldstate = focus && enabled;
+  bool oldstate = isEnabled();
   enabled = b;
-  if ( (focus && enabled) != oldstate ) {
+  if (isEnabled()!=oldstate) {
     sigChanged();
   }
 }
@@ -83,7 +99,33 @@ TAction::setEnabled(bool b)
 bool 
 TAction::isEnabled() const
 {
-  return sigActivate.isConnected() && focus && enabled;
+  if (!sigActivate.isConnected())
+    return false;
+  switch(activation) {
+    case ALWAYS:
+      return true;
+    case DOMAIN_FOCUS:
+      return has_domain_focus;
+    case PARENT_FOCUS:
+      return has_focus;
+  }
+  return false;
+}
+
+bool
+TAction::trigger(unsigned idx)
+{
+  if (!isEnabled())
+    return false;
+  return sigActivate.trigger();
+}
+
+bool
+TAction::delayedTrigger(unsigned idx)
+{
+  if (!isEnabled())
+    return false;
+  return sigActivate.delayedTrigger();
 }
 
 unsigned

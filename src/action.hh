@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,19 +53,20 @@ class TActionStorage:
 class TAction:
   public TInteractor
 {
-    TBitmap *bitmap;
-
-  private:
-    bool focus;
-    bool enabled;
-
   public:
+    enum EActivation {
+      ALWAYS,
+      DOMAIN_FOCUS,
+      PARENT_FOCUS
+    };
+
     static TActionStorage actions;
 
-    TAction(TInteractor *, const string&);
+    TAction(TInteractor *, const string&, EActivation activation = PARENT_FOCUS);
     virtual ~TAction();
     
     // enable/disable
+    void focus(bool);
     void domainFocus(bool);
     void setEnabled(bool b);
     bool isEnabled() const;
@@ -73,15 +74,8 @@ class TAction:
     //! this signal is triggered when the action has to be performed
     TSignal sigActivate;
     
-    virtual void trigger(unsigned idx=0)
-    {
-      sigActivate.trigger();
-    }
-
-    virtual void delayedTrigger(unsigned idx=0)
-    {
-      sigActivate.delayedTrigger();
-    }
+    virtual bool trigger(unsigned idx=0);
+    virtual bool delayedTrigger(unsigned idx=0);
 
     //! the status of the action (enabled/disabled) has changed
     TSignal sigChanged;
@@ -96,6 +90,16 @@ class TAction:
     virtual const string& getID(unsigned idx) const;
     virtual unsigned getSelection() const { return 0; }
     virtual bool getState(string *text, bool *active) const { return false; }
+    void setActivationType(EActivation a) { activation = a; }
+    EActivation getActivationType() const { return activation; }
+
+  private:
+    TBitmap *bitmap;
+    bool has_focus:1;
+    bool has_domain_focus:1;
+    bool enabled:1;
+    EActivation activation:2;
+//    EType type:3;
 };
 
 class TChoiceModel:
@@ -181,15 +185,19 @@ class GChoice:
       model->select(idx);
       sigActivate();
     }
-    virtual void trigger(unsigned idx=0)
+    virtual bool trigger(unsigned idx=0)
     {
+      if (!isEnabled())
+        return false;
       model->select(idx);
-      sigActivate.trigger();
+      return sigActivate.trigger();
     }
-    virtual void delayedTrigger(unsigned idx=0)
+    virtual bool delayedTrigger(unsigned idx=0)
     {
+      if (!isEnabled())
+        return false;
       model->select(idx);
-      sigActivate.delayedTrigger();
+      return sigActivate.delayedTrigger();
     }
     virtual unsigned getSelection() const { return model->getSelection(); }
     GChoiceModel<T> *model;
