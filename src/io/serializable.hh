@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,6 +71,11 @@ class TOutObjectStream:
      * end group
      */
     void endGroup();
+    
+    void writeQuoted(const char *p, unsigned n);
+    void writeQuoted(const std::string &s) {
+      writeQuoted(s.c_str(), s.size());
+    }
 
   protected:    
     unsigned depth;

@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -272,12 +272,10 @@ TInObjectStream::restore()
  * (non implicit types are returned via a pointer)
  */
 
-namespace {
-
 void
-writeQuoted(ostream &out, const char *p, unsigned n)
+TOutObjectStream::writeQuoted(const char *p, unsigned n)
 {
-  out << '\"';  
+  write("\"", 1);
 
   const char * e = p+n;
   n = 0;
@@ -285,9 +283,9 @@ writeQuoted(ostream &out, const char *p, unsigned n)
   while(p<e) { 
     if (*p=='\"') {
       if (n) {     
-        out.write(l, n);
+        write(l, n);
       }
-      out << "\\\"";
+      write("\\\"", 2);
       ++p;
       l = p;
       n = 0;
@@ -297,10 +295,8 @@ writeQuoted(ostream &out, const char *p, unsigned n)
     }
   }  
   if (n)
-    out.write(l, n);
-  out << '\"';
-}
-
+    write(l, n);
+  write("\"", 1);
 }
 
 // TSerializable
@@ -476,7 +472,7 @@ void
 store(TOutObjectStream &out, const string &value)
 {
   out << ' ';
-  writeQuoted(out, value.c_str(), value.size());
+  out.writeQuoted(value);
 }
 
 bool 
@@ -494,14 +490,14 @@ void
 store(TOutObjectStream &out, const char *value)
 {
   out << ' ';
-  writeQuoted(out, value, strlen(value));
+  out.writeQuoted(value, strlen(value));
 }
 
 void
 storeCStr(TOutObjectStream &out, const char *value, unsigned n)
 {
   out << ' ';
-  writeQuoted(out, value, n);
+  out.writeQuoted(value, n);
 }
 
 bool 
