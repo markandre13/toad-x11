@@ -38,18 +38,24 @@
 
 using namespace toad;
 
+namespace toad {
+  bool debug_region = false;
+}
+
 TRegion::TRegion()
 {
   TOAD_XLIB_MTLOCK();
   x11region = XCreateRegion();
-//cerr << "create x11region " << x11region << endl;
+  if (debug_region)
+    cerr << "create x11region " << x11region << " [" << this << "]\n";
   TOAD_XLIB_MTUNLOCK();
 }
 
 TRegion::TRegion(const TRegion &r)
 {
   x11region = XCreateRegion();
-//cerr << "create x11region " << x11region << endl;
+  if (debug_region)
+    cerr << "create x11region " << x11region << " [" << this << "]\n";
   XUnionRegion(x11region, r.x11region, x11region);
 }
 
@@ -63,7 +69,8 @@ TRegion::operator=(const TRegion &r)
 TRegion::~TRegion()
 {
   TOAD_XLIB_MTLOCK();
-//err << "destroying X11 region " << x11region << endl;
+  if (debug_region)
+    cerr << "destroying X11 region " << x11region << " [" << this << "]\n";
   XDestroyRegion(x11region);
   TOAD_XLIB_MTUNLOCK();
 }
