@@ -845,7 +845,7 @@ TOADBase::initXInput()
     return;
   }
   
-  if ((xim = XOpenIM(TOADBase::x11display, NULL, NULL, NULL))==NULL) {
+  if ((xim = XOpenIM(toad::x11display, NULL, NULL, NULL))==NULL) {
     cerr << "Failed to open X Input Method for locale " << 
             setlocale(LC_ALL,NULL) << endl;
     return;

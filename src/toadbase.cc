@@ -65,7 +65,7 @@ static string GetWindowProperty(Window source, Atom property, Atom type);
 static string AtomName(Atom atom) {
   string result = "(None)";
   if (atom) {
-    char *name = XGetAtomName(TOADBase::x11display, atom);
+    char *name = XGetAtomName(toad::x11display, atom);
     result = name;
     XFree(name);
   }
@@ -105,21 +105,22 @@ extern XIC xic_current;
 
 // X11 data
 //---------------------------------------------------------------------------
-Display*  TOADBase::x11display = NULL;
-Visual*   TOADBase::x11visual = NULL;
-int       TOADBase::x11depth = 0;
-int       TOADBase::x11screen;
+Display*  toad::x11display = NULL;
+Visual*   toad::x11visual = NULL;
+int       toad::x11depth = 0;
+int       toad::x11screen;
 
 TEventFilter * toad::global_evt_filter = 0;
 
 //! \ingroup directx
-XEvent    TOADBase::x11event;
-GC        TOADBase::x11gc = 0;
-XContext  TOADBase::nClassContext;
-Atom      TOADBase::xaWMSaveYourself;
-Atom      TOADBase::xaWMDeleteWindow;
+XEvent    toad::x11event;
+GC        toad::x11gc = 0;
+XContext  toad::nClassContext;
+Atom      toad::xaWMSaveYourself;
+Atom      toad::xaWMDeleteWindow;
+Atom      toad::xaWMMotifHints;
+
 static Atom xaWMProtocols;
-Atom      TOADBase::xaWMMotifHints;
 
 // TOAD data
 //---------------------------------------------------------------------------
@@ -1605,7 +1606,7 @@ GetWindowProperty(Window source, Atom property, Atom type)
   unsigned char *buffer;
   string data;
   do {
-    if (XGetWindowProperty(TOADBase::x11display,
+    if (XGetWindowProperty(toad::x11display,
                            source,
                            property,
                            position, 1024L,

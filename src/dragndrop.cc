@@ -80,7 +80,7 @@ namespace toad {
 
 #define DBM(CMD)
 
-#define x11display TOADBase::x11display
+#define x11display toad::x11display
 
 static void PrepareXdndClientMessage(XEvent&, Window, Atom);
 static string GetWindowProperty(Window source, Atom property, Atom type);
@@ -1195,7 +1195,7 @@ void HandlePosition(Window wnd,         // top-level window
                          &drop->x, &drop->y);
   drop->action=ACTION_NONE;
   TWindow *tw;
-  if(!XFindContext(x11display, xw, TOADBase::nClassContext, (XPointer*)&tw)) {
+  if(!XFindContext(x11display, xw, toad::nClassContext, (XPointer*)&tw)) {
     // find all drop site for this window
     TWindowDropSiteMap::iterator wds = dropsitemap.find(tw);
     if (wds!=dropsitemap.end()) {

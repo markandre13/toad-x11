@@ -153,6 +153,20 @@ enum EWindowPlacement {
   PLACE_TOOLTIP
 };
 
+#ifdef _TOAD_PRIVATE
+extern Display *x11display;
+extern Colormap x11colormap;
+extern Visual* x11visual;
+extern int x11depth;
+extern XEvent x11event;
+extern _TOAD_GC x11gc;
+extern int x11screen;
+extern XContext nClassContext;
+extern Atom xaWMSaveYourself;
+extern Atom xaWMDeleteWindow;
+extern Atom xaWMMotifHints;
+#endif
+
 class TOADBase
 {
     friend class TWindow;
@@ -249,7 +263,7 @@ class TOADBase
     static string getSelection();
 
   private:
-  #ifdef _TOAD_PRIVATE
+    #ifdef _TOAD_PRIVATE
     static void DnDNewShellWindow(TWindow*);
     static bool DnDMotionNotify(XEvent &event);
     static bool DnDButtonRelease(XEvent &event);
@@ -257,21 +271,6 @@ class TOADBase
     static bool DnDSelectionNotify(XEvent &event);
     static bool DnDSelectionRequest(XEvent &event);
     static bool DnDSelectionClear(XEvent &event);
-
-  public:
-    static Display *x11display;
-    static Colormap x11colormap;
-    static Visual* x11visual;
-    static int x11depth;
-    static XEvent x11event;
-    static _TOAD_GC x11gc;
-    static int x11screen;
-    static XContext nClassContext;
-
-    // should be an array
-    static Atom xaWMSaveYourself;
-    static Atom xaWMDeleteWindow;
-    static Atom xaWMMotifHints;
     #endif
 };
 

@@ -67,7 +67,7 @@ bool TColor::_shouldNotDither()
   return !(color_mode & _DITHER);
 }
 
-Colormap TOADBase::x11colormap;
+Colormap toad::x11colormap;
 static unsigned long pixel[RGB_PALETTE_MAX];
 static int nPaletteSize;
 static Pixmap empty_pm = 0;
@@ -114,28 +114,29 @@ TColor::TData::~TData()
     if (!empty_pm)
       empty_pm = pm;
     else
-      XFreePixmap(TOADBase::x11display, pm);
+      XFreePixmap(x11display, pm);
   }
 }
 
 
-void TColor::_setPen(TPen *pen, _TOAD_GC &gc)
+void
+TColor::_setPen(TPen *pen, _TOAD_GC &gc)
 {
   if (!gc) {
-    gc = XCreateGC(TOADBase::x11display, pen->x11drawable,0,0);
+    gc = XCreateGC(x11display, pen->x11drawable,0,0);
     if (pen->region)
-      XSetRegion(TOADBase::x11display, gc, pen->region->x11region);
+      XSetRegion(x11display, gc, pen->region->x11region);
   }
   if (_data==NULL)
     _data = new TData();
   if ( !(color_mode&_DITHER) ) {
-    XSetForeground(TOADBase::x11display, gc, _getPixel(*this));
+    XSetForeground(x11display, gc, _getPixel(*this));
     return;
   }
   switch(pen->cmode) {
     case TColor::NEAREST:
-      XSetFillStyle(TOADBase::x11display, gc, FillSolid);
-      XSetForeground(TOADBase::x11display, gc, get_pixel(r,g,b));
+      XSetFillStyle(x11display, gc, FillSolid);
+      XSetForeground(x11display, gc, get_pixel(r,g,b));
       break;
       
       //+-------------------------------------------------+
@@ -149,20 +150,21 @@ void TColor::_setPen(TPen *pen, _TOAD_GC &gc)
           _data->pm=empty_pm;
           empty_pm=0;
         } else {
-          _data->pm = XCreatePixmap(TOADBase::x11display, 
-                             RootWindow(TOADBase::x11display, TOADBase::x11screen),
+          _data->pm = XCreatePixmap(x11display, 
+                             RootWindow(x11display, x11screen),
                              8,8, 
-                             DefaultDepth(TOADBase::x11display, TOADBase::x11screen) );
+                             DefaultDepth(x11display, x11screen) );
         }
       }
       dither(r,g,b,_data->pm);
-      XSetTile(TOADBase::x11display, gc, _data->pm);
-      XSetFillStyle(TOADBase::x11display, gc, FillTiled);
+      XSetTile(x11display, gc, _data->pm);
+      XSetFillStyle(x11display, gc, FillTiled);
       break;
   }
 }
 
-ulong TColor::_getPixel(const TRGB &rgb)
+ulong
+TColor::_getPixel(const TRGB &rgb)
 {
   if (color_mode & _DIRECT) {
     return
@@ -340,7 +342,7 @@ bool allocate_exact_colors()
     xcolor.red  = palette[i].r + (palette[i].r<<8);
     xcolor.green= palette[i].g + (palette[i].g<<8);
     xcolor.blue = palette[i].b + (palette[i].b<<8);
-    if (XAllocColor(TOADBase::x11display, TOADBase::x11colormap, &xcolor)==0)
+    if (XAllocColor(x11display, x11colormap, &xcolor)==0)
       break;
     pixel[i] = xcolor.pixel;
   }
@@ -352,13 +354,13 @@ bool allocate_exact_colors()
         return false;
       } else {
         nPaletteSize=16;
-        XFreeColors(TOADBase::x11display, TOADBase::x11colormap, pixel+16,i-16+1,0);
+        XFreeColors(x11display, x11colormap, pixel+16,i-16+1,0);
       }
     } else {
 #if 0
       // use 28 colors
       nPaletteSize=28;
-      XFreeColors(TOADBase::x11display, TOADBase::x11colormap, pixel+28,i-28+1,0);
+      XFreeColors(x11display, x11colormap, pixel+28,i-28+1,0);
 #else
       DBM(printf("toad: %d colors available\n", i);)
       nPaletteSize=i;
@@ -425,15 +427,23 @@ void PrintVisualInfo(const XVisualInfo &xvi)
 #endif
 }
 
-void determine_color_mode()
+/**
+ * Set 'color_mode' from the visual class.
+ *
+ * \li StaticGray, GrayScale: Isn't supported yet.
+ * \li PseudoColor, DirectColor: Indexed.
+ * \li StaticColor, TrueColor: RGB
+ */
+void 
+determine_color_mode()
 {
-  Visual *visual = XDefaultVisual(TOADBase::x11display, DefaultScreen(TOADBase::x11display));
+  Visual *visual = XDefaultVisual(x11display, DefaultScreen(x11display));
 
-  TOADBase::x11colormap = DefaultColormap(TOADBase::x11display, 
-                                          DefaultScreen(TOADBase::x11display));
-  TOADBase::x11visual = visual;
-  TOADBase::x11depth  = DefaultDepth(TOADBase::x11display,
-                                     DefaultScreen(TOADBase::x11display));
+  x11colormap = DefaultColormap(x11display,
+                                DefaultScreen(x11display));
+  x11visual = visual;
+  x11depth  = DefaultDepth(x11display,
+                           DefaultScreen(x11display));
 
   switch(visual->c_class) {
     case StaticGray:
@@ -475,7 +485,12 @@ struct CStat
 static void MakeStat(CStat stat[], int nPaletteSize, XColor ctable[], bool public_color[], int n);
 static void SortStat(CStat stat[], int nPaletteSize);
 
-void allocate_fuzzy_colors()
+/**
+ * Allocate colors. When there aren't enough colors, try to find similar
+ * colors in the current color palette.
+ */
+void
+allocate_fuzzy_colors()
 {
   // get list of public color cells
   //--------------------------------
@@ -485,12 +500,12 @@ void allocate_fuzzy_colors()
   
   // get a list of all current colors
   //----------------------------------
-  Visual *v = DefaultVisual(TOADBase::x11display, TOADBase::x11screen);
+  Visual *v = DefaultVisual(x11display, x11screen);
   
   XColor *ctable = new XColor[v->map_entries];
   for (i=0; i<v->map_entries; i++)
     ctable[i].pixel = i;
-  XQueryColors(TOADBase::x11display, TOADBase::x11colormap, ctable, v->map_entries);
+  XQueryColors(x11display, x11colormap, ctable, v->map_entries);
 
   // get a list of all public colors
   //---------------------------------
@@ -499,14 +514,14 @@ void allocate_fuzzy_colors()
   int tmp_npixel=0;
   for (i=0; i<v->map_entries; i++) {
     xcolor = ctable[i];
-    if (XAllocColor(TOADBase::x11display, TOADBase::x11colormap, &xcolor)==0) {
+    if (XAllocColor(x11display, x11colormap, &xcolor)==0) {
       public_color[i]=false;
     } else {
       public_color[i]=true;
       tmp_pixel[tmp_npixel++]=xcolor.pixel;
     }
   }
-  XFreeColors(TOADBase::x11display, TOADBase::x11colormap, tmp_pixel, tmp_npixel, 0);
+  XFreeColors(x11display, x11colormap, tmp_pixel, tmp_npixel, 0);
   
   // find the best matches
   //-----------------------
@@ -515,7 +530,7 @@ void allocate_fuzzy_colors()
 
   // free colors this application has allocated before
   //---------------------------------------------------
-  //  XFreeColors(TOADBase::x11display, TOADBase::x11colormap,pixel,nAllocatedColors-1,0);
+  //  XFreeColors(x11display, x11colormap,pixel,nAllocatedColors-1,0);
 
   // some color are free now, allocate the worst matches
   //-----------------------------------------------------
@@ -529,7 +544,7 @@ void allocate_fuzzy_colors()
     xcolor.red  = palette[k].r + (palette[k].r<<8);
     xcolor.green= palette[k].g + (palette[k].g<<8);
     xcolor.blue = palette[k].b + (palette[k].b<<8);
-    if (XAllocColor(TOADBase::x11display, TOADBase::x11colormap, &xcolor)==0)
+    if (XAllocColor(x11display, x11colormap, &xcolor)==0)
       break;
     pixel[stat[i].pindex] = xcolor.pixel;
     bAllocated[stat[i].pindex] = true;
@@ -547,7 +562,7 @@ void allocate_fuzzy_colors()
     xcolor.red  = ctable[stat[i].cmindex].red;
     xcolor.green= ctable[stat[i].cmindex].green;
     xcolor.blue = ctable[stat[i].cmindex].blue;
-    if (XAllocColor(TOADBase::x11display, TOADBase::x11colormap, &xcolor)==0) {
+    if (XAllocColor(x11display, x11colormap, &xcolor)==0) {
       cerr << "toad: couldn't allocate existing read-only color" << endl;
     }
     pixel[stat[i].pindex] = xcolor.pixel;
@@ -618,7 +633,8 @@ struct _rgb
   unsigned char r,g,b;
 } rgb[64];
 
-static void reduce(byte &r, byte &ir)
+static void 
+reduce(byte &r, byte &ir)
 {
   if (r==255) {
     r=64;
@@ -634,7 +650,8 @@ static void reduce(byte &r, byte &ir)
   }
 }
 
-static void setrgb(int i, char f, byte v)
+static void 
+setrgb(int i, char f, byte v)
 {
   switch(f) {
     case 'r':
@@ -649,7 +666,8 @@ static void setrgb(int i, char f, byte v)
   }
 }
 
-static void fill(byte &r, byte &ir, byte &i2max, char f)
+static void 
+fill(byte &r, byte &ir, byte &i2max, char f)
 {
   int i,j;
 
@@ -687,7 +705,8 @@ static void fill(byte &r, byte &ir, byte &i2max, char f)
   }
 }
 
-void dither16_8x8(byte r, byte g, byte b, Pixmap pm)
+void 
+dither16_8x8(byte r, byte g, byte b, Pixmap pm)
 {
   static int Dithertable[64]=
   {
@@ -804,15 +823,15 @@ void dither16_8x8(byte r, byte g, byte b, Pixmap pm)
 
   // the following code makes dithering really slow and even images won't help
   {
-    GC ink=XCreateGC(TOADBase::x11display,DefaultRootWindow(TOADBase::x11display),0,0);
+    GC ink=XCreateGC(x11display,DefaultRootWindow(x11display),0,0);
     int p=0;
     for(i=0; i<8; i++) {
       for(j=0; j<8; j++) {
-        XSetForeground(TOADBase::x11display, ink, pixel[m[p++]]);
-        XDrawPoint(TOADBase::x11display, pm, ink, j,7-i);
+        XSetForeground(x11display, ink, pixel[m[p++]]);
+        XDrawPoint(x11display, pm, ink, j,7-i);
       }
     }
-    XFreeGC(TOADBase::x11display,ink);
+    XFreeGC(x11display,ink);
   }
 }
 
@@ -821,7 +840,8 @@ void dither16_8x8(byte r, byte g, byte b, Pixmap pm)
  * 27 Color Dithering                                                        *
  *                                                                           *
  *****************************************************************************/
-void dither27_8x8(byte r, byte g, byte b, Pixmap pm)
+void 
+dither27_8x8(byte r, byte g, byte b, Pixmap pm)
 {
   int i,j;
 
@@ -859,17 +879,15 @@ void dither27_8x8(byte r, byte g, byte b, Pixmap pm)
 
   // the following code makes dithering really slow and even images won't help
   TOAD_XLIB_MTLOCK();
-  GC ink=XCreateGC(TOADBase::x11display,DefaultRootWindow(TOADBase::x11display),0,0);
+  GC ink=XCreateGC(x11display, DefaultRootWindow(x11display),0,0);
   int p=0;
   for(i=0; i<8; i++) {
     for(j=0; j<8; j++) {
-      XSetForeground(TOADBase::x11display, ink, 
-        pixel[order27[m[dither_m8x8[p++]]]]
-      );
-      XDrawPoint(TOADBase::x11display, pm, ink, j,7-i);
+      XSetForeground(x11display, ink, pixel[order27[m[dither_m8x8[p++]]]]);
+      XDrawPoint(x11display, pm, ink, j,7-i);
     }
   }
-  XFreeGC(TOADBase::x11display,ink);
+  XFreeGC(x11display, ink);
 }
 
 
@@ -878,7 +896,8 @@ void dither27_8x8(byte r, byte g, byte b, Pixmap pm)
  * 125 Color Dithering                                                       *
  *                                                                           *
  *****************************************************************************/
-void dither125_8x8(byte r, byte g, byte b, Pixmap pm)
+void 
+dither125_8x8(byte r, byte g, byte b, Pixmap pm)
 {
   int i,j;
 
@@ -922,14 +941,14 @@ void dither125_8x8(byte r, byte g, byte b, Pixmap pm)
   }
 #endif
   // the following code makes dithering really slow and even images won't help
-  GC ink=XCreateGC(TOADBase::x11display,DefaultRootWindow(TOADBase::x11display),0,0);
+  GC ink=XCreateGC(x11display,DefaultRootWindow(x11display),0,0);
   for(i=0; i<8; i++) {
     for(j=0; j<8; j++) {
-      XSetForeground(TOADBase::x11display, ink, dither_pixel(r,g,b,j,i));
-      XDrawPoint(TOADBase::x11display, pm, ink, j,7-i);
+      XSetForeground(x11display, ink, dither_pixel(r,g,b,j,i));
+      XDrawPoint(x11display, pm, ink, j,7-i);
     }
   }
-  XFreeGC(TOADBase::x11display,ink);
+  XFreeGC(x11display, ink);
 }
 
 /*****************************************************************************
@@ -940,7 +959,8 @@ void dither125_8x8(byte r, byte g, byte b, Pixmap pm)
 
 // dither color to pixmap
 //---------------------------------------------------------------------------
-void dither(byte r, byte g, byte b, Pixmap pm)
+void 
+dither(byte r, byte g, byte b, Pixmap pm)
 {
   if (nPaletteSize<28) {
     dither16_8x8(r,g,b,pm);
@@ -956,7 +976,8 @@ void dither(byte r, byte g, byte b, Pixmap pm)
 
 // get the nearest system color to (r,g,b)
 //---------------------------------------------------------------------------
-unsigned long get_pixel(byte r, byte g, byte b)
+unsigned long 
+get_pixel(byte r, byte g, byte b)
 {
   if (nPaletteSize==126) {
     return pixel[order125[
@@ -986,7 +1007,8 @@ unsigned long get_pixel(byte r, byte g, byte b)
 
 // get pixel color with dithering
 //---------------------------------------------------------------------------
-unsigned long dither_pixel(byte r, byte g, byte b, int x, int y)
+unsigned long 
+dither_pixel(byte r, byte g, byte b, int x, int y)
 {
   // make sure x and y are positive
   //--------------------------------

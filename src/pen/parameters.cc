@@ -414,19 +414,20 @@ void TPen::setColorMode(TColor::EDitherMode cm)
 /**
  * Use the bitmap during drawing operations. NULL removes the bitmap.
  */
-void TPen::setBitmap(TBitmap *bmp)
+void 
+TPen::setBitmap(TBitmap *bmp)
 {
   if (bmp) {
     two_colors = false;
     bmp->update();
     if (bmp->pixmap) {
-      XSetTile(TOADBase::x11display, o_gc, bmp->pixmap);
-      XSetFillStyle(TOADBase::x11display, o_gc, FillTiled);
+      XSetTile(x11display, o_gc, bmp->pixmap);
+      XSetFillStyle(x11display, o_gc, FillTiled);
       using_bitmap = true;
     }
   } else {
     if (using_bitmap) {
-      XSetFillStyle(TOADBase::x11display, o_gc, FillSolid);
+      XSetFillStyle(x11display, o_gc, FillSolid);
       using_bitmap = false;
     }
   }
@@ -437,10 +438,11 @@ void TPen::setBitmap(TBitmap *bmp)
 /**
  * Set the line and fill color to <VAR>color</VAR>.
  */
-void TPen::setColor(const TColor &color)
+void 
+TPen::setColor(const TColor &color)
 {
   if (using_bitmap) {
-    XSetFillStyle(TOADBase::x11display, o_gc, FillSolid);
+    XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
 
@@ -455,10 +457,11 @@ void TPen::setColor(const TColor &color)
 /**
  * Set the line color to <VAR>color</VAR>.
  */
-void TPen::setLineColor(const TColor &color)
+void 
+TPen::setLineColor(const TColor &color)
 {
   if (using_bitmap) {
-    XSetFillStyle(TOADBase::x11display, o_gc, FillSolid);
+    XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
 
@@ -479,10 +482,11 @@ void TPen::setLineColor(const TColor &color)
 /**
  * Set the fill color to <VAR>color</VAR>.
  */
-void TPen::setFillColor(const TColor &color)
+void 
+TPen::setFillColor(const TColor &color)
 {
   if (using_bitmap) {
-    XSetFillStyle(TOADBase::x11display, o_gc, FillSolid);
+    XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
 
@@ -509,10 +513,11 @@ void TPen::setFillColor(const TColor &color)
  *
  * \sa fillString
  */
-void TPen::setBackColor(const TColor& color)
+void
+TPen::setBackColor(const TColor& color)
 {
   if (using_bitmap) {
-    XSetFillStyle(TOADBase::x11display, o_gc, FillSolid);
+    XSetFillStyle(x11display, o_gc, FillSolid);
     using_bitmap = false;
   }
 

@@ -77,7 +77,7 @@ Cursor TCursor::X11Cursor(TCursor::EType type)
   }
 
   if (!cursor[type]) {
-    cursor[type] = XCreateFontCursor(TOADBase::x11display, xtype[type]);
+    cursor[type] = XCreateFontCursor(toad::x11display, xtype[type]);
   }
   
   return cursor[type];
