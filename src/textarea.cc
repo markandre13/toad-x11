@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2004 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -179,6 +179,7 @@ TTextArea::keyDown(TKey key, char* str, unsigned modifier)
 {
   if (!model)
     return;
+
 DBM(cout << "ENTER keyDown '" << str << "'" << endl;
     cout << "  _cx, _cy        : " << _cx << ", " << _cy << endl;
     cout << "     , _ty        : " << ", " << _ty << endl;
@@ -1142,6 +1143,8 @@ void
 TTextArea::_insert(const string &s)
 {
   MARK
+  if (s.empty())
+    return;
   if (preferences->mode==TPreferences::NORMAL) {
     if (_bos != _eos)
       _selection_erase();
@@ -1879,6 +1882,9 @@ TTextModel::insert(unsigned p, const string &aString)
 void
 TTextModel::remove(unsigned p, unsigned l)
 {
+  if (l==0)
+    return;
+    
   DBM(cout << "remove at " << p << endl;)
   if (type==CHANGE || type==INSERT || p!=offset-length) {
     //cout << "* new undo group for textarea" << endl;
