@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -100,7 +100,7 @@ class TFigure:
     // stage 3: manipulate
     static const int NO_HANDLE = -1;
     virtual bool getHandle(unsigned n, TPoint *p);
-    virtual void translateHandle(unsigned handle, int x, int y);
+    virtual void translateHandle(unsigned handle, int x, int y, unsigned modifier);
 
     // stage 4: in place editing
     //! Return `true' when in-place editing is desired.
@@ -194,7 +194,7 @@ class TFRectangle:
     double distance(int x, int y);
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint *p);
-    void translateHandle(unsigned handle, int mx, int my);
+    void translateHandle(unsigned handle, int mx, int my, unsigned);
 
     SERIALIZABLE_INTERFACE(toad::, TFRectangle);    
     
@@ -219,7 +219,7 @@ class TFPolygon:
     void getShape(TRectangle*);
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint *p);
-    void translateHandle(unsigned handle, int mx, int my);
+    void translateHandle(unsigned handle, int mx, int my, unsigned);
     
     SERIALIZABLE_INTERFACE(toad::, TFPolygon);
   protected:
@@ -283,7 +283,7 @@ class TFPolyline:
  * \ingroup figure
  */
 class TFBezierline:
-  public TFPolygon
+  public TFLine
 {
   public:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
@@ -293,8 +293,10 @@ class TFBezierline:
 
     void paint(TPenBase &, EPaintType);
     void paintSelection(TPenBase &pen, int handle);
+    void _paintSelection(TPenBase &pen, int handle, bool filled);
     double distance(int x, int y);
-    void translateHandle(unsigned handle, int mx, int my);
+    void translateHandle(unsigned handle, int mx, int my, unsigned);
+    void _translateHandle(unsigned handle, int mx, int my, unsigned, bool filled);
     unsigned mouseRDown(TFigureEditor*, int, int, unsigned);
     
     TCloneable* clone() const { return new TFBezierline(*this); }
@@ -312,8 +314,9 @@ class TFBezier:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
 
     void paint(TPenBase &, EPaintType);
+    void paintSelection(TPenBase &pen, int handle);
     double distance(int x, int y);
-    void translateHandle(unsigned handle, int x, int y);
+    void translateHandle(unsigned handle, int x, int y, unsigned);
     
     TCloneable* clone() const { return new TFBezier(*this); }
     const char * getClassName() const { return "toad::TFBezier"; }
@@ -437,7 +440,7 @@ class TFWindow:
     void paint(TPenBase&, EPaintType);
     double distance(int x, int y);
     void translate(int dx, int dy);
-    void translateHandle(unsigned handle, int x, int y);
+    void translateHandle(unsigned handle, int x, int y, unsigned);
     
     TCloneable* clone() const { return new TFWindow(*this); }
     const char * getClassName() const { return "toad::TFWindow"; }
@@ -465,7 +468,7 @@ class TFGroup:
     double distance(int x, int y);
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint *p);
-    void translateHandle(unsigned handle, int dx, int dy);
+    void translateHandle(unsigned handle, int dx, int dy, unsigned);
     
     void drop() {
       gadgets.drop();

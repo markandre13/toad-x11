@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-Andr? Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1660,7 +1660,7 @@ redo:
           y2 = y;
         }
 
-        model->translateHandle(gadget, handle, x2, y2);
+        model->translateHandle(gadget, handle, x2, y2, m);
       }
     } break;
 
@@ -1797,7 +1797,7 @@ redo:
           y2 = y;
         }
 
-        model->translateHandle(gadget, handle, x2, y2);
+        model->translateHandle(gadget, handle, x2, y2,m);
         TUndoManager::endUndoGrouping();
       }
       invalidateFigure(gadget);

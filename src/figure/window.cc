@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,13 +62,13 @@ TFWindow::translate(int dx, int dy)
 }
 
 void
-TFWindow::translateHandle(unsigned handle, int mx, int my)
+TFWindow::translateHandle(unsigned handle, int mx, int my, unsigned m)
 {
   if (window==NULL) {
     cerr << "toad warning: TFWindow.window==NULL : " << title << endl;
     return;
   }
-  super::translateHandle(handle, mx, my);
+  super::translateHandle(handle, mx, my, m);
   TRectangle r;
   getShape(&r);
   window->setShape(r);

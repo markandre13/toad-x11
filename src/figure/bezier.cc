@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,8 @@ TFBezierline::paint(TPenBase &pen, EPaintType type)
 {
   if (type==EDIT || type==SELECT) {
     pen.setColor(TColor::FIGURE_SELECTION);
-    // pen.setLineStyle(TPen::DOT);
+    pen.setLineStyle(TPen::SOLID);
+    pen.setLineWidth(0);
     TPolygon::const_iterator p(polygon.begin());
     unsigned n = polygon.size();
     while(true) {
@@ -55,16 +56,35 @@ TFBezierline::paint(TPenBase &pen, EPaintType type)
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
   pen.drawPolyBezier(polygon);
+
+  if (arrowmode == NONE)
+    return;
   pen.setLineStyle(TPen::SOLID);
-  pen.setLineWidth(0);
+  pen.setLineWidth(1);
+  if (arrowmode == HEAD || arrowmode == BOTH)
+    drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
+  if (arrowmode == TAIL || arrowmode == BOTH)
+    drawArrow(pen, polygon[0], polygon[1], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
 }
 
 /**
- * Like TFigure::paintSelection but with slighlty different behaviour
+ * Like TFigure::paintSelection but with slightly different behaviour
  * to ease bezier editing.
  */
 void
 TFBezierline::paintSelection(TPenBase &pen, int handle)
+{
+  _paintSelection(pen, handle, false);
+}
+
+void
+TFBezier::paintSelection(TPenBase &pen, int handle)
+{
+  _paintSelection(pen, handle, true);
+}
+
+void
+TFBezierline::_paintSelection(TPenBase &pen, int handle, bool filled)
 {
   pen.setLineColor(TColor::FIGURE_SELECTION);
   pen.setFillColor(TColor::WHITE);
@@ -86,7 +106,21 @@ TFBezierline::paintSelection(TPenBase &pen, int handle)
       if ((h%3)==0) {
         pen.fillRectanglePC(x-2,y-2,5,5);
       } else {
-        if (h+1==handle || h-1==handle) {
+        bool b = false;
+        if ( (handle%3)==0) {
+          b = h+1==handle || h-1==handle;
+          if (filled) {
+            if (handle==0) {
+              if (polygon.size()-2==h)
+                b = true;
+            }
+            if (handle==polygon.size()-1) {
+              if (1==h)
+                b = true;
+            }
+          }
+        }
+        if (b) {
           pen.setFillColor(TColor::FIGURE_SELECTION);
           pen.fillCirclePC(x-2,y-2,6,6);
           pen.setFillColor(TColor::WHITE);
@@ -96,10 +130,11 @@ TFBezierline::paintSelection(TPenBase &pen, int handle)
       }
     } else {
       pen.setFillColor(TColor::FIGURE_SELECTION);
-      if ((h%3)==0)
+      if ((h%3)==0) {
         pen.fillRectanglePC(x-2,y-2,5,5);
-      else
+      } else {
         pen.fillCirclePC(x-2,y-2,6,6);
+      }
       pen.setFillColor(TColor::WHITE); 
     }
     if (pen.mat)
@@ -107,7 +142,6 @@ TFBezierline::paintSelection(TPenBase &pen, int handle)
     h++;
   }
 }    
-
 
 double
 TFBezierline::distance(int x, int y)
@@ -146,6 +180,7 @@ TFBezierline::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
     case TFigureEditor::STATE_CREATE: {
       if (m & MK_DOUBLE) {
 //cerr << "end at: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
+        editor->invalidateFigure(this);
         if (polygon.size()<=4)
           return STOP|DELETE;
         if ((polygon.size()%3)==1) {
@@ -166,6 +201,7 @@ TFBezierline::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
         *e = *p;
 */
 //cerr << "end with: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
+        editor->invalidateFigure(this);
         return STOP;
       }
       if ((polygon.size()%3)==2) {
@@ -190,17 +226,19 @@ TFBezierline::mouseMove(TFigureEditor *editor, int mx, int my, unsigned m)
   editor->invalidateFigure(this);
   unsigned n = polygon.size();
 //cerr << "n=" << n << ", n%3=" << (n%3) << endl;
-  if (n>3 && (n%3)==1) {
-    p->set(mx, my);
-    --p;
-  }
-  if (n>3 && (n%3)==2) {
-    TPolygon::iterator p2 = polygon.end();
-    p2-=2;
-    TPolygon::iterator p1 = p2;
-    --p1;
-    p1->set( p2->x - (mx - p2->x),
-             p2->y - (my - p2->y) );
+  if (n>3) {
+    if ((n%3)==1) {
+      p->set(mx, my);
+      --p;
+    }
+    if ((n%3)==2) {
+      TPolygon::iterator p2 = polygon.end();
+      p2-=2;
+      TPolygon::iterator p1 = p2;
+      --p1;
+      p1->set( p2->x - (mx - p2->x),
+               p2->y - (my - p2->y) );
+    }
   }
   p->set(mx, my);
   editor->invalidateFigure(this);
@@ -208,24 +246,95 @@ TFBezierline::mouseMove(TFigureEditor *editor, int mx, int my, unsigned m)
 }
 
 void 
-TFBezierline::translateHandle(unsigned handle, int x, int y)
+TFBezierline::translateHandle(unsigned handle, int x, int y, unsigned m)
 {
-  if ((handle%3)==0) {
-    int dx = x - polygon[handle].x;
-    int dy = y - polygon[handle].y;
-    polygon[handle].x = x;
-    polygon[handle].y = y;
-    if (handle>0) {
-      polygon[handle-1].x += dx;
-      polygon[handle-1].y += dy;
-    }
-    if (handle+1<polygon.size()) {
-      polygon[handle+1].x += dx;
-      polygon[handle+1].y += dy;
+  _translateHandle(handle, x, y, m, false);
+}
+
+void
+TFBezier::translateHandle(unsigned handle, int x, int y, unsigned m)
+{
+  _translateHandle(handle, x, y, m, true);
+}
+
+void 
+TFBezierline::_translateHandle(unsigned h0, int x, int y, unsigned m, bool filled)
+{
+  if ((h0%3)==0) {
+    int dx = x - polygon[h0].x;
+    int dy = y - polygon[h0].y;
+    polygon[h0].x = x;
+    polygon[h0].y = y;
+    if (filled && h0==0 && polygon.size()>3) {
+      h0=polygon.size()-1;
+      polygon[h0].x = x;
+      polygon[h0].y = y;
+      --h0;
+      polygon[h0].x += dx;
+      polygon[h0].y += dy;
+      polygon[1].x += dx;
+      polygon[1].y += dy;
+    } else {
+      if (h0>0) {
+        polygon[h0-1].x += dx;
+        polygon[h0-1].y += dy;
+      }
+      if (h0+1<polygon.size()) {
+        polygon[h0+1].x += dx;
+        polygon[h0+1].y += dy;
+      }
     }
   } else {
-    polygon[handle].x=x;
-    polygon[handle].y=y;
+    unsigned h1, h2;
+    bool b = true;
+    if ( (h0%3)==1 ) {
+      if (h0>2) {
+        h1 = h0-1;
+        h2 = h0-2;
+      } else {
+        if (filled && polygon.size()>=7) {
+          h1 = polygon.size()-1;
+          h2 = h1-1;
+        } else {
+          b = false;
+        }
+      }
+    } else {
+      if (h0<polygon.size()-3) {
+        h1 = h0+1;
+        h2 = h0+2;
+      } else {
+        if (filled && polygon.size()>=7) {
+          h1=0;
+          h2=1;
+        } else {
+          b = false;
+        }
+      }
+    }
+    
+    if (!b)
+      cout << "only single point" << endl;
+
+    if (b) {    
+      if (m & MK_SHIFT) {
+        // symmetric
+        polygon[h2].x = polygon[h1].x + polygon[h1].x - polygon[h0].x;
+        polygon[h2].y = polygon[h1].y + polygon[h1].y - polygon[h0].y;
+      } else
+      if (m & MK_CONTROL) {
+        // on a line
+        double dy = polygon[h1].y - polygon[h2].y;
+        double dx = polygon[h1].x - polygon[h2].x;
+        double d = atan2((double)polygon[h1].y - polygon[h0].y,
+                         (double)polygon[h1].x - polygon[h0].x);
+        double n = sqrt(dx*dx+dy*dy);
+        polygon[h2].x = polygon[h1].x + cos(d)*n;
+        polygon[h2].y = polygon[h1].y + sin(d)*n;
+      }
+    }
+    polygon[h0].x=x;
+    polygon[h0].y=y;
   }
 }
 
@@ -278,7 +387,7 @@ TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
 //cerr << "create tree " << dummy << endl;
   TAction *action;
   if (!found) {
-    action = new TAction(dummy, "add point");
+    action = new TAction(dummy, "add point", TAction::ALWAYS);
     connect(action->sigActivate, editor, &TFigureEditor::invalidateFigure, this);
     connect(action->sigActivate, this, &TFBezierline::insertPointNear, x, y);
     connect(action->sigActivate, editor, &TFigureEditor::invalidateFigure, this);
@@ -288,6 +397,8 @@ TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
     GIMP: normal: edit curve symmetric
           shift : edit curve sharp
           ctrl  : move curve corner
+          
+          corner, smooth, symmetric
 */
 /*
     action = new TAction(dummy, "symmetric");
@@ -539,8 +650,9 @@ TFBezier::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
     case TFigureEditor::STATE_CREATE: {
       if (m & MK_DOUBLE) {
 //cerr << "end at: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
-        if (polygon.size()<=4)
+        if (polygon.size()<=4) {
           return STOP|DELETE;
+        }
         if ((polygon.size()%3)==1) {
           TPolygon::iterator e(polygon.end());
           e-=3;
@@ -553,11 +665,11 @@ TFBezier::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
         }
         if (polygon.size()<4)
           return STOP|DELETE;
-        if (polygon.size()>4) {
-          TPolygon::iterator e(polygon.end()), p(polygon.begin());
-          --e;
-          *e = *p;
-        }
+
+        // join first and last point
+        TPolygon::iterator e(polygon.end()), p(polygon.begin());
+        --e;
+        *e = *p;
 
 //cerr << "end with: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
         return STOP;
@@ -574,34 +686,4 @@ TFBezier::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
       break;
   }
   return CONTINUE;
-}
-
-void 
-TFBezier::translateHandle(unsigned handle, int x, int y)
-{
-  if ((handle%3)==0) {
-    int dx = x - polygon[handle].x;
-    int dy = y - polygon[handle].y;
-    polygon[handle].x = x;
-    polygon[handle].y = y;
-    if (handle>0) {
-      polygon[handle-1].x += dx;
-      polygon[handle-1].y += dy;
-    } else {
-      polygon[polygon.size()-1].x += dx;
-      polygon[polygon.size()-1].y += dy;
-      polygon[polygon.size()-2].x += dx;
-      polygon[polygon.size()-2].y += dy;
-    }
-    if (handle+1<polygon.size()) {
-      polygon[handle+1].x += dx;
-      polygon[handle+1].y += dy;
-    } else {
-      polygon[0].x += dx;
-      polygon[0].y += dy;
-    }
-  } else {
-    polygon[handle].x=x;
-    polygon[handle].y=y;
-  }
 }

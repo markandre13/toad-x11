@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,8 @@ class TFigureAttributes;
 class TFigureModel:
   public TModel, public TSerializable
 {
-    friend class TFigureWindow; // debugging
+//    friend class TFigureWindow; // debugging
+  protected:
     typedef std::vector<TFigure*> TStorage;
   public:
     /**
@@ -121,12 +122,12 @@ class TFigureModel:
     void add(TFigure*);
     void erase(TFigure*);
     void add(TFigureVector&);
-    void erase(TFigureSet&);
+    virtual void erase(TFigureSet&);
     
     void insert(TFigureAtDepthList &store);
 
     void translate(const TFigureSet&, int dx, int dy);
-    void translateHandle(TFigure *figure, unsigned handle, int dx, int dy);
+    void translateHandle(TFigure *figure, unsigned handle, int dx, int dy, unsigned);
     
     TFigure* group(TFigureSet &);
     void _undoGroup(TFGroup*, TFigureAtDepthList &figures);

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -341,18 +341,20 @@ class TUndoTranslateHandle:
     TFigure* figure;
     unsigned handle;
     int dx, dy;
+    unsigned m;
   public:
-    TUndoTranslateHandle(TFigureModel *model, TFigure *figure, unsigned handle, int dx, int dy) {
+    TUndoTranslateHandle(TFigureModel *model, TFigure *figure, unsigned handle, int dx, int dy, unsigned m) {
       this->model = model;
       this->figure = figure;
       this->handle = handle;
       this->dx = dx;
       this->dy = dy;
+      this->m  = m;
     }
   protected:
     void undo() {
 //cout << "undo translate " << dx << ", " << dy << endl;
-      model->translateHandle(figure, handle, dx, dy);
+      model->translateHandle(figure, handle, dx, dy, m);
     }
     bool getUndoName(string *name) const {
       *name = "Undo: Move Handle";
@@ -428,7 +430,7 @@ TFigureModel::translate(const TFigureSet &set, int dx, int dy)
  *   vertical position of the figures handle
  */
 void
-TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y)
+TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y, unsigned m)
 {
   if (x==0 && y==0)
     return;
@@ -442,12 +444,12 @@ TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y)
   TPoint p;
   figure->getHandle(handle, &p);
   
-  figure->translateHandle(handle, x, y);
+  figure->translateHandle(handle, x, y, m);
   
   type = MODIFIED;
   sigChanged();
   
-  TUndoTranslateHandle *undo = new TUndoTranslateHandle(this, figure, handle, p.x, p.y);
+  TUndoTranslateHandle *undo = new TUndoTranslateHandle(this, figure, handle, p.x, p.y, m);
   TUndoManager::registerUndo(this, undo);
 
   _modified = true;

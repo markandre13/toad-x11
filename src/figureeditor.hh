@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,6 +67,7 @@ class TFigureAttributes:
 
     // These methods delegate to the current TFigureEditor.
     void setOperation(unsigned);
+    // unsigned getOperation() const { return current->getOperation(); }
     void setCreate(TFigure*);
     void group();
     void ungroup();
@@ -221,6 +222,7 @@ class TFigureEditor:
     static const unsigned OP_CREATE = 1;
     static const unsigned OP_ROTATE = 2;
     void setOperation(unsigned);
+    unsigned getOperation() const { return operation; }
     void setCreate(TFigure*);
     
     // not all these methods work now, but the first 4 should do
@@ -254,7 +256,7 @@ class TFigureEditor:
       if (window)
         window->invalidateWindow(r, b);
     }
-    void invalidateFigure(TFigure*);
+    virtual void invalidateFigure(TFigure*);
     void getFigureShape(TFigure*, TRectangle*, TMatrix2D*);
 
     void addFigure(TFigure*);   
@@ -325,7 +327,7 @@ class TFigureEditor:
     void paintGrid(TPenBase &pen);
     void paintSelection(TPenBase &pen);
     void paintDecoration(TPenBase &pen);
-    void print(TPenBase &pen, bool withSelection=false);
+    virtual void print(TPenBase &pen, bool withSelection=false);
     
     void resize();
     void mouseEvent(TMouseEvent&);
