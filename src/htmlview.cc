@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-Andre Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,8 +77,8 @@ utf8fromwchar(wchar_t c)
     int c2 = (c & 0x3f) | 0x80;
     c >>= 6;
     int c1 = c | 0xc0;
-    result.append(1, c1);
-    result.append(1, c2);
+    result.append(1, (char)c1);
+    result.append(1, (char)c2);
   } else
   if (c<=0xffff) {
     int c3 = (c & 0x3f) | 0x80;
@@ -86,9 +86,9 @@ utf8fromwchar(wchar_t c)
     int c2 = (c & 0x3f) | 0x80;
     c >>= 6;
     int c1 = c | 0xe0;
-    result.append(1, c1);
-    result.append(1, c2);
-    result.append(1, c3);
+    result.append(1, (char)c1);
+    result.append(1, (char)c2);
+    result.append(1, (char)c3);
   } else
   if (c<=0x1fffff) {
     int c4 = (c & 0x3f) | 0x80;
@@ -98,10 +98,10 @@ utf8fromwchar(wchar_t c)
     int c2 = (c & 0x3f) | 0x80;
     c >>= 6;
     int c1 = c | 0xf0;
-    result.append(1, c1);
-    result.append(1, c2);
-    result.append(1, c3);
-    result.append(1, c4);
+    result.append(1, (char)c1);
+    result.append(1, (char)c2);
+    result.append(1, (char)c3);
+    result.append(1, (char)c4);
   } else
   if (c<=0x3ffffff) {
     int c5 = (c & 0x3f) | 0x80;
@@ -113,11 +113,11 @@ utf8fromwchar(wchar_t c)
     int c2 = (c & 0x3f) | 0x80;
     c >>= 6;
     int c1 = c | 0xf8;
-    result.append(1, c1);
-    result.append(1, c2);
-    result.append(1, c3);
-    result.append(1, c4);
-    result.append(1, c5);
+    result.append(1, (char)c1);
+    result.append(1, (char)c2);
+    result.append(1, (char)c3);
+    result.append(1, (char)c4);
+    result.append(1, (char)c5);
   } else {
     int c6 = (c & 0x3f) | 0x80;
     c >>= 6;
@@ -130,17 +130,15 @@ utf8fromwchar(wchar_t c)
     int c2 = (c & 0x3f) | 0x80;
     c >>= 6;
     int c1 = c | 0xfc;
-    result.append(1, c1);
-    result.append(1, c2);
-    result.append(1, c3);
-    result.append(1, c4);
-    result.append(1, c5);
-    result.append(1, c6);
+    result.append(1, (char)c1);
+    result.append(1, (char)c2);
+    result.append(1, (char)c3);
+    result.append(1, (char)c4);
+    result.append(1, (char)c5);
+    result.append(1, (char)c6);
   }
   return result;
 }
-
-
 
 } // namespace
 
