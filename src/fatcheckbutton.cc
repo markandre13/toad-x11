@@ -54,11 +54,12 @@ void TFatCheckButton::mouseLDown(int, int, unsigned)
   if (model) {
     setValue(!*model);
   }
-  
-  if (model || !*model)
+
+  if (model && *model) {
     setBackground(TColor::SLIDER_FACE);
-  else
+  } else {
     setBackground(TColor::BTNFACE);
+  }
   
   setFocus();
   invalidateWindow();
