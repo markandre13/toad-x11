@@ -857,7 +857,6 @@ DBM(cout << "leave modelChanged (" << getTitle() << ")" << endl;
 void
 TTextArea::preferencesChanged()
 {
-cerr << "preferencesChanged" << endl;
   invalidateWindow();
 }
 
