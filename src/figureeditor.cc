@@ -1907,13 +1907,19 @@ TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
   if (!window)
     return;
 
-  stopOperation();
+//  stopOperation();
 //  clearSelection();
   setFocus();
   mouse2sheet(mx, my, &mx, &my);
   TFigure *f = findFigureAt(mx, my);
-  if (f)
+  if (f) {
+    if (state==STATE_NONE) {
+      clearSelection();
+      selection.insert(f);
+      invalidateFigure(f);
+    }
     f->mouseRDown(this, mx, my, modifier);
+  }
 }
 
 void

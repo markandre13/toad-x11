@@ -228,6 +228,11 @@ class TFPolygon:
     // polygon creation
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);
+    unsigned keyDown(TFigureEditor *editor, TKey key, char *str, unsigned);
+    unsigned mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier);
+  public:
+    virtual void insertPointNear(int, int);
+    virtual void deletePoint(unsigned);
 };
 
 /**
@@ -283,6 +288,7 @@ class TFBezierline:
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);
 
     void insertPointNear(int x, int y);
+    void deletePoint(unsigned i);
 
     void paint(TPenBase &, EPaintType);
     void paintSelection(TPenBase &pen, int handle);

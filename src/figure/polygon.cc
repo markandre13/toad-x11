@@ -21,6 +21,9 @@
 #include <toad/figure.hh>
 #include <toad/figureeditor.hh>
 
+#include <toad/action.hh>
+#include <toad/popupmenu.hh>
+
 using namespace toad;
 
 void
@@ -128,17 +131,22 @@ TFPolygon::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
   switch(editor->state) {
     case TFigureEditor::STATE_START_CREATE:
       polygon.addPoint(mx, my);
+      polygon.addPoint(mx, my);
       editor->setMouseMoveMessages(TWindow::TMMM_ALL);
-    case TFigureEditor::STATE_CREATE:
+      break;
+    case TFigureEditor::STATE_CREATE: {
       if (m & MK_DOUBLE) {
         if (polygon.size()<4)
           return STOP|DELETE;
         polygon.erase(--polygon.end());
         return STOP;
       }
-      polygon.addPoint(mx, my);
-      editor->invalidateFigure(this);
-      break;
+      TPolygon::iterator p(polygon.end()-2);
+      if (p->x != mx || p->y != my) {
+        polygon.addPoint(mx, my);
+        editor->invalidateFigure(this);
+      }
+    } break;
     default:
       break;
   }
@@ -148,12 +156,155 @@ TFPolygon::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
 unsigned 
 TFPolygon::mouseMove(TFigureEditor *editor, int mx, int my, unsigned)
 {
-  TPolygon::iterator p(polygon.end());
-  --p;
+  TPolygon::iterator p(--polygon.end());
   editor->invalidateFigure(this);
   p->set(mx, my);
   editor->invalidateFigure(this);
   return CONTINUE;
+}
+
+unsigned 
+TFPolygon::keyDown(TFigureEditor *editor, TKey key, char *str, unsigned)
+{
+  editor->invalidateFigure(this);
+  switch(key) {
+    case TK_BACKSPACE:
+    case TK_DELETE:
+      if (polygon.size()<=1)
+        return STOP|DELETE;
+      *(polygon.end()-2) = *(polygon.end()-1);
+      polygon.erase(polygon.end()-1);
+      break;
+    case TK_RETURN:
+      return STOP;
+  }
+  editor->invalidateFigure(this);
+  return CONTINUE;
+}
+
+class TMyPopupMenu:
+  public TPopupMenu
+{
+  public:
+    TMyPopupMenu(TWindow *p, const string &t): TPopupMenu(p, t)
+    {
+//cerr << "create menu " << this << endl;
+    }
+    ~TMyPopupMenu() {
+//cerr << "delete tree " << tree << endl;
+      delete tree;
+    }
+    
+    void closeRequest() {
+      TPopupMenu::closeRequest();
+//cerr << "delete menu " << this << endl;
+      delete this;
+    }
+    
+    TInteractor *tree;
+};
+
+unsigned
+TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
+{
+  if (editor->state != TFigureEditor::STATE_NONE)
+    return NOTHING;
+
+  unsigned i=0;
+  bool found=false;
+  for(TPolygon::iterator p=polygon.begin();
+      p!=polygon.end();
+      ++p, ++i)
+  {
+    if (p->x-editor->fuzziness<=x && x<=p->x+editor->fuzziness && 
+        p->y-editor->fuzziness<=y && y<=p->y+editor->fuzziness) 
+    {
+      // cerr << "found handle " << i << endl;
+      found = true;
+      break;
+    }
+  }
+  
+  if (!found && polygon.size()<=2)
+    return NOTHING;
+
+  TInteractor *dummy = new TInteractor(0, "dummy interactor");
+//cerr << "create tree " << dummy << endl;
+  TAction *action;
+  if (!found) {
+    action = new TAction(dummy, "add point", TAction::ALWAYS);
+    TCLOSURE4(
+      action->sigActivate,
+      figure, this,
+      edit, editor,
+      _x, x,
+      _y, y,
+      edit->invalidateFigure(figure);
+      figure->insertPointNear(_x, _y);
+      edit->invalidateFigure(figure);
+    )
+  } else {
+    action = new TAction(dummy, "delete point", TAction::ALWAYS);
+    TCLOSURE3(
+      action->sigActivate,
+      figure, this,
+      edit, editor,
+      _i, i,
+      edit->invalidateFigure(figure);
+      figure->deletePoint(_i);
+      edit->invalidateFigure(figure);
+    )
+  }
+  TMyPopupMenu *menu;
+  menu = new TMyPopupMenu(editor, "popup");
+  menu->tree = dummy;
+  menu->setScopeInteractor(dummy);
+  menu->open(x, y, modifier);
+  return NOTHING;
+}
+
+void
+TFPolygon::insertPointNear(int x, int y)
+{
+  unsigned i=0;
+  double min;
+
+  for(unsigned j=0; j < polygon.size(); j++) {
+    double d;
+    if (j+1<polygon.size()) {
+      d = distance2Line(x, y,
+                        polygon[j  ].x, polygon[j  ].y,
+                        polygon[j+1].x, polygon[j+1].y);
+    } else {
+      d = distance2Line(x, y,
+                        polygon[j  ].x, polygon[j  ].y,
+                        polygon[0].x, polygon[0].y);
+    }
+    if (j==0) {
+      min = d;
+    } else {
+      if (d<min) {
+        min = d;
+        i = j;
+      }
+    }
+  }
+
+//cout << "i=" << i << ", polygon.size()=" << polygon.size() << endl;
+  if (i+1<polygon.size()) {
+    polygon.insert(polygon.begin()+i+1, TPoint(x,y));
+  } else {
+    polygon.insert(polygon.end(), TPoint(x,y));
+  }
+}
+
+void
+TFPolygon::deletePoint(unsigned i)
+{
+  if (polygon.size()<=2)
+    return;
+
+  polygon.erase(polygon.begin()+i);
 }
 
 // storage

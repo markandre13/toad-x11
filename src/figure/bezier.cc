@@ -313,9 +313,6 @@ TFBezierline::_translateHandle(unsigned h0, int x, int y, unsigned m, bool fille
       }
     }
     
-    if (!b)
-      cout << "only single point" << endl;
-
     if (b) {    
       if (m & MK_SHIFT) {
         // symmetric
@@ -377,35 +374,42 @@ TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
     if (p->x-editor->fuzziness<=x && x<=p->x+editor->fuzziness && 
         p->y-editor->fuzziness<=y && y<=p->y+editor->fuzziness) 
     {
-      cerr << "found handle " << i << endl;
+      // cerr << "found handle " << i << endl;
       found = true;
       break;
     }
   }
+  
+  if (!found && ( (i%3)!=0 || polygon.size()<=4))
+    return 0;
 
   TInteractor *dummy = new TInteractor(0, "dummy interactor");
 //cerr << "create tree " << dummy << endl;
   TAction *action;
   if (!found) {
     action = new TAction(dummy, "add point", TAction::ALWAYS);
-    connect(action->sigActivate, editor, &TFigureEditor::invalidateFigure, this);
-    connect(action->sigActivate, this, &TFBezierline::insertPointNear, x, y);
-    connect(action->sigActivate, editor, &TFigureEditor::invalidateFigure, this);
+    TCLOSURE4(
+      action->sigActivate,
+      figure, this,
+      edit, editor,
+      _x, x,
+      _y, y,
+      edit->invalidateFigure(figure);
+      figure->insertPointNear(_x, _y);
+      edit->invalidateFigure(figure);
+    )
     action = new TAction(dummy, "split");
   } else {
-/*
-    GIMP: normal: edit curve symmetric
-          shift : edit curve sharp
-          ctrl  : move curve corner
-          
-          corner, smooth, symmetric
-*/
-/*
-    action = new TAction(dummy, "symmetric");
-    action = new TAction(dummy, "smooth corner");
-    action = new TAction(dummy, "sharp corner");
-*/
-    action = new TAction(dummy, "delete point");
+    action = new TAction(dummy, "delete point", TAction::ALWAYS);
+    TCLOSURE3(
+      action->sigActivate,
+      figure, this,
+      edit, editor,
+      _i, i,
+      edit->invalidateFigure(figure);
+      figure->deletePoint(_i);
+      edit->invalidateFigure(figure);
+    )
     action = new TAction(dummy, "split");
   }
   // action = new TAction(dummy, "sharp edge");
@@ -564,6 +568,24 @@ TFBezierline::insertPointNear(int x, int y)
   polygon[i+5].set(x2,y2);
 }
 
+void
+TFBezierline::deletePoint(unsigned i)
+{
+  // don't delete curve handles
+  if ((i%3)!=0)
+    return;
+  if (polygon.size()<=4)
+    return;
+    
+  if (i==0) {
+    polygon.erase(polygon.begin(), polygon.begin()+3);
+  } else 
+  if (i==polygon.size()-1) {
+    polygon.erase(polygon.end()-3, polygon.end());
+  } else {
+    polygon.erase(polygon.begin()+i-1, polygon.begin()+i+2);
+  }
+}
 
 /*
  * TFBezier is derived from TFBezierline
