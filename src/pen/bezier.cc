@@ -31,6 +31,16 @@
 #include <vector>
 #include <cmath>
 
+// XDrawLines is broken for pixmaps with coordinates <0
+// verified on MacOS X, ...
+#define PIXMAP_FIX_001(xp, n) \
+  if (bmp) { \
+    for(unsigned i=0; i<n; ++i) { \
+      if (xp[i].x < 0) \
+        xp[i].x--; \
+    } \
+  }
+
 using namespace toad;
 
 struct TXPoints
@@ -56,7 +66,7 @@ struct TXPoints
       ++n;
     }
     void push(double x, double y) {
-      push((int)(x+0.5), (int)(y+0.5));
+      push((int)lround(x), (int)lround(y));
     }
     unsigned size() const { return n; }
     XPoint* ptr() const { return p; }
@@ -85,6 +95,7 @@ TPen::drawBezier(int x1,int y1,
 
   lst.push(x1, y1);
   xcurve(lst, x1,y1, x2,y2, x3,y3, x4,y4);
+  PIXMAP_FIX_001(lst.ptr(), lst.size())
   XDrawLines(x11display, x11drawable, o_gc, lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
@@ -105,6 +116,7 @@ TPen::drawBezier(double x1,double y1,
 
   lst.push(x1, y1);
   xcurve(lst, x1,y1, x2,y2, x3,y3, x4,y4);
+  PIXMAP_FIX_001(lst.ptr(), lst.size())
   XDrawLines(x11display, x11drawable, o_gc, lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
@@ -195,6 +207,7 @@ TPen::drawPolyBezier(const TPoint *p, int n)
 {
   if (!points2list(mat, p, n))
     return;
+  PIXMAP_FIX_001(lst.ptr(), lst.size())
   XDrawLines(x11display, x11drawable, o_gc, lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
@@ -203,6 +216,7 @@ TPen::drawPolyBezier(const TDPoint *p, int n)
 {
   if (!points2list(mat, p, n))
     return;
+  PIXMAP_FIX_001(lst.ptr(), lst.size())
   XDrawLines(x11display, x11drawable, o_gc, lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
@@ -216,11 +230,10 @@ TPen::fillPolyBezier(const TPoint *p, int np)
   unsigned n = lst.size();
   XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
     d, n, Nonconvex, CoordModeOrigin);
+  PIXMAP_FIX_001(d, n)
+  lst.push(d[0].x, d[0].y);
   XDrawLines(x11display, x11drawable, o_gc,
-      d, n, CoordModeOrigin);
-  XDrawLine(x11display, x11drawable, o_gc,
-     d[0].x,d[0].y,
-     d[n-1].x,d[n-1].y);
+      lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
 void
@@ -233,11 +246,13 @@ TPen::fillPolyBezier(const TDPoint *p, int np)
   unsigned n = lst.size();
   XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
     d, n, Nonconvex, CoordModeOrigin);
-  XDrawLines(x11display, x11drawable, o_gc,
-      d, n, CoordModeOrigin);
   XDrawLine(x11display, x11drawable, o_gc,
      d[0].x,d[0].y,
      d[n-1].x,d[n-1].y);
+  PIXMAP_FIX_001(d, n)
+  lst.push(d[0].x, d[0].y);
+  XDrawLines(x11display, x11drawable, o_gc,
+      lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
 static bool
@@ -331,6 +346,7 @@ TPen::drawPolyBezier(const TPolygon &polygon)
 {
   if (!polygon2list(mat, polygon))
     return;
+  PIXMAP_FIX_001(lst.ptr(), lst.size())
   XDrawLines(x11display, x11drawable, o_gc, lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
@@ -339,6 +355,7 @@ TPen::drawPolyBezier(const TDPolygon &polygon)
 {
   if (!polygon2list(mat, polygon))
     return;
+  PIXMAP_FIX_001(lst.ptr(), lst.size())
   XDrawLines(x11display, x11drawable, o_gc, lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
@@ -352,11 +369,10 @@ TPen::fillPolyBezier(const TPolygon &polygon)
   unsigned n = lst.size();
   XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
     d, n, Nonconvex, CoordModeOrigin);
+  PIXMAP_FIX_001(d, n)
+  lst.push(d[0].x, d[0].y);
   XDrawLines(x11display, x11drawable, o_gc,
-      d, n, CoordModeOrigin);
-  XDrawLine(x11display, x11drawable, o_gc,
-     d[0].x,d[0].y,
-     d[n-1].x,d[n-1].y);
+      lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
 void
@@ -369,11 +385,10 @@ TPen::fillPolyBezier(const TDPolygon &polygon)
   unsigned n = lst.size();
   XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
     d, n, Nonconvex, CoordModeOrigin);
+  PIXMAP_FIX_001(d, n)
+  lst.push(d[0].x, d[0].y);
   XDrawLines(x11display, x11drawable, o_gc,
-      d, n, CoordModeOrigin);
-  XDrawLine(x11display, x11drawable, o_gc,
-     d[0].x,d[0].y,
-     d[n-1].x,d[n-1].y);
+      lst.ptr(), lst.size(), CoordModeOrigin);
 }
 
 /**
@@ -511,10 +526,10 @@ static void curve(
   double w3 = vx0 * vy4 - vy0 * vx4;
 
   if (fabs(w0)+fabs(w1)+fabs(w2)+fabs(w3)<WEIGHT) {
-    poly.push_back(TPoint((int)x0, (int)y0));
-    poly.push_back(TPoint((int)x1, (int)y1));
-    poly.push_back(TPoint((int)x2, (int)y2));
-    poly.push_back(TPoint((int)x3, (int)y3));
+    poly.push_back(TPoint(lround(x0), lround(y0)));
+    poly.push_back(TPoint(lround(x1), lround(y1)));
+    poly.push_back(TPoint(lround(x2), lround(y2)));
+    poly.push_back(TPoint(lround(x3), lround(y3)));
   } else {
     double xx  = mid(x1, x2);
     double yy  = mid(y1, y2);
