@@ -417,10 +417,10 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
         _selection_clear();
       if (preferences->notabs) {
         unsigned m = preferences->tabwidth -
-                      (utf8charcount(model->getValue(), _bol, _pos-_bol+1)
+                      (utf8charcount(model->getValue(), _bol, _pos-_bol)
                       % preferences->tabwidth);
         string s;
-        s.replace(0,1, m+1, ' ');
+        s.replace(0,0, m, ' ');
         _insert(s);
       } else {
         _insert("\t");
@@ -963,14 +963,14 @@ TTextArea::_get_line(string *line,
     ++i, utf8inc(*line, &j))
   {
     if ((*line)[j]=='\t') {
-      unsigned m = preferences->tabwidth - ((i+1) % preferences->tabwidth);
+      unsigned m = preferences->tabwidth - (i % preferences->tabwidth);
       if (!preferences->viewtabs) {
-        line->replace(j, 1, m+1, ' ');
+        line->replace(j, 1, m, ' ');
       } else {
 //        line->replace(j, 1, m+1, '·');
 //        line->replace(j, 1, 1  , '»');
-        line->replace(j, 1, m+1, '.');
-        line->replace(j, 1, 1  , '|');
+        line->replace(j, 1, m, '.');
+        line->replace(j, 1, 1, '|');
       }
 #if 0
 cout << "found tab:" << endl
@@ -983,6 +983,7 @@ cout << "found tab:" << endl
      << "  *eos = " << *eos << endl
      ;
 #endif
+      --m;
       if (i<*sx)
         *sx+=m;
       if (bos) {
@@ -995,7 +996,6 @@ cout << "found tab:" << endl
       j+=m;
     }
   }
-
 //cerr << "2 sx=" << *sx << endl;
 
 }
