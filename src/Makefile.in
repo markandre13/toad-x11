@@ -1,6 +1,6 @@
 # 
 # TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
-# Copyright (C) 1995-2004 by Mark-André Hopf <mhopf@mark13.org>
+# Copyright (C) 1995-2005 by Mark-André Hopf <mhopf@mark13.org>
 #
 # @configure_input@
 #
@@ -13,6 +13,7 @@
 
 # values from the configure script
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+top_builddir=@top_builddir@
 prefix=@prefix@
 exec_prefix=@prefix@
 libdir=@libdir@
@@ -24,20 +25,19 @@ INSTALL=install
 CC	= @CC@
 CFLAGS	= @CFLAGS@
 CXX	= @CXX@
-CXXFLAGS= @CXXFLAGS@ @X_CFLAGS@
-DEFINES	= @DEFS@
+CXXFLAGS= @CXXFLAGS@
 LD	= $(CXX)
-LDFLAGS = @LDFLAGS@
-# LIBS	= @X_LIBS@ @X_PRE_LIBS@ @X_EXTRA_LIBS@ @LIBS@
+
+LIBS	= @LIBS@
+
+SHELL   = @SHELL@
+LIBTOOL = @LIBTOOL@
 
 # GNU Compiler specific options
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 CXXFLAGS+= -Iinclude -frtti \
 	   -Wno-return-type -Wno-pmf-conversions -Wwrite-strings \
 	   -Woverloaded-virtual
-
-# library option
-CXXFLAGS+= -fPIC
 
 # manual TOAD library setup
 #----------------------------------------------------------------------------
@@ -46,8 +46,8 @@ LIBMAJOR        = 0
 LIBMINOR        = 64
 LIBPL           = 0
 
+
 VERSION         = $(LIBMAJOR).$(LIBMINOR).$(LIBPL)
-LDFLAGS		+= -shared 
 LIBNAME		= libtoad.so
 LIBFULLNAME	= $(LIBNAME).$(VERSION)
 
@@ -104,6 +104,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		$(DEBUG)
 
 OBJS	= $(SRCS:.cc=.o)
+LOBJS	= $(SRCS:.cc=.lo)
 
 default: connect.hh resource.cc include/toad $(LIBNAME) ../bin/toadbin2c
 
@@ -117,13 +118,14 @@ install:
 		install -d $(DESTDIR)$(includedir)/toad/$$dir ; \
 	done
 	find . -name "*.hh" -exec \
-    install -D -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
+	install -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
 	find . -name "*.h" -exec \
-    install -D -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
-	install -d $(DESTDIR)$(libdir)
-	install $(LIBNAME).$(VERSION) $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION)
-	cd $(DESTDIR)$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
-	cd $(DESTDIR)$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)
+	install -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
+	@$(LIBTOOL) --tag=CXX --mode=install install libtoad.la $(libdir)
+#	install -d $(DESTDIR)$(libdir)
+#	install $(LIBNAME).$(VERSION) $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION)
+#	cd $(DESTDIR)$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
+#	cd $(DESTDIR)$(libdir) && ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)
 
 # recreate `connect.hh'
 #-----------------------
@@ -153,26 +155,42 @@ depend:
 
 .cc.o:
 	@echo compiling $*.cc ...
-	@$(CXX) $(CXXFLAGS) $(SO_FLAGS) $(DEFINES) $*.cc -c -o $*.o
+	@$(LIBTOOL) --tag CXX --mode=compile \
+	  $(CXX) $(CXXFLAGS) -c -o $*.o $*.cc
+
+#.cc.o:
+#	@echo compiling $*.cc ...
+#	@$(CXX) $(CXXFLAGS) $(SO_FLAGS) $(DEFINES) $*.cc -c -o $*.o
 
 #---------------------------------------------------------------------------
 # Linking
 #---------------------------------------------------------------------------
 
 $(LIBNAME): $(OBJS)
-	@echo creating $(LIBNAME) ...
-	@$(LD) $(LDFLAGS) $(LIBS) -Wl,-soname,$(LIBFULLNAME) -o $(LIBNAME).$(VERSION) $(OBJS) $(LDTAIL)
-	@ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
-	@ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)
-	@echo Ok
+	@echo "linking..."
+	@$(LIBTOOL) --tag=CXX --mode=link $(CXX) -release $(LIBMAJOR).$(LIBMINOR) \
+		-rpath $(libdir) $(LIBS) -o libtoad.la $(LOBJS)
+
+# $(LIBPL)
+
+
+
+# ldconfig:
+# ../libtool --dry-run --tag=CXX --mode=finish
+
+#	@echo creating $(LIBNAME) ...
+#	@$(LD) $(LDFLAGS) $(LIBS) -Wl,-soname,$(LIBFULLNAME) -o $(LIBNAME).$(VERSION) $(OBJS) $(LDTAIL)
+#	@ln -sf $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR)
+#	@ln -sf $(LIBNAME).$(VERSION) $(LIBNAME)
+#	@echo Ok
 
 #---------------------------------------------------------------------------
 # Xtras
 #---------------------------------------------------------------------------
 clean:
 	@echo removing generated files in `pwd`
-	@rm -f $(CLEAN) $(OBJS) *.bak *~ .depend core DEADJOE
-	@rm -f $(LIBNAME).$(VERSION) $(LIBNAME).$(LIBMAJOR) $(LIBNAME)
+	@$(LIBTOOL) --tag=CXX --mode=clean rm -f libtoad.la $(LOBJS)
+	@rm -f $(CLEAN) *.bak *~ .depend core DEADJOE
 	@rm -f connect.hh resource.cc ../bin/toadbin2c
 	@rm -f include/toad
 	@-rmdir include

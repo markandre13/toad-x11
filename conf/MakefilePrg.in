@@ -21,17 +21,16 @@
 # make run	run program (with modified LD_LIBRARY_PATH)
 # make clean	remove created files
 
-TOAD_INC	= @toaddir@/src/include
-TOAD_LIB	= @toaddir@/src
+top_builddir= @top_builddir@
+TOAD_INC    = $(top_builddir)/src/include
+TOAD_LIB    = $(top_builddir)/src
 
 CC 	= @CC@
-CFLAGS  += @CFLAGS@ $(INCDIRS)
+CFLAGS  += $(DEFINES) @CFLAGS@ $(INCDIRS)
 CXX     = @CXX@   
-CXXFLAGS+= @CXXFLAGS@ @X_CFLAGS@ -I$(TOAD_INC) $(INCDIRS)
-DEFINES += @DEFS@
+CXXFLAGS+= $(DEFINES) @CXXFLAGS@ -I$(TOAD_INC) $(INCDIRS)
 LD      = $(CXX)
-LDFLAGS += @LDFLAGS@ $(LIBDIRS)
-LIBS    += -L$(TOAD_LIB) -ltoad @X_LIBS@ @X_PRE_LIBS@ @X_EXTRA_LIBS@ @LIBS@
+LIBS    += $(LDFLAGS) -L$(TOAD_LIB) -ltoad @X_LIBS@ @X_PRE_LIBS@ @X_EXTRA_LIBS@ @LIBS@
 
 # GNU Compiler specific options
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -41,8 +40,6 @@ CXXFLAGS+= -Iinclude -frtti \
 
 
 OBJS		= $(SRCS:.cc=.o)
-
-# TOAD_DEP	= $(wildcard $(TOAD_LIB)/*)
 
 all:
 	$(MAKE) $(PRGFILE)
@@ -54,14 +51,14 @@ all:
 
 .cc.o:
 	@echo compiling $*.cc ...
-	@$(CXX) $(CXXFLAGS) $(DEFINES) -I$(TOAD_INC) $*.cc -c -o $*.o
+	@$(CXX) $(CXXFLAGS) $*.cc -c -o $*.o
 
 #---------------------------------------------------------------------------
 # Linking
 #---------------------------------------------------------------------------
 $(PRGFILE): $(OBJS) $(TOAD_DEP)
 	@echo linking $(PRGFILE) ...
-	@$(LD) $(LIBS) $(LDFLAGS) $(OBJS) -o $(PRGFILE)
+	@$(LD) $(LIBS) $(OBJS) -o $(PRGFILE)
 	@echo Ok
 
 #---------------------------------------------------------------------------

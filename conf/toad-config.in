@@ -3,7 +3,7 @@
 # version of the TOAD C++ GUI Libary.
 # $Id$
 #
-# Copyleft 2003-2004 Mark-André Hopf <mhopf@mark13.de>
+# Copyleft 2003-2005 Mark-AndrÃ© Hopf <mhopf@mark13.org>
 # All Rights Reversed.
 #
 
@@ -15,8 +15,8 @@ includedir=@includedir@
 datadir=@datadir@
 
 CXX=@CXX@
-CXXFLAGS="-I${includedir} @X_CFLAGS@"
-LIBS="@LDFLAGS@ @X_LIBS@ @X_PRE_LIBS@ @X_EXTRA_LIBS@ -L${libdir} -ltoad @LIBS@"
+CXXFLAGS="-I${includedir} @CXXFLAGS@"
+LIBS="-L${libdir} -ltoad @LIBS@"
 
 usage() {
 cat<<EOF
