@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -146,6 +146,9 @@ TFGroup::paint(TPenBase &pen, EPaintType)
 bool 
 TFGroup::getHandle(unsigned n, TPoint &p)
 {
+#if 1
+  return super::getHandle(n, p);
+#else
 cerr << "group, query handle " << n << endl;
 if (super::getHandle(n, p)) {
   cerr << "  ok" << endl;
@@ -154,23 +157,29 @@ if (super::getHandle(n, p)) {
   cerr << "  no" << endl;
 }
   return false;
+#endif
 }
 
 double
 TFGroup::distance(int mx, int my)
 {
-  TFigureModel::iterator p,e;
-  p = gadgets.begin();
-  e = gadgets.end();
-  if (p==e)
-    return OUT_OF_RANGE;
-  double d = (*p)->distance(mx, my);
-  p++;
-  while(p!=e) {
-    double td = (*p)->distance(mx, my);
+  double d = OUT_OF_RANGE;
+  for (TFigureModel::iterator p = gadgets.begin();
+       p != gadgets.end();
+       ++p)
+  {
+    double td;
+    if ( (*p)->mat) {
+      int x, y;
+      TMatrix2D m(*(*p)->mat);
+      m.invert();
+      m.map(mx, my, &x, &y);
+      td = (*p)->distance(x, y);
+    } else {
+      td = (*p)->distance(mx, my);
+    }
     if (td<d)
       d=td;
-    p++;
   }
   return d;
 }
