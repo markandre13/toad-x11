@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2004 by Mark-Andr? Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -166,6 +166,7 @@ TFigureAttributes::TFigureAttributes()
   drawgrid = true;
   connect(drawgrid.sigChanged, foobar, this);
   gridsize = 4;
+  connect(gridsize.sigChanged, foobar, this);
   
   linewidth = 0;
   linestyle = TPen::SOLID;
@@ -372,7 +373,11 @@ TFigureEditor::enableScroll(bool b)
 void
 TFigureEditor::enableGrid(bool b)
 {
+  if (b==preferences->drawgrid)
+    return;
   preferences->drawgrid = b;
+  if (window)
+    window->invalidateWindow(visible);
 }
 
 /**
@@ -394,6 +399,8 @@ void
 TFigureEditor::setBackground(int r,int g,int b)
 {
   background_color.set(r,g,b);
+  if (window)
+    window->invalidateWindow(visible);
 }
 
 void
@@ -423,7 +430,6 @@ TFigureEditor::paint()
     update_scrollbars = false;
   }
 
-#if 0
   TPen scr(this);
   scr.identity();
   TRectangle r;
@@ -434,8 +440,8 @@ TFigureEditor::paint()
   pen.setColor(background_color);
   pen.identity();
   pen.fillRectanglePC(0,0,r.w,r.h);
-  pen.translate(window->getOriginX()-r.x+visible.x, 
-                window->getOriginY()-r.y+visible.y);
+  pen.translate(window->getOriginX()+visible.x-r.x, 
+                window->getOriginY()+visible.y-r.y);
   if (mat)
     pen.multiply(mat);
     
@@ -446,27 +452,6 @@ TFigureEditor::paint()
   // put the result onto the screen
   scr.drawBitmap(r.x,r.y, &bmp);
   paintDecoration(scr);
-#else
-  TPen pen(this);
-  TRectangle r;
-  pen.getClipBox(&r);
-
-  pen.setColor(background_color);
-  pen.identity();
-  pen.fillRectanglePC(r.x,r.y,r.w,r.h);
-  pen.translate(window->getOriginX()+visible.x, 
-                window->getOriginY()+visible.y);
-  if (mat)
-    pen.multiply(mat);
-
-  paintGrid(pen);
-  print(pen, true);
-  paintSelection(pen);
-
-
-  pen.identity();
-  paintDecoration(pen);
-#endif
 }
 
 /**
@@ -482,18 +467,28 @@ TFigureEditor::paintGrid(TPenBase &pen)
       background_color.b > 128 ? background_color.b-64 : background_color.b+64
     );
     int x1, x2, y1, y2;
-    
-    getPanePos(&x1, &y1, true);
-    x2 = x1 + visible.w;
-    y2 = y1 + visible.h;
-    
+    int g = preferences->gridsize;
+  
+    TRectangle r;
+    pen.getClipBox(&r);
+    x1=r.x;
+    y1=r.y;
+    x2=r.x+r.w+1;
+    y2=r.y+r.h+1;
+
+    TMatrix2D *mat = pen.getMatrix();
     if (mat) {
-      int gx, gy;
-      mat->map(preferences->gridsize, preferences->gridsize, &gx, &gy);
-      if (gx<2 || gy<2) {
-//        cerr << "don't draw grid, it's too small" << endl;
-        x1=y1=1;
-        x2=y2=0;
+      int gx0, gx, gy0, gy;
+      TMatrix2D m(*mat);   
+      m.map(0, 0, &gx0, &gy0);
+      m.map(preferences->gridsize, preferences->gridsize, &gx, &gy);
+      gx-=gx0;
+      gy-=gy0;
+//cout << "gx,gy=" << gx << "," << gy << endl;
+      m.invert();
+      if (gx<=2 || gy<=2) {
+        cerr << "don't draw grid, it's too small" << endl;
+        return;
       } else {
         TMatrix2D m(*mat);
         m.invert();
@@ -510,7 +505,6 @@ TFigureEditor::paintGrid(TPenBase &pen)
     }
 
     // justify to grid
-    int g = preferences->gridsize;
     x1 -= x1 % g;
     y1 -= y1 % g;
 
@@ -668,29 +662,16 @@ TFigureEditor::print(TPenBase &pen, bool withSelection)
 {
   TRectangle cb, r;
   pen.getClipBox(&cb);
-//cout << endl << "unmapped clip box: " <<cb.x<<"-"<<(cb.x+cb.w)<<","<<cb.y<<"-"<<(cb.y+cb.h)<<endl;
-#if 0
-  if (pen.getMatrix()) {
-    TMatrix2D m = *pen.getMatrix();
-    m.invert();
-    m.map(cb.x, cb.y, &cb.x, &cb.y);
-    m.map(cb.w, cb.h, &cb.w, &cb.h);
-cout << endl << "mapped clip box: " <<cb.x<<"-"<<(cb.x+cb.w)<<","<<cb.y<<"-"<<(cb.y+cb.h)<<endl;
 
-  }
-#endif
   for(TFigureModel::iterator p = model->begin();
       p != model->end();
       ++p)
   {
     TRectangle r;
-    getFigureShape(*p, &r);
-//cout << (*p)->getClassName() << ": " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h);
+    getFigureShape(*p, &r, pen.getMatrix());
     if (!r.intersects(cb)) {
-//cout<<" disjunkt"<<endl;
       continue;
     }
-//cout<<" schnitt"<<endl;
     
     TFigure::EPaintType pt = TFigure::NORMAL;
     unsigned pushs = 0;
@@ -748,6 +729,8 @@ TFigureEditor::preferencesChanged()
     gtemplate->setAttributes(preferences);
     
   model->setAttributes(selection, preferences);
+  if (window)
+    window->invalidateWindow(visible);
 }
 
 void
@@ -1945,13 +1928,15 @@ TFigureEditor::invalidateFigure(TFigure* figure)
   TRectangle r;
 //figure->getShape(&r);
 //cout << figure->getClassName() << ": invalidate shape " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h)<<endl;
-  getFigureShape(figure, &r);
+  getFigureShape(figure, &r, mat);
+  r.x+=window->getOriginX() + visible.x;
+  r.y+=window->getOriginY() + visible.y;
 //cout << figure->getClassName() << ": invalidate window " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h)<<endl;
   window->invalidateWindow(r);
 }
 
 void
-TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r)
+TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r, TMatrix2D *mat)
 {
   figure->getShape(r);
 
@@ -1993,13 +1978,13 @@ TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r)
   }
 //cout << "invalidating shape " << r.x << "," << r.y << "," << r.w << "," << r.h << endl;
 
+  // add some extra for the figure handles
+  // (this would be be delegated to the figure itself, as the figure contains
+  // the code to draw the handles!)
   r->x-=3;
   r->y-=3;
   r->w+=6;
   r->h+=6;
-
-  r->x+=window->getOriginX() + visible.x;
-  r->y+=window->getOriginY() + visible.y;
 }
 
 /**
