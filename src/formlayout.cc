@@ -567,8 +567,9 @@ TFormLayout::store(TOutObjectStream &out) const
   TFormNode *ptr=flist;
   out.indent();
   while(true) {
+    out.writeQuoted(ptr->name);
+    out<<" = ";
     out.startGroup();
-    ::store(out, "name", ptr->name);
     for(unsigned i=0; i<4; ++i) {
       if (ptr->how[i]!=NONE) {
         out.indent();
@@ -599,6 +600,7 @@ TFormLayout::store(TOutObjectStream &out) const
       }
     }
     out.endGroup();
+    out.indent();
     ptr = ptr->next;
     if (ptr==flist)
       break;
@@ -608,54 +610,89 @@ TFormLayout::store(TOutObjectStream &out) const
 bool
 TFormLayout::restore(TInObjectStream &in)
 {
-  string s;
-  int d;
-  static int state=0;
-  
-  switch(state /*in.getInterpreterState()*/) {
-    case 0:
-      switch(in.what) {
-        case ATV_START:
-          assert(flist==0);
-          return true;
-        case ATV_GROUP:
-          cerr << "X start group '" << in.attribute << "'\n";
-          state=1; // in.setInterpreterState(1);
-          return true;
-        case ATV_FINISHED:
-          return true;
+  if (in.what==ATV_START || in.what==ATV_FINISHED)
+    return true;
+  unsigned depth=0;
+  in.setInterpreter(0);
+  TFormNode *node = 0;
+  unsigned pos = 0;
+
+  do {
+#if 0
+    cout << "(" << depth << ") ";
+    switch(in.what) {
+      case ATV_START:
+        cout << "ATV_START"; break;
+      case ATV_VALUE:
+        cout << "ATV_VALUE"; break;
+      case ATV_GROUP:
+        cout << "ATV_GROUP"; 
+        break;
+      case ATV_FINISHED:
+        cout << "ATV_FINISHED"; 
+        break;
+    }
+    cout << ": (\""<< in.attribute << "\", \"" << in.type << "\", \"" << in.value << "\")\n";
+#endif
+    switch(depth) {
+      case 0:
+        if (in.what == ATV_GROUP &&
+            !in.attribute.empty() &&
+            in.type.empty())
+        {
+          node = _find(in.attribute);
+          // cout << "  new node " << node << endl;
+        }
+        break;
+      case 1:
+        if (in.what == ATV_GROUP &&
+            !in.attribute.empty() &&
+            in.type.empty())
+        {
+          if (in.attribute=="top")
+            pos = DTOP;
+          else if (in.attribute=="bottom")
+            pos = DBOTTOM;
+          else if (in.attribute=="left")
+            pos = DLEFT;
+          else if (in.attribute=="right")
+            pos = DRIGHT;
+        }
+        break;
+      case 2:
+        if (in.what == ATV_VALUE &&
+            in.attribute == "how" &&
+            in.type.empty())
+        {
+          if (in.value=="border")
+            node->how[pos]=FORM;
+          else if (in.value=="window")
+            node->how[pos]=WINDOW;
+          else if (in.value=="opposite")
+            node->how[pos]=OPPOSITE_WINDOW;
+        }
+        if (in.what == ATV_VALUE &&
+            in.attribute == "where" &&
+            in.type.empty())
+        {
+          node->whichname[pos]=in.value;
+        }
+        if (in.what == ATV_VALUE &&
+            in.attribute == "distance" &&
+            in.type.empty())
+        {
+          node->dist[pos]=atoi(in.value.c_str());
+        }
+    }
+    if (in.what==ATV_GROUP) {
+      ++depth;
+    } else if (in.what==ATV_FINISHED) {
+      if (!depth) {
+        in.putback('}');
+        break;
       }
-      break;
-    case 1:
-      switch(in.what) {
-        case ATV_GROUP:
-          cerr << "Y start group '" << in.attribute << "'\n";
-//          lastadd = flist = new TFormNode(which);
-          return true;
-        case ATV_VALUE:
-          if (::restore(in, "name", &s)) {
-            cerr << "  name = '" << s << "'\n";
-            return true;
-          }
-          if (::restore(in, "how", &s)) {
-            cerr << "  how = '" << s << "'\n";
-            return true;
-          }
-          if (::restore(in, "which", &s)) {
-            cerr << "  which = '" << s << "'\n";
-            return true;
-          }
-          if (::restore(in, "distance", &d)) {
-            cerr << "  distance = '" << d << "'\n";
-            return true;
-          }
-          break;
-        case ATV_FINISHED:
-          state=0;
-          return true;
-      }
-      break;
-  }
-  ATV_FAILED(in);
-  return false;
+      --depth;
+    }
+  } while(in.parse());
+  in.setInterpreter(this);
 }
