@@ -781,7 +781,9 @@ TFigureEditor::modelChanged()
       break;
     case TFigureModel::GROUP:
       #warning "not removing figure from selection"
-      invalidateFigure(*model->figures.begin());
+      selection.clear();
+      selection.insert(model->figure);
+      invalidateFigure(model->figure);
       break;
     case TFigureModel::_UNDO_GROUP:
       invalidateFigure(model->figure);
@@ -991,11 +993,8 @@ TFigureEditor::selectionDown()
 void
 TFigureEditor::group()
 {
-  TFigure *group = model->group(selection);
-  if (group) {
-    clearSelection();
-    selection.insert(group);
-  }
+  if (model)
+    model->group(selection);
 }
 
 void
