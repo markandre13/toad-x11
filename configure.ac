@@ -30,7 +30,7 @@ XLIBS="${X_LIBS} ${X_PRE_LIBS} ${X_EXTRA_LIBS}"
 # AC_CHECK_LIB([MesaGLU], [main])
 AC_CHECK_LIB([X11], [XOpenDisplay],,AC_MSG_ERROR([Could not link with X11]), $XLIBS)
 # AC_CHECK_LIB([Xext], [main])
-AC_CHECK_LIB([Xmu], [XmuClientWindow],,AC_MSG_ERROR([Could not link with Xmu]),$XLIBS)
+# AC_CHECK_LIB([Xmu], [XmuClientWindow],,AC_MSG_ERROR([Could not link with Xmu]),$XLIBS)
 AC_CHECK_LIB([m], [main])
 
 # pkg-config (required)
