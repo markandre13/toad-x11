@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,11 @@
 #endif
 
 using namespace toad;
+
+namespace {
+  TBitmap *bmp1 = 0;
+  TBitmap *bmp2 = 0;
+} // namespace
 
 TColorDialog::TColorDialog(TWindow *parent, const string &title):
   super(parent, title), color(0)
@@ -80,6 +85,11 @@ hsv2rgb(double h, double s, double v, int *red, int *green, int *blue)
     }
   }
 }
+
+#define ORIGCOLOR_X 8+256+8+16+8+12
+#define ORIGCOLOR_Y 8
+#define ORIGCOLOR_W 64
+#define ORIGCOLOR_H 32
 
 void
 TColorDialog::_init()
@@ -168,11 +178,21 @@ TColorDialog::_init()
   pb = new TPushButton(this, "OK");
   pb->setShape(x,y,w,h);
   connect(pb->sigActivate, this, &TColorDialog::done, true);
+  
+  TDropSiteColor *ds = new TDropSiteColor(this, 
+                           TRectangle(ORIGCOLOR_X+64,
+                                      ORIGCOLOR_Y,
+                                      ORIGCOLOR_W,
+                                      ORIGCOLOR_H));
+  connect_value(ds->sigDrop, this, &TColorDialog::dropColor, ds);
 }
 
 void
 TColorDialog::createBitmaps()
-{  
+{
+  if (bmp1)
+    return;
+
   bmp1 = new TBitmap(256, 256, TBITMAP_TRUECOLOR);
   int iy, ix;
   double x, y;
@@ -229,6 +249,24 @@ TColorDialog::mouseMove(int x, int y, unsigned m)
   mouseLDown(x, y, m);
 }
 
+
+void
+TColorDialog::mouseMDown(int x, int y, unsigned modifier)
+{
+  if (ORIGCOLOR_X+64 <= x && x <= ORIGCOLOR_X+64 + ORIGCOLOR_W &&
+      ORIGCOLOR_Y    <= y && y <= ORIGCOLOR_Y + ORIGCOLOR_H )
+  {
+    startDrag(new TDnDColor(rgb), modifier);
+  }
+}
+
+void
+TColorDialog::dropColor(const PDnDColor &drop)
+{
+  rgb = drop->rgb;
+  rgb2hsv();
+}
+
 void
 TColorDialog::paint()
 {
@@ -279,6 +317,7 @@ TColorDialog::paint()
 
   pen.draw3DRectanglePC(8+256+8+16+8+12, 8, 64+64, 32);
 }
+
 
 void
 TColorDialog::hsv2rgb()

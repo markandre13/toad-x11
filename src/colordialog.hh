@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 
 #include <toad/dialog.hh>
 #include <toad/rgbmodel.hh>
+#include <toad/dnd/color.hh>
 
 namespace toad {
 
@@ -47,13 +48,13 @@ class TColorDialog:
     ~TColorDialog();
     void paint();
     void mouseLDown(int, int, unsigned);
+    void mouseMDown(int, int, unsigned);
     void mouseMove(int, int, unsigned);
+    void dropColor(const PDnDColor&);
     
     void done(bool apply);
     
     bool apply;
-    
-    TBitmap *bmp1 , *bmp2;
 };
 
 } // namespace toad
