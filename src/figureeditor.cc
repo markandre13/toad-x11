@@ -209,7 +209,7 @@ TFigureEditor::init()
   background_color.set(192,192,192);
   fontname = "arial,helvetica,sans-serif:size=12";
 
-  gridx = gridy = 8;
+  gridx = gridy = 4;
   draw_grid = true;
   fuzziness = 2;
   handle = -1;
