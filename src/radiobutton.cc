@@ -59,7 +59,7 @@ TRadioButton::paint()
   pen.setColor(  0,  0,  0);
   pen.drawArcPC(1,1,11,11, 90, 180);
   if (isDown())
-    pen.fillCirclePC(3,3, 6,6);
+    pen.fillCircle(3,3, 6,6);
     
   pen.drawString(20,y, getLabel());
   
