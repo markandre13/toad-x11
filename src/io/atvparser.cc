@@ -199,11 +199,13 @@ TATVParser::parse()
             unknown = yytext;
             attribute.clear();
             type.clear();
+            value.clear();
             state = 1;
             break;
           case '{':
             attribute.clear();
             type.clear();
+            value.clear();
             if (!startGroup()) {
               return false;
             }
@@ -249,6 +251,7 @@ TATVParser::parse()
             unknown = yytext;
             attribute.clear();
             type.clear();
+            value.clear();
             break;
           default:
             unexpectedToken(t);
@@ -289,6 +292,7 @@ TATVParser::parse()
             unknown = yytext;
             attribute.clear();
             type.clear();
+            value.clear();
             state = 1;
             break;
           case '}':
