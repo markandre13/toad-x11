@@ -93,9 +93,6 @@ toad::initialize(int argc, char **&argv, char **envv)
   }
   toad::argv = argv;
 
-  // initialize TSmartObject
-  TSmartObject::initialize(&argv);
-  
   // initialize stacktrace.cc
   toad::top_address = __builtin_return_address(1);
 
