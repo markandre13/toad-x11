@@ -134,6 +134,45 @@ class TSerializable:
     virtual bool restore(TInObjectStream&);
 };
 
+/**
+ * A macro to ease the declaration of TSerializable derived classes.
+ *
+ * There a 4 methods which must be implemented for each class, and most
+ * of the required definition for these methods is identical to using
+ * this macro may help you to prevent making error and avoid typing too
+ * much.
+ *
+ * An example:
+ * \pre
+class TResource:
+public TSerializable
+{  
+  typedef TSerializable super;
+  SERIALIZABLE_INTERFACE(toad::, TResource)
+    
+  string test;
+}
+   
+void
+TResource::store(TOutObjectStream &out) const
+{
+  ::store(out, "test", test);
+}
+
+bool
+TResource::restore(TInObjectStream &in)
+{
+  if (
+    ::restore(in, "test", &test) ||
+    super::restore(in)
+  ) return true;      
+  ATV_FAILED(in);
+  return false;
+}
+           
+   \endpre
+ *
+ */
 #define SERIALIZABLE_INTERFACE(PREFIX, CLASS) \
   public:\
     TCloneable* clone() const { return new CLASS(*this); }\
