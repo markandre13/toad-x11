@@ -48,6 +48,7 @@ class TFont:
     TFont(const string &fontname);
     void setFont(const string &fontname);
     virtual ~TFont();
+    double getPoints() const;
 
   public:
     enum ERenderType {
