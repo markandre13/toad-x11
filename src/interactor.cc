@@ -131,7 +131,7 @@ void TInteractor::beforeAdd(TInteractor**)
 /**
  * Called when the window (interactor) or one of its parents received the 
  * keyboard focus.<br>
- * <i>TWindow::IsFocus()</i> will return `true' when the window really has 
+ * <i>TWindow::isFocus()</i> will return `true' when the window really has 
  * the focus.
  */
 void TInteractor::focus(bool){}
@@ -196,13 +196,10 @@ TInteractor*
 TInteractor::getPrevSibling(const TInteractor *ptr)
 {
   TInteractor *prev = ptr->parent->child;
-  if (prev==ptr) {
-    while(prev->next)
-      prev = prev->next;
-  } else {
-    while(prev->next!=ptr)
-      prev = prev->next;
-  }
+  if (prev==ptr)
+    return 0;
+  while(prev->next!=ptr)
+    prev = prev->next;
   return prev;
 }
 
