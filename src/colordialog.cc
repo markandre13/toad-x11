@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -301,14 +301,15 @@ TColorDialog::paint()
   // draw HSVRGB
   x=8+256+8+16+8; y=8+32+8;
   static const char * txt[] = { "H", "S", "V", "R", "G", "B" };
-  pen.setColor(0,0,0);
+  pen.setFillColor(TColor::DIALOG);
+  pen.setLineColor(0, 0, 0);
   for(int i=0; i<6; ++i) {
-    pen.drawString(x,y+2, txt[i]);
+    pen.fillString(x,y+2, txt[i]);
     y+=17+8;
   }
   
   y+=4;
-  pen.drawString(x+44,y+2, "Hex Triplet:");
+  pen.fillString(x+44,y+2, "Hex Triplet:");
   
   // draw color field
   pen.setColor(origcolor);
