@@ -273,12 +273,12 @@ TPen::setMatrix(double a11, double a12, double a21, double a22, double tx, doubl
 void
 TPen::push()
 {
-  TMatrix2D *mnew;
-  if (mat)
+  if (mat) {
+    TMatrix2D *mnew;
     mnew = new TMatrix2D(*mat);
-  else
-    mnew = new TMatrix2D();
-  mat = mnew;
+    mnew->next = mat;
+    mat = mnew;
+  }
 }
 
 void
