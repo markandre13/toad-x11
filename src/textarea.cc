@@ -183,7 +183,7 @@ TTextArea::init()
   _bos = _eos = 0;
   _cx = _cy = 0;
   _cxpx = -1;
-  _tx = _ty = 0;
+  _ty = 0;
   _pos = 0;
   
   bDoubleBuffer = true;
@@ -229,7 +229,7 @@ TTextArea::keyDown(TKey key, char* str, unsigned modifier)
     return;
 DBM(cout << "ENTER keyDown '" << str << "'" << endl;
     cout << "  _cx, _cy        : " << _cx << ", " << _cy << endl;
-    cout << "  _tx, _ty        : " << _tx << ", " << _ty << endl;
+    cout << "     , _ty        : " << ", " << _ty << endl;
     cout << "  _bol, _pos, _eol: " << _bol << ", " << _pos << ", " << _eol << endl;)
 
   // MacOS alike keybindings
@@ -434,7 +434,7 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
 
 DBM(cout << "LEAVE keyDown" << endl;
     cout << "  _cx, _cy        : " << _cx << ", " << _cy << endl;
-    cout << "  _tx, _ty        : " << _tx << ", " << _ty << endl;
+    cout << "  _ty             : " << _ty << endl;
     cout << "  _bol, _pos, _eol: " << _bol << ", " << _pos << ", " << _eol << endl;)
 }
 
@@ -484,12 +484,17 @@ y-=2;
   cerr << "found line '" << line << "'\n";
 
   int w1 = 0, w2 = 0;
-  unsigned p;
-  for(p=0; p<=line.size(); utf8inc(line, &p)) {
+  unsigned p, cx;
+  for(p=0, cx=0; p<line.size(); utf8inc(line, &p), ++cx) {
     w2 = font->getTextWidth(line.substr(0, p));
     if (w2>x)
       break;
     w1 = w2;
+  }
+  if (p==line.size()) {
+    w2 = font->getTextWidth(line);
+    if (w2<=x)
+      w1 = w2;
   }
 //cerr << "x-w1=" << (x-w1) << ", w2-x=" << (w2-x) << endl;
 
@@ -504,7 +509,7 @@ y-=2;
   
 //cerr << "position " << p << ", " << y << endl;
 
-  setCursor(p + _tx, y + _ty);
+  setCursor(cx, y + _ty);
 }
 
 void
@@ -534,7 +539,6 @@ TTextArea::_set_model(TTextModel *m)
   model = m;
   _cx = 0;
   _cy = 0;
-  _tx = 0;
   _ty = 0;
   _bol = 0;
   _pos = 0;
@@ -548,6 +552,60 @@ TTextArea::_set_model(TTextModel *m)
   adjustScrollbars();
   invalidateWindow(true);
 }
+
+//#undef DBM
+//#define DBM(CMD) CMD
+
+#ifdef TOAD_TEXTAREA_CHECK
+void
+checkCursor2(TTextArea *ta)
+{
+  unsigned pos = ta->getPos();
+  unsigned x, y;
+  x = y = 0;
+  const string &str = ta->getModel()->getValue();
+  for(unsigned i=0; i<pos; ++i) {
+    ++x;
+    if (str[i]=='\n') {
+      x=0;
+      ++y;
+    }
+  }
+  if (x!=ta->getCursorX() || y!=ta->getCursorY()) {
+    cout << "str   = '" << str << "'\n";
+    cout << "wrong cursor position: textarea is at (" 
+         << ta->getCursorX() << ", " << ta->getCursorY()
+         << ") but pos " << pos << " is at (" 
+         << x << ", " << y << ")\n";
+    exit(0);
+  }
+}
+
+void
+checkCursor3(TTextArea *ta, unsigned offset, unsigned size)
+{
+  unsigned pos = ta->getPos();
+  unsigned x, y;
+  x = y = 0;
+  string str = ta->getModel()->getValue();
+  str.erase(offset, size);
+  for(unsigned i=0; i<pos; ++i) {
+    ++x;
+    if (str[i]=='\n') {
+      x=0;
+      ++y;
+    }
+  }
+  if (x!=ta->getCursorX() || y!=ta->getCursorY()) {
+    cout << "str   = '" << str << "'\n";
+    cout << "wrong cursor position: textarea is at (" 
+         << ta->getCursorX() << ", " << ta->getCursorY()
+         << ") but pos " << pos << " is at (" 
+         << x << ", " << y << ")\n";
+    exit(0);
+  }
+}
+#endif
 
 /**
  * Update view.
@@ -566,25 +624,31 @@ TTextArea::modelChanged()
     return;
   }
 */
-  int oldcx=_cx, oldtx=_tx;
+  int oldcx=_cx;
 
   // check 'blink.current' before modifing blink.visible
   // we might not own the cursor
   if (blink.current==this)
     blink.visible=true;
-DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
-    cout << "  model->offset=" << model->offset << endl;
-    cout << "  model->length=" << model->length << endl;
-    cout << "  model->lines =" << model->lines << endl;
-    cout << "  _cx, _cy (" << _cx << ", " << _cy << ")" << endl;
-    cout << "  _tx, _ty (" << _tx << ", " << _ty << ")" << endl;
-    cout << "  _bol, _eol   (" << _bol << ", " << _eol << ")" << endl;
-    cout << "  _pos " << _pos << endl;)
+DBM(static unsigned opcount=0;
+    opcount++;
+    cout << "enter modelChanged (" << getTitle() << ")" << endl
+         << "  model->offset=" << model->offset << endl
+         << "  model->length=" << model->length << endl
+         << "  model->lines =" << model->lines << endl
+         << "  _cx, _cy (" << _cx << ", " << _cy << ")" << endl
+         << "  _ty (" << _ty << ")" << endl
+         << "  _bol, _eol   (" << _bol << ", " << _eol << ")" << endl
+         << "  _pos " << _pos << endl
+         << " value='" << model->getValue() << "'\n"
+         << "  opcount=" << opcount << endl;
+if (opcount==591) {
+  cout << "UPSI DAISY\n";
+})
   switch(model->type) {
     case TTextModel::CHANGE:
       _cx = 0;
       _cy = 0;
-      _tx = 0;
       _ty = 0;
       _bol = 0;
       _pos = 0;
@@ -640,19 +704,29 @@ DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
           if (_eol==string::npos)
             _eol=s.size();
             
-          _cx = utf8charcount(s, _bol, _pos - _bol) - _tx;
+          _cx = utf8charcount(s, _bol, _pos - _bol);
          }
         
         _catch_cursor();
       }
+#ifdef TOAD_TEXTAREA_CHECK
+      checkCursor2(this);
+#endif
       break;
 
+    // REMOVE is called before the section to be removed is actually
+    // removed from the model
     case TTextModel::REMOVE:
       {
         const string s(model->getValue());
         _bos = _eos = 0;
         unsigned m1 = model->offset;
         unsigned m2 = model->offset+model->length;
+        
+        DBM(
+          cout << "  REMOVE: offset=" << model->offset << endl
+               << "          length=" << model->length << endl;
+        )
         
         // update _cy, _ty
         
@@ -685,7 +759,10 @@ DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
           _bol -= model->length;
         } else
         if (m1 < _bol && _bol <= m2) { // (B) _bol inside sel.
-          _bol = s.rfind('\n', m1);
+          if (m1==0)
+            _bol = 0;
+          else
+            _bol = s.rfind('\n', m1-1);
           if (_bol==string::npos)
             _bol=0;
           else
@@ -718,25 +795,33 @@ DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
         }
         DBM(cout << "_eol   = " << _eol << endl;)
 
-        // _cx = _pos - _bol - _tx;
-        _cx = utf8charcount(s, _bol, _pos - _bol) - _tx;
+        _cx = utf8charcount(s, _bol, _pos - _bol);
 
         _catch_cursor();
       }
+#ifdef TOAD_TEXTAREA_CHECK
+      checkCursor3(this, model->offset, model->length);
+#endif
+      break;
   }
 DBM(cout << "leave modelChanged (" << getTitle() << ")" << endl;
     cout << "  _cx, _cy (" << _cx << ", " << _cy << ")" << endl;
-    cout << "  _tx, _ty (" << _tx << ", " << _ty << ")" << endl;
+    cout << "  _ty (" << _ty << ")" << endl;
     cout << "  _bol, _eol (" << _bol << ", " << _eol << ")" << endl;
     cout << "  _pos " << _pos << endl;
     cout << "----------------------------------------------------" << endl;)
 
-  if (oldcx!=_cx || oldtx!=_tx)
+  if (oldcx!=_cx)
     _cxpx = -1;
+
+
   adjustScrollbars();
   invalidateWindow();
   sigStatus();
 }
+
+//#undef DBM
+//#define DBM(CMD)
 
 void
 TTextArea::adjustScrollbars()
@@ -819,7 +904,7 @@ TTextArea::_get_line(string *line,
   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   // line = line with tabs converted to spaces
   // sx   = cx in line with tabs converted to spaces
-  *sx = _tx+_cx;
+  *sx = _cx;
 //cerr << "\n1 sx=" << sx << endl;
 
   if (bos) {
@@ -927,12 +1012,7 @@ TTextArea::paint()
         part = true;
       }
       
-      if (_tx==0) {
-        pen.fillString(0,y,line);
-      } else {
-        if (_tx < line.size())
-          pen.fillString(0,y,line.substr(_tx));
-      }
+      pen.fillString(0,y,line);
       
       if (part) {
 #if 0
@@ -962,19 +1042,8 @@ TTextArea::paint()
         }
         // cut pos & len to _tx
 //cerr << "pos = " << pos << endl << "_tx = " << _tx << endl;
-        if (pos<_tx) {
-          unsigned d = _tx - pos;
-          pos=_tx;
-          if (len>d) {
-            len-=d;
-          } else {
-            len=0;
-          }
-          x=0;
-        } else {
-          x = pen.getTextWidth(line.substr(_tx,pos-_tx));
+        x = pen.getTextWidth(line.substr(0,pos));
 //cerr << "  \"" << line.substr(_tx,pos-_tx) << "\"" << endl;
-        }
 //cerr << "x   = " << x << endl << "len = " << len << endl;
         if (len>0 && pos<line.size()) {
           pen.setLineColor(255,255,255);
@@ -1127,9 +1196,6 @@ TTextArea::_cursor_left(unsigned n)
         --_cx;
         _invalidate_line(_cy);
         _catch_cursor();
-      } else {
-        _tx--;
-        invalidateWindow();
       }
     } else 
     if (_cy+_ty>0) {
@@ -1145,9 +1211,9 @@ void
 TTextArea::_cursor_right(unsigned n)
 {
   MARK
-cerr << "cursor_right" << endl;
-cerr << "   _cx = " << _cx << endl;
-cerr << "  _pos = " << _pos << endl;
+//cerr << "cursor_right" << endl;
+//cerr << "   _cx = " << _cx << endl;
+//cerr << "  _pos = " << _pos << endl;
   for(unsigned i=0; i<n; ++i) {
     if (_pos<_eol) {
       ++_cx;
@@ -1160,8 +1226,8 @@ cerr << "  _pos = " << _pos << endl;
       _cursor_home();
     }
   }
-cerr << "   _cx = " << _cx << endl;
-cerr << "  _pos = " << _pos << endl;
+//cerr << "   _cx = " << _cx << endl;
+//cerr << "  _pos = " << _pos << endl;
   _cxpx = -1;
   blink.visible=true;
 }
@@ -1171,6 +1237,12 @@ TTextArea::_cursor_down(unsigned n)
 {
 #warning "_cursor_down doesn't handle utf-8"
   MARK
+  if (_cxpx == -1) {
+//    cout << "_cursor_down: _cxpx==-1\n";
+    TFont *font = TPen::lookupFont(preferences->getFont());
+    _cxpx = font->getTextWidth(model->getValue().substr(_bol, _pos-_bol));
+  }
+  
   for(unsigned i=0; i<n; ++i) {
     if(_eol+1<model->getValue().size()) {
       _bol=_eol+1;
@@ -1178,14 +1250,43 @@ TTextArea::_cursor_down(unsigned n)
       _invalidate_line(_cy);
       _cy++;
       _invalidate_line(_cy);
-      // _cx recalculation assumes fixed font!
-      if (_cx>_eol-_bol)
-        _cx=_eol-_bol-_tx;
-      _pos = _bol+_cx+_tx;
+      _pos_from_cxpx();
     }
   }
   _catch_cursor();    
   blink.visible=true;
+}
+
+/**
+ * calculate _cx, _pos from _bol, _eol and _cxpx
+ */
+void
+TTextArea::_pos_from_cxpx()
+{
+#warning "_pos_from_cxpx doesn't handle tabs"
+  assert(_cxpx != -1);
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
+
+  int w1 = 0, w2 = 0;
+  unsigned p, cx;
+  for(p=0, cx=0; p<=line.size(); utf8inc(line, &p), ++cx) {
+    w2 = font->getTextWidth(line.substr(0, p));
+    if (w2>_cxpx)
+      break;
+    w1 = w2;
+  }
+  if (p>=line.size()) {
+    utf8dec(line, &p);
+    --cx;
+  } else
+  if ( _cxpx-w1 < w2-_cxpx ) {
+    utf8dec(line, &p);
+    --cx;
+  }
+
+  _pos = _bol + p;
+  _cx  = cx;
 }
 
 void
@@ -1193,6 +1294,14 @@ TTextArea::_cursor_up(unsigned n)
 {
 #warning "_cursor_up doesn't handle utf-8"
   MARK
+
+  if (_cxpx == -1) {
+//    cout << "_cursor_down: _cxpx==-1\n";
+    TFont *font = TPen::lookupFont(preferences->getFont());
+    _cxpx = font->getTextWidth(model->getValue().substr(_bol, _pos-_bol));
+  }
+
+
   for(unsigned i=0; i<n; ++i) {
     if (_bol>0) {
       if (_bol>1) {
@@ -1208,10 +1317,7 @@ TTextArea::_cursor_up(unsigned n)
       _invalidate_line(_cy);
       _cy--;
       _invalidate_line(_cy);
-      // _cx recalculation assumes fixed font!
-      if (_cx>_eol-_bol)
-        _cx=_eol-_bol-_tx;
-      _pos = _bol+_cx+_tx;  // <- we don't need _pos, can calculate it? keep it for now!
+      _pos_from_cxpx();
     }
   }
   _catch_cursor();
@@ -1222,11 +1328,10 @@ void
 TTextArea::_cursor_home()
 {
   MARK
-  if (_tx+_cx!=0) {
-    bool flag = _tx == 0;
+  if (_cx!=0) {
+    bool flag = false;
     _pos=_bol;
     _cx=0;
-    _tx=0;
     if (flag) {
       _invalidate_line(_cy);
     } else {
@@ -1287,8 +1392,8 @@ TTextArea::_return()
 #else
       indent.erase();
 #endif
-    if (_cx + _tx < i-_bol)
-      indent.erase(_cx+_tx);
+    if (_cx < i-_bol)
+      indent.erase(_cx);
   }
   _insert('\n');
   for(int i=0; i<indent.size(); i++)
@@ -1403,8 +1508,8 @@ TTextArea::_scroll_right(unsigned n)
   MARK
   if (_cx==0)
     return;
-  _cx-=n;
-  _tx+=n;
+//  _cx-=n;
+//  _tx+=n;
   _cxpx = -1;
   invalidateWindow();  
 }
@@ -1413,12 +1518,12 @@ void
 TTextArea::_scroll_left(unsigned n)
 {
   MARK
-  if (_tx==0)
-    return;
-  if (n>_tx)
-    n = _tx;
-  _cx+=n;
-  _tx-n;
+//  if (_tx==0)
+//    return;
+//  if (n>_tx)
+//    n = _tx;
+//  _cx+=n;
+//  _tx-n;
   _cxpx = -1;
   invalidateWindow();
 }
@@ -1466,7 +1571,7 @@ TTextArea::setCursor(unsigned x, unsigned y)
   if (!model)
     return;
     
-  if (_tx+_cx == x && _ty+_cy==y)
+  if (_cx == x && _cy==y)
     return;
   
   MARK
@@ -1483,8 +1588,7 @@ cout << "screen position is at " << x << ", " << y << endl;
 cout << "screen is " << _tx << " - " << _ty << ", "
      << (_tx + wx) << " - " << (_ty + wy) << endl;
 #endif
-  if (_tx <= x && x <= _tx + wx &&
-      _ty <= y && y <= _ty + wy )
+  if (_ty <= y && y <= _ty + wy )
   {
     DBM(cout << "_bol, _pos, _eol = " << _bol << ", " << _pos << ", " << _eol << endl;)
 
@@ -1495,10 +1599,10 @@ cout << "screen is " << _tx << " - " << _ty << ", "
         ++i;
       ++tpos;
     }
-    tpos+=_tx;
+    tpos+=0;
     
 //    cerr << "old line: " << model->getValue().substr(_bol, _eol-_bol) << endl;
-    x-=_tx; y-=_ty;
+    y-=_ty;
     string::const_iterator p = tpos;
     string::const_iterator bol = p;
     _cx = _cy = 0;
@@ -1531,7 +1635,7 @@ cout << "screen is " << _tx << " - " << _ty << ", "
   {
     // stupid implementation
     _cx = _cy = 0;
-    _tx = _ty = 0;
+    _ty = 0;
     _pos = 0;
     _bol = 0;
     _eol = model->getValue().find('\n', _bol);
@@ -1548,7 +1652,7 @@ cout << "screen is " << _tx << " - " << _ty << ", "
 unsigned 
 TTextArea::getCursorX() const
 {
-  return _cx+_tx;
+  return _cx;
 }
 
 unsigned 

@@ -73,7 +73,6 @@ class TTextArea:
   
     static const bool debug_modelchanged = true;
 
-
     TTextArea(TWindow *p, const string &t):
       super(p, t)
     {
@@ -146,7 +145,7 @@ class TTextArea:
     void _invalidate_line(unsigned line, bool statusChanged=true);
 
     //! position of the window's upper left char inside data
-    unsigned _tx, _ty;
+    unsigned _ty;
     
     //! cursor position (relative to screen)
     int _cx, _cy;
@@ -207,6 +206,8 @@ class TTextArea:
         _eol = model->getValue().size();
     }
     
+    void _pos_from_cxpx();
+    
     void _set_model(TTextModel*);
 
   public:
@@ -238,6 +239,8 @@ class TTextArea:
     unsigned gotoLine(unsigned);
     void find(const string&);
     unsigned getLines() const;
+    
+    unsigned getPos() const { return _pos; }
 };
 
 } // namespace toad
