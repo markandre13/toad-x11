@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1271,12 +1271,12 @@ TWindow::scrollWindow(int dx, int dy, bool clear)
   // decide which parts of the window must be redrawn
   //-------------------------------------------------------------
   if (dy>0) // scroll down, clear top
-    invalidateWindow(0,0, _w, dy, clear);
+    invalidateWindow(0,0, _w, dy+1, clear);
   else if (dy<0)  // scroll up, clear bottom
     invalidateWindow(0,_h+dy, _w, -dy, clear);
 
   if (dx>0) // scroll right, clear left
-    invalidateWindow(0,0, dx, _h, clear);
+    invalidateWindow(0,0, dx+1, _h, clear);
   else if (dx<0)  // scroll left, clear right
     invalidateWindow(_w+dx, 0, -dx, _h, clear);
 
@@ -1307,6 +1307,8 @@ TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool clear)
     invalidateWindow(clear);
     return;
   }
+
+//cerr << "scroll rectangle " << r << " by " << dx << ", " << dy << endl;
 
   #ifdef SCROLL_WITH_SERVER_GRAB
   XGrabServer(x11display);
@@ -1366,21 +1368,21 @@ TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool clear)
     xs  = r.w;
   }
 
-//  printf("scroll %3i,%3i - %3i,%3i by %3i,%3i\n", r.x,r.y, r.x+r.w,r.y+r.h, dx,dy);
-//  printf("copy   %3i,%3i - %3i,%3i to %3i,%3i\n", r.x,r.y, r.x+xs,r.y+ys, d.x,d.y);
-
   XCopyArea(x11display, x11window, x11window, x11gc, s.x,s.y, xs, ys, d.x,d.y);
+
+//cerr << "  copy area " << s.x << ", " << s.y << ", " << xs << ", " << ys << " to " << d.x << ", " << d.y << endl;
   
   // decide which parts of the window must be redrawn
   //-------------------------------------------------------------
   if (dy>0) // scroll down, clear top
-    invalidateWindow(r.x,        r.y, _w, dy, clear);
-  else if (dy<0)  // scroll up, clear bottom
-    invalidateWindow(r.x,r.y+r.h+dy, _w, r.y-dy, clear);
+    invalidateWindow(r.x, r.y, r.w, dy+1, clear);
+  else if (dy<0) // scroll up, clear bottom
+    invalidateWindow(r.x,r.y+r.h+dy, r.w, -dy, clear);
+
   if (dx>0) // scroll right, clear left
-    invalidateWindow(r.x,        r.y, dx, _h, clear);
+    invalidateWindow(r.x, r.y, dx+1, r.h, clear);
   else if (dx<0)  // scroll left, clear right
-    invalidateWindow(r.x+r.w+dx, r.y, -dx, _h, clear);
+    invalidateWindow(r.x+r.w+dx, r.y, -dx, r.h, clear);
 
   #ifdef SCROLL_WITH_SERVER_GRAB
   XUngrabServer(x11display);
