@@ -218,12 +218,14 @@ class TDefaultTableHeaderRenderer:
   public TAbstractTableHeaderRenderer
 {
     bool numeric;
+    vector<string> text;
   public:
     TDefaultTableHeaderRenderer(bool numeric_mode=true):
       numeric(numeric_mode) {}
     int getHeight();
     int getWidth();
     void renderItem(TPen &pen, int idx, int w, int h);
+    void setText(unsigned pos, const string &txt);
 };
 
 class TTable:
@@ -285,6 +287,7 @@ class TTable:
     void resize();
     void focus(bool);
 
+    void mouseEvent(TMouseEvent &me);
     void mouseLDown(int x,int y, unsigned modifier);
     void mouseMove(int x,int y, unsigned modifier);
     void mouseLUp(int x,int y, unsigned modifier);
@@ -343,7 +346,7 @@ class TTable:
     int rows, cols;     // table size in rows & columns
     bool per_row, per_col;
     
-    // getRowHeight & getColWidth are expensive operation so call 'em
+    // getRowHeight & getColWidth are expensive operations so call 'em
     // once and store their values in row_info and col_info
     struct TRCInfo {    // row/column info
       int size;

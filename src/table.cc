@@ -491,6 +491,27 @@ TTableSelectionModel::isSelected(int x, int y) const
   return region.isInside(x, y);
 }
 
+/**
+ * @ingroup table
+ * \class TDefaultTableHeaderRenderer
+ *
+ * Objects of this class can be used to draw the table row and column
+ * header. Numeric headers are used per default, Alphabetic headers can
+ * be selected by passing 'false' to the constructor.
+ *
+ * Custom text can be selected using the 'setText' method which will be
+ * used instead of the numeric or alphabetic header in case the text for
+ * the position isn't empty. (Thus to set an empty header, pass a string
+ * containing one or more blanks.)
+ */
+
+void
+TDefaultTableHeaderRenderer::setText(unsigned pos, const string &txt) {
+  if (text.size()<=pos)
+    text.resize(pos+1);
+  text[pos] = txt;
+}
+ 
 int
 TDefaultTableHeaderRenderer::getHeight()
 {
@@ -510,6 +531,9 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, int idx, int w, int h)
   char buffer[16];
   string str;
   const char *txt;
+  if (idx<text.size() && !text[idx].empty()) {
+    txt = text[idx].c_str();
+  } else
   if (numeric) {
     snprintf(buffer, 15, "%i", idx+1);
     txt = buffer;
@@ -616,6 +640,11 @@ TTable::setRowHeaderRenderer(TAbstractTableHeaderRenderer *r)
   if (row_header_renderer==r)
     return;
   row_header_renderer = r;
+  if (row_header_renderer || col_header_renderer) {
+    setMouseMoveMessages(TMMM_ALL);
+  } else {
+    setMouseMoveMessages(TMMM_ANYBUTTON);
+  }
   doLayout();
 }
 
@@ -625,6 +654,11 @@ TTable::setColHeaderRenderer(TAbstractTableHeaderRenderer *r)
   if (col_header_renderer==r)
     return;
   col_header_renderer = r;
+  if (row_header_renderer || col_header_renderer) {
+    setMouseMoveMessages(TMMM_ALL);
+  } else {
+    setMouseMoveMessages(TMMM_ANYBUTTON);
+  }
   doLayout();
 }
 
@@ -731,6 +765,10 @@ TTable::invalidateChangedArea(int sx, int sy,
 #endif
 }
 
+// clipping: we don't need clipping at all, when we ensure that field content
+// is never drawn with the negative area. this way we can fields on the right
+// and below overdraw the content from the previous field and thus simulate
+// the clipping, which may be expensive
 void
 TTable::paint()
 {
@@ -765,6 +803,8 @@ DBSCROLL({
     xp = fpx + visible.x;
     int h = col_header_renderer->getHeight();
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
+      if (col_info[x].size==0)
+        continue;
       pen.identity();
       pen.translate(xp+1,0);
       int size = col_info[x].size;
@@ -788,6 +828,8 @@ DBSCROLL({
     yp = fpy + visible.y;
     int w = row_header_renderer->getWidth();
     for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
+      if (row_info[y].size==0)
+        continue;
       pen.identity();
       pen.translate(0,yp);
       row_header_renderer->renderItem(pen, y, w, row_info[y].size);
@@ -896,7 +938,6 @@ DBSCROLL(
                   (per_row && cy==y) ||
                   (per_col && cx==x);
         }
-
         renderer->renderCell(
             pen,
             x, y,
@@ -1049,6 +1090,88 @@ cerr << " y=" << y
 }
 
 void
+TTable::mouseEvent(TMouseEvent &me)
+{
+  bool between_h = false;
+  static unsigned state = 0;
+  static int col;
+  static int osize;
+  static int mdown;
+  static int opane;
+
+  switch(state) {
+    case 0:
+    case 1:
+      int colx;
+      if (col_header_renderer) {
+        TRectangle clip(visible.x, 0, visible.w, visible.y);
+        if (clip.isInside(me.x, me.y)) {
+          int xp = fpx + visible.x;
+          int h = col_header_renderer->getHeight();
+          for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
+            int size = col_info[x].size;
+            if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
+              size = visible.x+visible.w-xp+1;
+//            cout << "xp="<<xp<<", size="<<size<<", mx="<<me.x<<endl;
+            if (xp+1 <= me.x && me.x <= xp+size-2) {
+//              cout << "  inside " << x << endl;
+            } else
+            if (xp+size-1<=me.x && me.x<=xp+size+1+border) {
+//              cout << "between" << endl;
+              colx = x;
+              between_h = true;
+            }
+            xp+=col_info[x].size;
+            if (border) {
+              xp+=border;
+            }
+          }
+        }
+      }
+      if (state == 0 && between_h) {
+        TWindow::setCursor(TCursor::HORIZONTAL);
+        state = 1;
+//        cout << "into between" << endl;
+      } else
+      if (state == 1 && !between_h) {
+        TWindow::setCursor(TCursor::DEFAULT);
+        state = 0;
+//        cout << "out of between" << endl;
+      }
+      if (state==1 && me.type == TMouseEvent::LDOWN) {
+        state = 2;
+        col = colx;
+        osize = col_info[col].size;
+        opane = pane.w;
+        mdown = me.x;
+//        cout << "grep between " << col << endl;
+      }
+      break;
+    case 2:
+      if (me.type==TMouseEvent::LUP) {
+        state = 1;
+//        cout << "ungrep between" << endl;
+      } else
+      if (me.type==TMouseEvent::MOVE) {
+//        cout << "move col "<<col<<" between" << endl;
+//        cout << "  dx=" << (osize+me.x-mdown) << endl;
+        col_info[col].size = osize+me.x-mdown;
+        if (col_info[col].size<3)
+          col_info[col].size=3;
+        pane.w = opane - osize + col_info[col].size;
+        invalidateWindow();
+        doLayout();
+      }
+      break;
+  }
+  if (state!=0)
+    return;
+
+  // TWindow::setCursor(TCursor::DEFAULT);
+  TWindow::mouseEvent(me);
+}
+
+void
 TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
 DBM2(cerr << "enter mouseLDown" << endl;)
@@ -1116,10 +1239,13 @@ DBM2(cerr << "enter mouseLDown" << endl;)
 void
 TTable::mouseMove(int mx, int my, unsigned)
 {
+//cout << "TTable::mouseMove("<<mx<<", "<<my<<")"<<endl;
+
 DBM2(cerr << "enter mouseMove" << endl;)
   if (!selecting) {
     DBM2(cerr << "  not selecting" << endl;
     cerr << "leave mouseMove" << endl << endl;)
+    return;
   }
 
 //cerr << __PRETTY_FUNCTION__ << endl;
@@ -1222,8 +1348,8 @@ TTable::center(int how)
     
     int y1 = paney;
     int y2 = y1 + visible.h;
-      
-    if (yp<y1) {
+    
+    if (yp<=y1) {
       paney = yp;
     } else {
       yp += row_info[y].size + border;
@@ -1243,7 +1369,7 @@ TTable::center(int how)
     int x1 = panex;
     int x2 = x1 + visible.w;
       
-    if (xp<x1) {
+    if (xp<=x1) {
       panex = xp;
     } else {
       xp += col_info[x].size + border;
@@ -1495,7 +1621,7 @@ TTable::_handleRemovedRow()
   int new_rows = rows - renderer->size;
   // row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
 
-//cerr << "move from " << renderer->where << " to " << (renderer->where + renderer->size) << " an amount of " << (rows - renderer->where) << " entries" << endl;
+//cout << "move from " << (renderer->where+renderer->size) << " to " << (renderer->where) << " an amount of " << (rows - renderer->where - renderer->size) << " entries" << endl;
   TRCInfo *info = row_info + renderer->where;
   for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
@@ -1523,6 +1649,7 @@ TTable::_handleRemovedRow()
   // selection model ??? ouch ....
 
   rows = new_rows;
+//cout << "number of rows is now " << rows << endl;
   invalidateWindow();
 
   doLayout();
