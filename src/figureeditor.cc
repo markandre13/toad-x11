@@ -1770,7 +1770,7 @@ redo:
       
       TPoint pt(x,y);
 #if 1
-      cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+//      cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
 #else
       history.add(new TUndoableHandleMove(*selection.begin(), handle, memo_pt, pt));
 #endif
