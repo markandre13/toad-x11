@@ -1,0 +1,35 @@
+/*****************************************************************************
+ *                                                                           *
+ * TOAD - thing on a desk                                                    *
+ * (C)opyright 1996 by Mark-André Hopf                                       *
+ *                                                                           *
+ *****************************************************************************/
+
+/*
+ *  This is the input file for configure to produce "config.h".
+ */
+
+/* Define if you can safely include both <sys/time.h> and <time.h>.  */
+#undef TIME_WITH_SYS_TIME
+
+/* Define if you have the <sys/time.h> header file.  */
+#undef HAVE_SYS_TIME_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Define if threads are possible */
+#undef __TOAD_THREADS
+
+/* Define if the compiler handles nested classes. */
+#undef HAVE_NESTED_CLASSES
+
+/* Define if system has the Solaris dlopen interface */
+#undef HAVE_DLFCN
+
+#undef HAVE_LIBJPEG
+
+/* Xft support for anti-aliased font, which is part of XFree86 */
+#undef HAVE_LIBXFT
+
+/* end of config.hin */
