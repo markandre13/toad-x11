@@ -283,8 +283,9 @@ writeQuoted(ostream &out, const char *p, unsigned n)
   const char * l = p;
   while(p<e) {
     if (*p=='\"') {
-      if (n)
-        out.write(l, n);
+      if (n) {
+        out.write(l, n-1);
+      }
       out << '\\';
       l = p;
       n = 1;
@@ -293,8 +294,7 @@ writeQuoted(ostream &out, const char *p, unsigned n)
     ++p;
   }
   if (n)
-    out.write(l, n);
-    
+    out.write(l, n-1);
   out << '\"';
 }
 
