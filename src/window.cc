@@ -434,7 +434,8 @@ TWindow::createWindow()
   flag_create = true; // avoid recursion (for TMDIWindow)
 
   if (getParent() && !getParent()->x11window ) {
-    getParent()->createWindow(); // create parent (for TMDIWindow)
+#warning "disabled stupid hack for TMDIWindow without fixing TMDIWindow"
+//    getParent()->createWindow(); // create parent (for TMDIWindow)
   } else if (!x11window) {
     flag_explicit_create = true; // ???
     _interactor_init();      // call create top-down
@@ -1680,7 +1681,7 @@ void TWindow::setTitle(const string &title)
 void
 TWindow::loadLayout(const string &file)
 {
-  TLayout * layout = NULL;
+  TLayout * new_layout = NULL;
   // bDialogEditRequest = true; ???
   string filename = getResourcePrefix() + file;
   try {
@@ -1695,20 +1696,25 @@ TWindow::loadLayout(const string &file)
       cerr << "loading layout failed:\n" << in.getErrorText() << endl;
     }
     
-    layout = dynamic_cast<TLayout*>(s);
+    new_layout = dynamic_cast<TLayout*>(s);
     if (!layout) {
       cerr << "loading layout failed:\nfile '"<<filename<<"' doesn't provide TLayout object" << endl;
       delete s;
-      return;
     }
   }
   catch(exception &e) {
     cerr << "loading layout failed:\ncaught exception: " << e.what() << endl;
-    layout = new TDialogLayout();
   }
-  if (layout) {
-    layout->setFilename(filename);
-    setLayout(layout);
+  if (new_layout) {
+    new_layout->setFilename(filename);
+    setLayout(new_layout);
+  } else {
+    if (layout) {
+      layout->arrange();
+      layout->setFilename(filename);
+      layout->setModified(true);
+      layout->toFile();
+    }
   }
 }
 

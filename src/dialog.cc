@@ -100,6 +100,7 @@ TDialog::TDialog(TWindow* parent, const string &title):
   bDrawFocus = false;
   if (getParent())
     TOADBase::placeWindow(this, PLACE_PARENT_CENTER, getParent());
+  setLayout(new TDialogLayout());
 }
 
 TDialog::~TDialog()
@@ -210,7 +211,6 @@ arrangeHelper(TFigureModel::iterator p,
   while(p!=e) {
     TFWindow *gw = dynamic_cast<TFWindow*>(*p);
     if (gw) {
-//cerr << "found TFWindow title='"<<gw->title<<"', label='"<<gw->label<<"'\n";
       TTitleWindowMap::iterator pm = wmap.find(gw->title);
       if (pm!=wmap.end()) {
         gw->window = (*pm).second;
@@ -219,8 +219,9 @@ arrangeHelper(TFigureModel::iterator p,
         gw->window->setShape(r.x,r.y,r.w,r.h);
         TLabelOwner *lo = dynamic_cast<TLabelOwner*>(gw->window);
         if (lo) {
-          lo->setLabel(gw->label);
-          gw->label.erase();
+          if (gw->label.size()!=0)
+            lo->setLabel(gw->label);
+          gw->label.erase(); // ???
         }
         gw->window->taborder = gw->taborder;
         wmap.erase(pm);

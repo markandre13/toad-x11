@@ -154,6 +154,7 @@ TDialogEditor::TFilter::keyEvent(TKeyEvent &ke)
 TDialogEditor::TDialogEditor():
   TDialog(NULL, "Dialog Editor")
 {
+  setLayout(0);
   TFatCheckButton *fcb;
   fcb = new TFatCheckButton(this, "Edit");
   connect(fcb->sigValueChanged, this, &TDialogEditor::editModeChanged);
