@@ -24,6 +24,7 @@
 #include <toad/action.hh>
 #include <toad/filedialog.hh>
 #include <toad/undomanager.hh>
+#include <toad/utf8.hh>
 
 #include <ctype.h>
 #include <string>
@@ -65,80 +66,6 @@ struct TState;
 struct TElement;
 struct TETable;
 struct TEAnchor;
-
-string
-utf8fromwchar(wchar_t c)
-{
-  string result;
-  if (c<=0x7f) {
-    result.append(1, c);
-  } else
-  if (c<=0x7ff) {
-    int c2 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c1 = c | 0xc0;
-    result.append(1, (char)c1);
-    result.append(1, (char)c2);
-  } else
-  if (c<=0xffff) {
-    int c3 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c2 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c1 = c | 0xe0;
-    result.append(1, (char)c1);
-    result.append(1, (char)c2);
-    result.append(1, (char)c3);
-  } else
-  if (c<=0x1fffff) {
-    int c4 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c3 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c2 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c1 = c | 0xf0;
-    result.append(1, (char)c1);
-    result.append(1, (char)c2);
-    result.append(1, (char)c3);
-    result.append(1, (char)c4);
-  } else
-  if (c<=0x3ffffff) {
-    int c5 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c4 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c3 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c2 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c1 = c | 0xf8;
-    result.append(1, (char)c1);
-    result.append(1, (char)c2);
-    result.append(1, (char)c3);
-    result.append(1, (char)c4);
-    result.append(1, (char)c5);
-  } else {
-    int c6 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c5 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c4 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c3 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c2 = (c & 0x3f) | 0x80;
-    c >>= 6;
-    int c1 = c | 0xfc;
-    result.append(1, (char)c1);
-    result.append(1, (char)c2);
-    result.append(1, (char)c3);
-    result.append(1, (char)c4);
-    result.append(1, (char)c5);
-    result.append(1, (char)c6);
-  }
-  return result;
-}
 
 } // namespace
 

@@ -22,6 +22,7 @@
 #include <toad/simpletimer.hh>
 #include <toad/undomanager.hh>
 #include <toad/action.hh>
+#include <toad/utf8.hh>
 #include <cstdio>
 #include <assert.h>
 
@@ -34,68 +35,6 @@
 #endif
 
 using namespace toad;
-
-/**
- * Set *cx to the next UTF-8 character in text.
- */
-inline void 
-utf8inc(const string &text, unsigned int *cx)
-{
-  ++*cx;
-  while( ((unsigned char)text[*cx] & 0xC0) == 0x80)
-    ++*cx;
-}
-
-/**
- * Set *cx to the previous UTF-8 character in text.
- */
-inline void 
-utf8dec(const string &text, unsigned int *cx)
-{
-  --*cx;
-  while( ((unsigned char)text[*cx] & 0xC0) == 0x80)
-    --*cx;
-}
-
-/**
- * Return the number of characters in text from start to start+bytelen.
- */
-inline int
-utf8charcount(const string &text, int start, int bytelen)
-{
-  return XCountUtf8Char((const unsigned char*)text.c_str()+start, bytelen);
-}
-
-/**
- * Return the number for bytes used to store 'charlen' characters
- * beginning at 'start' in 'text'.
- */
-inline int
-utf8bytecount(const string &text, int start, int charlen)
-{
-  int result = 0;
-  unsigned char *ptr = (unsigned char*)text.c_str() + start;
-  while(charlen>0) {
-    ++ptr;
-    --charlen;
-    ++result;
-    while( (*ptr & 0xC0) == 0x80 ) {
-      ++result;
-      ++ptr;
-    }
-  }
-  return result;
-}
-
-/**
- * Return the number of bytes required to store the character at position
- * 'pos' in 'text'.
- */
-inline int
-utf8charsize(const string &text, int pos)
-{
-  return utf8bytecount(text, pos, 1);
-}
 
 TTextModel *
 toad::createTextModel(TTextModel *m)
