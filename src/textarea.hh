@@ -194,9 +194,6 @@ class TTextArea:
     void _scroll_left(unsigned n=1);
     void _scroll_right(unsigned n=1);
     
-    //! insert a single character at cursor position (_cx, _cy)
-    void _insert(int c);
-    
     //! insert string at cursor position (_cy, _cy)
     void _insert(const string&);
     

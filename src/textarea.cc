@@ -405,13 +405,11 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
         s.replace(0,1, m+1, ' ');
         _insert(s);
       } else {
-        _insert('\t');
+        _insert("\t");
       }
       break;
     default:
       if ((unsigned char)str[0]>=32 || str[1]!=0) {
-        if (preferences->mode==TPreferences::NORMAL)
-          _selection_clear();
         _insert(str);
       }
 //      else
@@ -473,7 +471,7 @@ TTextArea::mouseLUp(int x, int y, unsigned)
 void
 TTextArea::_goto_pixel(int x, int y)
 {
-x-=2;
+x-=2-_tx;
 y-=2;
   TFont *font = TPen::lookupFont(preferences->getFont());
   int h = font->getHeight();
@@ -482,11 +480,11 @@ y-=2;
   setCursor(0, y + _ty);
 
   string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
-  cerr << "found line '" << line << "'\n";
+//  cerr << "found line '" << line << "'\n";
 
   int w1 = 0, w2 = 0;
   unsigned p, cx;
-  for(p=0, cx=0; p<line.size(); utf8inc(line, &p), ++cx) {
+  for(p=0, cx=0; p<line.size(); utf8inc(line, &p), cx++) {
     w2 = font->getTextWidth(line.substr(0, p));
     if (w2>x)
       break;
@@ -502,6 +500,7 @@ y-=2;
   if ( x-w1 < w2-x ) {
     utf8dec(line, &p);
     _cxpx = w1;
+    cx--;
   } else {
     _cxpx = w2;
   }
@@ -644,7 +643,7 @@ DBM(static unsigned opcount=0;
          << " value='" << model->getValue() << "'\n"
          << "  opcount=" << opcount << endl;
 if (opcount==591) {
-  cout << "UPSI DAISY\n";
+//  cout << "UPSI DAISY\n";
 })
   switch(model->type) {
     case TTextModel::CHANGE:
@@ -760,14 +759,16 @@ if (opcount==591) {
           _bol -= model->length;
         } else
         if (m1 < _bol && _bol <= m2) { // (B) _bol inside sel.
-          if (m1==0)
+          if (m1==0) {
             _bol = 0;
-          else
+          } else {
             _bol = s.rfind('\n', m1-1);
-          if (_bol==string::npos)
-            _bol=0;
-          else
-            _bol++;
+            if (_bol==string::npos) {
+              _bol=0;
+            } else {
+              _bol++;
+            }
+          }
         }
         
         // _pos
@@ -985,7 +986,7 @@ TTextArea::paint()
     eol = data.find('\n', bol);
     unsigned n = eol==string::npos ? eol : eol-bol; // n=characters in line
     if (y+pen.getHeight()>=clipbox.y) { // loop has reached the visible area
-//cout << "line " << bol << "-" << eol << endl;
+//cerr << "line " << bol << "-" << eol << endl;
 
       string line;
       unsigned bos, eos;
@@ -994,14 +995,15 @@ TTextArea::paint()
 //cerr << "draw line: '" << line << "'\n";
 //cerr << "  line     : " << bol << " - " << eol << endl;
 //cerr << "  selection: " << _bos << " - " << _eos << endl;
+//cerr << "  selection: " << bos << " - " << eos << endl;
       // draw text
       bool part=false;
-      if (_bos <= bol && eol <= _eos) {
+      if (bos <= bol && eol <= eos) {
 //cerr << "    line is inside selection\n";
         // inside selection
         pen.setLineColor(255,255,255);
         pen.setFillColor(0,0,0);
-      } else if (eol < _bos || bol > _eos) {
+      } else if (eol < bos || bol > eos) {
 //cerr << "    line is outside selection\n";
         // outside selection
         pen.setLineColor(0,0,0);
@@ -1028,15 +1030,15 @@ TTextArea::paint()
         int x=0;
         unsigned pos = 0;
         unsigned len = eol-bol;
-        if (bol < _bos) { // start is inside
+        if (bol < bos) { // start is inside
 //cerr << "start is inside" << endl;
           pos = bos-bol;
         }
-        if (_eos < eol) { // end is inside
+        if (eos < eol) { // end is inside
 //cerr << "end is inside" << endl;
           len = eos - bol;
         }
-        if (bol < _bos) { // start is inside
+        if (bol < bos) { // start is inside
 //cerr << "start is inside" << endl;
           pos = bos-bol;
           len-=pos;
@@ -1087,16 +1089,13 @@ TTextArea::_invalidate_line(unsigned y, bool statusChanged)
 }
 
 void
-TTextArea::_insert(int c)
-{
-  MARK
-  model->insert(_pos, c);
-}
-
-void
 TTextArea::_insert(const string &s)
 {
   MARK
+  if (preferences->mode==TPreferences::NORMAL) {
+    if (_bos != _eos)
+      _selection_erase();
+  }
   if (preferences->singleline) {
     unsigned p = s.find('\n');
     if (p!=string::npos) {
@@ -1395,9 +1394,8 @@ TTextArea::_return()
     if (_cx < i-_bol)
       indent.erase(_cx);
   }
-  _insert('\n');
-  for(int i=0; i<indent.size(); i++)
-    _insert(indent[i]);
+  indent.insert(0, "\n");
+  _insert(indent);
 }
 
 void
