@@ -184,6 +184,7 @@ TTextArea::init()
   _cx = _cy = 0;
   _cxpx = -1;
   _ty = 0;
+  _tx = 0;
   _pos = 0;
   
   bDoubleBuffer = true;
@@ -1012,7 +1013,7 @@ TTextArea::paint()
         part = true;
       }
       
-      pen.fillString(0,y,line);
+      pen.fillString(-_tx,y,line);
       
       if (part) {
 #if 0
@@ -1048,7 +1049,7 @@ TTextArea::paint()
         if (len>0 && pos<line.size()) {
           pen.setLineColor(255,255,255);
           pen.setFillColor(0,0,0);
-          pen.fillString(x, y, line.c_str()+pos, len);
+          pen.fillString(x-_tx, y, line.c_str()+pos, len);
         }
       }
       
@@ -1061,9 +1062,8 @@ TTextArea::paint()
         if (_cxpx<0) {
           _cxpx = pen.getTextWidth(line.substr(0, utf8bytecount(line, 0, sx)));
         }
-        // sx = pen.getTextWidth("x") * (sx-_tx);
         pen.setMode(TPen::INVERT);
-        pen.drawLine(_cxpx,y,_cxpx,y+pen.getHeight()-1);
+        pen.drawLine(_cxpx-_tx,y,_cxpx-_tx,y+pen.getHeight()-1);
         pen.setMode(TPen::NORMAL);
       }
     }
@@ -1449,6 +1449,26 @@ DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
     _scroll_up(-_cy);
   }
 
+#if 1
+
+  // |          |            |           |
+  //            _tx             tx
+  
+  // |          |            |           |
+  // |      tx  _tx
+
+  const string line(model->getValue().substr(_bol, _pos-_bol));
+  int tx = font->getTextWidth(line);
+  if (tx > _tx+getWidth()-5) {
+    _tx = tx-getWidth()+5;
+    invalidateWindow(); // call scrollRectangle instead
+  } else if (tx < _tx) {
+    _tx = tx;
+    invalidateWindow(); // call scrollRectangle instead
+  }
+
+#else
+
 #if 0
   const string line(model->getValue().substr(_bol, _eol-_bol));
   int cx = 0;
@@ -1471,6 +1491,8 @@ cout << "_cx=" << _cx << ", cx=" << cx << endl;
   if (cx < 0) {
     _scroll_left(-cx);
   }
+#endif
+
 DBM(cout << __FILE__ << ':' << __LINE__ << ": _eol=" << _eol << endl;)
 }
 

@@ -147,6 +147,8 @@ class TTextArea:
     //! position of the window's upper left char inside data
     unsigned _ty;
     
+    int _tx;
+    
     //! cursor position (relative to screen)
     int _cx, _cy;
 
