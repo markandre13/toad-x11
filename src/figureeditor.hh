@@ -154,6 +154,7 @@ class TFigureEditor:
     void keyDown(TKey, char*, unsigned);
 
     bool restore(TInObjectStream&);
+    void store(TOutObjectStream&) const;
 
     class TColorSelector:
       public TWindow

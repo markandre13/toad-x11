@@ -205,8 +205,26 @@ TFigureEditor::~TFigureEditor()
 bool
 TFigureEditor::restore(TInObjectStream &in)
 {
-//  clearSelection();
-//  super::restore(in);
+  clearSelection();
+  TSerializable *s;
+
+  // ::restorePtr(in, &s);
+  s = in.restore();
+
+  TFigureModel *m = dynamic_cast<TFigureModel *>(s);
+  if (!m) {
+    cerr << "wasn't a TFigureModel" << endl;
+    return false;
+  }
+  setModel(m);
+  return true;
+}
+
+void
+TFigureEditor::store(TOutObjectStream &out) const
+{
+  if (model)
+    ::store(out, model);
 }
 
 /**
