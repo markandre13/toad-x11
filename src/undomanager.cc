@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,23 @@ using namespace toad;
  *   \li limit number of stored undo event to a given maximum
  *   \li grouping of undo events
  */
+
+// How this stuff is organized:
+//
+// undomanagers: contains a set of all known undomanagers
+//   each undomanager contains a list of all models managed by him
+//
+// models: holds a map with additional information for each model
+//         registered for undo/redo:
+//         - undo's
+//         - redo's
+//         - set of undomanagers who contain views manipulating the
+//           model
+//
+// undogroups
+// redogroups
+//
+
 
 namespace {
 
@@ -153,6 +170,7 @@ findUndoManager(TWindow *window)
   return p;
 }
 
+
 /**
  * Register model for an undomanager.
  */
@@ -196,6 +214,29 @@ TUndoManager::unregisterModel(TModel *model)
   p->second.clear(model);
   models.erase(p);
 }
+
+// Model added too late to undo manager
+// When an already modified model (models undostack isn't empty) is added
+// to an undo manager, there will be a discrepance between the models and
+// the undo managers undo stack. Normally for every undo in the models undo
+// stack there's a model entry in the undo managers undo stack.
+// There are the following approaches:
+// o ignore it, in case there are no side effects with the other algorithms
+//   when a user creates a second view of, say a text editor, it wouldn't
+//   be what he expects, that undo isn't available in the new window but
+//   not in the old.
+// o insert entries for the model into the undomanager and use all other 
+//   undomanagers which are using this model as a reference.
+//   but this may not work in case the undomanager other models aren't used
+//   in other undomanagers together with this model, in which case we could
+//   insert the model anywhere, as long as we keep the order.
+//   we would need to add a global undo stack just for this case to get the
+//   correct order. or just redesign the current database?
+//   (a better idea came when i woke up this morning: add serial numbers to
+//   the undo objects! this would allow us to use an simple insert without
+//   looking into the other undomanagers. we could also drop the undomanagers
+//   undo- and redostacks!)
+
 
 //#undef DBM
 //#define DBM(CMD) CMD
@@ -242,12 +283,113 @@ TUndoManager::unregisterModel(TWindow *window, TModel *model)
     cerr << "  done" << endl;)
 }
 
+bool TUndoManager::undoregistration = true;
+
+/**
+ * Enable 'registerUndo', which is the default.
+ */
+/*static*/ void
+TUndoManager::enableUndoRegistration()
+{
+  undoregistration = true;
+}
+
+/**
+ * Disable 'registerUndo'.
+ */
+/*static*/ void
+TUndoManager::disableUndoRegistration()
+{
+  undoregistration = false;
+}
+
+/*static*/ bool
+TUndoManager::isUndoRegistrationEnabled()
+{
+  return undoregistration;
+}
+
+namespace {
+
+struct TUndoGroup;
+typedef vector<TUndoGroup*> TUndoGroupVector;
+
+struct TUndoGroup
+{
+  // serial number of first undo event
+  unsigned start;
+  // serial number + 1 of last undo event (start==end -> no events)
+  unsigned end;
+  // nested undo groups
+  TUndoGroupVector nested;
+  TModelSet models;
+  
+  /**
+   * \param back
+   *    true=undo, false=redo
+   */
+  void undo(bool back);
+};
+
+TUndoGroupVector groupstack;
+TUndoGroupVector undogroups;
+TUndoGroupVector redogroups;
+
+} // namespace
+
+/*static*/ void
+TUndoManager::beginUndoGrouping()
+{
+  DBM(cerr << __PRETTY_FUNCTION__ << endl;)
+  TUndoGroup *g = new TUndoGroup();
+  if (groupstack.empty()) {
+    if (!undoing) {
+      DBM(cerr << "  to undo groups" << endl;)
+      undogroups.push_back(g);
+    } else {
+      DBM(cerr << "  to redo groups" << endl;)
+      redogroups.push_back(g);
+    }
+  } else {
+    groupstack.back()->nested.push_back(g);
+  }
+  groupstack.push_back(g);
+  g->start = TUndo::counter;
+}
+
+/*static*/ void 
+TUndoManager::endUndoGrouping()
+{
+  DBM(cerr << __PRETTY_FUNCTION__ << endl;)
+  if (groupstack.empty()) {
+    DBM(cerr << "TUndoManager::endUndoGrouping called but no group to be closed" << endl;)
+    // printStackTrace();
+    return;
+  }
+  
+  groupstack.back()->end = TUndo::counter;
+  groupstack.pop_back();
+}
+
+// setGroupsByEvent...
+
+/*static*/ unsigned
+TUndoManager::groupingLevel()
+{
+  return groupstack.size();
+}
+
 //#undef DBM
 //#define DBM(CMD)
 
 /*static*/ bool
 TUndoManager::registerUndo(TModel *model, TUndo *undo)
 {
+  if (!undoregistration) {
+    delete undo;
+    return false;
+  }
+
   DBM(cerr << "register undo " << undo << " for model " << model << endl;)
   TModelStore::iterator p = models.find(model);
   if (p==models.end()) {
@@ -256,20 +398,40 @@ TUndoManager::registerUndo(TModel *model, TUndo *undo)
     return false;
   }
   DBM(cerr << "found undomanager(s) for undo/redo" << endl;)
+
+  if (!groupstack.empty())
+    groupstack[0]->models.insert(model);
+
   p->second.addUndo(model, undo);
+
   return true;
 }
 
 void
-TUndoManager::doUndo()
+TUndoManager::doIt(bool back)
 {
-  DBM(cerr << "entering undomanager " << this << " undo" << endl;)
-  if (undoing) {
-    DBM(cerr << "  undo not possible, because i'm already undoing, please try later" << endl;)
-    return;
+  DBM(cerr << "entering undomanager " << this << " doUndo" << endl;)
+
+  if (!groupstack.empty()) {
+    cerr << "TUndoManager::doUndo(): groupstack isn't empty, closing it" << endl;
+    while(!groupstack.empty())
+      endUndoGrouping();
+  }
+
+  if (back) {
+    if (undoing) {
+      DBM(cerr << "  undo not possible, because i'm already undoing, please try later" << endl;)
+      return;
+    }
+    undoing = true;
+  } else {
+    if (redoing) {
+      DBM(cerr << "  redo not possible, because i'm already redoing, please try later" << endl;)
+      return;
+    }
+    redoing = true;
   }
    
-  undoing = true;
 
   // find next model to be undone
   
@@ -278,96 +440,153 @@ TUndoManager::doUndo()
   TModelStore::iterator pms;
   TUndo *undo = 0;
   unsigned undocount = 0;
+  
+  // iterate over all models managed by this undomanager and set
+  // 'undo' to the latest undo object found
   for(TModelSet::iterator p=mmodels.begin();
       p!=mmodels.end();
       ++p)
   {
+    // get the additional undo/redo information for the model
     TModelStore::iterator q = models.find(*p);
     assert(q!=models.end());
-    if (!q->second.undostack.empty()) {
+    
+    // set 'undo' to the latest undo event
+    TUndo *u;
+    if (back) {
+      if (q->second.undostack.empty())
+        continue;
       undocount += q->second.undostack.size();
-      TUndo *u = q->second.undostack.back();
-      if (!undo) {
-        undo = u; 
-        pms = q;  
-      } else {    
-        if (undo->serial < u->serial) {
-          undo = u;
-          pms = q; 
-        }
-      }  
-    }    
+      u = q->second.undostack.back();
+    } else {
+      if (q->second.redostack.empty())
+        continue;
+      undocount += q->second.redostack.size();
+      u = q->second.redostack.back();
+    }
+
+    if (!undo) {
+      undo = u;
+      pms = q;
+    } else {
+      if (undo->serial < u->serial) {
+        undo = u;
+        pms = q;
+      }
+    }
   }      
          
-  if (!undo) {
-    DBM(cerr << "  undo not possible, because there are no events to be undone" << endl;)
+  if (undo) {
+    bool foundgroup = false;
+    TUndoGroupVector::iterator p, b;
+    if (back) {
+      b = undogroups.begin();
+      p = undogroups.end();
+    } else {
+      b = redogroups.begin();
+      p = redogroups.end();
+    }
+    while(p!=b) {
+      --p;
+      if ((*p)->start<=undo->serial && undo->serial<(*p)->end) {
+        
+        (*p)->undo(back);
+        foundgroup = true;
+        if (back)
+          undogroups.erase(p);
+        else
+          redogroups.erase(p);
+        
+        break;
+      } else
+      if ((*p)->start<undo->serial) {
+        break;
+      }
+    }
+    if (!foundgroup) {
+      // remove undo object from model
+      if (back) {
+        pms->second.undostack.pop_back();
+      } else {
+        pms->second.redostack.pop_back();
+      }
+      // execute undo
+      undo->undo();
+      delete undo;
+    }
   } else {
-    pms->second.undostack.pop_back();
-    undo->undo();
-    delete undo;
+    DBM(cerr << "  undo not possible, because there are no events to be undone" << endl;)
   }
+
   if (undocount<=1) {
-    this->undo->setEnabled(false);
+    if (back)
+      this->undo->setEnabled(false);
+    else
+      this->redo->setEnabled(false);
   }
-   
-  undoing = false;
+  if (back)
+    undoing = false;
+  else
+    redoing = false;
 }
 
 void
-TUndoManager::doRedo()
+TUndoGroup::undo(bool back)
 {
-  DBM(cerr << "\nredo" << endl;)
-  if (redoing) {
-    DBM(cerr << "  redo not possible" << endl;)
+  DBM(cerr << "undo/redo TUndoGroup" << endl;)
+  if (start==end) {
+    cerr << "undo group is empty\n";
     return;
   }
-   
-  redoing = true;
+  
+  TUndoManager::beginUndoGrouping();
 
-  // find next model to be redone
-  
-  DBM(cerr << "checking all " << mmodels.size() << " models\n";)
-  
-  TModelStore::iterator pms;
-  TUndo *undo = 0;
-  unsigned redocount = 0;
-  for(TModelSet::iterator p=mmodels.begin();
-      p!=mmodels.end();
-      ++p)
-  {
-    TModelStore::iterator q = models.find(*p);
-    assert(q!=models.end());
-    DBM(cerr << "  check model " << *p << endl;)
-    if (!q->second.redostack.empty()) {
-      redocount += q->second.redostack.size();
-      DBM(cerr << "    it's not empty" << endl;)
-      TUndo *u = q->second.redostack.back();
-      if (!undo) {
-        undo = u; 
-        pms = q;  
-      } else {    
-        if (undo->serial < u->serial) {
+  while(true) {
+    TUndo *undo = 0;
+    TModelStore::iterator pms;
+    for(TModelSet::iterator p = models.begin();
+        p != models.end();
+        ++p)
+    {
+      TModelStore::iterator q = ::models.find(*p);
+      assert(q!=::models.end());
+      TUndo *u;
+      if (back) {
+        if (q->second.undostack.empty())
+          continue;
+        u = q->second.undostack.back();
+      } else {
+        if (q->second.redostack.empty())
+          continue;
+        u = q->second.redostack.back();
+      }
+      
+      if (start <= u->serial && u->serial < end) {
+        if (!undo) {
           undo = u;
-          pms = q; 
+          pms = q;
+        } else {
+          if (undo->serial < u->serial) {
+            undo = 0;
+            pms = q;
+          }
         }
-      }  
-    } else {
-      DBM(cerr << "    it's empty" << endl;)
+      }
     }
-  }  
-     
-  if (!undo) {
-    DBM(cerr << "  redo not possible, because there are no events to be redone" << endl;)
-  } else {
-    pms->second.redostack.pop_back();
+    if (!undo) {
+      DBM(cerr << "  found no more undo objects inside this group" << endl;)
+      break;
+    }
+    DBM(cerr << "  undo object inside group" << endl;)
+    if (back)
+      pms->second.undostack.pop_back();
+    else
+      pms->second.redostack.pop_back();
     undo->undo();
     delete undo;
   }
-  if (redocount<=1) {
-    this->redo->setEnabled(false);
-  }
-   
-  redoing = false;
+  
+  TUndoManager::endUndoGrouping();
 }
 
 bool
@@ -493,6 +712,43 @@ TUndoManager::canRedo() const
   return false;
 }
 
+// Redo Conflict:
+// When adding a new undo event, the redo stack of the model must
+// be cleared. The question then is what to with the redo stacks
+// in the undomanagers.
+//
+// a clear the models redo stack and all remove references to
+//   the model in the redo stacks of all undo managers
+// b clear the redo stacks of all models under control of the
+//   undo manager where the undo was issued and remove all
+//   references to these models in all undo managers
+//   (only it can't be done, as we don't know under which undomanager
+//   the undo event originated, because the model generates it)
+// c same as b, but done for all undo managers known to manage
+//   the model where the the undo event was issued
+// d clear all redo stacks which are somehow related to each
+//   other
+// e clear ALL redo stacks
+//
+// b would have been the best approach, but since it can't be implemented
+// with the current API, it's currently c.
+//
+// how to use b instead of c:
+// o don't let the model create the undo, but the window
+//   but we don't want to do that, as creating the undo in the model
+//   allows us to let the model create redo's events
+// o use a side channel... ie. the window which was receiving a event
+//   (mouse, keyboard, ...) is the one which was modifying the model.
+//   might be not a bad as it sounds, as Apple's Cocoa uses the event loop
+//   to automatically group undo events (unless disabled, and grouping
+//   can also be done explicitly)
+//   but: how about model changes not initiated by a view at all, ie.  
+//        when a ioobserver adds text to a model (as done in NetEdit 2,
+//        when SNMP replies come in)
+// o before a view modifies a model it can set a global variable to itself
+//
+// okay, solutions unsatisfactionarry, we keep it like that: variant c.
+
 void
 TModelUndoStore::addUndo(TModel *model, TUndo *undo)
 {
@@ -535,6 +791,26 @@ TModelUndoStore::addUndo(TModel *model, TUndo *undo)
       DBM(cerr << "  clear redo list of model " << *p << endl;)
       q->second.clearRedo();
     }
+    
+    // step 3: now we do the same with the redo groups
+    for(TUndoGroupVector::iterator p=redogroups.begin();
+        p!=redogroups.end();
+        ++p)
+    {
+      for(TModelSet::iterator q=xmodels.begin();
+          q!=xmodels.end();
+          ++q)
+      {
+        (*p)->models.erase(*q);
+      }
+      if ((*p)->models.empty()) {
+        DBM(cerr << "deleting empty redogroup" << endl;)
+        int n = p - redogroups.begin();
+        redogroups.erase(p);
+        p = redogroups.begin() + n - 1;
+      }
+    }
+
   }  
   assert(undomanagers.begin()!=undomanagers.end());
   if (!TUndoManager::isUndoing()) {

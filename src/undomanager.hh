@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,6 +49,8 @@ class TUndoManager:
 
     static bool undoing;
     static bool redoing;
+    static bool undoregistration;
+    static unsigned groupinglevel;
   
   public:
     static bool registerModel(TWindow*, TModel*);
@@ -56,10 +58,18 @@ class TUndoManager:
     static void unregisterModel(TWindow *, TModel*);
     static bool registerUndo(TModel*, TUndo*);
     
+    static void enableUndoRegistration();
+    static void disableUndoRegistration();
+    static bool isUndoRegistrationEnabled();
+    
+    static void beginUndoGrouping();
+    static void endUndoGrouping();
+    static unsigned groupingLevel();
+    
     bool canUndo() const;
     bool canRedo() const;
-    void doUndo();
-    void doRedo();
+    void doUndo() { doIt(true); }
+    void doRedo() { doIt(false); }
 
     static bool isUndoing();
     static bool isRedoing();
@@ -68,6 +78,7 @@ class TUndoManager:
     //! models managed by the undomanager
     TModelSet mmodels;
 
+    void doIt(bool back);
 
     friend class TUndoAction;
     class TUndoAction:
