@@ -569,6 +569,22 @@ TFBezierline::insertPointNear(int x, int y)
  * TFBezier is derived from TFBezierline
  */
 
+void 
+TFBezier::store(TOutObjectStream &out) const
+{
+  // skip the line super classes TFBezierLine -> TFLine -> TFPolygon -> ...
+  // with their arrow parameters
+  TFPolygon::store(out);
+}
+
+void
+TFBezier::setAttributes(const TFigureAttributes *attr)
+{
+  // skip the line super classes TFBezierLine -> TFLine -> TFPolygon -> ...
+  // with their different handling of the 'filled' flag
+  TFPolygon::setAttributes(attr);
+}
+
 void
 TFBezier::paint(TPenBase &pen, EPaintType type)
 {
@@ -653,6 +669,7 @@ TFBezier::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
         if (polygon.size()<=4) {
           return STOP|DELETE;
         }
+        editor->invalidateFigure(this);
         if ((polygon.size()%3)==1) {
           TPolygon::iterator e(polygon.end());
           e-=3;

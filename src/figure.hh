@@ -272,13 +272,6 @@ class TFLine:
     SERIALIZABLE_INTERFACE(toad::, TFLine);
 };
 
-class TFPolyline:
-  public TFLine
-{
-  public:
-    const char * getClassName() const { return "toad::TFPolyline"; }
-};
-
 /**
  * \ingroup figure
  */
@@ -317,9 +310,11 @@ class TFBezier:
     void paintSelection(TPenBase &pen, int handle);
     double distance(int x, int y);
     void translateHandle(unsigned handle, int x, int y, unsigned);
+    void setAttributes(const TFigureAttributes*);
     
     TCloneable* clone() const { return new TFBezier(*this); }
     const char * getClassName() const { return "toad::TFBezier"; }
+    void store(TOutObjectStream &out) const;
 };
 
 /**

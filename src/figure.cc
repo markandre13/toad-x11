@@ -68,6 +68,19 @@ const double TFigure::RANGE;
 const double TFigure::INSIDE;
 #endif
 
+// this class is for backward compability
+
+namespace {
+
+class TFPolyline:
+  public TFLine
+{
+  public:
+    const char * getClassName() const { return "toad::TFPolyline"; }
+};
+
+} // namespace
+
 void
 TFigure::initialize()
 {
