@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,7 @@
  */
 
 #include <toad/formlayout.hh>
+#include <toad/stacktrace.hh>
 
 #include <algorithm>
 
@@ -51,11 +52,13 @@ using namespace toad;
  *****************************************************************************/
 class TFormLayout::TFormNode
 {
+    TWindow *wnd;               // pointer to the window to be placed
   public:
-    TFormNode();
-    string window;              // title of the window to be placed
-    TWindow *it;                // the window to be placed
+    TFormNode(const string &name);
+    TWindow* it(TWindow *parent);
+    string name;                // name of the window to be placed
     unsigned how[4];            // how to attach
+    string whichname[4];
     TWindow *which[4];          // where to attach
     int dist[4];                // minimal distance to neighbours
     int coord[4];               // the left,right,top & bottom during calculation
@@ -64,14 +67,35 @@ class TFormLayout::TFormNode
     TFormNode *next, *prev;     // should remove `prev'
 };
 
-inline TFormBase::TFormNode::TFormNode()
+inline TFormLayout::TFormNode::TFormNode(const string &name)
 {
-  for(int i=0; i<4; i++)
-  {
+  this->name = name;
+  // cerr << "new node '" << name << "'" << this << endl;
+  wnd = NULL;
+  for(int i=0; i<4; i++) {
     how[i]=NONE;
     which[i]=NULL;
     dist[i]=0;
-  }   
+  }
+  next = prev = NULL;
+}
+
+TWindow*
+TFormLayout::TFormNode::it(TWindow *parent)
+{
+  if (wnd)
+    return wnd;
+    
+  TInteractor *p = parent->getFirstChild();
+  while(p) {
+    if (p->getTitle() == name) {
+      wnd = dynamic_cast<TWindow*>(p);
+      return wnd;
+    }
+    p = p->getNextSibling();
+  }
+  cerr << "error: no window found with name '" << name << "'" << this << endl;
+  return NULL;
 }
 
 TFormLayout::TFormLayout()
@@ -84,15 +108,19 @@ running = false;
 
 TFormLayout::~TFormLayout()
 {
-  while(flist) {
-    TFormNode *on = flist;
-    flist = flist->next;
-    delete on;
+  if (flist) {
+    flist->prev->next = 0;
+    while(flist) {
+      TFormNode *on = flist;
+      flist = flist->next;
+      delete on;
+    }
   }
 }
 
+#if 0
 void
-TFormLayout::addForm(TWindow *child)
+TFormLayout::addForm(const string &child)
 {
   if (flist) {
     lastadd = new TFormNode;
@@ -105,11 +133,11 @@ TFormLayout::addForm(TWindow *child)
     flist->next = flist;
     flist->prev = flist;
   } 
-  lastadd->it = child;
+  lastadd->name = child;
 }
 
 void
-TFormLayout::removeForm(TWindow *child)
+TFormLayout::removeForm(const string &child)
 {
   if (flist) {
     if (flist == flist->next) {
@@ -127,6 +155,7 @@ TFormLayout::removeForm(TWindow *child)
     }
   }
 }
+#endif
 
 #if 0
 void
@@ -154,15 +183,7 @@ TFormLayout::attachLast(unsigned where, unsigned how, TWindow *which)
 void 
 TFormLayout::attach(const string &window, unsigned where, EMethod how, const string &which)
 {
-  #ifdef SECURE
-  if (how==WINDOW && !which) {
-    fprintf(stderr, "TFormBase.attach: WINDOW without window specified => ignoring\n");
-    printStackTrace();
-    return;
-  }
-  #endif
-
-  TFormNode *node = _find(wnd);
+  TFormNode *node = _find(window);
   if (!node)
     return;
   
@@ -173,15 +194,15 @@ TFormLayout::attach(const string &window, unsigned where, EMethod how, const str
         (i==3 && where&RIGHT ) )
     {
       node->how[i]=how;
-      node->which[i]=which;
+      node->whichname[i]=which;
     }
   }
 }
 
 void
-TFormBase::distance(TWindow *wnd, int distance, unsigned where)
+TFormLayout::distance(const string &window, int distance, unsigned where)
 {
-  TFormNode *node = _find(wnd);
+  TFormNode *node = _find(window);
   if (!node)
     return;
   
@@ -197,12 +218,18 @@ TFormBase::distance(TWindow *wnd, int distance, unsigned where)
   }
 }
 
-/*---------------------------------------------------------------------------*
- | Arrange                                                                   |
- | arrange all children as described in the 'flist'                          |
- *---------------------------------------------------------------------------*/
 void
-TFormBase::arrange(int fx,int fy,int fw,int fh)
+TFormLayout::arrange()
+{
+  arrange(0, 0, window->getWidth(), window->getHeight());
+}
+
+/**
+ * Arrange
+ * arrange all children as described in the 'flist'
+ */
+void
+TFormLayout::arrange(int fx,int fy,int fw,int fh)
 {
 if (running) {
 //  cout << "Rekursion" << endl;
@@ -235,7 +262,7 @@ running = false;
     nChildren++;
     ptr->done  = 0;
     ptr->nflag = 0;
-    ptr->it->getShape(&shape);
+    ptr->it(window)->getShape(&shape);
     ptr->coord[DTOP]    = shape.y;
     ptr->coord[DBOTTOM] = shape.y+shape.h;
     ptr->coord[DLEFT]   = shape.x;
@@ -246,9 +273,9 @@ running = false;
       }
     }
     if ((ptr->nflag&3)==3 || (ptr->nflag&12)==12) {
-      if(!ptr->it->bShell && !ptr->it->bPopup ) {
+      if(!ptr->it(window)->bShell && !ptr->it(window)->bPopup ) {
         fprintf(stderr, "toad: '%s' within TForm has undefined attachment\n",
-                ptr->it->getTitle().c_str());
+                ptr->name.c_str());
         bError = true;
       }
     }
@@ -304,7 +331,7 @@ running = false;
               count = 0;
               break;
             case WINDOW:
-              ptr2=_find(ptr->which[i]);          // opposite window
+              ptr2=_find(ptr->whichname[i]);      // opposite window
               if ((ptr2->done) & (1<<(i^1))) {    // opposite side is set
                 ptr->done |=(1<<i);
                 ptr->coord[i] = ptr2->coord[i^1];
@@ -319,7 +346,7 @@ running = false;
               }
               break;
             case OPPOSITE_WINDOW: // CODE IS MISSING FOR DISTANCE !!!
-              ptr2=_find(ptr->which[i]);
+              ptr2=_find(ptr->whichname[i]);
               if ((ptr2->done) & (1<<(i))) {
                 ptr->done |=(1<<i);
                 ptr->coord[i] = ptr2->coord[i];
@@ -336,9 +363,9 @@ running = false;
         // we're almost done with the window, the missing coordinates
         // can be calculated from the objects size
         //------------------------------------------------------------
-        ptr->it->getShape(&shape);
+        ptr->it(window)->getShape(&shape);
         #ifdef DEBUG
-        printf("Placing %s now:\n",ptr->it->Title().c_str());
+        printf("Placing %s now:\n",ptr->name.c_str());
         #endif
         // no top and/or left attachment
         #ifdef DEBUG
@@ -381,10 +408,10 @@ running = false;
         h = ptr->coord[DBOTTOM] - ptr->coord[DTOP];
 
         //ptr->it->SetSize(w,h);
-        ptr->it->setShape(TPOS_PREVIOUS, TPOS_PREVIOUS, w,h);
+        ptr->it(window)->setShape(TPOS_PREVIOUS, TPOS_PREVIOUS, w,h);
 
         // adjust top and/or left after SetSize
-        ptr->it->getShape(&shape);
+        ptr->it(window)->getShape(&shape);
         if (ptr->nflag & TOP)
           ptr->coord[DTOP] = ptr->coord[DBOTTOM] - shape.h;
         if (ptr->nflag & BOTTOM)
@@ -400,8 +427,8 @@ running = false;
                                             ,ptr->coord[DBOTTOM] );
         #endif
         
-        ptr->it->setPosition(ptr->coord[DLEFT],ptr->coord[DTOP]);
-        ptr->it->getShape(&shape);
+        ptr->it(window)->setPosition(ptr->coord[DLEFT],ptr->coord[DTOP]);
+        ptr->it(window)->getShape(&shape);
 
         ptr->coord[DTOP]   = shape.y;
         ptr->coord[DBOTTOM] = shape.y+shape.h;
@@ -429,10 +456,10 @@ running = false;
       count=0;
       while(count<nChildren) {
         if (ptr->done != HAS_ALL) {
-          ptr->it->getShape(&shape);
+          ptr->it(window)->getShape(&shape);
           if ( (ptr->nflag&LEFT) && !(ptr->done&LEFT) && (ptr->done&RIGHT) ) {
             #ifdef DEBUG
-            printf("guessing left side of %s\n",ptr->it->Title().c_str());
+            printf("guessing left side of %s\n",ptr->name.c_str());
             #endif
             ptr->coord[DLEFT] = ptr->coord[DRIGHT] - shape.w;
             ptr->done|=HAS_L;
@@ -440,7 +467,7 @@ running = false;
           }
           if ( (ptr->nflag&RIGHT) && !(ptr->done&RIGHT) && (ptr->done&LEFT) ) {
             #ifdef DEBUG
-            printf("guessing right side of %s\n",ptr->it->Title().c_str());
+            printf("guessing right side of %s\n",ptr->name.c_str());
             #endif
             ptr->coord[DRIGHT] = ptr->coord[DLEFT] + shape.w;
             ptr->done|=HAS_R;
@@ -448,7 +475,7 @@ running = false;
           }
           if ( !(ptr->nflag&TOP) && !(ptr->done&TOP) && (ptr->done&BOTTOM) ) {
             #ifdef DEBUG
-            printf("guessing top side of %s\n",ptr->it->Title().c_str());
+            printf("guessing top side of %s\n",ptr->name.c_str());
             #endif
             ptr->coord[DTOP] = ptr->coord[DBOTTOM] - shape.h;
             ptr->done|=HAS_T;
@@ -456,7 +483,7 @@ running = false;
           }
           if ( (ptr->nflag&BOTTOM) && !(ptr->done&BOTTOM) && (ptr->done&TOP) ) {
             #ifdef DEBUG
-            printf("guessing bottom side of %s\n",ptr->it->Title().c_str());
+            printf("guessing bottom side of %s\n",ptr->name.c_str());
             #endif
             ptr->coord[DBOTTOM] = ptr->coord[DTOP] + shape.h;
             ptr->done|=HAS_B;
@@ -475,7 +502,7 @@ running = false;
         #ifdef DEBUG
         count=0;
         while(count<nChildren) {
-          printf("%25s : ",ptr->it->Title().c_str());
+          printf("%25s : ",ptr->name.c_str());
           printf( ptr->done&HAS_T ? "t" : "-");
           printf( ptr->done&HAS_B ? "b" : "-");
           printf( ptr->done&HAS_L ? "l" : "-");
@@ -499,36 +526,136 @@ running=false;
 return;
 }
 
-TFormBase::TFormNode* 
-TFormBase::_find(const string &which)
+TFormLayout::TFormNode* 
+TFormLayout::_find(const string &which)
 {
+  if (which.empty()) {
+    cerr << "_find to empty name" << endl;
+    exit(1);
+  }
+
+  if (!flist) {
+    lastadd = flist = new TFormNode(which);
+    flist->next = flist;
+    flist->prev = flist;
+    return flist;
+  }
+  
   TFormNode *ptr2=flist;
-  while(ptr2->window != which) {
+  while(ptr2->name != which) {
     ptr2 = ptr2->next;
     if (ptr2==flist) {
-      fprintf(stderr, "toad: (TForm) '%s' is not a child of TForm.\n",
-                      which->getTitle().c_str()/*, Title()*/);
-      printStackTrace();
-      return NULL;
+      lastadd = new TFormNode(which);
+      lastadd->next = flist;
+      lastadd->prev = flist->prev;
+      flist->prev->next = lastadd;
+      flist->prev = lastadd;
+      return lastadd;
     }
   }
   return ptr2;
 }
 
-void
-TForm::childNotify(TWindow *c, EChildNotify t)
+void 
+TFormLayout::store(TOutObjectStream &out) const 
 {
-  switch(t){
-    case TCHILD_ADD: 
-      addForm(c);
+  // nBorderOverlap
+  // bKeepOwnBorder
+
+  if (!flist)
+    return;
+  TFormNode *ptr=flist;
+  out.indent();
+  while(true) {
+    out.startGroup();
+    ::store(out, "name", ptr->name);
+    for(unsigned i=0; i<4; ++i) {
+      if (ptr->how[i]!=NONE) {
+        out.indent();
+        switch(i) {
+          case DTOP   : out << "top = "; break;
+          case DBOTTOM: out << "bottom = "; break;
+          case DLEFT  : out << "left = "; break;
+          case DRIGHT : out << "right = "; break;
+        }
+        out.startGroup();
+        switch(ptr->how[i]) {
+          case FORM:
+            ::store(out, "how", "border");
+            break;
+          case WINDOW:
+            ::store(out, "how", "window");
+            ::store(out, "where", ptr->whichname[i]);
+            break;
+          case OPPOSITE_WINDOW:
+            ::store(out, "how", "opposite");
+            ::store(out, "where", ptr->whichname[i]);
+            break;
+        }
+        if (ptr->dist[i]) {
+          ::store(out, "distance", ptr->dist[i]);
+        }
+        out.endGroup();
+      }
+    }
+    out.endGroup();
+    ptr = ptr->next;
+    if (ptr==flist)
       break;
-    case TCHILD_REMOVE: 
-      removeForm(c); 
-      break;
-    case TCHILD_RESIZE:
-//cout << "TForm: child \"" << c->Title() << "\" has been resized" << endl;
-      arrange(0,0,getWidth(),getHeight()); 
-      break;
-    default:;
   }
+}
+
+bool
+TFormLayout::restore(TInObjectStream &in)
+{
+  string s;
+  int d;
+  static int state=0;
+  
+  switch(state /*in.getInterpreterState()*/) {
+    case 0:
+      switch(in.what) {
+        case ATV_START:
+          assert(flist==0);
+          return true;
+        case ATV_GROUP:
+          cerr << "X start group '" << in.attribute << "'\n";
+          state=1; // in.setInterpreterState(1);
+          return true;
+        case ATV_FINISHED:
+          return true;
+      }
+      break;
+    case 1:
+      switch(in.what) {
+        case ATV_GROUP:
+          cerr << "Y start group '" << in.attribute << "'\n";
+//          lastadd = flist = new TFormNode(which);
+          return true;
+        case ATV_VALUE:
+          if (::restore(in, "name", &s)) {
+            cerr << "  name = '" << s << "'\n";
+            return true;
+          }
+          if (::restore(in, "how", &s)) {
+            cerr << "  how = '" << s << "'\n";
+            return true;
+          }
+          if (::restore(in, "which", &s)) {
+            cerr << "  which = '" << s << "'\n";
+            return true;
+          }
+          if (::restore(in, "distance", &d)) {
+            cerr << "  distance = '" << d << "'\n";
+            return true;
+          }
+          break;
+        case ATV_FINISHED:
+          state=0;
+          return true;
+      }
+      break;
+  }
+  ATV_FAILED(in);
+  return false;
 }

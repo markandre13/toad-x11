@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -40,11 +40,12 @@ class TFormLayout:
 
     void attach(const string &window, unsigned where, EMethod how, const string &which);
     void attach(const string &window, unsigned where, const string &which="") {
-      attach(wnd, where, which.empty() ? WINDOW : FORM, which);
+      attach(window, where, which.empty() ? FORM : WINDOW, which);
     }
     void distance(const string &window, int distance, unsigned where=ALL);
 
   private:
+    void arrange(int x, int y, int w, int h);
     void arrange();
     int nBorderOverlap;
     bool bKeepOwnBorder;

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
 
 #include <toad/dialog.hh>
 #include <toad/menuhelper.hh>
+#include <toad/formlayout.hh>
 
 using namespace toad;
 
@@ -74,6 +75,7 @@ TFigure::initialize()
   serialize.registerObject(new TSerializableRGB());
   serialize.registerObject(new TDialogLayout());
   serialize.registerObject(new TMenuLayout());
+  serialize.registerObject(new TFormLayout());
   serialize.registerObject(new TMenuEntry());
   serialize.registerObject(new TMenuSeparator());
   serialize.registerObject(new TMatrix2D());
