@@ -74,7 +74,7 @@ AC_CHECK_LIB([png], [png_create_read_struct],,
 
 # libjpeg (optional)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AC_CHECK_LIB([jpeg], [jpeg_start_decompress],$XLIBS)
+AC_CHECK_LIB([jpeg], [jpeg_start_decompress],,,$XLIBS)
 
 # libXutf8 (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
