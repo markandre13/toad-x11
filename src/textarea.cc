@@ -1203,6 +1203,8 @@ TTextArea::_selection_paste()
 void
 TTextArea::_selection_clear()
 {
+  if (_bos==0 && _eos==0)
+    return;
   _bos = _eos = 0;
   invalidateWindow();
 }
