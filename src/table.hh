@@ -21,7 +21,7 @@
 #ifndef TTable
 #define TTable TTable
 
-#include <toad/scrolledarea.hh>
+#include <toad/scrollpane.hh>
 #include <toad/model.hh>
 
 namespace toad {

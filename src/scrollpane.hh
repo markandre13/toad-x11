@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef _TOAD_SCROLLEDAREA_HH
-#define _TOAD_SCROLLEDAREA_HH
+#ifndef _TOAD_SCROLLPANE_HH
+#define _TOAD_SCROLLPANE_HH
 
 #include <toad/window.hh>
 

@@ -21,8 +21,7 @@
 #ifndef _TOAD_FIGUREEDITOR
 #define _TOAD_FIGUREEDITOR
 
-// #include <toad/figurewindow.hh>
-#include <toad/scrolledarea.hh>
+#include <toad/scrollpane.hh>
 #include <toad/figureeditor/undoable.hh>
 #include <toad/util/history.hh>
 

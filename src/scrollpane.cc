@@ -21,7 +21,7 @@
 #include <toad/toad.hh>
 #include <toad/scrollbar.hh>
 #include <toad/region.hh>
-#include <toad/scrolledarea.hh>
+#include <toad/scrollpane.hh>
 
 #define DBM(X)
 

@@ -94,7 +94,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		radiobuttonbase.cc fatradiobutton.cc radiobutton.cc \
 		fatcheckbutton.cc \
 		scrollbar.cc \
-		checkbox.cc scrolledarea.cc \
+		checkbox.cc scrollpane.cc \
 		messagebox.cc tooltip.cc \
 		select.cc pointer.cc \
 		dialogeditor.cc colordialog.cc \
