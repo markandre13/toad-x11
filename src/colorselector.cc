@@ -129,29 +129,15 @@ TColorSelector::mouseLDown(int x, int y, unsigned modifier)
       x>w2-border ||
       y>h-border)  
   {
-/*
-    TColorDialog ce(this, "Line Color", &linecolor);
-    ce.doModalLoop();
-    invalidateWindow();
-*/
-  } else {
-/*
-    TColorDialog ce(this, "Fill Color", &fillcolor);
-    TCheckBox *fill = new TCheckBox(&ce, "Filled"); 
-    fill->setShape(x=8+256+8+16+8+12, 228, 80, 32); 
-    fill->getModel()->setValue(true);
-    ce.doModalLoop();
-    if (ce.apply)
-      filled = fill->getModel()->getValue();
-*/
-    filled = !filled;
-    invalidateWindow();
+    return;
   }
 
-  if (!gedit)
+  if (!gedit) {
+    invalidateWindow();
     return;
+  }
   gedit->setLineColor(linecolor);
-  if (filled)
+  if (!filled)
     gedit->setFillColor(fillcolor);
   else
     gedit->unsetFillColor();
