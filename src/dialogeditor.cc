@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -133,17 +133,45 @@ TDialogEditor::TFilter::mouseEvent(TMouseEvent &me)
 bool
 TDialogEditor::TFilter::keyEvent(TKeyEvent &ke)
 {
-//  cerr << "TMyMouseFilter::keyEvent" << endl;
-  if (!parent->layouteditor || !parent->layouteditor->isEnabled())
+//cerr << "TDialogEditor::TFilter::keyEvent\n";
+  if (!parent->layouteditor || !parent->layouteditor->isEnabled()) {
+//cerr << "  return 'false' in line " << __LINE__ << endl;
     return false;
+  }
 
   if (ke.window==parent->editwindow || 
       ke.window->isChildOf(parent->editwindow)) 
   {
 //    cerr << "  belongs to edit window" << endl;
     parent->layouteditor->getFilter()->keyEvent(ke);
+//cerr << "  return 'true' in line " << __LINE__ << endl;
     return true;
   }
+
+  // work around the focus management: when the key event occured within
+  // the same toplevel window which contains our edit window, we forward
+  // it to the edit window:
+
+  // copied from TMenuLayout::arrange, should make this one a method
+  // of TWindow  
+  TWindow *toplvl = ke.window;
+  while((toplvl->bPopup || !toplvl->bShell) && toplvl->getParent()) {
+    toplvl = toplvl->getParent();
+  }
+
+  if (toplvl==parent->editwindow || 
+      parent->editwindow->isChildOf(toplvl))
+  {
+//    cerr << "  belongs to edit window" << endl;
+    parent->layouteditor->getFilter()->keyEvent(ke);
+//cerr << "  return 'true' in line " << __LINE__ << endl;
+    return true;
+  }
+  
+//printf("parent->editwindow %p (%s)\n", parent->editwindow, parent->editwindow->getTitle().c_str());
+//printf("toplvl %p (%s)\n", toplvl, toplvl->getTitle().c_str());
+//printf("ke.window %p (%s)\n", ke.window, ke.window->getTitle().c_str());
+//cerr << "  return 'false' in line " << __LINE__ << endl;
   return false;
 }
 
