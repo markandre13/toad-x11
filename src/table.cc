@@ -564,11 +564,18 @@ TTable::setSelectionModel(TAbstractTableSelectionModel *m)
   if (selection)
     disconnect(selection->sigChanged, this);
   selection = m;
+  if (selection) {
+    connect(selection->sigChanged, this, &TTable::selectionChanged);
+  }
+  selectionChanged();
+}
 
+void
+TTable::selectionChanged()
+{
   if (selection) {
     // stupid hack just in case someone is using sx and sy...
-    // i'm going to remove this along with the getLast...
-    // methods?
+    // the selection model could supply these values?
     sx = sy = 0;
     for(int y=0; y<rows; ++y) {
       for(int x=0; x<cols; ++x) {
@@ -579,14 +586,7 @@ TTable::setSelectionModel(TAbstractTableSelectionModel *m)
         }
       }
     }
-    connect(selection->sigChanged, this, &TTable::selectionChanged);
   }
-  selectionChanged();
-}
-
-void
-TTable::selectionChanged()
-{
   invalidateWindow();
   sigSelection();
 }
@@ -1376,6 +1376,7 @@ TTable::handleNewModel()
   if (selection)
     selection->clearSelection();
   cx = cy = 0;
+  sy = sy = 0;
   resetScrollPane();
   ffx = ffy = 0;
   fpx = fpy = 0;
