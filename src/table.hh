@@ -67,6 +67,7 @@ class TTableSingleSelectionModel:
 
   public:
     TTableSingleSelectionModel() {
+      selected = false;
       clearSelection();
     }
     
