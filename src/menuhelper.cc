@@ -443,6 +443,7 @@ layout2nodes(TMenuEntryList::iterator p,
                                 (*p)->shortcut.c_str(),
                                 0, /* bitmap, still missing */
                                 (*p)->type);
+    newnode->parent = top;
     if (!node) {
       top->down = newnode;
     } else {
