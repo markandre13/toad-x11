@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -264,7 +264,7 @@ class GSTLSet:
     }
     typename container::const_reference 
     getElementAt(int, int index) {
-      assert(index<size());
+      assert(index>=0 && index<(int)size());
       while(idx<index) {
         ++idx;
         ++ptr;
@@ -674,7 +674,7 @@ class GSTLRandomAccess:
      
     const TYPE&
     getElementAt(int, int index) {
-      assert(index<size());
+      assert(index>=0 && index<(int)size());
       return (*this)[index];
     }
     void push_back(const TYPE &s) {
