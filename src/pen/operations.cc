@@ -41,6 +41,8 @@
  *     make TMatrix2D serializable
  *   \li
  *     allow multiplication of TMatrix2Ds
+ *   \li
+ *     (re-)add integer based translations
  */
 
 #include <X11/Xlib.h>
@@ -589,7 +591,7 @@ void
 TPenBase::fillCirclePC(int x, int y, int w, int h) const
 {
   XDRAW_PIXEL_COORD(w,h)
-  drawCircle(x, y, w, h);
+  fillCircle(x, y, w, h);
 }
 
 // arc
