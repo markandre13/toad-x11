@@ -160,9 +160,17 @@ TColoredFigure::setFromPreferences(TFigurePreferences *preferences)
  * delivered by <I>getHandle</I> or at the corners of the rectangle
  * delivered by <I>getShape</I> when <I>getHandle</I> returns `false'
  * for handle 0.
+ *
+ * When 'handle' is positive, it indicates that the handle of the same
+ * number is currently manipulated.
+ *
+ * \param pen
+ *   A pen to draw the figures selection.
+ * \param handle
+ *   Handle which is currently manipulated or <0, in case of none.
  */
 void
-TFigure::paintSelection(TPenBase &pen)
+TFigure::paintSelection(TPenBase &pen, int handle)
 {
   pen.setLineColor(TColor::FIGURE_SELECTION);
   pen.setFillColor(TColor::WHITE);
@@ -180,7 +188,13 @@ TFigure::paintSelection(TPenBase &pen)
       x = pt.x;
       y = pt.y;
     }
-    pen.fillRectanglePC(x-2,y-2,5,5);
+    if (handle!=h) {
+      pen.fillRectanglePC(x-2,y-2,5,5);
+    } else {
+      pen.setFillColor(TColor::FIGURE_SELECTION);
+      pen.fillRectanglePC(x-2,y-2,5,5);
+      pen.setFillColor(TColor::WHITE);
+    }
     if (pen.mat)
       pen.pop();
     h++;

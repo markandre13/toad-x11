@@ -65,7 +65,7 @@ class TFigure:
     
     //! Called to paint the gadget.
     virtual void paint(TPenBase& pen, EPaintType) = 0;
-    virtual void paintSelection(TPenBase &pen);
+    virtual void paintSelection(TPenBase &pen, int handle);
 
     /**
      * Called to get the gadgets bounding rectangle.

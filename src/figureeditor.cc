@@ -111,6 +111,13 @@ using namespace toad;
  *      color changes aren't part of undo/redo
  */
 
+/*
+ * The 'gadget' attribute is used to
+ * o identify the figure currently rotated
+ * o ...
+ *
+ */
+
 /**
  * This constructer is to be used when TFigureEditor isn't used as a
  * window itself but handles events delegated to it from another window.
@@ -140,10 +147,8 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t):
 
 TFigureEditor::~TFigureEditor()
 {
+  setModel(0);
   setPreferences(0);
-
-//  SetMode(MODE_SELECT);
-//  cout << "gadgets total: " << gadgets.size() << endl;
   if (mat)
     delete mat;
 }
@@ -523,7 +528,7 @@ TFigureEditor::paint()
     }
   }
   
-  print(pen);
+  print(pen, true);
 
   // draw the selection marks over all figures
   for(TFigureSet::iterator sp = selection.begin();
@@ -534,7 +539,11 @@ TFigureEditor::paint()
       pen.push();
       pen.multiply( (*sp)->mat );
     }
-    (*sp)->paintSelection(pen);
+    if (*sp!=gadget) {
+      (*sp)->paintSelection(pen, -1);
+    } else {
+      (*sp)->paintSelection(pen, handle);
+    }
     if ((*sp)->mat)
       pen.pop();
   }
@@ -646,16 +655,31 @@ bar=!bar;
     col_header_renderer->render(scr, -window->getOriginX(), visible.w, mat);
   }
 }
-  
+
+/**
+ * Draw all figures.
+ *
+ * This method is called from 'paint' to draw the whole drawing area.
+ * It's provided as an separate method so users can also draw on other
+ * devices than the screen.
+ *
+ * \param pen
+ *   The pen to be used, ie. TPen for the screen or TPrinter for the printer.
+ * \param withSelection
+ *   When set to 'true', the method will call the paint method of all
+ *   selected figures with TFigure::SELECT as 2nd parameter. The figure
+ *   TFText uses this to draw the text caret when in edit mode.
+ *
+ *   Handles to move, resize and rotate figures are drawn by the paint
+ *   method itself.
+ */  
 void
-TFigureEditor::print(TPenBase &pen)
+TFigureEditor::print(TPenBase &pen, bool withSelection)
 {
-  TFigureModel::iterator p, e;
-  
-  // draw the figures
-  p = model->begin();
-  e = model->end();
-  while(p!=e) {
+  for(TFigureModel::iterator p = model->begin();
+      p != model->end();
+      ++p)
+  {
     TFigure::EPaintType pt = TFigure::NORMAL;
     unsigned pushs = 0;
     if (gadget==*p) {
@@ -676,7 +700,7 @@ TFigureEditor::print(TPenBase &pen)
       pen.multiply( (*p)->mat );
     }
     
-    if (gadget!=*p && selection.find(*p)!=selection.end()) {
+    if (withSelection && gadget!=*p && selection.find(*p)!=selection.end()) {
       pt = TFigure::SELECT;
     }
     (*p)->paint(pen, pt);
@@ -684,7 +708,6 @@ TFigureEditor::print(TPenBase &pen)
       pen.pop();
       pushs--;
     }
-    ++p;
   }
 }
 
@@ -1251,27 +1274,23 @@ redo:
           // handle the handles
           //--------------------
           if ( !selection.empty() && !(m&MK_DOUBLE) ) {
-            TFigureSet::iterator p,e;
-            p = selection.begin();
-            e = selection.end();
-            #if VERBOSE
-              cout << "      mouse @ " << mx << ", " << my << endl;
-            #endif
+            for(TFigureSet::iterator p=selection.begin();
+                p!=selection.end();
+                ++p)
+            {
+              // map desktop (mx,my) to figure (x,y) (copied from findFigureAt)
+              int x, y;
+              if ((*p)->mat) {
+                TMatrix2D m(*(*p)->mat);
+                m.invert();
+                m.map(mx, my, &x, &y);
+              } else {
+                x = mx;
+                y = my;
+              }
 
-/* copied from findFigureAt */            
-      int x, y;
-      if ((*p)->mat) {
-        TMatrix2D m(*(*p)->mat);
-        m.invert();
-        m.map(mx, my, &x, &y);
-      } else {
-        x = mx;
-        y = my;
-      }
-            
-            
-            while(p!=e) {
-              unsigned h=0;
+              // loop over all handles
+              unsigned h = 0;
               while(true) {
                 if (!(*p)->getHandle(h,memo_pt))
                   break;
@@ -1281,21 +1300,21 @@ redo:
                     cout << "      found handle at cursor => STATE_MOVE_HANDLE" << endl;
                   #endif
                   handle = h;
+                  gadget = *p;
                   #if VERBOSE
                   cout << "      handle " << h << " @ " << memo_pt.x << ", " << memo_pt.y << endl;
                   #endif
                   state = STATE_MOVE_HANDLE;
                   if (selection.size()>1) {
-                    TFigure *g = *p;
                     clearSelection();
-                    selection.insert(g);
+                    selection.insert(gadget);
                     sigSelectionChanged();
                   }
+                  invalidateFigure(gadget);
                   return;
                 }
                 h++;
               }
-              p++;
             }
           } // end of handling the handles
 
@@ -1492,7 +1511,6 @@ redo:
 void
 TFigureEditor::mouseMove(int mx, int my, unsigned m)
 {
-
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
@@ -1566,15 +1584,14 @@ redo:
     } break;
 
     case STATE_MOVE_HANDLE: {
-      TFigure *f = *selection.begin();
       #if VERBOSE
         cout << "  STATE_MOVE_HANDLE => moving handle" << endl;
       #endif
 
-/* copied from findFigureAt */
+      /* copied from findFigureAt */
       int x2, y2;
-      if (f->mat) {
-        TMatrix2D m(*f->mat);
+      if (gadget->mat) {
+        TMatrix2D m(*gadget->mat);
         m.invert();
         m.map(x, y, &x2, &y2);
       } else {
@@ -1582,9 +1599,9 @@ redo:
         y2 = y;
       }
 
-      invalidateFigure(f);
-      f->translateHandle(handle, x2, y2);
-      invalidateFigure(f);
+      invalidateFigure(gadget);
+      gadget->translateHandle(handle, x2, y2);
+      invalidateFigure(gadget);
     } break;
 
     case STATE_SELECT_RECT: {
@@ -1711,12 +1728,11 @@ redo:
       #if VERBOSE
         cout << "  STATE_MOVE_HANDLE => updating scrollbars, STATE_NONE" << endl;
       #endif
-      TFigure *f = *selection.begin();
 
-/* copied from findFigureAt */            
+      /* copied from findFigureAt */            
       int x2, y2;
-      if (f->mat) {
-        TMatrix2D m(*f->mat);
+      if (gadget->mat) {
+        TMatrix2D m(*gadget->mat);
         m.invert();
         m.map(x, y, &x2, &y2);
       } else {
@@ -1724,10 +1740,12 @@ redo:
         y2 = y;
       }
 
-      invalidateFigure(f);
-      f->translateHandle(handle, x2, y2);
-      invalidateFigure(f);
+      invalidateFigure(gadget);
+      gadget->translateHandle(handle, x2, y2);
+      invalidateFigure(gadget);
       state = STATE_NONE;
+      gadget = 0;
+      handle = -1;
       updateScrollbars();
       
       TPoint pt(x,y);
@@ -1971,6 +1989,8 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
   x1 = y1 = INT_MAX;
   x2 = y2 = INT_MIN;
 
+  if (model) {
+
   TRectangle r;
   for(TFigureModel::iterator p = model->begin();
       p != model->end();
@@ -2033,6 +2053,8 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
     if (ay2>y2)
       y2=ay2;
 //cout << "area size: (" << x1 << ", " << y1 << ") - (" << x2 << ", " << y2 << ")\n";
+  }
+
   }
   
   if (x1>0) x1=0;
