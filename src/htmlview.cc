@@ -66,6 +66,82 @@ struct TElement;
 struct TETable;
 struct TEAnchor;
 
+string
+utf8fromwchar(wchar_t c)
+{
+  string result;
+  if (c<=0x7f) {
+    result.append(1, c);
+  } else
+  if (c<=0x7ff) {
+    int c2 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c1 = c | 0xc0;
+    result.append(1, c1);
+    result.append(1, c2);
+  } else
+  if (c<=0xffff) {
+    int c3 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c2 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c1 = c | 0xe0;
+    result.append(1, c1);
+    result.append(1, c2);
+    result.append(1, c3);
+  } else
+  if (c<=0x1fffff) {
+    int c4 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c3 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c2 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c1 = c | 0xf0;
+    result.append(1, c1);
+    result.append(1, c2);
+    result.append(1, c3);
+    result.append(1, c4);
+  } else
+  if (c<=0x3ffffff) {
+    int c5 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c4 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c3 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c2 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c1 = c | 0xf8;
+    result.append(1, c1);
+    result.append(1, c2);
+    result.append(1, c3);
+    result.append(1, c4);
+    result.append(1, c5);
+  } else {
+    int c6 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c5 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c4 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c3 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c2 = (c & 0x3f) | 0x80;
+    c >>= 6;
+    int c1 = c | 0xfc;
+    result.append(1, c1);
+    result.append(1, c2);
+    result.append(1, c3);
+    result.append(1, c4);
+    result.append(1, c5);
+    result.append(1, c6);
+  }
+  return result;
+}
+
+
+
 } // namespace
 
 class THTMLView::TElementStorage:
@@ -1641,9 +1717,9 @@ TParser::parse(TElementStorage *out,
 //cerr << "  matched\n";
              static const char out_of_order[]="\"&<>";
              if (current_table<160)
-                text += out_of_order[current_table-156];
+                text += utf8fromwchar(out_of_order[current_table-156]);
              else
-                text += (char)current_table;
+                text += utf8fromwchar(current_table);
           } else {
 //cerr << "  didn't match\n";
             text += entity;
