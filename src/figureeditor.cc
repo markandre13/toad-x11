@@ -476,13 +476,13 @@ TFigureEditor::paint()
   if (mat)
     pen.multiply(mat);
     
-  pen.setColor(
-    background_color.r > 128 ? background_color.r-128 : background_color.r+128,
-    background_color.g > 128 ? background_color.g-128 : background_color.g+128,
-    background_color.b > 128 ? background_color.b-128 : background_color.b+128
-  );
 
   if (preferences->drawgrid && preferences->gridsize) {
+    pen.setColor(
+      background_color.r > 128 ? background_color.r-64 : background_color.r+64,
+      background_color.g > 128 ? background_color.g-64 : background_color.g+64,
+      background_color.b > 128 ? background_color.b-64 : background_color.b+64
+    );
     int x1, x2, y1, y2;
     
     getPanePos(&x1, &y1, true);
@@ -1064,6 +1064,7 @@ TFigureEditor::setOperation(unsigned op)
   cout << "Setting Operation " << op << endl;
 #endif
   stopOperation();
+  clearSelection();
   if (window)
     window->setFocus();
   operation = op;
@@ -1100,8 +1101,6 @@ TFigureEditor::setCreate(TFigure *t)
   gtemplate->removeable = true;
 preferences->reason = TFigurePreferences::ALLCHANGED;
   gtemplate->setFromPreferences(preferences);
-  
-  clearSelection();
   setOperation(OP_CREATE);
 }
 
