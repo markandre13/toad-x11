@@ -224,8 +224,8 @@ TMatrix2D::map(int inX, int inY, short int *outX, short int *outY) const
 {
   double x, y;
   x = inX; y=inY;
-  *outX = static_cast<short int>(a11 * x + a12 * y + tx);
-  *outY = static_cast<short int>(a21 * x + a22 * y + ty);
+  *outX = static_cast<short int>(lround(a11 * x + a12 * y + tx));
+  *outY = static_cast<short int>(lround(a21 * x + a22 * y + ty));
 }
 
 void
@@ -233,8 +233,8 @@ TMatrix2D::map(int inX, int inY, int *outX, int *outY) const
 {
   double x, y;
   x = inX; y=inY;
-  *outX = static_cast<int>(a11 * x + a12 * y + tx);
-  *outY = static_cast<int>(a21 * x + a22 * y + ty);
+  *outX = static_cast<int>(lround(a11 * x + a12 * y + tx));
+  *outY = static_cast<int>(lround(a21 * x + a22 * y + ty));
 }
 
 void
@@ -242,8 +242,8 @@ TMatrix2D::map(int inX, int inY, long *outX, long *outY) const
 {
   double x, y;
   x = inX; y=inY;
-  *outX = static_cast<long>(a11 * x + a12 * y + tx);
-  *outY = static_cast<long>(a21 * x + a22 * y + ty);
+  *outX = lround(a11 * x + a12 * y + tx);
+  *outY = lround(a21 * x + a22 * y + ty);
 }
 
 void
