@@ -1118,7 +1118,7 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
           XftDrawSetClip(xftdraw, wnd->getUpdateRegion()->x11region);
 #warning "clipping required!!!"
       }
-      XftDrawString8(xftdraw, &color, font->getXftFont(), x,y, (XftChar8*)str, strlen);
+      XftDrawStringUtf8(xftdraw, &color, font->getXftFont(), x,y, (XftChar8*)str, strlen);
       } break;
 #endif
   }

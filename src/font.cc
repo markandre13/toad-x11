@@ -244,7 +244,7 @@ TFont::getTextWidth(const char *str, int len) const
 #ifdef HAVE_LIBXFT
   if (xftfont) {
     XGlyphInfo gi;
-    XftTextExtents8(x11display, xftfont, (XftChar8*)str, len, &gi);
+    XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
     return gi.width;
   }
 #endif
