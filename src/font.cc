@@ -19,6 +19,7 @@
  */
 
 #include <cmath>
+#include <set>
 #include <toad/os.hh>
 
 #ifdef __X11__
@@ -433,8 +434,13 @@ TFont::createX11Font(TMatrix2D *mat)
     }
 #endif
 #ifdef HAVE_LIBXUTF8
+    XErrorHandler oldhandler;
+    oldhandler = XSetErrorHandler(dummyhandler);
+    dummy = false;
     xutf8font_new = XCreateUtf8FontStruct(x11display, xfn.getXLFD().c_str());
-    if (!xutf8font_new) {
+    XSync(x11display, False);
+    XSetErrorHandler(oldhandler);
+    if (dummy || !xutf8font_new) {
       cerr << "error while loading font '" << fontname << "':\n"
            << "  failed to load Utf8 font structure '" << xfn.getXLFD() << "'\n";
     }
@@ -721,7 +727,7 @@ bool
 X11ConfigBuildFonts(FcConfig *config)
 {
   bool result = false;
-
+cerr << "build x11 fontconfig" << endl;
   FcFontSet *fs = FcConfigGetFonts(config, FcSetSystem);
   if (!fs)
     fs = FcFontSetCreate();
@@ -737,18 +743,70 @@ X11ConfigBuildFonts(FcConfig *config)
   int count;
   char **fl;
   TX11FontName xfn;
-  
-  // unicode 0x00-0xFF
-  fl = XListFonts(x11display, "*-iso8859-1", 8192, &count);
-  // unicode 0x0000 - 0xFFFF
-  //  fl = XListFonts(x11display, "*-iso10646-1", 8192, &count);
+
+  // there are fonts, which don't match XLFD format like 'fixed', '8x16' or 
+  // 'kanji16'. we ignore these and hope they also exist with an XLFD name
+  fl = XListFonts(x11display, "-*-*-*-*-*-*-*-*-*-*-*-*-*-*", 8192, &count);
   if (count>0)
     result=true;
+
+  map<string, set<string> > mymap;
+
   for(int i=0; i<count; ++i) {
     xfn.setXLFD(fl[i]);
+
+    #warning "suboptimal code..."
+    // setting these entries to "0" is required for sorting, but
+    // in case no variant exists with "0" in all these fields, we
+    // may use a bad filename
+    xfn.pixels = "0";
+    xfn.points = "0";
+    xfn.hdpi = "0";
+    xfn.vdpi = "0";
+    xfn.avg_width = "0";
+
+    string xlfd = xfn.getXLFD();
+    
+    unsigned j = xlfd.rfind('-');
+    j = xlfd.rfind('-', j-1);
+    mymap[xlfd.substr(0,j)].insert(xlfd.substr(j+1));
+  }
+
+  for(map<string, set<string> >::iterator p = mymap.begin();
+      p != mymap.end();
+      ++p)
+  {
+#if 0
+    cerr << p->first << endl;
+    for(set<string>::iterator q = p->second.begin();
+        q!=p->second.end();
+        ++q)
+    {
+      cerr << "  " << *q << endl;
+    }
+#endif
+    string xlfd = p->first + "-";
+    
+    // prefer iso10646-1 over iso8859-1 over ...
+    if (p->second.find("iso10646-1")!=p->second.end()) {
+      xlfd += "iso10646-1";
+    } else
+    if (p->second.find("iso8859-1")!=p->second.end()) {
+      xlfd += "iso8859-1";
+    } else {
+      // pick one at random...
+      xlfd += *p->second.begin();
+    }
+
+    xfn.setXLFD(xlfd.c_str());
+
+    // cout << xlfd << endl;
+
     font = FcPatternCreate();
+
+
     FcPatternAddString(font, FC_RASTERIZER, (FcChar8*)"X11");
-    FcPatternAddString(font, FC_FILE, (FcChar8*)fl[i]);
+    FcPatternAddString(font, FC_FILE, (FcChar8*)xlfd.c_str());
 #if 0
     FcPatternAddString(font, FC_LANG, (FcChar8*)
       "aa|af|ar|ast|ava|ay|be|bg|bi|bin|br|bs|ca|ce|ch|co|cs|cy|da|de|el|"
@@ -869,6 +927,7 @@ X11ConfigBuildFonts(FcConfig *config)
   }
   cout << "----------------------------------------------" << endl;
 #endif
+
   return result;
 }
 
