@@ -1096,7 +1096,7 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
       }
       if (region)
         XftDrawSetClip(xftdraw, region->x11region);
-      else if (wnd)
+      else if (wnd && wnd->getUpdateRegion())
         XftDrawSetClip(xftdraw, wnd->getUpdateRegion()->x11region);
       break;
 #else
