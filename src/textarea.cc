@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <assert.h>
 
+
 #if 0
 #define DBM(M) M
 #define MARK { cout << __PRETTY_FUNCTION__ << endl; }
@@ -33,6 +34,34 @@
 #endif
 
 using namespace toad;
+
+inline void 
+utf8inc(const string &text, unsigned int *cx)
+{
+  ++*cx;
+  while( ((unsigned char)text[*cx] & 0xC0) == 0x80)
+    ++*cx;
+}
+
+inline void 
+utf8dec(const string &text, unsigned int *cx)
+{
+  --*cx;
+  while( ((unsigned char)text[*cx] & 0xC0) == 0x80)
+    --*cx;
+}
+
+inline int
+utf8charcount(const string &text, int start, int len)
+{
+  return XCountUtf8Char((const unsigned char*)text.c_str()+start, len);
+}
+
+inline int
+utf8charsize(const string &text, int pos)
+{
+  return XUtf8CharByteLen((const unsigned char*)text.c_str()+pos, 5);
+}
 
 TTextModel *
 toad::createTextModel(TTextModel *m)
@@ -58,7 +87,6 @@ toad::createTextModel(TTextModel *m)
  *       deleting multiple lines
  *   \li clear old selection on insert and make inserted text the new
  *       selection
- *   \li increment col and row by one before printing 'em
  *   \li horizontal scrolling starts too late when line contains tabs
  *   \li remove code to insert a single character
  *   \li don't clear selection when shift is pressed
@@ -69,10 +97,6 @@ toad::createTextModel(TTextModel *m)
  *   \li when the whole line is selected, invert the whole line from the
  *       left to the right side of the window
  *   \li scrollbars (optional ones)
- *   \li textfield mode (no scrollbars, one line only)
- *   \li place cursor with mouse click
- *   \li selection with mouse
- *   \li border with shadow as done on the old TTextField widget
  *   \li non-monospaced characters
  *   \li later: non-one-byte-per-char texts (ie. UTF8)
  *   \li later: control characters for multiple colors, fonts, etc.
@@ -354,7 +378,8 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       if (preferences->mode==TPreferences::NORMAL)
         _selection_clear();
       if (preferences->notabs) {
-        unsigned m = (preferences->tabwidth-_cx-1) % preferences->tabwidth;
+        unsigned m = (preferences->tabwidth -
+                      utf8charcount(model->getValue(), _bol, _pos-_bol+1)-1) % preferences->tabwidth;
         string s;
         s.replace(0,1, m+1, ' ');
         _insert(s);
@@ -548,7 +573,7 @@ DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
         }
         
         if (inside_current_line) {
-          const string s(model->getValue());
+          const string &s = model->getValue();
 
           if (_pos > 0) {
           _bol = s.rfind('\n', _pos-1);
@@ -562,7 +587,7 @@ DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
           if (_eol==string::npos)
             _eol=s.size();
             
-          _cx = _pos - _bol - _tx;
+          _cx = utf8charcount(s, _bol, _pos - _bol) - _tx;
          }
         
         _catch_cursor();
@@ -640,7 +665,8 @@ DBM(cout << "enter modelChanged (" << getTitle() << ")" << endl;
         }
         DBM(cout << "_eol   = " << _eol << endl;)
 
-        _cx = _pos - _bol - _tx;
+        // _cx = _pos - _bol - _tx;
+        _cx = utf8charcount(s, _bol, _pos - _bol) - _tx;
 
         _catch_cursor();
       }
@@ -772,6 +798,7 @@ TTextArea::paint()
       // line = line with tabs converted to spaces
       // sx   = cx in line with tabs converted to spaces
       sx = _tx+_cx;
+cerr << "1 sx=" << sx << endl;
       
       unsigned _bos = this->_bos;
       unsigned _eos = this->_eos;
@@ -783,8 +810,11 @@ TTextArea::paint()
       
       unsigned bos = _bos;
       unsigned eos = _eos;
-      for(unsigned i=0; i<line.size(); i++) {
-        if (line[i]=='\t') {
+      for(unsigned i=0, j=0; 
+          i<line.size(); 
+          i++, utf8inc(line, &j))
+      {
+        if (line[j]=='\t') {
           unsigned m = (preferences->tabwidth-i-1) % preferences->tabwidth;
           if (!preferences->viewtabs) {
             line.replace(i, 1, m+1, ' ');
@@ -883,6 +913,7 @@ TTextArea::paint()
       // draw cursor
       if (blink.visible && blink.current==this && sy==_cy) {
         pen.setColor(0,0,0);
+cerr << "2 sx=" << sx << endl;
         // sx = pen.getTextWidth(line.substr(0, sx));
         sx = pen.getTextWidth("x") * (sx-_tx);
         pen.setMode(TPen::INVERT);
@@ -1013,15 +1044,15 @@ TTextArea::_cursor_left(unsigned n)
 {
   MARK
   for(unsigned i=0; i<n; ++i) {
-    if (_cx+_tx>0) {
+    if (_pos>_bol) {
       if (_cx>0) {
-        _cx--;
-        _pos--;
+        --_cx;
+        utf8dec(model->getValue(), &_pos);
         _invalidate_line(_cy);
         _catch_cursor();
       } else {
         _tx--;
-        _pos--;
+        utf8dec(model->getValue(), &_pos);
         invalidateWindow();
       }
     } else 
@@ -1037,10 +1068,13 @@ void
 TTextArea::_cursor_right(unsigned n)
 {
   MARK
+cerr << "cursor_right" << endl;
+cerr << "   _cx = " << _cx << endl;
+cerr << "  _pos = " << _pos << endl;
   for(unsigned i=0; i<n; ++i) {
-    if (_cx+_tx<_eol-_bol) {
-      _cx++;
-      _pos++;
+    if (_pos<_eol-_bol) {
+      ++_cx;
+      utf8inc(model->getValue(), &_pos);
       _invalidate_line(_cy);
       _catch_cursor();
     } else 
@@ -1049,6 +1083,8 @@ TTextArea::_cursor_right(unsigned n)
       _cursor_home();
     }
   }
+cerr << "   _cx = " << _cx << endl;
+cerr << "  _pos = " << _pos << endl;
   blink.visible=true;
 }
 
@@ -1183,7 +1219,7 @@ TTextArea::_delete()
   MARK
   DBM(cout << "_delete: _bol=" << _bol << ", _pos=" << _pos << ", _eol=" << _eol << endl;)
   if (_pos<model->getValue().size()) {
-    model->remove(_pos);
+    model->remove(_pos, utf8charsize(model->getValue(), _pos));
   }
 }
 
