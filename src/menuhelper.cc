@@ -155,9 +155,15 @@ TMenuHelper::~TMenuHelper()
 /**
  * Set the menu's TMenuLayout scope to the specified interactor.
  *
+ * Use only actions which are part of the specified interactor.
+ *
  * This method is used for example by TFigureEditor to create popup
  * menu's for interactors which aren't part of the window tree. Namely 
  * figures in the case of TFigureEditor.
+ *
+ * Another case is to use a menubar and a popup menu within the same
+ * top level window. Actions above the interactor will not be displayed
+ * in the menu.
  */
 void
 TMenuHelper::setScopeInteractor(TInteractor *interactor)
@@ -295,8 +301,8 @@ DBM2(cerr << "TMenuHelper received closeRequest" << endl;)
 }
 
 /**
- * Create and/or return a node in the tree point to by root, corresponding
- * to the path in str.
+ * Create and/or return a node in the tree pointed to by root and which
+ * corresponds with the path in str.
  */
 static TMenuHelper::TNode* 
 insert_node(
@@ -314,7 +320,7 @@ insert_node(
   strpos = str.find('|');
   left = str.substr(0, strpos);
   
-  TMenuHelper::TNode *node;
+  TMenuHelper::TNode *node = NULL;
   if (*root==NULL) {
     *root = node = new TMenuHelper::TNode(left);
 DBM_FEEL(cout << "adding node " << left << ":" << parent << endl;)
@@ -323,8 +329,12 @@ DBM_FEEL(cout << "adding node " << left << ":" << parent << endl;)
   } else {
     node = *root;
     while(true) {
-      if (node->title == left)
+      if (node->title == left) {
         break;
+      }
+      if (node->title == str) {
+        return node;
+      }
       if (node->next==NULL) {
         // no node in the tree so add a new one
         node->next = new TMenuHelper::TNode(left);
@@ -567,6 +577,20 @@ TMenuHelper::TNode::isEnabled() const
 bool 
 TMenuHelper::TNode::isAvailable() const
 {
+  if (type==SEPARATOR)
+    return true;
+
+  // nodes with an empty label are always non-available unless they
+  // are of type RADIOBUTTON, in which case 'createWindowAt' is performing
+  // the required checks
+  if (label.empty()) {
+    if (actions.empty() ||
+       (*actions.begin())->type != TAction::RADIOBUTTON) 
+    {
+      return false;
+    }
+  }
+
 DBM2(cerr << "      " << __PRETTY_FUNCTION__ << endl;)
   if (down) {
 DBM2(cerr << "        is down\n";)
@@ -582,8 +606,6 @@ DBM2(cerr << "        not available\n";)
     return !actions.empty();
   }
 
-  if (type==SEPARATOR)
-    return true;
 
   if (actions.empty()) {
 DBM2(cerr << "        no actions -> not available\n";)
@@ -705,7 +727,6 @@ TMenuHelper::TNode::createWindowAt(TMenuHelper *parent)
   // - nodes with action=NULL are menubar entries with submenus
   // - assuming, all actions are of the same type
   
-  
   TAction *action = 0;
   TAction::EType type = TAction::BUTTON;
   nwinarray = 1;
@@ -718,33 +739,40 @@ TMenuHelper::TNode::createWindowAt(TMenuHelper *parent)
   winarray = new TMenuButton*[nwinarray];
   w=0;
   h=0;
+  unsigned j=0;
   for(unsigned i=0; i<nwinarray; i++) {
     switch(type) {
       case TAction::BUTTON:
-        winarray[i] = new TMenuButton(parent, this);
+        winarray[j] = new TMenuButton(parent, this);
         break;
       case TAction::RADIOBUTTON: {
         TAbstractChoice *choice = dynamic_cast<TAbstractChoice*>(action);
         assert(choice);
-        winarray[i] = new TMenuRadioButton(parent, this, choice->getModel(), i);
+        if (!getLabel(i).empty()) {
+          winarray[j] = new TMenuRadioButton(parent, this, choice->getModel(), i);
+        } else {
+          continue;
+        }
         } break;
 #if 0
       case TAction::CHECKBUTTON:
-        winarray[i] = new TMenuCheckButton(parent, this);
+        winarray[j++] = new TMenuCheckButton(parent, this);
         break;
 #endif
     }
-    winarray[i]->adjustButton();
-    winarray[i]->createWindow();
+    winarray[j]->adjustButton();
+    winarray[j]->createWindow();
     
     if (vertical) {
-      w = max(w, winarray[i]->getWidth());
-      h += winarray[i]->getHeight();
+      w = max(w, winarray[j]->getWidth());
+      h += winarray[j]->getHeight();
     } else {
-      w += winarray[i]->getWidth();
-      h = max(h, winarray[i]->getHeight());
+      w += winarray[j]->getWidth();
+      h = max(h, winarray[j]->getHeight());
     }
+    ++j;
   }
+  nwinarray = j;
 }
 
 /**
@@ -969,11 +997,13 @@ DBM2(cerr << "  okay, it's '" << toplvl->getTitle() << "'\n";)
 
   TActionStorage::iterator p(TAction::actions.begin()), e(TAction::actions.end());
   while(p!=e) {
-DBM2(cerr << "  create node " << (*p)->getTitle() << endl;)
-    TMenuHelper::TNode *node = insert_node((*p)->getTitle(), &menu->root.down, &menu->root);
+    TMenuHelper::TNode *node;
+DBM2(cerr << "  check node " << (*p)->getTitle() << endl;)
     switch(scope) {
       case GLOBAL:
 DBM2(cerr << "    global menubar, always add\n";)
+DBM2(cerr << "      create node\n";)
+        node = insert_node((*p)->getTitle(), &menu->root.down, &menu->root);
         node->addAction(*p);
         break;
       case TOPLEVEL: {
@@ -982,6 +1012,8 @@ DBM2(cerr << "    toplevel menubar, check that action is a child\n";)
           while(ptr) {
             TWindow *w = dynamic_cast<TWindow*>(ptr);
             if (w) {
+DBM2(cerr << "      create node\n";)
+              node = insert_node((*p)->getTitle(), &menu->root.down, &menu->root);
 DBM2(cerr << "      found window '" << w->getTitle() << "'\n";)
               if (w->bShell || !w->getParent()) {
 DBM2(cerr << "       it's a shell window or has no other parent\n";)
@@ -999,7 +1031,11 @@ DBM2(cerr << "      go up to parent\n";)
           }
         } break;
       case INTERACTOR:
+DBM2(cerr << "      interactor scope menubar, check that action is a child\n";)
         if (interactor==*p || (*p)->isChildOf(interactor)) {
+DBM2(cerr << "      create node\n";)
+              TMenuHelper::TNode *node = insert_node((*p)->getTitle(), &menu->root.down, &menu->root);
+DBM2(cerr << "        okay\n";)
           node->addAction(*p);
         }
         break;
