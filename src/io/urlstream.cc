@@ -407,8 +407,11 @@ urlstreambase::iopen_http()
   }
 
   cmd = "GET ";
-  cmd+=url;
-  cmd+=" HTTP/1.0\r\n\r\n";
+  cmd+=filename;
+  cmd+=" HTTP/1.1\r\n";
+  cmd+="Host: ";
+  cmd+=hostname;
+  cmd+="\r\n\r\n";
   if (write(sock, cmd.c_str(), cmd.size())!=(int)cmd.size()) {
     error = "failed to send HTTP request to " + fn;
     goto error5;
