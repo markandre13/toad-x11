@@ -127,8 +127,8 @@ class TTextModel:
           offset = o;
           text   = t;
         }
-        // const string& getRedoName();
-        // const string& getUndoName();
+        string getRedoName() const { return "Redo: Insert"; }
+        string getUndoName() const { return "Undo: Insert"; }
         void undo() {
           model->remove(offset, text.size(), false);
         }
@@ -136,6 +136,7 @@ class TTextModel:
           model->insert(offset, text, false);
         }
     };
+
     class TUndoableRemove:
       public TUndoable
     {
@@ -148,6 +149,8 @@ class TTextModel:
           offset = o;
           text   = t;
         }
+        string getRedoName() const { return "Redo: Delete"; }
+        string getUndoName() const { return "Undo: Delete"; }
         void undo() {
           model->insert(offset, text, false);
         }

@@ -34,6 +34,9 @@ class TUndoableDelete:
     TUndoableDelete(TFigureModel&,
                     const TFigureEditor::TFigureSet&);
     ~TUndoableDelete();
+
+    string getRedoName() const { return "Redo: Delete"; }
+    string getUndoName() const { return "Undo: Delete"; }
     void undo();
     void redo();
     

@@ -32,6 +32,15 @@ namespace toad {
 class TFigure;
 class TScrollBar;
 
+class TFigureEditorHeaderRenderer
+{
+    bool vertical;
+  public:
+    TFigureEditorHeaderRenderer(bool vertical=false);
+    void render(TPen &pen, int pos, int size, TMatrix2D *mat);
+    int getSize();
+};
+
 /**
  * \ingroup figure
  */
@@ -59,6 +68,7 @@ class TFigureEditor:
     void setModel(TFigureModel *m) {
       model = m;
       invalidateWindow();
+      updateScrollbars();
     }
     TFigureModel * getModel() const {
       return model;
@@ -68,6 +78,9 @@ class TFigureEditor:
     TWindow *window;            // current window
     TMatrix2D *mat;             // transformation for the editor
     int fuzziness;              // fuzziness to catch handles
+    
+    TFigureEditorHeaderRenderer *row_header_renderer;
+    TFigureEditorHeaderRenderer *col_header_renderer;
 
   public:
     static const unsigned OP_SELECT = 0;
@@ -161,6 +174,8 @@ class TFigureEditor:
     void mouseMove(int,int,unsigned);
     void mouseLUp(int,int,unsigned);
     void keyDown(TKey, char*, unsigned);
+
+    void mouse2sheet(int mx, int my, int *sx, int *sy);
 
     bool restore(TInObjectStream&);
     void store(TOutObjectStream&) const;

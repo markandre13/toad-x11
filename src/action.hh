@@ -93,6 +93,7 @@ class TAction:
     virtual unsigned getSize() const;
     virtual const string& getID(unsigned idx) const;
     virtual unsigned getSelection() const { return 0; }
+    virtual bool getState(string *text, bool *active) const { return false; }
 };
 
 class TChoiceModel:

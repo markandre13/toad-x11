@@ -33,6 +33,9 @@ class TUndoableMove:
   public:
     TUndoableMove(int, int, const TFigureEditor::TFigureSet&);
     ~TUndoableMove();
+
+    string getRedoName() const { return "Redo: Move Object"; }
+    string getUndoName() const { return "Undo: Move Object"; }
     void undo();
     void redo();
     

@@ -752,6 +752,11 @@ TMenuHelper::TNode::getLabel(unsigned idx) const
   if (action && action->type==TAction::RADIOBUTTON) {
     return action->getID(idx);
   }
+  static string alt_label;
+  bool alt_active = true;
+  if (action && action->getState(&alt_label, &alt_active)) {
+    return alt_label;
+  }
   return label;
 }
 

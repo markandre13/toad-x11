@@ -36,6 +36,8 @@ class TUndoableCreate:
       done = false;
     }
                     
+    string getRedoName() const { return "Redo: New"; }
+    string getUndoName() const { return "Undo: New"; }
     void undo() { TUndoableDelete::redo(); }
     void redo() { TUndoableDelete::undo(); }
 };

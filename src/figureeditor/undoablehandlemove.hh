@@ -32,6 +32,8 @@ class TUndoableHandleMove:
 {
   public:
     TUndoableHandleMove(TFigure*, unsigned, const TPoint&, const TPoint&);
+    string getRedoName() const { return "Redo: Move"; }
+    string getUndoName() const { return "Undo: Move"; }
     void undo();
     void redo();
     

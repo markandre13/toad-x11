@@ -130,6 +130,8 @@ TFigureEditor::TFigureEditor():
   init();
   bExplicitCreate = true; // don't create, see TWindow::createParentless()
   window = NULL;
+  row_header_renderer = new TFigureEditorHeaderRenderer(true);
+  col_header_renderer = new TFigureEditorHeaderRenderer(false);
 }
 
 TFigureEditor::TFigureEditor(TWindow *p, const string &t):
@@ -139,6 +141,8 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t):
   setMouseMoveMessages(TMMM_LBUTTON);
   bNoBackground = true;
   window = this;
+  row_header_renderer = new TFigureEditorHeaderRenderer(false);
+  col_header_renderer = new TFigureEditorHeaderRenderer(true);
 }
 
 TFigureEditor::~TFigureEditor()
@@ -167,6 +171,36 @@ TFigureEditor::setWindow(TWindow *w)
   if (window)
     window->invalidateWindow();
 }
+
+class THistoryAction:
+  public TAction
+{
+    TFigureEditor::THistory *history;
+    bool undo;
+  public:
+    THistoryAction(TWindow *w, const string &t, TFigureEditor::THistory *h, bool u):
+      TAction(w, t), history(h), undo(u)
+    {
+    }
+    
+    bool getState(string *text, bool *active) const {
+      if (undo) {
+        if (history->getBackSize()>0)
+          *text = history->getCurrent()->getUndoName();
+        else
+          *text = "(Undo)";
+      } else {
+        if (history->getForwardSize()>0) {
+          history->goForward();
+          *text = history->getCurrent()->getRedoName();
+          history->goBack();
+        } else {
+          *text = "(Redo)";
+        }
+      }
+      return true;
+    }
+};
 
 void
 TFigureEditor::init()
@@ -204,9 +238,9 @@ TFigureEditor::init()
   action = new TAction(this, "edit|delete");
   CONNECT(action->sigActivate, this, deleteSelection);
 
-  action = new TAction(this, "edit|undo");
+  action = new THistoryAction(this, "edit|undo", &history, true);
   CONNECT(action->sigActivate, this, undo);
-  action = new TAction(this, "edit|redo");
+  action = new THistoryAction(this, "edit|redo", &history, false);
   CONNECT(action->sigActivate, this, redo);
 }
 
@@ -238,23 +272,32 @@ TFigureEditor::store(TOutObjectStream &out) const
 void 
 TFigureEditor::identity() 
 { 
-  if (mat) mat->identity();
+  if (mat) {
+    mat->identity();
+    updateScrollbars();
+  }
 }
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::rotate(double) {}
+void TFigureEditor::rotate(double)
+{
+}
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::rotateAt(double x, double y, double degree) {}
+void TFigureEditor::rotateAt(double x, double y, double degree)
+{
+}
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::translate(double, double) {}
+void TFigureEditor::translate(double, double)
+{
+}
 
 /**
  * Scale the edit pane.
@@ -269,18 +312,25 @@ void TFigureEditor::scale(double sx, double sy)
 // distance
 fuzziness = 2.0 / sx;
   
+  updateScrollbars();
   invalidateWindow();
 }
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::shear(double, double) {}
+void TFigureEditor::shear(double, double) 
+{
+  updateScrollbars();
+}
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::multiply(const TMatrix2D*) {}
+void TFigureEditor::multiply(const TMatrix2D*)
+{
+  updateScrollbars();
+}
 
 /**
  * \param b 'true' if scrollbars shall be used.
@@ -337,6 +387,83 @@ double rotd0;
 
 int select_x;
 int select_y;
+
+TFigureEditorHeaderRenderer::TFigureEditorHeaderRenderer(bool vertical)
+{
+  this->vertical = vertical;
+}
+
+int
+TFigureEditorHeaderRenderer::getSize()
+{
+  return 16;
+}
+
+/*
+  o our internal resolution is 9600dpi
+  o our assumed screen resolution is 100dpi
+  o 1cm = 0.394in
+  o 2.54cm = 1in
+*/
+void
+TFigureEditorHeaderRenderer::render(TPen &pen, int pos, int size, TMatrix2D *mat)
+{
+cerr << "render pos " << pos << " with size " << size << endl;
+  pen.setColor(TColor::BTNFACE);
+
+  double x0, x1, y0, y1;
+  mat->map(0,0, &x0, &y0);
+  mat->map(1,1, &x1, &y1);
+  
+  double res;
+  if (!vertical)
+    res = ((x1-x0)*9600.0);
+  else
+    res = ((y1-y0)*9600.0);
+  
+  if (!vertical) {
+    pen.fillRectangle(pos, 0, size, 16);
+    pen.setColor(TColor::BTNLIGHT);
+    pen.drawLine(pos,0,pos+size,0);
+    pen.setColor(TColor::BTNSHADOW);
+    pen.drawLine(pos,15,pos+size,15);
+  } else {
+    pen.fillRectangle(0, pos, 16, size);
+    pen.setColor(TColor::BTNLIGHT);
+    pen.drawLine(0,pos,0,pos+size);
+    pen.setColor(TColor::BTNSHADOW);
+    pen.drawLine(15,pos,15,pos+size);
+  }
+  
+  pen.setColor(0,0,0);
+  
+  int f = res/10;
+  
+  pos = (pos/f)*f;
+  for(unsigned i=pos; i<pos+size; i+=f) {
+    int y = 0;
+    if (i%10==0)
+      y = 10;
+    if (i%20==0)
+      y = 8;
+    if (i%100==0)
+      y = 2;
+    if (y!=0) {
+      if (!vertical)
+        pen.drawLine(i,16,i,y);
+      else
+        pen.drawLine(16,i,y,i);
+    }
+    if (y==2) {
+      char buffer[64];
+      snprintf(buffer, sizeof(buffer), "%lf", ((double)i/res));
+      if (!vertical)
+        pen.drawString(i+2, 0, buffer);
+      else
+        pen.drawString(0, i+2, buffer);
+    }
+  }
+}
 
 void
 TFigureEditor::paint()
@@ -462,10 +589,44 @@ TFigureEditor::paint()
 
   // put the result onto the screen
   TPen scr(window);
+/*
+TRectangle foo;
+scr.getClipBox(&foo);
+cout << "clip box " << foo << endl;
+*/
   scr.identity();
   scr.drawBitmap(visible.x,visible.y, &bmp);
-  
+/*
+static bool bar=true;
+if (bar)
+  scr.setColor(255,0,0);
+else
+  scr.setColor(0,255,0);
+bar=!bar;
+  scr.drawLine(0,64, 64,0);
+*/  
   paintCorner(scr);
+  
+  if (row_header_renderer) {
+//    TRectangle clip(0, visible.y, visible.x, visible.h);
+    TRectangle clip(visible.x, 0, visible.w, visible.y);
+    TRectangle dummy(0,0,getWidth(), getHeight());
+    scr.identity();
+    scr|=dummy;
+    scr&=clip;
+    scr.translate(visible.x+window->getOriginX(), 0);
+    row_header_renderer->render(scr, -window->getOriginX(), visible.w, mat);
+  }
+
+  if (col_header_renderer) {
+    TRectangle clip(0, visible.y, visible.x, visible.h);
+    TRectangle dummy(0,0,getWidth(), getHeight());
+    scr.identity();
+    scr|=dummy;
+    scr&=clip;
+    scr.translate(0, visible.y+window->getOriginY());
+    col_header_renderer->render(scr, -window->getOriginY(), visible.h, mat);
+  }
 }
   
 void
@@ -930,20 +1091,30 @@ redo:
 }
 
 void
-TFigureEditor::mouseLDown(int mx,int my, unsigned m)
+TFigureEditor::mouse2sheet(int mx, int my, int *sx, int *sy)
 {
+  mx-=visible.x;
+  my-=visible.y;
   if (mat) {
     TMatrix2D m(*mat);
     m.invert();
     m.map(mx, my, &mx, &my);
   }
+  *sx = mx;
+  *sy = my;
+}
 
+void
+TFigureEditor::mouseLDown(int mx,int my, unsigned m)
+{
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
 
   if (!window)
     return;
+
+  mouse2sheet(mx, my, &mx, &my);
 
   int x = ((mx+gridx/2)/gridx)*gridx;
   int y = ((my+gridy/2)/gridy)*gridy;
@@ -1199,17 +1370,15 @@ redo:
 void
 TFigureEditor::mouseMove(int x, int y, unsigned m)
 {
-  if (mat) {
-    TMatrix2D m(*mat);
-    m.invert();
-    m.map(x, y, &x, &y);
-  }
+
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
 
   if (!window)
     return;
+
+  mouse2sheet(x, y, &x, &y);
 
   x = ((x+gridx/2)/gridx)*gridx;
   y = ((y+gridy/2)/gridy)*gridy;
@@ -1338,17 +1507,14 @@ redo:
 void
 TFigureEditor::mouseLUp(int x, int y, unsigned m)
 {
-  if (mat) {
-    TMatrix2D m(*mat);
-    m.invert();
-    m.map(x, y, &x, &y);
-  }
 #if VERBOSE
   cout << __PRETTY_FUNCTION__ << endl;
 #endif
 
   if (!window)
     return;
+
+  mouse2sheet(x, y, &x, &y);
 
   x = ((x+gridx/2)/gridx)*gridx;
   y = ((y+gridy/2)/gridy)*gridy;
@@ -1371,6 +1537,7 @@ redo:
           cout << "    stop" << endl;
         #endif
         stopOperation();
+        updateScrollbars();
       }
       if (r & TFigure::REPEAT) {
         #if VERBOSE
@@ -1533,8 +1700,8 @@ TFigureEditor::invalidateFigure(TFigure* figure)
   r.w+=6;
   r.h+=6;
 
-  r.x+=window->getOriginX();
-  r.y+=window->getOriginY();
+  r.x+=window->getOriginX() + visible.x;
+  r.y+=window->getOriginY() + visible.y;
 
   window->invalidateWindow(r);
 }
@@ -1588,11 +1755,11 @@ TFigureEditor::findGadgetAt(int mx, int my)
 void
 TFigureEditor::adjustPane()
 {
-#if 0
+#if 1
   visible.set(0,0,getWidth(),getHeight());
 
-  if (true /*row_header_renderer*/) {
-    visible.x = 16; // row_header_renderer->getWidth();
+  if (row_header_renderer) {
+    visible.x = row_header_renderer->getSize();
     visible.w -= visible.x;
   }
   if (true /*col_header_renderer*/) {

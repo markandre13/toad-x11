@@ -78,6 +78,9 @@ TScrollPane::_scrolled()
     scrollRectangle(r, dx, 0, true);
   } 
 
+#warning "invalidating the whole window to avoid off-by-one error in scrollRectangle"
+invalidateWindow();
+
   scrolled(dx, dy);
 }
 
@@ -181,6 +184,7 @@ TScrollPane::doLayout()
 void
 TScrollPane::paintCorner(TPen &pen)
 {
+#if 0 
   if (hscroll && vscroll &&
       hscroll->isMapped() &&
       vscroll->isMapped())
@@ -193,6 +197,25 @@ TScrollPane::paintCorner(TPen &pen)
     pen|=r;
     pen.fillRectanglePC(r);
   }
+#else
+  pen.setColor(TColor::DIALOG);
+  pen.identity();
+  TRectangle r(0,0,getWidth(),getHeight());
+  pen|=r;
+  if (visible.y>0) {
+    if (visible.x>0) 
+      pen.fillRectanglePC(0, 0, visible.x, visible.y);
+    if (visible.x+visible.w < getWidth())
+      pen.fillRectanglePC(visible.x+visible.w, 0, getWidth()-visible.x-visible.w, visible.y);
+  }
+  if (visible.y+visible.h < getHeight()) {
+    if (visible.x>0) 
+      pen.fillRectanglePC(0, visible.y+visible.h, visible.x, getHeight()-visible.y-visible.h);
+    if (visible.x+visible.w < getWidth())
+      pen.fillRectanglePC(visible.x+visible.w, visible.y+visible.h, getWidth()-visible.x-visible.w, getHeight()-visible.y-visible.h);
+  }
+  
+#endif
 }
 
 void

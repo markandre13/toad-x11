@@ -29,6 +29,9 @@ class TUndoable:
   public TSmartObject
 {
   public:
+    virtual string getRedoName() const = 0;
+    virtual string getUndoName() const = 0;
+       
     virtual void undo() = 0;
     virtual void redo() = 0;
 };
