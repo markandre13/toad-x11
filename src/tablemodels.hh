@@ -41,6 +41,60 @@
 
 namespace toad {
 
+class TAbstractTableModel:
+  public TModel
+{
+  public:
+    virtual int getRows() = 0;
+    virtual int getCols();
+};
+
+typedef GSmartPointer<TAbstractTableModel> PAbstractTableModel;
+
+template <class T>
+class GAbstractTableModel:
+  public TAbstractTableModel
+{
+  public:
+    typedef T TElement;
+    virtual const TElement& getElementAt(int xindex, int yindex) = 0;
+};
+
+template <class T>
+class GTableSelectionModel:
+  public TTableSelectionModel
+{
+  public:
+    typedef T TModel;
+    typedef typename T::TElement TElement;
+   
+    TModel *model;
+ 
+    GTableSelectionModel(TModel *m):model(m) { }
+  
+    class iterator:
+      public TTableSelectionModel::iterator
+    {
+        TModel *model;
+        typedef TTableSelectionModel::iterator super;
+      public:
+        iterator() {
+          model = 0;
+        }
+        iterator(TRegion *r, bool b, TModel *m):
+           TTableSelectionModel::iterator(r, b), model(m) {}
+        const TElement& operator*() { return model->getElementAt(getX(), getY()); }
+    };
+    iterator begin() {
+      return iterator(&region, true, model);
+    }
+    iterator end() {
+      return iterator(&region, false, model);
+    }
+};
+
+
+
 /**
  * \ingroup table
  * \class toad::TTableModel_CString
@@ -131,24 +185,7 @@ class TTableCellRenderer_CString:
       return max+2;
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      if (selected) {
-        if (focus) {
-          pen.setColor(TColor::SELECTED);
-        } else {
-          pen.setColor(TColor::SELECTED_GRAY);
-        }
-        pen.fillRectangle(0,0,w, h);
-        pen.setColor(TColor::SELECTED_TEXT);
-      }
-      pen.drawString(
-        1, 1, model->getElementAt(x, y)
-      );
-      if (selected) {
-        pen.setColor(TColor::BLACK);
-      }
-      if (cursor) {
-        pen.drawRectangle(0,0,w, h);
-      }
+      pen.drawString(1, 1, model->getElementAt(x, y));
     }
 };
 
@@ -396,24 +433,7 @@ class GTableCellRenderer_String:
       return max+2;
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      if (selected) {
-        if (focus) {
-          pen.setColor(TColor::SELECTED);
-        } else {
-          pen.setColor(TColor::SELECTED_GRAY);
-        }
-        pen.fillRectangle(0,0,w, h);
-        pen.setColor(TColor::SELECTED_TEXT);
-      }
-      pen.drawString(
-        1, 1, model->getElementAt(x, y)
-      );
-      if (selected) {
-        pen.setColor(TColor::BLACK);
-      }
-      if (cursor) {
-        pen.drawRectangle(0,0,w, h);
-      }
+      pen.drawString(1, 1, model->getElementAt(x, y));
     }
 };
 
@@ -472,24 +492,7 @@ class GTableCellRenderer_Text:
       return max+2;
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      if (selected) {
-        if (focus) {
-          pen.setColor(TColor::SELECTED);
-        } else {
-          pen.setColor(TColor::SELECTED_GRAY);
-        }
-        pen.fillRectangle(0,0,w, h);
-        pen.setColor(TColor::SELECTED_TEXT);
-      }
-      pen.drawString(
-        1, 1, model->getElementAt(0, y).toText(x)
-      );
-      if (selected) {
-        pen.setColor(TColor::BLACK);
-      }
-      if (cursor) {
-        pen.drawRectangle(0,0,w, h);
-      }
+      pen.drawString( 1, 1, model->getElementAt(0, y).toText(x));
     }
 };
 
@@ -550,24 +553,7 @@ class GTableCellRenderer_PText:
       return max+2;
     }
     void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
-      if (selected) {
-        if (focus) {
-          pen.setColor(TColor::SELECTED);
-        } else {
-          pen.setColor(TColor::SELECTED_GRAY);
-        }
-        pen.fillRectangle(0,0,w, h);
-        pen.setColor(TColor::SELECTED_TEXT);
-      }
-      pen.drawString(
-        1, 1, model->getElementAt(0, y)->toText(x)
-      );
-      if (selected) {
-        pen.setColor(TColor::BLACK);
-      }
-      if (cursor) {
-        pen.drawRectangle(0,0,w, h);
-      }
+      pen.drawString( 1, 1, model->getElementAt(0, y)->toText(x));
     }
 };
 
@@ -622,31 +608,7 @@ class GTableRowRenderer:
       return max+2;
     }
     void renderItem(TPen &pen, int col, int index, int w, int h, bool cursor, bool selected, bool focus) {
-      if (selected) {
-        if (focus) {
-          pen.setColor(TColor::SELECTED);
-        } else {
-          pen.setColor(TColor::SELECTED_GRAY);
-        }
-        pen.fillRectangle(0,0,w, h);
-        pen.setColor(TColor::SELECTED_TEXT);
-      }
-
       model->getElementAt(0, index).renderItem(pen, col, w, h);
-
-      if (selected) {
-        pen.setColor(TColor::BLACK);
-      }
-      if (cursor) {
-        pen.drawLine(0,0,w,0);
-        pen.drawLine(0,h,w,h);
-        if (col==0) {
-          pen.drawLine(0,0,0,h);
-        } else if (col==WIDTH-1) {
-          pen.drawLine(w,0,w,h);
-        }
-      }
-
     }
 };
 

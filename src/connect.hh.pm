@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 #
-# I wrote this one to simplify something,
-# but after I've looked at it I forgot what.
+# This script generates the connect.hh file. This is done to genarate
+# the connection variants with 0, 1 and 2 parameters from the same
+# definition.
 #
 # The text printed by the license function below is for this Perl 
 # script and the output it creates.

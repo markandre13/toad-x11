@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -35,24 +35,16 @@ using namespace toad;
  * This group contains a set of classes to display data in a table.
  *
  * @verbatim
-   TAbstractTableModel
-     GAbstractTableModel<T>
-      TTableModel_CString
-   TAbstractTableCellRenderer
-     GTableRowRenderer
-     TTableCellRenderer_CString
-   TTableSelectionModel
-   TTable
-  
-   mi(si)
-         1 n             1 1
-    model---cell_renderer---+
-                            +--table
-           selectionmodel---+
-                 si      1 1
  
-   mi : model iterator
-   si : selection iterator
+The base classes are defined in table.hh:
+ 
+TModel
++- TAbstractTableCellRenderer             
++- TAbstractTableSelectionModel           
+|  +- TTableSingleSelectionModel
+|  +- TTableSelectionModel
++- TAbstractTableHeaderRenderer             
+   +- TDefaultTableHeaderRenderer         
    @endverbatim
  *
  * \code
@@ -96,19 +88,134 @@ using namespace toad;
  *       edit cell, row, column; delete row, column
  */
 
+void 
+TAbstractTableCellRenderer::renderCell(TPen &pen, int col, int row, int w, int h, bool cursor, bool selected, bool focus)
+{
+  if (selected) {
+    if (focus) {
+      pen.setColor(TColor::SELECTED);
+    } else {
+      pen.setColor(TColor::SELECTED_GRAY);
+    }
+    pen.fillRectangle(0,0,w, h);
+    pen.setColor(TColor::SELECTED_TEXT);
+  }
+  renderItem(pen, col, row, w, h, cursor, selected, focus);
+  if (selected) {
+    pen.setColor(TColor::BLACK);
+  }
+  if (cursor) {
+    pen.drawRectangle(0,0,w, h);
+  }
+}
+
 #if 0
+/**
+ * A basic selection model for a single position.
+ */
+    
+TAbstractTableSelectionModel::ESelectionMode
+TTableSingleSelectionModel::getSelectionMode() const
+{ 
+  return SINGLE;
+}
+   
+void
+TTableSingleSelectionModel::clearSelection()
+{ 
+}
 
-TSmartObject
-  TTableSelectionModel
+void
+TTableSingleSelectionModel::setSelection(int col, int row)
+{
+  if (this->col == col && this->row == row)
+    return;
+  this->col = col;
+  this->row = row;
+  sigChanged();
+}
 
-TAbstractTableModel
-  GAbstractTableModel
-    TTableModel_CString
+void
+TTableSingleSelectionModel::setSelection(int col, int row, int w, int h)
+{
+  setSelection(col, row);
+}
 
-TAbstractTableCellRenderer
-  TTableCellRenderer_CString
+void
+TTableSingleSelectionModel::toggleSelection(int col, int row)
+{
+  setSelection(col, row);
+}
 
-TTable
+bool
+TTableSingleSelectionModel::isSelected(int col, int row) const
+{
+  return this->col == col && this->row == row;
+}
+
+bool
+TTableSingleSelectionModel::isEmpty() const
+{
+  return false;
+}
+#else
+/**
+ * A basic selection model for a single position.
+ */
+    
+TAbstractTableSelectionModel::ESelectionMode
+TTableSingleSelectionModel::getSelectionMode() const
+{ 
+  return SINGLE;
+}
+   
+void
+TTableSingleSelectionModel::clearSelection()
+{ 
+  col = row = 0;
+  if (!selected)
+    return;
+  selected = false;
+  sigChanged();
+}
+
+void
+TTableSingleSelectionModel::setSelection(int col, int row)
+{
+  if (selected && this->col == col && this->row == row)
+    return;
+  selected = true;
+  this->col = col;
+  this->row = row;
+  sigChanged();
+}
+
+void
+TTableSingleSelectionModel::setSelection(int col, int row, int w, int h)
+{
+  setSelection(col, row);
+}
+
+void
+TTableSingleSelectionModel::toggleSelection(int col, int row)
+{
+  if (isSelected(col, row))
+    clearSelection();
+  else
+    setSelection(col, row);
+}
+
+bool
+TTableSingleSelectionModel::isSelected(int col, int row) const
+{
+  return selected && this->col == col && this->row == row;
+}
+
+bool
+TTableSingleSelectionModel::isEmpty() const
+{
+  return !selected;
+}
 #endif
 
 /**
@@ -283,53 +390,6 @@ TTableSelectionModel::isSelected(int x, int y) const
   return region.isInside(x, y);
 }
 
-/**
- * @ingroup table
- * @class toad::TAbstractTableModel
- *
- * This class provides the basic interface between the applications data
- * and the TOAD toolkit. It should be subclassed via the generic class
- * GAbstractTableModel.
- *
- * @sa GAbstractTableModel
- */
-
-int
-TAbstractTableModel::getCols()
-{
-  return 1;
-}
-
-/**
- * @ingroup table
- * @class toad::GAbstractTableModel
- *
- * This interface can be subclassed to provide an interface between
- * you applications data and the TOAD toolkit.
- *
- * This generic class uses one type only for all cells in the table. To
- * handle tables with different types per column, per row or even a different
- * type in every field, one has to write an adapter class which might
- * look like this:
- *
- * @code
- * class TMyData
- * {
- *   enum TType { 
- *     STRING, NUMBER, BITMAP, DATE, CURRENCY, EXPRESSION 
- *   } type;
- *   union {
- *     string string;
- *     double number;
- *     TBitmap bitmap;
- *     time_t date;
- *     long currency;
- *     string expression;
- *   } data;
- * }
- * @endcode
- */
-
 int
 TDefaultTableHeaderRenderer::getHeight()
 {
@@ -385,9 +445,10 @@ TTable::TTable(TWindow *p, const string &t):
   super(p, t) 
 {
   renderer = NULL;
-  selection = new TTableSelectionModel();
+  selection = 0;
   border = 0;
   cx = cy = 0;
+  sx = sy = 0;
   ffx = ffy = 0;
   fpx = fpy = 0;
   row_info = col_info = NULL;
@@ -397,8 +458,6 @@ TTable::TTable(TWindow *p, const string &t):
   stretchLastColumn = true;
   noCursor = false;
   selectionFollowsMouse = false;
-
-  connect(selection->sigChanged, this, &TTable::selectionChanged);
 }
 
 void
@@ -415,7 +474,7 @@ TTable::setRenderer(TAbstractTableCellRenderer *r)
 }
 
 void
-TTable::setSelectionModel(TTableSelectionModel *m)
+TTable::setSelectionModel(TAbstractTableSelectionModel *m)
 {
   if (selection==m)
     return;
@@ -666,9 +725,6 @@ DBSCROLL({
     return;
 
   // draw the fields with the table renderer
-  bool perRow, perCol; // true when to select whole row/column
-  perRow = per_row;
-  perCol = per_col;
   xp = fpx + visible.x;
   for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
     yp = fpy + visible.y;
@@ -679,13 +735,17 @@ DBSCROLL({
       {
         pen.identity();
         pen.translate(xp, yp);
-        bool selected = selection->isSelected(perRow?0:x,perCol?0:y);
+        bool selected;
+        if (selection)
+          selected = selection->isSelected(per_row?0:x,per_col?0:y);
+        else
+          selected = (per_row?0:x == cx) && (per_col?0:y == cy);
         if (selecting) {
           if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
             selected = true;
-          if (perRow && y>=y1 && y<=y2)
+          if (per_row && y>=y1 && y<=y2)
             selected = true;
-          if (perCol && x>=x1 && x<=x2)
+          if (per_col && x>=x1 && x<=x2)
             selected = true;
         }
         int size = col_info[x].size;
@@ -703,7 +763,7 @@ DBSCROLL(
                   (per_row && cy==y) ||
                   (per_col && cx==x);
         }
-        renderer->renderItem(
+        renderer->renderCell(
             pen,
             x, y,
             size, row_info[y].size,
@@ -734,13 +794,16 @@ TTable::focus(bool)
 void
 TTable::selectAtCursor()
 {
-  bool perRow, perCol; // true when to select whole row/column
-  perRow = perCol = false;
-  if (renderer->getModel()) { // this looks like a stupid hack to me...
-    perRow = renderer->getCols()!=renderer->getModel()->getCols();
-    perCol = renderer->getRows()!=renderer->getModel()->getRows();
+  sx = per_row?0:cx;
+  sy = per_col?0:cy;
+  if (selection) {
+    if (selectionFollowsMouse)
+      selection->setSelection(sx, sy);
+    else
+      selection->toggleSelection(sx, sy);
+  } else {
+    selectionChanged();
   }
-  selection->toggleSelection(perRow?0:cx, perCol?0:cy);
 }
 
 /**
@@ -829,10 +892,14 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
 
   cx = x; cy = y;
 
-  if (selection->getSelectionMode() != TTableSelectionModel::MULTIPLE_INTERVAL)
-    selection->clearSelection();
-  sx=cx; sy=cy;
-  selecting=true;
+// this is not my job, it the models one:
+//  if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::MULTIPLE_INTERVAL)
+//    selection->clearSelection();
+
+  selecting = false;
+  if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::SINGLE)
+    selecting=true;
+
   invalidateCursor();
 
   selectAtCursor();
@@ -873,7 +940,7 @@ TTable::mouseLUp(int mx, int my, unsigned)
   if (!mouse2field(mx, my, &x, &y))
     return;
 
-  if (selecting) {
+  if (selection && selecting) {
     selecting=false;
     int x1, y1, x2, y2;    
     x1 = min(sx, cx);
@@ -947,6 +1014,20 @@ TTable::center(int how)
   setPanePos(panex, paney);
 
   invalidateWindow();
+}
+
+void
+TTable::setCursor(int col, int row)
+{
+  if (cx == col && cy == row)
+    return;
+  invalidateCursor();
+  cx = col; cy = row;
+  if (cx>=cols)
+    cx = cols-1;
+  if (cy>=rows)
+    cy = rows-1;
+  invalidateCursor();
 }
 
 void
@@ -1037,15 +1118,29 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       sigDoubleClicked();
       break;
     case ' ': {
+#if 1
+      sx=cx; sy=cy;
+      if (selection) {
+        if (selectionFollowsMouse)
+          selection->setSelection(per_row?0:cx, per_col?0:cy);
+        else
+          selection->toggleSelection(per_row?0:cx, per_col?0:cy);
+      } else {
+        selectionChanged();
+      }
+#else
       bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
       bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
       selection->toggleSelection(perRow?0:cx, perCol?0:cy);
+#endif
       } break;
     case TK_SHIFT_L:
     case TK_SHIFT_R:
-      if (selection->getSelectionMode() != TTableSelectionModel::MULTIPLE_INTERVAL)
-        selection->clearSelection();
       sx=cx; sy=cy;
+      if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::MULTIPLE_INTERVAL)
+        selection->clearSelection();
+      else
+        selectionChanged();
       selecting=true;
       invalidateCursor();
       break;
@@ -1057,7 +1152,8 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
 {
   switch(key) {
     case TK_SHIFT_L:
-    case TK_SHIFT_R: {
+    case TK_SHIFT_R: 
+      if (selection) {
         selecting=false;
         int x1, y1, x2, y2;    
         x1 = min(sx, cx);

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -28,22 +28,66 @@ namespace toad {
 
 class TScrollBar;
 
-class TTableSelectionModel:
+class TAbstractTableSelectionModel:
   public TModel
+{
+  public:
+    enum ESelectionMode {
+      MULTIPLE_INTERVAL,
+      SINGLE_INTERVAL,
+      SINGLE
+    };
+
+    // this is a hint for TTable on how to handle the user interaction:
+    virtual ESelectionMode getSelectionMode() const = 0;
+    
+    // these are called by TTable:
+    virtual void clearSelection() = 0;
+    virtual void setSelection(int x, int y) = 0;
+    virtual void setSelection(int x, int y, int w, int h) = 0;
+    virtual void toggleSelection(int x, int y) = 0;
+    virtual bool isSelected(int x, int y) const = 0;
+    virtual bool isEmpty() const = 0;
+};
+
+typedef GSmartPointer<TAbstractTableSelectionModel> PAbstractTableSelectionModel;
+
+/**
+ * A basic selection model for a single position.
+ */
+class TTableSingleSelectionModel:
+  public TAbstractTableSelectionModel
+{
+    int col, row;
+    bool selected;
+
+  public:
+    TTableSingleSelectionModel() {
+      clearSelection();
+    }
+    
+    int getCol() const { return col; }
+    int getRow() const { return row; }
+    
+    virtual ESelectionMode getSelectionMode() const;
+    virtual void clearSelection();
+    virtual void setSelection(int col, int row);
+    virtual void setSelection(int col, int row, int w, int h);
+    virtual void toggleSelection(int col, int row);
+    virtual bool isSelected(int col, int row) const;
+    virtual bool isEmpty() const;
+};
+
+class TTableSelectionModel:
+  public TAbstractTableSelectionModel
 {
   protected:
     TRegion region;
 
   public:
     TTableSelectionModel() {
-      selection_mode = SINGLE;
+      selection_mode = MULTIPLE_INTERVAL;
     }
-  
-    enum ESelectionMode{
-      MULTIPLE_INTERVAL,
-      SINGLE_INTERVAL,
-      SINGLE
-    };
     
     class iterator {
         friend bool operator==(const iterator&, const iterator&);
@@ -116,58 +160,6 @@ inline bool operator!=(const TTableSelectionModel::iterator &a,
   return !(a == b);
 }
 
-class TAbstractTableModel:
-  public TModel
-{
-  public:
-    virtual int getRows() = 0;
-    virtual int getCols();
-};
-
-typedef GSmartPointer<TAbstractTableModel> PAbstractTableModel;
-
-template <class T>
-class GAbstractTableModel:
-  public TAbstractTableModel
-{
-  public:
-    typedef T TElement;
-    virtual const TElement& getElementAt(int xindex, int yindex) = 0;
-};
-
-template <class T>
-class GTableSelectionModel:
-  public TTableSelectionModel
-{
-  public:
-    typedef T TModel;
-    typedef typename T::TElement TElement;
-   
-    TModel *model;
- 
-    GTableSelectionModel(TModel *m):model(m) { }
-  
-    class iterator:
-      public TTableSelectionModel::iterator
-    {
-        TModel *model;
-        typedef TTableSelectionModel::iterator super;
-      public:
-        iterator() {
-          model = 0;
-        }
-        iterator(TRegion *r, bool b, TModel *m):
-           TTableSelectionModel::iterator(r, b), model(m) {}
-        const TElement& operator*() { return model->getElementAt(getX(), getY()); }
-    };
-    iterator begin() {
-      return iterator(&region, true, model);
-    }
-    iterator end() {
-      return iterator(&region, false, model);
-    }
-};
-
 class TAbstractTableCellRenderer:
   public TModel
 {
@@ -176,26 +168,19 @@ class TAbstractTableCellRenderer:
       per_row = per_col = false;
     }
   
-    virtual int getRows() = 0;
-    virtual int getCols() = 0;
+    virtual int getRows() { return 1; }
+    virtual int getCols() { return 1; }
     virtual int getRowHeight(int row) = 0;
     virtual int getColWidth(int col) = 0;
-
     /**
-     * Return the model associated with this renderer.
-     *
-     * This method isn't required for rendering and may return NULL.
-     *
-     * The purpose of this method is to use it combination with
-     * GTableSelectionModel?
+     * Render cell background, cursor and invoke renderItem.
      */
-    virtual TAbstractTableModel * getModel() { return 0; }
+    virtual void renderCell(TPen&, int xindex, int yindex, int w, int h, bool cursor, bool selected, bool focus);
     virtual void renderItem(TPen&, int xindex, int yindex, int w, int h, bool cursor, bool selected, bool focus) = 0;
 
-    void modelChanged() {
-      sigChanged();
-    }
-    
+    // this method is to enable signals to trigger our signal:
+    void modelChanged() { sigChanged(); }
+
     bool per_row, per_col;
 };
 
@@ -229,22 +214,26 @@ class TTable:
 {
     typedef TScrollPane super;
     PAbstractTableCellRenderer renderer;
-    PTableSelectionModel selection;
+    PAbstractTableSelectionModel selection;
     PAbstractTableHeaderRenderer row_header_renderer;
     PAbstractTableHeaderRenderer col_header_renderer;
 
     unsigned border;
     
-    //! cursor position
+    //! Cursor position.
     int cx, cy;
     
-    //! position where selection over multiple fields started
+    /**
+     * Position of the last selected single field. Used for 
+     * getLastSelectionRow() and -Col() and when selecting
+     * areas.
+     */
     int sx, sy;
 
-    //! true means, user is defining a selection over multiple fields
+    //! 'true' means, user is defining a selection over multiple fields
     bool selecting;
     
-    //! first (upper, left) field;
+    //! first (upper, left) field
     int ffx, ffy;
     
     //! first (upper, left) pixel of first (upper, left) field
@@ -260,8 +249,8 @@ class TTable:
     void setRenderer(TAbstractTableCellRenderer *r);
     TAbstractTableCellRenderer* getRenderer() const { return renderer; }
     
-    void setSelectionModel(TTableSelectionModel *m);
-    TTableSelectionModel* getSelectionModel() const { return selection; }
+    void setSelectionModel(TAbstractTableSelectionModel *m);
+    TAbstractTableSelectionModel* getSelectionModel() const { return selection; }
     void selectionChanged();
     TSignal sigSelection;
     
@@ -286,9 +275,13 @@ class TTable:
     void keyDown(TKey key, char *string, unsigned modifier);
     void keyUp(TKey key, char *string, unsigned modifier);
     
-    int getCursorX() const { return cx; }
-    int getCursorY() const { return cy; }
+    void setCursor(int col, int row);
+    int getCursorCol() const { return cx; }
+    int getCursorRow() const { return cy; }
     void selectAtCursor();
+    
+    int getLastSelectionCol() const { return sx; }
+    int getLastSelectionRow() const { return sy; }
     
     //! the cursor was moved
     TSignal sigCursor;

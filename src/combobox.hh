@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,13 +38,23 @@ class TComboBox:
     TAbstractTableCellRenderer* getRenderer() const { 
       return table->getRenderer(); 
     }
-    void setSelectionModel(TTableSelectionModel *m) {
+
+    void setSelectionModel(TAbstractTableSelectionModel *m) {
       table->setSelectionModel(m);
     }
-    TTableSelectionModel* getSelectionModel() const {
+    TAbstractTableSelectionModel* getSelectionModel() const {
       return table->getSelectionModel();
     }
     TSignal sigSelection;
+
+    int getLastSelectionCol() const { return table->getLastSelectionCol(); }
+    int getLastSelectionRow() const { return table->getLastSelectionRow(); }
+
+    void setCursor(int col, int row) { table->setCursor(col, row); }
+    int getCursorCol() const { return table->getCursorCol(); }
+    int getCursorRow() const { return table->getCursorRow(); }
+    void selectAtCursor() { table->selectAtCursor(); }
+
 
   protected:
     void resize();

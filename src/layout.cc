@@ -83,7 +83,8 @@ TLayoutEditor::TLayoutEditor(TWindow *parent, const string &title):
 
 /**
  * When the layout editor has to handle events in the window being edited,
- * it should return a filter here or NULL if otherwise.
+ * it should return a filter here to get these event or NULL otherwise.
+ * (The default implementation returns NULL.)
  */
 TEventFilter *
 TLayoutEditor::getFilter()

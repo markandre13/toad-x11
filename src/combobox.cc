@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,8 +70,17 @@ TComboBox::paint()
   TPen pen(this);
 
   pen.draw3DRectangle(0,0, getWidth()-1, getHeight()-1);
-
-  TTableSelectionModel *s = table->getSelectionModel();
+#if 1
+  pen.translate(2, 2);
+  table->getRenderer()->renderItem(
+    pen,
+    table->getLastSelectionCol(), table->getLastSelectionRow(),
+    btn->getXPos()-2, getHeight()-4,
+    false,
+    false,
+    isFocus());
+#else
+  TAbstractTableSelectionModel *s = table->getSelectionModel();
   TTableSelectionModel::iterator p(s->begin());
   if (p==s->end())
     return;
@@ -83,6 +92,7 @@ TComboBox::paint()
     false,
     false,
     isFocus());
+#endif
 }
 
 void

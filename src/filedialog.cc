@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,10 +47,13 @@ using namespace toad;
 
 typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableRowRenderer_DirectoryEntrySet;
 typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
+
+namespace toad {
+TPreviousDirs previous_cwds;
+}
 namespace {
 TBitmap bmp;
 string cwd;
-TPreviousDirs previous_cwds;
 
 void  
 removeDuplicates()
@@ -153,6 +156,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   tfiles->noCursor = true;
   tfiles->selectionFollowsMouse = true;
   tfiles->setRenderer(new TTableRowRenderer_DirectoryEntrySet(&entries));
+  tfiles->setSelectionModel(&entrychoice);
   connect(tfiles->sigSelection, this, &This::fileSelected);
   connect(tfiles->sigDoubleClicked, this, &This::doubleClick);
 
@@ -166,7 +170,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
     new GTableCellRenderer_PText<TFilterList, 1>(&filterlist)
   );
   connect(cb_filter->sigSelection, this, &This::filterSelected);
-  cb_filter->getSelectionModel()->setSelection(0,0);
+  cb_filter->selectAtCursor();
 
   new TCheckBox(this, "show hidden", &show_hidden);
   connect(show_hidden.sigChanged, this, &This::hidden);
@@ -182,8 +186,8 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
 
   cb = new TComboBox(this, "previous");
   cb->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
-  cb->getSelectionModel()->setSelection(0,0);
   connect(cb->sigSelection, this, &This::jumpDirectory);
+  cb->selectAtCursor();
   
 //  loadDirectory();
   
@@ -223,7 +227,17 @@ TFileDialog::getFilename() const
 void
 TFileDialog::addFileFilter(TFileFilter *ff)
 {
+#if 0
+  TFilterList::iterator p = filterlist.end();
+  if (p!=filterlist.begin())
+    --p;
+#endif
+#if 0
+  filterlist.insert(filterlist.begin(), ff);
+#endif
+#if 1
   filterlist.push_back(ff);
+#endif
 //  cb_filter->getSelectionModel()->setSelection(0,0);
 }
 
@@ -340,7 +354,7 @@ TSimpleFileFilter::toText() const
 void
 TFileDialog::hidden()
 {
-  tfiles->getSelectionModel()->clearSelection();
+//  tfiles->getSelectionModel()->clearSelection();
   loadDirectory();
 }
 
@@ -373,13 +387,10 @@ TFileDialog::fileSelected()
 {
   static bool lock = false;
   if (lock) return;
-//toad::printStackTrace();
-  if (tfiles->getSelectionModel()->isEmpty())
+  if (entrychoice.isEmpty())
     return;
 
-  const TDirectoryEntry &file(
-    entries.getElementAt(0, tfiles->getSelectionModel()->begin().getY())
-  );
+  const TDirectoryEntry &file(entries.getElementAt(0, entrychoice.getRow()));
 //  cerr << "selected " << file.name << endl;
   filename = file.name;
   adjustOkButton();
@@ -440,11 +451,11 @@ TFileDialog::doubleClick()
   static bool lock = false;
   if (lock) return;
 //toad::printStackTrace();
-  if (tfiles->getSelectionModel()->isEmpty())
-    return;
+//  if (tfiles->getSelectionModel()->isEmpty())
+//    return;
 
   const TDirectoryEntry &file(
-    entries.getElementAt(0, tfiles->getSelectionModel()->begin().getY())
+    entries.getElementAt(0, entrychoice.getRow())
   );
 //  cerr << "selected " << file.name << endl;
   if (S_ISDIR(file.mode)) {
@@ -472,7 +483,8 @@ TFileDialog::doubleClick()
       previous_cwds[0]=cwd;
     }
     previous_cwds.sigChanged();
-    cb->getSelectionModel()->setSelection(0,0);
+    cb->setCursor(0,0);
+    cb->selectAtCursor();
 
     loadDirectory();
 lock=false;
@@ -489,15 +501,14 @@ lock=false;
 void
 TFileDialog::jumpDirectory()
 {
-//  cerr << "selected directory " << cb->getSelectionModel()->begin().getY() << endl;
-  cwd = previous_cwds[cb->getSelectionModel()->begin().getY()];
+  cwd = previous_cwds[cb->getCursorRow()];
   loadDirectory();
 }
 
 void
 TFileDialog::filterSelected()
 {
-  filter = filterlist[cb_filter->getSelectionModel()->begin().getY()];
+  filter = filterlist[cb_filter->getCursorRow()];
   loadDirectory();
 }
 
