@@ -272,6 +272,8 @@ class TTable:
     
     TSignal sigCursor;
     
+    bool stretchLastColumn;
+    
   protected:
     static const int CENTER_VERT=1;
     static const int CENTER_HORZ=2;
