@@ -210,7 +210,7 @@ TTextArea::init()
   setBorder(0);
   vscroll = hscroll = 0;
   
-  preferences = new TPreferences();
+  setPreferences(new TPreferences());
   
   TAction *action;
 
@@ -232,8 +232,7 @@ TTextArea::~TTextArea()
   }
   if (model)
     disconnect(model->sigTextArea, this);
-  if (preferences)
-    delete preferences;
+  setPreferences(0);
 }
 
 void
@@ -854,6 +853,13 @@ DBM(cout << "leave modelChanged (" << getTitle() << ")" << endl;
 
 //#undef DBM
 //#define DBM(CMD)
+
+void
+TTextArea::preferencesChanged()
+{
+cerr << "preferencesChanged" << endl;
+  invalidateWindow();
+}
 
 void
 TTextArea::adjustScrollbars()

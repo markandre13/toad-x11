@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,9 @@ class TTextArea:
     friend class TBlink;
 
   public:
-    class TPreferences {
+    class TPreferences:
+      public TModel
+    {
       public:
         TPreferences();
         ~TPreferences();
@@ -60,15 +62,25 @@ class TTextArea:
           WORDSTAR
         } mode;
         
-        void setFont(const string &aFontname) { fontname = aFontname; }
+        void setFont(const string &aFontname) { 
+          fontname = aFontname; 
+          sigChanged();
+        }
         const string& getFont() const { return fontname; }
       protected:
         string fontname;
     };
+    typedef GSmartPointer<TPreferences> PPreferences;
     
-    TPreferences *preferences;
+    PPreferences preferences;
     
-    void setPreferences(TPreferences *aPreference) { preferences = aPreference; }
+    void setPreferences(TPreferences *aPreference) {
+      if (preferences)
+        disconnect(preferences->sigChanged, this);
+      preferences = aPreference; 
+      if (preferences)
+        connect(preferences->sigChanged, this, &TTextArea::preferencesChanged);
+    }
     TPreferences * getPreferences() const { return preferences; }
   
     static const bool debug_modelchanged = true;
@@ -122,6 +134,8 @@ class TTextArea:
     
     //! Called by the model when it was changed.
     void modelChanged();
+    
+    void preferencesChanged();
     
     void adjustScrollbars();
     TRectangle visible;
