@@ -99,8 +99,8 @@ class TBitmap:
     void setPixel(int x,int y,short r,short g,short b);
     bool getPixel(int x,int y,short *r,short *g,short *b);
     bool getPixel(int x,int y,TRGB*);
-    void load(const string &url);
-    void load(istream&);
+    bool load(const string &url);
+    bool load(istream&);
     bool save(const string &url, void* xtra=NULL);
     bool save(ostream&, void *xtra=NULL);
     void update();

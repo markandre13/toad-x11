@@ -809,17 +809,22 @@ struct TFree
 
 /**
  * Load a bitmap file.<BR>
- * Throws an exception when an error occurs.
  */
-void TBitmap::load(const string& url)
+bool
+TBitmap::load(const string& url)
 {
   if (!filter_list) {
-    THROW("No filter available for bitmap \"" << url << "\".");
+    cerr << "toad: no filter available for bitmap \"" << url << "\".\n";
+    return false;
   }
 
   // read file into istrstream
   //----------------------------
   iurlstream is(url);
+  if (!is) {
+    cerr << "toad: failed to load bitmap \"" << url << "\".\n";
+    return false;
+  }
   char* buffer = NULL;
   unsigned size = 0;
   while(is) {
@@ -844,10 +849,13 @@ void TBitmap::load(const string& url)
   catch (exception &e) {
     cerr << "warning: caught exception in bitmap filter "
          << e.what() << endl;
+    return false;
   }
+  return true;
 }
 
-void TBitmap::load(istream &ds)
+bool
+TBitmap::load(istream &ds)
 {
   TBitmapFilter *filter, *last_filter;
   filter = filter_list;
@@ -855,7 +863,8 @@ void TBitmap::load(istream &ds)
   TBitmapFilter::EResult result;
   
   if (!ds) {
-    throw runtime_error("file not found");
+    cerr << "toad: failed to load bitmap\n";
+    return false;
   }
 
   while(filter) {
@@ -897,17 +906,19 @@ void TBitmap::load(istream &ds)
         index = NULL;
         color = p;
       }
-      return;
+      return true;
     } else {
       filter->deleteBuffer();
       if (result==TBitmapFilter::ERROR) {
-        throw runtime_error(filter->errortxt);
+        cerr << "toad: " << filter->errortxt << endl;
+        return false;
       }
     }
     last_filter = filter;
     filter = filter->next;
   }
-  throw runtime_error("No filter available for bitmap graphic.");
+  cerr << "toad: No filter available for bitmap graphic.\n";
+  return false;
 }
 
 // Save
