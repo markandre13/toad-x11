@@ -324,7 +324,7 @@ DBM(
   }
   
   if (!wnd->isRealized()) {
-#if 1
+#if 0
     cerr << "window \"" << wnd->getTitle() << "\": can't set focus because parent isn't realized yet\n"
             "  (don't worry, it's TOADs' fault)\n";
 #endif
