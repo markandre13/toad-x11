@@ -72,7 +72,7 @@ void *
 TSmartObject::operator new(std::size_t size) {
   assert(heapidx<heaptrack_size);
 
-  char * ptr = new char[size];
+  char * ptr = (char*)malloc(size);
   heap[heapidx].start = ptr;
   heap[heapidx].end   = ptr+size;
   
@@ -88,6 +88,12 @@ void *
 TSmartObject::operator new(std::size_t n, void* p) {
   cout << "new2 TSmartObject" << endl;
   return p;
+}
+
+void 
+TSmartObject::operator delete(void *ptr)
+{
+  free(ptr);
 }
     
 TSmartObject::~TSmartObject() {

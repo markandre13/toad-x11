@@ -117,6 +117,7 @@ class TSmartObject
     TSmartObject();
     void * operator new(std::size_t size);
     void * operator new(std::size_t n, void* p);
+    void operator delete(void *ptr);
     virtual ~TSmartObject();
 //  private:
     unsigned _toad_ref_cntr;
