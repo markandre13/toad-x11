@@ -877,18 +877,18 @@ TPen::vdraw3DRectangle(int x, int y, int w, int h, bool inset)
   drawLines(p,3);
 
   if (inset)  
-    t->setColor(192,192,192);
+    t->setColor(TColor::BTNLIGHT);
   else
-    t->setColor(128,128,128);
+    t->setColor(TColor::BTNSHADOW);
   p[0].set(x+2  ,y+h-2);
   p[1].set(x+w-2,y+h-2);
   p[2].set(x+w-2,y+1);
   drawLines(p,3);
 
   if (inset)
-    t->setColor(128,128,128);
+    t->setColor(TColor::BTNSHADOW);
   else
-    t->setColor(192,192,192);
+    t->setColor(TColor::BTNLIGHT);
   p[0].set(x    ,y+h-1);
   p[1].set(x    ,y);
   p[2].set(x+w-1,y);
