@@ -1,14 +1,14 @@
 Source: libtoad
 Priority: optional
 Maintainer: Mark-André Hopf <mhopf@mark13.de>
-Build-Depends: debhelper (>> 3.0.0), doxygen, g++-3.0, fakeroot, xlibs-dev, zlib1g-dev, libpng2-dev, libxml2-dev
+Build-Depends: debhelper (>> 3.0.0), doxygen, g++-3.3, fakeroot, xlibs-dev, zlib1g-dev, libpng2-dev, libfontconfig-dev
 Standards-Version: 3.5.2
 
 Package: libtoad
 Section: libs
 Architecture: i386
 Maintainer: Mark-André Hopf <mhopf@mark13.de>
-Depends:  ${shlibs:Depends}, xlibs, libstdc++3, zlib1g, libpng2, libxml2
+Depends:  ${shlibs:Depends}, xlibs, libstdc++5, zlib1g, libpng2, libfontconfig1
 Suggests: perl
 Description: TOAD C++ GUI Library.
  This package contains the files necessary for running applications that use
@@ -18,7 +18,7 @@ Package: libtoad-dev
 Section: devel
 Architecture: any
 Maintainer: Mark-André Hopf <mhopf@mark13.de>
-Depends: libtoad (= ${Source-Version}), libc6-dev, libstdc++3-dev
+Depends: libtoad (= ${Source-Version}), libc6-dev, libstdc++5-3.3-dev, libfontconfig1-dev
 Description: TOAD C++ GUI Library development headers.
  This package contains the files necessary for compiling applications that
  use the TOAD C++ GUI Library.
