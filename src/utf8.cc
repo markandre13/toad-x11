@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-Andre Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-Andre Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,8 +25,8 @@ namespace toad {
 /**
  * Return the number of characters in text from start to start+bytelen.
  */
-int
-toad::utf8charcount(const string &text, int start, int bytelen)
+size_t
+toad::utf8charcount(const string &text, size_t start, size_t bytelen)
 {
   return XCountUtf8Char((const unsigned char*)text.c_str()+start, bytelen);
 }
@@ -35,10 +35,10 @@ toad::utf8charcount(const string &text, int start, int bytelen)
  * Return the number for bytes used to store 'charlen' characters
  * beginning at 'start' in 'text'.
  */
-int
-toad::utf8bytecount(const string &text, int start, int charlen)
+size_t
+toad::utf8bytecount(const string &text, size_t start, size_t charlen)
 {
-  int result = 0;
+  size_t result = 0;
   unsigned char *ptr = (unsigned char*)text.c_str() + start;
   while(charlen>0) {
     ++ptr;

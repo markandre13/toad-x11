@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-Andre Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-Andre Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ using namespace std;
  * Set *cx to the next UTF-8 character in text.
  */
 inline void 
-utf8inc(const string &text, unsigned int *cx)
+utf8inc(const string &text, size_t *cx)
 {
   ++*cx;
   while( ((unsigned char)text[*cx] & 0xC0) == 0x80)
@@ -43,7 +43,7 @@ utf8inc(const string &text, unsigned int *cx)
  * Set *cx to the previous UTF-8 character in text.
  */
 inline void 
-utf8dec(const string &text, unsigned int *cx)
+utf8dec(const string &text, size_t *cx)
 {
   --*cx;
   while( ((unsigned char)text[*cx] & 0xC0) == 0x80)
@@ -53,20 +53,20 @@ utf8dec(const string &text, unsigned int *cx)
 /**
  * Return the number of characters in text from start to start+bytelen.
  */
-int utf8charcount(const string &text, int start, int bytelen);
+size_t utf8charcount(const string &text, size_t start, size_t bytelen);
 
 /**
  * Return the number for bytes used to store 'charlen' characters
  * beginning at 'start' in 'text'.
  */
-int utf8bytecount(const string &text, int start, int charlen);
+size_t utf8bytecount(const string &text, size_t start, size_t charlen);
 
 /**
  * Return the number of bytes required to store the character at position
  * 'pos' in 'text'.
  */
 inline int
-utf8charsize(const string &text, int pos)
+utf8charsize(const string &text, size_t pos)
 {
   return utf8bytecount(text, pos, 1);
 }
