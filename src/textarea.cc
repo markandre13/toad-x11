@@ -105,8 +105,6 @@ toad::createTextModel(TTextModel *m)
  *   \li clear old selection on insert and make inserted text the new
  *       selection
  *   \li horizontal scrolling starts too late when line contains tabs
- *   \li remove code to insert a single character
- *   \li don't clear selection when shift is pressed
  *   \li infinite loop in a situation when trying to select from bol to
  *       eol and eol is outside the visible area (fixed?)
  *   \li 'caught exception in toad::TOADBase::runApp:
@@ -115,7 +113,6 @@ toad::createTextModel(TTextModel *m)
  *       left to the right side of the window
  *   \li scrollbars (optional ones)
  *   \li non-monospaced characters
- *   \li later: non-one-byte-per-char texts (ie. UTF8)
  *   \li later: control characters for multiple colors, fonts, etc.
  *   \li improve page up & down
  *   \li improve scrolling
@@ -142,7 +139,7 @@ static TTextArea::TBlink blink;
 void
 TTextArea::TBlink::tick()
 {
-//return;
+return;
   if (!current) {      // sanity check, not needed
     cout << "  no current => " << endl;
     return;
@@ -440,7 +437,6 @@ DBM(cout << "LEAVE keyDown" << endl;
 void
 TTextArea::mouseLDown(int x, int y, unsigned)
 {
-  #warning "mouseLDown doesn't handle proportional tabs"
   if (!model)
     return;
   _goto_pixel(x, y);
@@ -452,7 +448,6 @@ TTextArea::mouseLDown(int x, int y, unsigned)
 void
 TTextArea::mouseMove(int x, int y, unsigned)
 {
-  #warning "mouseMove doesn't handle proportional fonts and tabs"
   if (!model)
     return;
   _goto_pixel(x, y);
@@ -479,7 +474,11 @@ y-=2;
 
   setCursor(0, y + _ty);
 
-  string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
+//  string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
+  string line;
+  int sx;
+  unsigned d2, d3;
+  _get_line(&line, _bol, _eol, &sx, &d2, &d3);
 //  cerr << "found line '" << line << "'\n";
 
   int w1 = 0, w2 = 0;
@@ -706,7 +705,7 @@ if (opcount==591) {
             
           _cx = utf8charcount(s, _bol, _pos - _bol);
          }
-        
+        _cxpx = -1;
         _catch_cursor();
       }
 #ifdef TOAD_TEXTAREA_CHECK
@@ -798,7 +797,7 @@ if (opcount==591) {
         DBM(cout << "_eol   = " << _eol << endl;)
 
         _cx = utf8charcount(s, _bol, _pos - _bol);
-
+        _cxpx = -1;
         _catch_cursor();
       }
 #ifdef TOAD_TEXTAREA_CHECK
@@ -902,13 +901,8 @@ TTextArea::_get_line(string *line,
   assert(sx!=0);
   *line = model->getValue().substr(bol, eol==string::npos ? eol : eol-bol);
       
-  // substitute tabs with spaces
-  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // line = line with tabs converted to spaces
-  // sx   = cx in line with tabs converted to spaces
-  *sx = _cx;
-//cerr << "\n1 sx=" << sx << endl;
-
+  // set *bos < *eos
+  //^^^^^^^^^^^^^^^^^^
   if (bos) {
     // _bos < _eos
     unsigned _bos = this->_bos;
@@ -921,29 +915,54 @@ TTextArea::_get_line(string *line,
     *bos = _bos;
     *eos = _eos;
   }
+
+  // substitute tabs with spaces
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // line = line with tabs converted to spaces
+  // sx   = cx in line with tabs converted to spaces
+  *sx = _cx;
+//cerr << "\n1 sx=" << *sx << endl;
+
   for(unsigned i=0, j=0; 
     j<line->size();
-    i++, utf8inc(*line, &j))
+    ++i, utf8inc(*line, &j))
   {
     if ((*line)[j]=='\t') {
-      unsigned m = (preferences->tabwidth-i-1) % preferences->tabwidth;
-//      if (!preferences->viewtabs) {
+      unsigned m = preferences->tabwidth - (i % preferences->tabwidth);
+      if (!preferences->viewtabs) {
         line->replace(j, 1, m+1, ' ');
-//      } else {
+      } else {
 //        line->replace(j, 1, m+1, '·');
 //        line->replace(j, 1, 1  , '»');
-//      }
-      if (*sx>i)
+        line->replace(j, 1, m+1, '.');
+        line->replace(j, 1, 1  , '|');
+      }
+#if 0
+cout << "found tab:" << endl
+     << "  _cx = " << _cx << endl
+     << "  *sx = " << *sx << endl
+     << "  i = " << i << endl
+     << "  m = " << m << endl
+     << "  bol = " << bol << endl
+     << "  *bos = " << *bos << endl
+     << "  *eos = " << *eos << endl
+     ;
+#endif
+      if (i<*sx)
         *sx+=m;
       if (bos) {
         if (*bos > bol && *bos-bol > j)
           *bos+=m; // utf8bytes
-        if (*eos > bol && *eos-eol > j)
+        if (*eos > bol && *eos-bol > j)
           *eos+=m; // utf8bytes
       }
       i+=m;
+      j+=m;
     }
   }
+
+//cerr << "2 sx=" << *sx << endl;
+
 }
 
 /**
@@ -993,6 +1012,19 @@ TTextArea::paint()
       _get_line(&line, bol, eol, &sx, &bos, &eos);
 
 //cerr << "draw line: '" << line << "'\n";
+/*
+for(unsigned i=0; i<line.size(); ++i) {
+  int c=line[i];
+  switch(c) {
+    case '\t':
+      cout << "\\t";
+      break;
+    default:
+      cout << (char)c;
+  }
+}
+cout << endl;
+*/
 //cerr << "  line     : " << bol << " - " << eol << endl;
 //cerr << "  selection: " << _bos << " - " << _eos << endl;
 //cerr << "  selection: " << bos << " - " << eos << endl;
@@ -1262,7 +1294,7 @@ TTextArea::_cursor_down(unsigned n)
 void
 TTextArea::_pos_from_cxpx()
 {
-#warning "_pos_from_cxpx doesn't handle tabs"
+#warning "_pos_from_cxpx doesn't handle tabulators"
   assert(_cxpx != -1);
   TFont *font = TPen::lookupFont(preferences->getFont());
   string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
@@ -1559,7 +1591,7 @@ TTextArea::getValue() const
 void
 TTextArea::setCursor(unsigned x, unsigned y)
 {
-#warning "setCursor doesn't handle utf-8"
+#warning "setCursor doesn't handle utf-8 and tabulators"
   if (!model)
     return;
     
@@ -1644,6 +1676,7 @@ cout << "screen is " << _tx << " - " << _ty << ", "
 unsigned 
 TTextArea::getCursorX() const
 {
+  #warning "getCursorX doesn't handle tabulators"
   return _cx;
 }
 
