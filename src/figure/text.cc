@@ -51,7 +51,7 @@ TFText::paint(TPenBase &pen, EPaintType type)
 {
   pen.setFont(fontname);
   pen.setLineColor(line_color);
-
+#if 0
   if (filled) {
     pen.setFillColor(fill_color);
     TPoint q1, q2;
@@ -67,7 +67,7 @@ TFText::paint(TPenBase &pen, EPaintType type)
       pen.pop();
     }
   }
-  
+#endif  
   unsigned l, r;
   int yp = p1.y;
   l = 0;
