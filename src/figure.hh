@@ -92,6 +92,7 @@ class TFigure:
     static const unsigned DELETE   = 8; // delete this object
 
     // stage 1: select:
+    virtual double _distance(TFigureEditor *fe, int x, int y);
     virtual double distance(int x, int y) = 0;
     
     // stage 2: move
@@ -295,7 +296,7 @@ class TFBezierline:
     void paint(TPenBase &, EPaintType);
     void paintSelection(TPenBase &pen, int handle);
     void _paintSelection(TPenBase &pen, int handle, bool filled);
-    double distance(int x, int y);
+    double _distance(TFigureEditor *fe, int x, int y);
     void translateHandle(unsigned handle, int mx, int my, unsigned);
     void _translateHandle(unsigned handle, int mx, int my, unsigned, bool filled);
     unsigned mouseRDown(TFigureEditor*, int, int, unsigned);
@@ -316,7 +317,7 @@ class TFBezier:
 
     void paint(TPenBase &, EPaintType);
     void paintSelection(TPenBase &pen, int handle);
-    double distance(int x, int y);
+    double _distance(TFigureEditor *fe, int x, int y);
     void translateHandle(unsigned handle, int x, int y, unsigned);
     void setAttributes(const TFigureAttributes*);
     
@@ -468,7 +469,7 @@ class TFGroup:
     TFGroup(const TFGroup &g);
     ~TFGroup();
     void paint(TPenBase&, EPaintType);
-    double distance(int x, int y);
+    double _distance(TFigureEditor *fe, int x, int y);
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint *p);
     void translateHandle(unsigned handle, int dx, int dy, unsigned);

@@ -45,6 +45,12 @@ class TFigureEditorHeaderRenderer
     virtual void mouseEvent(TMouseEvent&);
 };
 
+class TFigureTool
+{
+  public:
+    virtual void mouseEvent(TFigureEditor *fe, TMouseEvent &me) = 0;
+};
+
 class TFigureAttributes:
   public TModel
 {
@@ -69,6 +75,8 @@ class TFigureAttributes:
     void setOperation(unsigned);
     // unsigned getOperation() const { return current->getOperation(); }
     void setCreate(TFigure*);
+    void setTool(TFigureTool*);
+    
     void group();
     void ungroup();
     void selectionDown();
@@ -157,7 +165,8 @@ class TFigureEditor:
 {
     typedef TScrollPane super;
     typedef TFigureEditor TThis;
-    PFigureModel model;    
+    PFigureModel model;
+    TFigureTool *tool;
   public:
     
     TFigureEditor();
@@ -224,6 +233,7 @@ class TFigureEditor:
     void setOperation(unsigned);
     unsigned getOperation() const { return operation; }
     void setCreate(TFigure*);
+    void setTool(TFigureTool*);
     
     // not all these methods work now, but the first 4 should do
     void identity();

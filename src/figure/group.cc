@@ -204,7 +204,7 @@ cerr << "  p2.x = " << p2.x << ", x = " << x << endl;
 }
 
 double
-TFGroup::distance(int mx, int my)
+TFGroup::_distance(TFigureEditor *fe, int mx, int my)
 {
   double d = OUT_OF_RANGE;
   for (TFigureModel::iterator p = gadgets.begin();
@@ -217,9 +217,9 @@ TFGroup::distance(int mx, int my)
       TMatrix2D m(*(*p)->mat);
       m.invert();
       m.map(mx, my, &x, &y);
-      td = (*p)->distance(x, y);
+      td = (*p)->_distance(fe, x, y);
     } else {
-      td = (*p)->distance(mx, my);
+      td = (*p)->_distance(fe, mx, my);
     }
     if (td<d)
       d=td;

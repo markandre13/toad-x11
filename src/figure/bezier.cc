@@ -144,8 +144,29 @@ TFBezierline::_paintSelection(TPenBase &pen, int handle, bool filled)
 }    
 
 double
-TFBezierline::distance(int x, int y)
+TFBezierline::_distance(TFigureEditor *fe, int x, int y)
 {
+  if (!polygon.isInside(x, y)) {
+    int x1,y1,x2,y2;
+    double min = OUT_OF_RANGE;
+    TPolygon::const_iterator p(polygon.begin());
+    x2=p->x;
+    y2=p->y;
+    ++p;
+    while(p!=polygon.end()) {
+      x1=x2;
+      y1=y2;
+      x2=p->x;
+      y2=p->y;
+      double d = distance2Line(x,y, x1,y1, x2,y2);
+      if (d<min)
+        min = d;
+      ++p;
+    }
+    if (min > 0.5*fe->fuzziness*TFigure::RANGE)
+      return OUT_OF_RANGE;
+  }
+
   TPolygon p2;
   TPenBase::poly2Bezier(polygon, p2);
   
@@ -653,8 +674,11 @@ TFBezier::paint(TPenBase &pen, EPaintType type)
 }
 
 double
-TFBezier::distance(int x, int y)
+TFBezier::_distance(TFigureEditor *fe, int x, int y)
 {
+  if (!polygon.isInside(x, y))
+    return OUT_OF_RANGE;
+
   TPolygon p2;
   TPenBase::poly2Bezier(polygon, p2);
   if (filled && p2.isInside(x, y))

@@ -192,6 +192,12 @@ TFigureAttributes::setCreate(TFigure *figure)
 }
 
 void
+TFigureAttributes::setTool(TFigureTool *tool)
+{
+  if (current) current->setTool(tool);
+}
+
+void
 TFigureAttributes::group()
 {
   if (current) current->group();
@@ -237,6 +243,7 @@ void
 TFigureEditor::init(TFigureModel *m)
 {
   preferences = 0;
+  tool = 0;
   setPreferences(new TFigureAttributes);
   fuzziness = 2;
 
@@ -1041,6 +1048,7 @@ TFigureEditor::setOperation(unsigned op)
   if (window)
     window->setFocus();
   operation = op;
+  tool = 0;
 }
 
 /**
@@ -1069,6 +1077,12 @@ TFigureEditor::setCreate(TFigure *t)
   preferences->reason = TFigureAttributes::ALLCHANGED;
   gtemplate->setAttributes(preferences);
   setOperation(OP_CREATE);
+}
+
+void
+TFigureEditor::setTool(TFigureTool *tool)
+{
+  this->tool = tool;
 }
 
 void
@@ -1259,12 +1273,35 @@ TFigureEditor::mouseEvent(TMouseEvent &me)
       {
         me.y = y;
         row_header_renderer->mouseEvent(me);
-      } else
-        super::mouseEvent(me);
+      } else {
+        if (!tool) {
+          super::mouseEvent(me);
+          return;
+        }
+      }
       break;
     default:
-      super::mouseEvent(me);
+      if (!tool) {
+        super::mouseEvent(me);
+        return;
+      }
   }
+  
+  if (!tool)
+    return;
+  if (!window)
+    return;
+    
+  if (me.type==TMouseEvent::LDOWN ||
+      me.type==TMouseEvent::MDOWN ||
+      me.type==TMouseEvent::RDOWN)
+  {
+    setFocus();
+    if (preferences)
+      preferences->setCurrent(this);
+  }  
+    
+  tool->mouseEvent(this, me);
 }
 
 void
@@ -1295,7 +1332,7 @@ namespace {
 }
 
 void
-TFigureEditor::mouseLDown(int mx,int my, unsigned m)
+TFigureEditor::mouseLDown(int mx, int my, unsigned m)
 {
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
@@ -2030,7 +2067,7 @@ TFigureEditor::findFigureAt(int mx, int my)
         y = my;
       }
 //cerr << "  after rotation ("<<x<<", "<<y<<")\n";
-      double d = (*p)->distance(x, y);
+      double d = (*p)->_distance(this, x, y);
       if (d==TFigure::INSIDE) {
         d = inside;
         stop = true;
@@ -2043,6 +2080,7 @@ TFigureEditor::findFigureAt(int mx, int my)
       }
     }
   }
+
   if (found == model->end())
     return NULL;
 

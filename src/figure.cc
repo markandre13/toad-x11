@@ -135,6 +135,16 @@ TFigure::~TFigure()
     delete mat;
 }
 
+/**
+ * This one is a crude hack to speedup selection in drawings with
+ * many beziers. I still need to work it out.
+ */
+double
+TFigure::_distance(TFigureEditor *fe, int x, int y)
+{
+  return distance(x, y);
+}
+
 TColoredFigure::TColoredFigure()
 {
   filled = false;
