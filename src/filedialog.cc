@@ -217,7 +217,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   connect((new TPushButton(this, "cancel"))->sigActivate, 
           this, &This::button, TMessageBox::ABORT);
 
-  TComboBox *cb_prev = new TComboBox(this, "previous");
+  cb_prev = new TComboBox(this, "previous");
   cb_prev->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
   cb_prev->selectAtCursor();
 
@@ -518,11 +518,11 @@ TFileDialog::doubleClick()
       previous_cwds[0]=cwd;
     }
     previous_cwds.sigChanged();
-    cb->setCursor(0,0);
-    cb->selectAtCursor();
+    cb_prev->setCursor(0,0);
+    cb_prev->selectAtCursor();
 
     loadDirectory();
-lock=false;
+    lock=false;
   } else {
 //    cerr << "  is a file" << endl;
     filename = file.name;
@@ -536,7 +536,7 @@ lock=false;
 void
 TFileDialog::jumpDirectory()
 {
-  cwd = previous_cwds[cb->getCursorRow()];
+  cwd = previous_cwds[cb_prev->getCursorRow()];
   loadDirectory();
 }
 

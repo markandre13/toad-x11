@@ -131,7 +131,7 @@ class TFileDialog:
     void jumpDirectory();
     
     TTable *tfiles;
-    TComboBox *cb, *cb_filter;
+    TComboBox *cb_filter, *cb_prev;
 
     void fileSelected();
     void doubleClick();
