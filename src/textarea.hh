@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@
 #include <toad/control.hh>
 #include <toad/model.hh>
 
-#include <toad/figureeditor/undoable.hh>
+#include <toad/undoable.hh>
 #include <toad/util/history.hh>
 
 #include <toad/scrollbar.hh>
@@ -127,8 +127,8 @@ class TTextModel:
           offset = o;
           text   = t;
         }
-        string getRedoName() const { return "Redo: Insert"; }
-        string getUndoName() const { return "Undo: Insert"; }
+        bool getRedoName(string *name) const { *name = "Redo: Insert"; return true; }
+        bool getUndoName(string *name) const { *name = "Undo: Insert"; return true; }
         void undo() {
           model->remove(offset, text.size(), false);
         }
@@ -149,8 +149,8 @@ class TTextModel:
           offset = o;
           text   = t;
         }
-        string getRedoName() const { return "Redo: Delete"; }
-        string getUndoName() const { return "Undo: Delete"; }
+        bool getRedoName(string *name) const { *name = "Redo: Delete"; return true; }
+        bool getUndoName(string *name) const { *name = "Undo: Delete"; return true; }
         void undo() {
           model->insert(offset, text, false);
         }

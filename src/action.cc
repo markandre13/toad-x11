@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,22 +33,21 @@ TAbstractChoice::~TAbstractChoice()
 /**
  * \class toad::TAction
  *
- * \li 
- *   Locates a TMenuBar in the tree a class TMenuBar::Add with itself
- *   as an argument.
+ * An action adds itself to TAction::actions where it can be found by
+ * menubars, popup menus and other widgets which can present the
+ * various actions to the user.
+ *
  * \todo
  *   \li
  *     Currently the actions look is controlled by the menubar which is
  *     wrong.
- *   \li
- *     The action shouldn't attach itself to the menubar but to some kind
- *     of storage. The menubar shall query this storage when needed.
  */
 
-TAction::TAction(TWindow *parent, const string &id)
+TAction::TAction(TInteractor *parent, const string &id)
   :TInteractor(parent)
 {
   title = id;
+  focus = true;
   enabled = true;
   bitmap = 0;
   type = BUTTON;
@@ -60,11 +59,24 @@ TAction::~TAction()
   actions.erase(this);
 }
 
-void TAction::domainFocus(bool b)
+void 
+TAction::domainFocus(bool b)
 {
 //  cout << ( b ? "received" : "lost") << " domain focus for " << getTitle() << endl;
-  if (enabled!=b) {
-    enabled = b;
+  bool oldstate = focus && enabled;
+  focus = b;
+  if ( (focus && enabled) != oldstate ) {
+    sigChanged();
+  }
+}
+
+void 
+TAction::setEnabled(bool b)
+{
+//  cout << ( b ? "received" : "lost") << " domain focus for " << getTitle() << endl;
+  bool oldstate = focus && enabled;
+  enabled = b;
+  if ( (focus && enabled) != oldstate ) {
     sigChanged();
   }
 }
@@ -72,9 +84,8 @@ void TAction::domainFocus(bool b)
 bool 
 TAction::isEnabled() const
 {
-  return sigActivate.isConnected() && enabled;
+  return sigActivate.isConnected() && focus && enabled;
 }
-
 
 unsigned
 TAction::getSize() const

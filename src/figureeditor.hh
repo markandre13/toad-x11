@@ -22,7 +22,7 @@
 #define _TOAD_FIGUREEDITOR
 
 #include <toad/scrollpane.hh>
-#include <toad/figureeditor/undoable.hh>
+#include <toad/undoable.hh>
 #include <toad/util/history.hh>
 
 #include <set>

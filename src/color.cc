@@ -124,7 +124,7 @@ void TColor::set(ESystemColor sc)
 }
 
 bool
-restore(atv::TInObjectStream &p, toad::TRGB *value)
+restore(atv::TInObjectStream &p, toad::TSerializableRGB *value)
 {
   if (p.what != ATV_GROUP)
     return false;
@@ -166,7 +166,7 @@ restore(atv::TInObjectStream &p, const char *name, TRGB **value)
 #endif
 
 void
-TRGB::store(TOutObjectStream &out) const
+TSerializableRGB::store(TOutObjectStream &out) const
 {
   ::store(out, r);
   ::store(out, g);
@@ -174,7 +174,7 @@ TRGB::store(TOutObjectStream &out) const
 }
 
 bool 
-TRGB::restore(TInObjectStream &in)
+TSerializableRGB::restore(TInObjectStream &in)
 {
   if (
     ::restore(in, 0, &r) ||

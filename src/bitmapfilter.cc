@@ -53,7 +53,7 @@ void TBitmapFilter::createBuffer(int width,int height,EBitmapType type)
 {
   #ifdef SECURE
   if (color || index) {
-    printf("toad: warning: TBitmapFilter::CreateBuffer buffer already exists\n");
+    printf("toad: warning: TBitmapFilter::createBuffer buffer already exists\n");
     if (color) delete color;
     if (index) delete index;
   }

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 
 #include <toad/figure.hh>
 #include <toad/figureeditor.hh>
-#include <toad/figureeditor/undoable.hh>
+#include <toad/undoable.hh>
 
 namespace toad {
 
@@ -32,8 +32,8 @@ class TUndoableHandleMove:
 {
   public:
     TUndoableHandleMove(TFigure*, unsigned, const TPoint&, const TPoint&);
-    string getRedoName() const { return "Redo: Move"; }
-    string getUndoName() const { return "Undo: Move"; }
+    bool getRedoName(string *name) const { *name = "Redo: Move"; return true; }
+    bool getUndoName(string *name) const { *name = "Undo: Move"; return true; }
     void undo();
     void redo();
     

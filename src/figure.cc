@@ -71,7 +71,7 @@ void
 TFigure::initialize()
 {
   TObjectStore& serialize(toad::getDefaultStore());
-  serialize.registerObject(new TRGB());
+  serialize.registerObject(new TSerializableRGB());
   serialize.registerObject(new TDialogLayout());
   serialize.registerObject(new TMenuLayout());
   serialize.registerObject(new TMenuEntry());

@@ -213,7 +213,6 @@ TFilterGIF::load(istream &stream)
       default:
         if (byte != ',')
           break;
-cerr << "found gif image" << endl;
         image_count++;
         TImage *img = new TImage;
         in.readWord();                  // left

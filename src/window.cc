@@ -1807,7 +1807,8 @@ TWindow::setSize(int w,int h)
   // serves a similar purpose
   //-----------------------------------------------------------------
   if ( isSuppressMessages() || flag_wm_resize ) {
-    cout << "don't calling resize() and parents childNotify()" << endl;
+#warning "try to remove not calling resize() and parents childNotify()"
+//    cout << "don't calling resize() and parents childNotify()" << endl;
     return;
   }
   doResize();

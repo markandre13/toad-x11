@@ -1028,6 +1028,7 @@ void
 TPen::drawString(int x,int y, const char *str, int strlen, bool transparent)
 {
 #ifdef __X11__
+  assert(font!=NULL);
   font->createFont(mat);
   switch(font->getRenderType()) {
 

@@ -78,8 +78,8 @@ class TFigure:
     virtual void getShape(TRectangle&) = 0;
 
   protected:
-    TRGB line_color;
-    TRGB fill_color;
+    TSerializableRGB line_color;
+    TSerializableRGB fill_color;
     bool filled:1;        // true when filled
   
   public:    

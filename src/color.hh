@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,12 +31,9 @@
 namespace toad {
 
 struct TRGB
-  :public TSerializable
 {
-    typedef TSerializable super;
     byte r,g,b;
     TRGB() {
-      r = g = b = 0;
     }
     TRGB(byte ir, byte ig, byte ib) {
       r=ir; g=ig; b=ib;
@@ -54,15 +51,44 @@ struct TRGB
     void set(byte rn,byte gn,byte bn) {
       r=rn;g=gn;b=bn;
     }
+};
 
-    TCloneable* clone() const { return new TRGB(*this); }
+struct TSerializableRGB:
+  public TRGB, public TSerializable
+{
+    typedef TSerializable super;
+
+    TSerializableRGB() {}
+
+    TSerializableRGB(byte ir, byte ig, byte ib) {
+      r=ir; g=ig; b=ib;
+    }
+    TSerializableRGB& operator= (const TRGB &c) {
+      r=c.r; g=c.g; b=c.b;
+      return *this;
+    }
+/*
+    bool operator ==(const TRGB &c) const {
+      return (r==c.r && g==c.g && b==c.b);
+    }
+    bool operator !=(const TRGB &c) const {
+      return (r!=c.r || g!=c.g || b!=c.b);
+    }
+    void operator() (byte rn,byte gn,byte bn) {
+      r=rn;g=gn;b=bn;
+    }
+    void set(byte rn,byte gn,byte bn) {
+      r=rn;g=gn;b=bn;
+    }
+*/
+    TCloneable* clone() const { return new TSerializableRGB(*this); }
     const char * name() const { return "toad::TRGB"; }
     void store(TOutObjectStream&) const;
     bool restore(TInObjectStream&);
 };
 
 class TColor
-  :public TRGB
+  :public TSerializableRGB
 {
     friend class TPen;
     friend class TWindow;
@@ -218,7 +244,7 @@ class TColor
 
 } // namespace toad
 
-bool restore(atv::TInObjectStream &p, toad::TRGB *value);
+bool restore(atv::TInObjectStream &p, toad::TSerializableRGB *value);
 // bool restore(TInObjectStream &p, const char *name, TRGB **value);
 
 

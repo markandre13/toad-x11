@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,8 +36,8 @@ class TUndoableCreate:
       done = false;
     }
                     
-    string getRedoName() const { return "Redo: New"; }
-    string getUndoName() const { return "Undo: New"; }
+    bool getRedoName(string *name) const { *name = "Redo: New"; return true; }
+    bool getUndoName(string *name) const { *name = "Undo: New"; return true; }
     void undo() { TUndoableDelete::redo(); }
     void redo() { TUndoableDelete::undo(); }
 };

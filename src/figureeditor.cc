@@ -184,13 +184,13 @@ class THistoryAction:
     bool getState(string *text, bool *active) const {
       if (undo) {
         if (history->getBackSize()>0)
-          *text = history->getCurrent()->getUndoName();
+          history->getCurrent()->getUndoName(text);
         else
           *text = "(Undo)";
       } else {
         if (history->getForwardSize()>0) {
           history->goForward();
-          *text = history->getCurrent()->getRedoName();
+          history->getCurrent()->getRedoName(text);
           history->goBack();
         } else {
           *text = "(Redo)";

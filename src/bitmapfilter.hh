@@ -36,6 +36,8 @@ namespace toad {
 
 class TBitmapFilter
 {
+  private:
+    TBitmapFilter(const TBitmapFilter&) { }
   public:
     TBitmapFilter();
     virtual ~TBitmapFilter() {};

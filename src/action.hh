@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,17 +55,19 @@ class TAction:
 {
     TBitmap *bitmap;
 
-  protected:
+  private:
+    bool focus;
     bool enabled;
 
   public:
     static TActionStorage actions;
 
-    TAction(TWindow *, const string&);
+    TAction(TInteractor *, const string&);
     virtual ~TAction();
     
     // enable/disable
     void domainFocus(bool);
+    void setEnabled(bool b);
     bool isEnabled() const;
     
     //! this signal is triggered when the action has to be performed
