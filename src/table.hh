@@ -38,16 +38,20 @@ class TAbstractTableSelectionModel:
       SINGLE
     };
 
-    // this is a hint for TTable on how to handle the user interaction:
-    virtual ESelectionMode getSelectionMode() const = 0;
+    virtual ESelectionMode getSelectionMode() const;
     
-    // these are called by TTable:
-    virtual void clearSelection() = 0;
-    virtual void setSelection(int x, int y) = 0;
-    virtual void setSelection(int x, int y, int w, int h) = 0;
-    virtual void toggleSelection(int x, int y) = 0;
-    virtual bool isSelected(int x, int y) const = 0;
-    virtual bool isEmpty() const = 0;
+    /** 
+     * Select an entry at the given column and row.
+     *
+     * An implementation should also call sigChanged().
+     */
+    virtual void setSelection(int col, int row) = 0;
+    virtual bool isSelected(int col, int row) const = 0;
+
+    virtual void setSelection(int col, int row, int w, int h);
+    virtual void toggleSelection(int col, int row);
+    virtual void clearSelection();
+    virtual bool isEmpty() const;
 };
 
 typedef GSmartPointer<TAbstractTableSelectionModel> PAbstractTableSelectionModel;

@@ -109,6 +109,80 @@ TAbstractTableCellRenderer::renderCell(TPen &pen, int col, int row, int w, int h
   }
 }
 
+/**
+ * Returns a hint for TTable about the selection models
+ * capabilities.
+ *
+ * \li
+ *   SINGLE: Only one value at a time can be selected.
+ * \li
+ *   SINGLE_INTERVAL: Only a single continues interval can
+ *   be selected.
+ * \li
+ *   MULTIPLE_INTERVAL: There's no limitation on how entries
+ *   can be selected.
+ *
+ * The default implementation returns 'SINGLE'.
+ */
+TAbstractTableSelectionModel::ESelectionMode
+TAbstractTableSelectionModel::getSelectionMode() const
+{
+  return SINGLE;
+}
+
+/**
+ * Select the specified rectangle, which will be used for the 'interval'
+ * selection modes.
+ *
+ * The default implementation is to call setSelection(col, row).
+ *
+ * An new implementation should also call sigChanged().
+ */
+void
+TAbstractTableSelectionModel::setSelection(int col, int row, int w, int h)
+{
+  setSelection(col, row);
+}
+
+/**
+ * XOR the selection at the given position.
+ *
+ * The default implementation is to do nothing.
+ *
+ * An new implementation should also call sigChanged().
+ */
+void
+TAbstractTableSelectionModel::toggleSelection(int col, int row)
+{
+  setSelection(col, row);
+}
+
+/**
+ * Clear the selection.
+ *
+ * The default implementation is to do nothing.
+ *
+ * An new implementation should also call sigChanged().
+ */
+void
+TAbstractTableSelectionModel::clearSelection()
+{
+}
+
+/**
+ * Indicates whether any entries are selected or not.
+ *
+ * The default implementation is to return 'false'.
+ *
+ * \return 'true' in case there's no entry selected.
+ */
+bool
+TAbstractTableSelectionModel::isEmpty() const
+{
+  return false;
+}
+
+
 #if 0
 /**
  * A basic selection model for a single position.
