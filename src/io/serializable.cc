@@ -276,25 +276,27 @@ namespace {
 void
 writeQuoted(ostream &out, const char *p, unsigned n)
 {
-  out << '\"';
+  out << '\"';  
 
   const char * e = p+n;
   n = 0;
   const char * l = p;
-  while(p<e) {
+  while(p<e) { 
     if (*p=='\"') {
-      if (n) {
-        out.write(l, n-1);
+      if (n) {     
+        out.write(l, n);
       }
-      out << '\\';
+      out << "\\\"";
+      ++p;
       l = p;
-      n = 1;
+      n = 0;
+    } else {
+      ++n;    
+      ++p;  
     }
-    ++n;
-    ++p;
-  }
+  }  
   if (n)
-    out.write(l, n-1);
+    out.write(l, n);
   out << '\"';
 }
 
