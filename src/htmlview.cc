@@ -2043,6 +2043,7 @@ THTMLView::paint()
 int x, y, h;
 getPanePos(&x, &y);
 h = getHeight() + y;
+int flag=0;
 #endif
 
   TState state(pane.w);
@@ -2058,8 +2059,11 @@ state.newline = false;
     state.handle(pen, *p);
 
 #ifdef SPEEDUP_KLUDGE
-if (state.newline && state.getBottom() > h)
-  break;
+if (state.newline && state.getBottom() > h) {
+  flag++;
+  if (flag>1)
+    break;
+}
 #endif
 
     ++p;
