@@ -1782,6 +1782,21 @@ redo:
 }
 
 void
+TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
+{
+  if (!window)
+    return;
+
+  stopOperation();
+  clearSelection();
+  setFocus();
+  mouse2sheet(mx, my, &mx, &my);
+  TFigure *f = findGadgetAt(mx, my);
+  if (f)
+    f->mouseRDown(this, mx, my, modifier);
+}
+
+void
 TFigureEditor::invalidateFigure(TFigure* figure)
 {
   if (!window)

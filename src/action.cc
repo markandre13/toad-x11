@@ -44,9 +44,8 @@ TAbstractChoice::~TAbstractChoice()
  */
 
 TAction::TAction(TInteractor *parent, const string &id)
-  :TInteractor(parent)
+  :TInteractor(parent, id)
 {
-  title = id;
   focus = true;
   enabled = true;
   bitmap = 0;

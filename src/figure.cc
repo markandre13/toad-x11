@@ -179,7 +179,8 @@ TFigure::paintSelection(TPenBase &pen)
  *
  * The first handle is 0.
  */
-bool TFigure::getHandle(unsigned n, TPoint &p)
+bool
+TFigure::getHandle(unsigned n, TPoint &p)
 {
   return false;
 }
@@ -187,8 +188,56 @@ bool TFigure::getHandle(unsigned n, TPoint &p)
 /**
  * Set handle <I>handle</I> to position (x,y).
  */
-void TFigure::translateHandle(unsigned handle, int x, int y)
+void
+TFigure::translateHandle(unsigned handle, int x, int y)
 {
+}
+
+bool
+TFigure::startInPlace()
+{
+  return false;
+}
+
+unsigned
+TFigure::stop(TFigureEditor*) 
+{ 
+  return NOTHING; 
+}
+
+unsigned 
+TFigure::keyDown(TFigureEditor*, TKey, char*, unsigned)
+{ 
+  return CONTINUE; 
+}
+
+void
+TFigure::startCreate()
+{
+}
+
+unsigned
+TFigure::mouseLDown(TFigureEditor*, int, int, unsigned)
+{
+  return STOP;
+}
+
+unsigned
+TFigure::mouseMove(TFigureEditor*, int, int, unsigned)
+{
+  return CONTINUE;
+}
+
+unsigned 
+TFigure::mouseLUp(TFigureEditor*, int, int, unsigned)
+{
+  return CONTINUE;
+}
+
+unsigned
+TFigure::mouseRDown(TFigureEditor*, int, int, unsigned)
+{
+  return CONTINUE;
 }
 
 void

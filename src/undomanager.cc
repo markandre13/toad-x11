@@ -43,7 +43,7 @@ TUndoManagerStorage umstorage;
  * The titles of the actions are "edit|undo" and "edit|redo".
  */
 TUndoManager::TUndoManager(TWindow *parent):
-  TInteractor(parent)
+  TInteractor(parent, "undomanager")
 {
   undo = new TUndoAction(getParent(), "edit|undo", this, true);
   redo = new TUndoAction(getParent(), "edit|redo", this, false);
@@ -56,7 +56,7 @@ TUndoManager::TUndoManager(TWindow *parent):
 TUndoManager::TUndoManager(TWindow *parent, 
                            const string &undotext,
                            const string &redotext):
-  TInteractor(parent)
+  TInteractor(parent, "undomanager")
 {
   undo = new TUndoAction(getParent(), undotext, this, true);
   redo = new TUndoAction(getParent(), redotext, this, false);

@@ -153,12 +153,27 @@ TMenuHelper::~TMenuHelper()
 }
 
 /**
+ * Set the menu's TMenuLayout scope to the specified interactor.
+ *
+ * This method is used for example by TFigureEditor to create popup
+ * menu's for interactors which aren't part of the window tree. Namely 
+ * figures in the case of TFigureEditor.
+ */
+void
+TMenuHelper::setScopeInteractor(TInteractor *interactor)
+{
+  TMenuLayout *layout = dynamic_cast<TMenuLayout*>(getLayout());
+  assert(layout);
+  layout->scope = TMenuLayout::INTERACTOR;
+  layout->interactor = interactor;
+}
+
+/**
  * Arrange the windows contents either horizontal (menubar) or 
  * vertical (popup).
  *
  * This one is also responsible to create TMenuButtons.
  */
-
 void 
 TMenuHelper::resize()
 {
@@ -891,6 +906,7 @@ TMenuLayout::TMenuLayout()
 {
 //  cerr << "TMenuLayout::TMenuLayout() " << this << endl;
   scope = TOPLEVEL;
+  interactor = 0;
   connect(TAction::actions.sigChanged, this, &TMenuLayout::actionsChanged);
 }
 
@@ -919,6 +935,8 @@ TMenuLayout::arrange()
 {
 DBM2(cerr << "TMenuLayout::arrange " << this << ", " << window << endl;)
   if (!window)
+    return;
+  if (!window->isRealized())
     return;
 
   TMenuHelper *menu = dynamic_cast<TMenuHelper*>(window);
@@ -969,6 +987,11 @@ DBM2(cerr << "      go up to parent\n";)
             ptr = ptr->getParent();
           }
         } break;
+      case INTERACTOR:
+        if (interactor==*p || (*p)->isChildOf(interactor)) {
+          node->addAction(*p);
+        }
+        break;
     }
     ++p;
   }

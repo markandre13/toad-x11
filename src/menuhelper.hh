@@ -47,8 +47,10 @@ class TMenuLayout:
     
     enum EScope {
       GLOBAL,
-      TOPLEVEL
+      TOPLEVEL,
+      INTERACTOR
     } scope;
+    TInteractor *interactor;
 
     TCloneable* clone() const { return new TMenuLayout(*this); }
     const char * name() const { return "toad::TMenuLayout"; }
@@ -77,6 +79,8 @@ class TMenuHelper:
   public:
     TMenuHelper(TWindow*, const string&);
     ~TMenuHelper();
+    
+    void setScopeInteractor(TInteractor*);
 
     void adjust();
     void resize();

@@ -298,6 +298,7 @@ class TFigureEditor:
     void mouseLDown(int,int,unsigned);
     void mouseMove(int,int,unsigned);
     void mouseLUp(int,int,unsigned);
+    void mouseRDown(int, int, unsigned);
     void keyDown(TKey, char*, unsigned);
 
     virtual void mouse2sheet(int mx, int my, int *sx, int *sy);

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,119 +21,10 @@
 #include <toad/figure.hh>
 #include <toad/figureeditor.hh>
 
+#include <toad/action.hh>
+#include <toad/popupmenu.hh>
+
 using namespace toad;
-
-void
-TFBezier::paint(TPenBase &pen, EPaintType type)
-{
-  pen.setLineColor(line_color);
-  if (!filled) {
-    pen.drawPolyBezier(polygon);
-  } else {
-    pen.setFillColor(fill_color);
-    pen.fillPolyBezier(polygon);
-  }
-  if (type==EDIT || type==SELECT) {
-    pen.setColor(0,0,255);
-//    pen.setLineStyle(TPen::DOT);
-    TPolygon::const_iterator p(polygon.begin());
-    unsigned n = polygon.size();
-    while(true) {
-      if (n>=2) {
-        pen.drawLine(p->x, p->y,
-                     (p+1)->x, (p+1)->y);
-      }
-      if (n>=4) {
-        pen.drawLine((p+2)->x, (p+2)->y,
-                     (p+3)->x, (p+3)->y);
-      } else {
-        break;
-      }
-      p+=3;
-      n-=3;
-    }
-//    pen.setLineStyle(TPen::SOLID);
-  }
-}
-
-double
-TFBezier::distance(int x, int y)
-{
-  TPolygon p2;
-  TPenBase::poly2Bezier(polygon, p2);
-  if (filled && p2.isInside(x, y))
-    return INSIDE;
-  
-  TPolygon::const_iterator p(p2.begin()), e(p2.end());
-  int x1,y1,x2,y2;
-  double min = OUT_OF_RANGE, d;
-  assert(p!=e);
-  --e;
-  assert(p!=e);
-  x2=p->x;
-  y2=p->y;
-  ++e;
-  assert(p!=e);
-  while(p!=e) {
-    x1=x2;
-    y1=y2;
-    x2=p->x;
-    y2=p->y;
-    d = distance2Line(x,y, x1,y1, x2,y2);
-    if (d<min)
-      min = d;
-    ++p;
-  }
-  return min;
-}
-
-unsigned
-TFBezier::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
-{
-  switch(editor->state) {
-    case TFigureEditor::STATE_START_CREATE:
-      polygon.addPoint(mx, my);
-      editor->setMouseMoveMessages(TWindow::TMMM_ALL);
-    case TFigureEditor::STATE_CREATE: {
-      if (m & MK_DOUBLE) {
-//cerr << "end at: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
-        if (polygon.size()<=4)
-          return STOP|DELETE;
-        if ((polygon.size()%3)==1) {
-          TPolygon::iterator e(polygon.end());
-          e-=3;
-          polygon.erase(e, polygon.end());
-        } else
-        if ((polygon.size()%3)==2) {
-          TPolygon::iterator e(polygon.end());
-          --e;
-          polygon.erase(e, polygon.end());
-        }
-        if (polygon.size()<4)
-          return STOP|DELETE;
-        if (polygon.size()>4) {
-          TPolygon::iterator e(polygon.end()), p(polygon.begin());
-          --e;
-          *e = *p;
-        }
-
-//cerr << "end with: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
-        return STOP;
-      }
-      if ((polygon.size()%3)==2) {
-//cerr << "add point 2 and 3" << endl;
-        polygon.addPoint(mx, my);
-      }
-      polygon.addPoint(mx, my);
-//cerr << "after add: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
-      editor->invalidateFigure(this);
-      } break;
-    default:
-      break;
-  }
-  return CONTINUE;
-}
-
 
 void
 TFBezierline::paint(TPenBase &pen, EPaintType type)
@@ -282,6 +173,134 @@ TFBezierline::translateHandle(unsigned handle, int x, int y)
     polygon[handle].x=x;
     polygon[handle].y=y;
   }
+}
+
+unsigned
+TFBezierline::mouseRDown(TFigureEditor *editor, int, int, unsigned)
+{
+  cerr << "TFBezierline::mouseRDown" << endl;
+
+  TInteractor *dummy = new TInteractor(0, "dummy interactor");
+  TAction *action;
+  action = new TAction(dummy, "add point");
+  action = new TAction(dummy, "delete point");
+  action = new TAction(dummy, "sharp edge");
+  action = new TAction(dummy, "no edge");
+  TPopupMenu *menu;
+  menu = new TPopupMenu(editor, "popup");
+  menu->setScopeInteractor(dummy);
+  menu->open();
+}
+
+void
+TFBezier::paint(TPenBase &pen, EPaintType type)
+{
+  pen.setLineColor(line_color);
+  if (!filled) {
+    pen.drawPolyBezier(polygon);
+  } else {
+    pen.setFillColor(fill_color);
+    pen.fillPolyBezier(polygon);
+  }
+  if (type==EDIT || type==SELECT) {
+    pen.setColor(0,0,255);
+//    pen.setLineStyle(TPen::DOT);
+    TPolygon::const_iterator p(polygon.begin());
+    unsigned n = polygon.size();
+    while(true) {
+      if (n>=2) {
+        pen.drawLine(p->x, p->y,
+                     (p+1)->x, (p+1)->y);
+      }
+      if (n>=4) {
+        pen.drawLine((p+2)->x, (p+2)->y,
+                     (p+3)->x, (p+3)->y);
+      } else {
+        break;
+      }
+      p+=3;
+      n-=3;
+    }
+//    pen.setLineStyle(TPen::SOLID);
+  }
+}
+
+double
+TFBezier::distance(int x, int y)
+{
+  TPolygon p2;
+  TPenBase::poly2Bezier(polygon, p2);
+  if (filled && p2.isInside(x, y))
+    return INSIDE;
+  
+  TPolygon::const_iterator p(p2.begin()), e(p2.end());
+  int x1,y1,x2,y2;
+  double min = OUT_OF_RANGE, d;
+  assert(p!=e);
+  --e;
+  assert(p!=e);
+  x2=p->x;
+  y2=p->y;
+  ++e;
+  assert(p!=e);
+  while(p!=e) {
+    x1=x2;
+    y1=y2;
+    x2=p->x;
+    y2=p->y;
+    d = distance2Line(x,y, x1,y1, x2,y2);
+    if (d<min)
+      min = d;
+    ++p;
+  }
+  return min;
+}
+
+unsigned
+TFBezier::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
+{
+  switch(editor->state) {
+    case TFigureEditor::STATE_START_CREATE:
+      polygon.addPoint(mx, my);
+      editor->setMouseMoveMessages(TWindow::TMMM_ALL);
+    case TFigureEditor::STATE_CREATE: {
+      if (m & MK_DOUBLE) {
+//cerr << "end at: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
+        if (polygon.size()<=4)
+          return STOP|DELETE;
+        if ((polygon.size()%3)==1) {
+          TPolygon::iterator e(polygon.end());
+          e-=3;
+          polygon.erase(e, polygon.end());
+        } else
+        if ((polygon.size()%3)==2) {
+          TPolygon::iterator e(polygon.end());
+          --e;
+          polygon.erase(e, polygon.end());
+        }
+        if (polygon.size()<4)
+          return STOP|DELETE;
+        if (polygon.size()>4) {
+          TPolygon::iterator e(polygon.end()), p(polygon.begin());
+          --e;
+          *e = *p;
+        }
+
+//cerr << "end with: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
+        return STOP;
+      }
+      if ((polygon.size()%3)==2) {
+//cerr << "add point 2 and 3" << endl;
+        polygon.addPoint(mx, my);
+      }
+      polygon.addPoint(mx, my);
+//cerr << "after add: n=" << polygon.size() << ", n%3=" << (polygon.size()%3) << endl;
+      editor->invalidateFigure(this);
+      } break;
+    default:
+      break;
+  }
+  return CONTINUE;
 }
 
 void 

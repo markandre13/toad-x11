@@ -117,16 +117,17 @@ class TFigure:
 
     // stage 4: in place editing
     //! Return `true' when in-place editing is desired.
-    virtual bool startInPlace() { return false; }
-    virtual unsigned stop(TFigureEditor*) { return NOTHING; };
-    virtual unsigned keyDown(TFigureEditor*, TKey, char*, unsigned) { return CONTINUE; }
+    virtual bool startInPlace();
+    virtual unsigned stop(TFigureEditor*);
+    virtual unsigned keyDown(TFigureEditor*, TKey, char*, unsigned);
 
     // editor related stuff for manipulation & creation
     //--------------------------------------------------
-    virtual void startCreate() {};
-    virtual unsigned mouseLDown(TFigureEditor*, int, int, unsigned) { return STOP; }
-    virtual unsigned mouseMove(TFigureEditor*, int, int, unsigned) { return CONTINUE; }
-    virtual unsigned mouseLUp(TFigureEditor*, int, int, unsigned) { return CONTINUE; }
+    virtual void startCreate();
+    virtual unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
+    virtual unsigned mouseMove(TFigureEditor*, int, int, unsigned);
+    virtual unsigned mouseLUp(TFigureEditor*, int, int, unsigned);
+    virtual unsigned mouseRDown(TFigureEditor*, int, int, unsigned);
 
     // editor related stuff for all gadgets
     //--------------------------------------
@@ -293,6 +294,7 @@ class TFBezierline:
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
     void translateHandle(unsigned handle, int mx, int my);
+    unsigned mouseRDown(TFigureEditor*, int, int, unsigned);
     
     TCloneable* clone() const { return new TFBezierline(*this); }
     const char * name() const { return "toad::TFBezierline"; }

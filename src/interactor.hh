@@ -33,7 +33,7 @@ class TWindowEvent;
 class TInteractor
 {
   public:
-    TInteractor(TInteractor *parent = NULL);
+    TInteractor(TInteractor *parent, const string &title);
     virtual ~TInteractor();
 
     virtual void setTitle(const string &title) {

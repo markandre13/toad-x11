@@ -221,8 +221,8 @@ enum {
   (_vmas_table[I] != _vmas_cast(&TWindow::F))
 static const void* _vmas_table[VMAS_MAX] = { NULL,  };
 
-TWindow::TWindow(TWindow *p, const string &new_title)
-  :TInteractor(p)
+TWindow::TWindow(TWindow *p, const string &title)
+  :TInteractor(p, title)
 {
   if (p==NULL) {
     parentless.push_back(this);
@@ -293,11 +293,6 @@ TWindow::TWindow(TWindow *p, const string &new_title)
   debug_flags = 0;
 #endif
 //  child = prev_sibling = next_sibling = NULL;
-
-  if (&new_title == NULL)
-    cerr << "toad: warning, window title reference is NULL\n"; 
-  else
-    setTitle(new_title);
 
   _childNotify(TCHILD_ADD);
 }
