@@ -1,6 +1,6 @@
 #
 # TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
-# Copyright (C) 1995-2002 by Mark-André Hopf <mhopf@mark13.de>
+# Copyright (C) 1995-2004 by Mark-André Hopf <mhopf@mark13.de>
 #
 # @configure_input@
 
@@ -32,6 +32,8 @@ install:
 	$(INSTALL) bin/toadtrace $(DESTDIR)/$(bindir)
 	$(INSTALL) bin/toadbin2c $(DESTDIR)/$(bindir)
 	$(INSTALL) -m 0755 conf/toad-config $(DESTDIR)/$(bindir)
+	$(INSTALL) -d $(libdir)/pkgconfig
+	$(INSTALL) toad.pc $(libdir)/pkgconfig
 	
 doc:
 	cd doc ; make

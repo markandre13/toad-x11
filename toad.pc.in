@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: TOAD C++ GUI Library
+Description: See http://www.mark13.de/toad/ for further information.
+Version: 0.64.0
+Libs: @LDFLAGS@ -L${libdir} @LIBS@ -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11
+Cflags: -I${includedir} @X_CFLAGS@

@@ -1,6 +1,7 @@
+#
 # Autoconf file for TOAD
 #
-# Copyright (C) 2002, 2003 by Mark-André Hopf <mhopf@mark13.de>
+# Copyright (C) 2002-2004 by Mark-André Hopf <mhopf@mark13.de>
 #
 
 AC_INIT(libtoad, 0.64.0, toad-bug@mark13.de)
@@ -18,11 +19,51 @@ AC_PROG_MAKE_SET
 AC_PATH_XTRA
 LIBS="${LIBS} ${X_LIBS}"
 
+AC_PATH_X
+
 # AC_CHECK_LIB([MesaGL], [main])
 # AC_CHECK_LIB([MesaGLU], [main])
 AC_CHECK_LIB([Xext], [main])
 AC_CHECK_LIB([m], [main])
+
+# freetype (required)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AC_ARG_WITH(freetype-config, [  --with-freetype-config=PROG Use FreeType configuration program PROG], freetype_config=$withval, freetype_config=yes)
+if test "$freetype_config" = "yes"; then
+  AC_PATH_PROG(ft_config,freetype-config,no)
+  if test "$ft_config" = "no"; then
+    AC_MSG_ERROR([You must have freetype installed; see http://www.freetype.org/])
+  fi
+else
+  ft_config="$freetype_config"
+fi
+
+CXXFLAGS="$CXXFLAGS `$ft_config --cflags`"
+LDFLAGS="$LDFLAGS `$ft_config --libs`"
 AC_CHECK_LIB([Xft], [XftFontOpen])
+
+# pkg-config (required)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AC_ARG_WITH(pkg-config, [  --with-pkg-config=PROG  Use pkg-config configuration utility PROG], freetype_config=$withval, pkg_config=yes)
+if test "$pkg_config" = "yes"; then
+  AC_PATH_PROG(pkg_config,pkg-config,no)
+  if test "$pkg_config" = "no"; then
+    AC_MSG_ERROR([You must have pkg-config installed; see http://www.freetype.org/])
+  fi
+else
+  pkg_config="$pkg_config"
+fi
+
+# fontconfig (required)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AC_MSG_CHECKING([fontconfig])
+pkg-config --atleast-version=2.2.0 fontconfig
+if test $? -ne 0 ; then
+  AC_MSG_ERROR([You must have fontconfig 2.2.0 or higher; see http://www.freedesktop.org/])
+fi
+AC_MSG_RESULT([yes])
+CXXFLAGS="$CXXFLAGS `$pkg_config --cflags fontconfig`"
+LDFLAGS="$LDFLAGS `$pkg_config --libs fontconfig`"
 
 # libpng (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -35,8 +76,16 @@ AC_CHECK_LIB([png], [png_create_read_struct],,
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AC_CHECK_LIB([jpeg], [jpeg_start_decompress])
 
+# libXutf8 (not used yet)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+dnl Test to see if libXutf8 is on this machine:
+XUTFLIB=
+AC_CHECK_LIB(Xutf8, XUtf8IsNonSpacing, \
+        AC_DEFINE(HAVE_XUTF8) XUTFLIB=" -lXutf8", ,\
+        -lX11 $X_EXTRA_LIBS)
+AC_SUBST(XUTFLIB)
+
 # Checks for header files.
-AC_PATH_X
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
@@ -56,12 +105,16 @@ AC_TYPE_SIGNAL
 AC_FUNC_STAT  
 # AC_CHECK_FUNCS([floor getcwd gethostbyname gettimeofday memset select setlocale socket sqrt strcasecmp strchr strerror strncasecmp])
 
+AC_MSG_CHECKING([absolute source path])
 cwd=`pwd`
 cd $srcdir
 toaddir=`pwd`
 cd $cwd
 AC_SUBST(toaddir)
+AC_MSG_RESULT([$toaddir])
 
-AC_CONFIG_FILES([Makefile src/Makefile conf/MakefilePrg testsuite/Makefile conf/toad-config])
+
+
+AC_CONFIG_FILES([Makefile src/Makefile conf/MakefilePrg testsuite/Makefile conf/toad-config toad.pc])
 
 AC_OUTPUT
