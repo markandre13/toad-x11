@@ -134,7 +134,7 @@ TMainWindow::menuAbout()
   messageBox(
     this,
     "About ${project}",
-    "Generated with toad-config on `date -I` by `whoami`@`hostname -f`.");
+    "Generated with toad-config on `date` by `whoami`@`hostname -f`.");
 }
 EOF
 cat > menubar.atv <<EOF
