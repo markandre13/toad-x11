@@ -22,6 +22,7 @@
 #include <toad/scrollbar.hh>
 #include <toad/pushbutton.hh>
 #include <toad/textfield.hh>
+#include <toad/gauge.hh>
 #include <cmath>
 
 // missing in mingw
@@ -98,7 +99,7 @@ TColorDialog::_init()
 {
   setLayout(0);
   apply = false; // set to 'false' in case of closeWindow
-  setSize(478, 8+256+8+25+8);
+  setSize(478+16, 8+256+8+25+8);
   setMouseMoveMessages(TMMM_LBUTTON); // only mouseMove when left button down
   if (color) {
     origcolor = *color;
@@ -119,31 +120,39 @@ TColorDialog::_init()
   
   TScrollBar *sb;
   TTextField *tf;
+  TGauge *gg;
   for(int i=0; i<6; ++i) {
+    gg = 0;
     switch(i) {
       case 0:
         sb = new TScrollBar(this, "sb.hue", &hue);
         tf = new TTextField(this, "tf.hue", &hue);
+        gg = new TGauge(this, "gg.hue", &hue);
         break;
       case 1:  
         sb = new TScrollBar(this, "sb.saturation", &saturation);
-        tf = new TTextField(this, "tf.hue", &saturation);
+        tf = new TTextField(this, "tf.saturation", &saturation);
+        gg = new TGauge(this, "gg.saturation", &saturation);
         break;
       case 2:
         sb = new TScrollBar(this, "sb.value", &value);
-        tf = new TTextField(this, "tf.hue", &value);
+        tf = new TTextField(this, "tf.value", &value);
+        gg = new TGauge(this, "gg.value", &value);
         break;
       case 3:  
         sb = new TScrollBar(this, "sb.red", &rgb.r);
-        tf = new TTextField(this, "tf.hue", &rgb.r);
+        tf = new TTextField(this, "tf.red", &rgb.r);
+        gg = new TGauge(this, "gg.red", &rgb.r);
         break;
       case 4:  
         sb = new TScrollBar(this, "sb.green", &rgb.g);
-        tf = new TTextField(this, "tf.hue", &rgb.g);
+        tf = new TTextField(this, "tf.green", &rgb.g);
+        gg = new TGauge(this, "gg.green", &rgb.g);
         break;
       case 5:
         sb = new TScrollBar(this, "sb.blue", &rgb.b);
-        tf = new TTextField(this, "tf.hue", &rgb.b);
+        tf = new TTextField(this, "tf.blue", &rgb.b);
+        gg = new TGauge(this, "gg.blue", &rgb.b);
         break;
     }
     if (i<3) {
@@ -153,6 +162,8 @@ TColorDialog::_init()
     }
     sb->setShape(x,y,w,h);
     tf->setShape(x+w+4,y,30,h);
+    if (gg)
+      gg->setShape(x+w+4+32,y-2,16,h+4);
     y+=h+d;
   }
 
