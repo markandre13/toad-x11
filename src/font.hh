@@ -57,6 +57,8 @@ class TFont:
       RENDER_X11,
       RENDER_FREETYPE
     };
+    static ERenderType default_rendertype;
+    static string default_font;
 //  private:
     string id;
 #ifdef __X11__
