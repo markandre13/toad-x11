@@ -69,12 +69,15 @@ class GRadioStateModel:
     };
     typedef vector<TBtnValue> TBtnValueVec;
     TBtnValueVec vec;
+    T memo;
     
   public:
     TRadioButtonBase * add(TRadioButtonBase *b, const T& v) {
       b->setModel(this);
       TRadioStateModel::add(b);
       vec.push_back(TBtnValue(b, v));
+      if (!getCurrent() && memo==v)
+        setCurrent(b);
       return b;
     }
     
@@ -84,16 +87,21 @@ class GRadioStateModel:
       e = vec.end();
       while(p!=e && (*p).value != v )
         ++p;
-      return p==e ? NULL : (*p).btn;
+      return p==e ? 0 : (*p).btn;
     }
   
     void setValue(const T& v) {
       TRadioButtonBase* btn = getButton(v);
       if (btn)
         setCurrent(btn);
+      else
+        memo = v;
     }
     
     const T& getValue() const {
+      if (!getCurrent)
+        return memo;
+    
       typename TBtnValueVec::const_iterator p, e;
       p = vec.begin();
       e = vec.end();
