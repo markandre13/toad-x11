@@ -249,6 +249,10 @@ class TFigureEditor:
     void selectionUp();
     void selectionDown();
     void applyAll();
+    
+    void selectionCut();
+    void selectionCopy();
+    void selectionPaste();
 
 #if 0
     void figure2Top(TFigure*);

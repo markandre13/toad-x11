@@ -1131,6 +1131,54 @@ TFigureEditor::stopOperation()
   state = STATE_NONE;
 }
 
+namespace {
+  typedef vector<TFigure*> TFigureVector;
+  TFigureVector clipboard;
+}
+
+void
+TFigureEditor::selectionCut()
+{
+  cerr << "cut selection, isn't implemented yet" << endl;
+}
+
+void
+TFigureEditor::selectionCopy()
+{
+  cerr << "copy selection" << endl;
+  for(TFigureVector::iterator p = clipboard.begin();
+      p != clipboard.end();
+      ++p)
+  {
+    delete *p;
+  }
+  clipboard.clear();
+
+  for(TFigureModel::iterator p = model->begin();
+      p != model->end();  
+      ++p)
+  {
+    if (selection.find(*p)!=selection.end()) {
+      clipboard.push_back( static_cast<TFigure*>( (*p)->clone() ) );
+    }
+  }
+}
+
+void
+TFigureEditor::selectionPaste()
+{
+  cerr << "paste selection" << endl;
+  clearSelection();
+  for(TFigureVector::iterator p = clipboard.begin();
+      p != clipboard.end();
+      ++p)
+  {
+    TFigure *f = static_cast<TFigure*>( (*p)->clone() );
+    selection.insert(f);
+    model->add(f);
+  }
+}
+
 void
 TFigureEditor::keyDown(TKey key, char *s, unsigned m)
 {
@@ -1147,10 +1195,27 @@ redo:
   switch(operation) {
     case OP_SELECT: {
       if (state!=STATE_EDIT) {
-        switch(key) {
-          case TK_DELETE:
-            deleteSelection();
-            break;
+        if (m & MK_CONTROL) {
+          switch(key) {
+            case 'x':
+            case 'X':
+              selectionCut();
+              break;
+            case 'c':
+            case 'C':
+              selectionCopy();
+              break;
+            case 'v':
+            case 'V':
+              selectionPaste();
+              break;
+          }
+        } else {
+          switch(key) {
+            case TK_DELETE:
+              deleteSelection();
+              break;
+          }
         }
         break;
       }
