@@ -24,12 +24,19 @@
  *
  */
 
-/*
- * There are some things to do for TSimpleTimer:
- * - synchronisation
- * - after StopTimer() it must be safe to call StartTimer which I suppose
- *   not being possible right now
- * - there's a midnight bug
+/**
+ * \file select.cc
+ *
+ *  \todo
+ *    \li 
+ *      synchronisation
+ *    \li
+ *      after StopTimer() it must be safe to call StartTimer which I suppose
+ *      not being possible right now
+ *    \li
+ *      there's a midnight bug
+ *    \li
+ *      remove the X11 specific parts and let TOAD register an TIOObserver
  */
 
 #include <toad/toadbase.hh>
