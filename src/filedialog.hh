@@ -21,8 +21,6 @@
 #ifndef _TOAD_FILEDIALOG_HH
 #define _TOAD_FILEDIALOG_HH
 
-#define FINAL_FILEDIALOG
-
 #include <set>
 #include <toad/dialog.hh>
 #include <toad/textmodel.hh>
@@ -68,12 +66,9 @@ class TFileDialog:
   public:
     TFileDialog(TWindow *parent, const string &title);
 
-    void setFilename(const string &s) {
-      filename = s;
-    }
-    const string& getFilename() const {
-      return filename;
-    }
+    void setFilename(const string &s);
+    string getFilename() const;
+
     unsigned getResult() const {
       return result;
     }

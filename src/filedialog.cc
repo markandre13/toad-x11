@@ -18,8 +18,6 @@
  * MA  02111-1307,  USA
  */
 
-// currently doing: the directory memory list
-
 #include <toad/filedialog.hh>
 
 #include <toad/toad.hh>
@@ -40,6 +38,10 @@
 #include <deque>
 
 // #include "filedialog.hh"
+
+#define FINAL_FILEDIALOG
+//#define RESOURCE(file) "file://resource/" file
+#define RESOURCE(file) "memory://toad/" file
 
 using namespace toad;
 
@@ -136,7 +138,7 @@ main(int argc, char **argv, char **envv)
   filedialog_mf();
   
   {
-    bmp.load("memory://toad/folder_red_open.png");
+    bmp.load(RESOURCE("folder_red_open.png"));
   
 //    TFileDialog dlg(0, "TFileDialog");
     TMyWindow wnd(0, "TFileDialog");
@@ -160,7 +162,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title):
   }
   
   if (previous_cwds.empty()) {
-    bmp.load("memory://toad/folder_red_open.png");
+    bmp.load(RESOURCE("folder_red_open.png"));
     previous_cwds.push_front(cwd);
   }
   first_chdir = true;
@@ -192,8 +194,19 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title):
   
   loadDirectory();
   
-  loadLayout("memory://toad/TFileDialog.atv");
-//  loadLayout("file://TFileDialog.atv");
+  loadLayout(RESOURCE("TFileDialog.atv"));
+}
+
+void
+TFileDialog::setFilename(const string &s)
+{
+  filename = s;
+}
+
+string
+TFileDialog::getFilename() const
+{
+  return cwd + "/" + filename;
 }
 
 void
@@ -281,7 +294,7 @@ TFileDialog::loadDirectory()
 void
 TFileDialog::jumpDirectory()
 {
-  cerr << "selected directory " << cb->getSelectionModel()->begin().getY() << endl;
+//  cerr << "selected directory " << cb->getSelectionModel()->begin().getY() << endl;
   cwd = previous_cwds[cb->getSelectionModel()->begin().getY()];
   loadDirectory();
 }
@@ -316,11 +329,11 @@ TFileDialog::fileSelected()
     lock=true;
 
     if (first_chdir) {
-cerr << "push current cwd" << endl;
+//cerr << "push current cwd" << endl;
       previous_cwds.push_front(cwd);
       first_chdir = false;
     } else {
-cerr << "set previous_cwds[0] to current directory" << endl;
+//cerr << "set previous_cwds[0] to current directory" << endl;
       previous_cwds[0]=cwd;
     }
     previous_cwds.sigChanged();
