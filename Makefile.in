@@ -1,6 +1,6 @@
 #
 # TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
-# Copyright (C) 1995-2004 by Mark-André Hopf <mhopf@mark13.de>
+# Copyright (C) 1995-2004 by Mark-André Hopf <mhopf@mark13.org>
 #
 # @configure_input@
 
@@ -43,22 +43,6 @@ install-doc:
 
 debian:
 	dpkg-buildpackage -b -rfakeroot
-
-changelog:
-	rcs2log -i 2 -u 'mark	Mark-André Hopf	mhopf@mark13.de' > Changelog
-	
-snapshot: changelog
-	date=`head -c 10 Changelog` && \
-	tar="toad-$${date}" && \
-	cvs -d $${HOME}/cvs export -r HEAD -d $$tar toad && \
-	cd $$tar && \
-	autoconf && \
-	cd .. && \
-	cp Changelog "toad-$${date}" && \
-	tar -cjf "$$tar.tar.bz2" $$tar && \
-	rm -rf $$tar && \
-	cp "$$tar.tar.bz2" ~/public_html/toad/download/snapshot/ && \
-	cp Changelog "$${HOME}/public_html/toad/Changelog-$$date.txt"
 
 clean:
 	cd src ; make clean
