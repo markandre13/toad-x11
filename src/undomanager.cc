@@ -158,6 +158,10 @@ TUndoManager::~TUndoManager()
 bool TUndoManager::undoing = false;
 bool TUndoManager::redoing = false;
 
+/**
+ * Iterate over all 'undomanagers' and find one which is a child of the
+ * specified TWindow.
+ */
 static TUndoManagerStore::iterator
 findUndoManager(TWindow *window)
 {
@@ -206,19 +210,43 @@ TUndoManager::registerModel(TWindow *window, TModel *model)
   }
   return true;
 }
- 
-/*static*/ void
+
+/**
+ * Unregister a model from the undo/redo management.
+ *
+ * Usually a view registers its models for undo/redo management which
+ * isn't always what you want. Eg. the row number field in a texteditor
+ * doesn't need undo/redo handling as the text is the data you're
+ * manipulating.
+ *
+ * Also note that some views create additional models so you should
+ * use the views getModel() method for unregistering a model:
+ *
+ * \code
+ * TBoundedRangeModel number;
+ * TTextField *txt = new TTextField(0, "text", &number);
+ * TUndoManager::unregisterModel(&number);         // failure
+ * TUndoManager::unregisterModel(txt->getModel()); // okay
+ * \endcode
+ *
+ * \param model
+ *   The model to be removed from the undo/redo management.
+ * \return
+ *   Returns 'false' in case the model wasn't registered.
+ */ 
+bool
 TUndoManager::unregisterModel(TModel *model)
 {
 #warning "TUndoManager must be informed to update it's actions"
 #warning "must remove model from model-undo-store also"
   DBM(cerr << "unregister model " << model << endl;)
-  TModelStore::iterator p = models.find(model);
-  if (p==models.end()) {
-    return;
+  TModelStore::iterator pms = models.find(model);
+  if (pms==models.end()) {
+    return false;
   }
-  p->second.clear(model);
-  models.erase(p);
+  pms->second.clear(model);
+  models.erase(pms);
+  return true;
 }
 
 // Model added too late to undo manager
@@ -936,6 +964,14 @@ TModelUndoStore::clearRedo() {
   }
 }  
 
+/**
+ * Clears the undo/redo stacks for this model and removes this model
+ * from all other TUndoManager::
+ *
+ * \param model
+ *   The TModelUndoStore's model, which isn't part of the TModelUndoStore
+ *   class and must therefore be given with this parameter.
+ */
 void
 TModelUndoStore::clear(TModel *model)
 {

@@ -54,7 +54,7 @@ class TUndoManager:
   
   public:
     static bool registerModel(TWindow*, TModel*);
-    static void unregisterModel(TModel*);
+    static bool unregisterModel(TModel*);
     static void unregisterModel(TWindow *, TModel*);
     static bool registerUndo(TModel*, TUndo*);
     
