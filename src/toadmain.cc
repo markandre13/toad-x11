@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <cstring>
+#include <fstream>
 
 #define _TOAD_PRIVATE
 
@@ -52,6 +53,37 @@ void* toad::top_address;
 
 extern void createTOADResource();
 
+namespace {
+
+string fontengine("x11");
+string fontname("arial,helvetica,sans-serif");
+
+void
+parseInitFile(const string &filename)
+{  
+  ifstream is(filename.c_str());
+  if (!is) 
+    return;
+  TATVParser in(&is);
+  while(in.parse()) {
+    switch(in.what) {
+      case ATV_VALUE:
+        if (in.attribute == "fontengine" && in.type.empty()) {
+          fontengine = in.value;
+          break;
+        } else
+        if (in.attribute == "font" && in.type.empty()) {
+          fontname = in.value;
+          break;
+        }
+      default:
+        cerr << "unexpected entry in " << filename << endl;
+    }
+  }
+}
+
+} // namespace
+
 /**
  * Initialize the TOAD library.
  *
@@ -68,6 +100,12 @@ void
 toad::initialize(int argc, char **&argv, char **envv)
 {
   bool layouteditor = false;
+
+  parseInitFile("/etc/toadrc");
+  
+  string ini = getenv("HOME");
+  ini+="/.toadrc";
+  parseInitFile(ini);
 
   for(int i=1; i<argc; i++) {
     if (strcmp(argv[i], "--toad-debug-memory")==0) {
@@ -98,20 +136,24 @@ toad::initialize(int argc, char **&argv, char **envv)
         cerr << "error: missing option for argument " << argv[i] << endl;
         exit(1);
       }
-      ++i;
-      if (strcmp(argv[i], "x11")==0) {
-        TFont::default_rendertype = TFont::RENDER_X11;
-      } else
-      if (strcmp(argv[i], "freetype")==0) {
-        TFont::default_rendertype = TFont::RENDER_FREETYPE;
-      } else {
-        cerr << "error: unknown font engine, try x11 or freetype" << endl;
-        exit(1);
-      }
+      fontengine = argv[i++];
     } else {
       cerr << "unknown option " << argv[i] << endl;
     }
   }
+  
+  if (fontengine == "x11") {
+      TFont::default_rendertype = TFont::RENDER_X11;
+  } else
+  if (fontengine == "freetype") {
+    TFont::default_rendertype = TFont::RENDER_FREETYPE;
+  } else {
+    cerr << "error: unknown font engine '" << fontengine << "', try x11 or freetype" << endl;
+    exit(1);
+  }
+  
+  TFont::default_font = fontname;
+  
   toad::argv = argv;
   toad::argc = argc;
   toad::envv = envv;
