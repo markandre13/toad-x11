@@ -591,6 +591,7 @@ struct TEHRule:
   public TElement
 {
   void render(TPen &pen, TState &s) {
+    s.applyAttributes(pen);
     s.newLine();
     int l = s.Left();
     int r = s.Right();
@@ -633,12 +634,16 @@ struct TEListItem:
     switch(s.itemdepth) {
       case 0:
       case 1:
-        if (s.output)
+        if (s.output) {
+          s.applyAttributes(pen);
           pen.fillCircle(s.Left()-8, s.Y()+pen.getHeight()/2-3, 6, 6);
+        }
         break;        
       default:
-        if (s.output)
+        if (s.output) {
+          s.applyAttributes(pen);
           pen.fillCircle(s.Left()-6, s.Y()+pen.getHeight()/2-2, 4, 4);
+        }
     }
     s.addElement(0,10);
   }
