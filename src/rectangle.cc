@@ -20,7 +20,7 @@
 
 #include <toad/types.hh>
 
-namespace toad {
+using namespace toad;
 
 void TRectangle::set(int x, int y, int w, int h)
 {
@@ -55,5 +55,3 @@ void TRectangle::set(const TPoint &p1, const TPoint &p2)
   w++;
   h++;    
 }
-
-} // namespace toad
