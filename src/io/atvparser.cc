@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -90,7 +90,7 @@ TATVParser::push()
   stack.push(e);
 }
 
-void
+bool
 TATVParser::pop()
 {
   if (!stack.empty()) {
@@ -98,7 +98,9 @@ TATVParser::pop()
     position    = stack.top().position;
     istate      = stack.top().istate;
     stack.pop();
+    return true;
   }
+  return false;
 }
 
 void
@@ -163,43 +165,43 @@ bool
 TATVParser::parse()
 {  
   int t;
-  int state = 0;
 
-  string unknown;
-
-  if (running) {
+  if (running && interpreter) {
     err << "bool TATVParser::parse() recursion";
     return false;
+  }
+  if (!running) {
+    state = 0;
   }
   
   running = true;
 
-  while( running && (t=yylex()) != EOF ) {
-    if (t==TKN_ERROR) {
-      err << " in line " << line << ':' << endl
-          << line1 << line2 << endl;
-      for(unsigned i=0; i<line1.size(); ++i)
-        err << ' ';
-      err << "^ around here" << endl;
-      return false;
-    }
+  while( running ) {
+    if (state < 10 ) {
+      t = yylex();
+      if (t==TKN_ERROR) {
+        err << " in line " << line << ':' << endl
+            << line1 << line2 << endl;
+        for(unsigned i=0; i<line1.size(); ++i)
+          err << ' ';
+        err << "^ around here" << endl;
+        return false;
+      }
 #if 0
-    switch(t) {
-      case TKN_STRING:
-        printf("%i ['%s']\n", state, yytext.c_str() );
-        break;
-      default:
-        printf("%i ['%c']\n", state, t);
-    }
+      switch(t) {
+        case TKN_STRING:
+          printf("%i ['%s']\n", state, yytext.c_str() );
+          break;
+        default:
+          printf("%i ['%c']\n", state, t);
+      }
 #endif
+    }
     switch(state) {
       case 0:
         switch(t) {
           case TKN_STRING:
             unknown = yytext;
-            attribute.clear();
-            type.clear();
-            value.clear();
             state = 1;
             break;
           case '{':
@@ -209,11 +211,22 @@ TATVParser::parse()
             if (!startGroup()) {
               return false;
             }
+            if (!interpreter)
+              return true;
             break;
           case '}':
+            state = 0;
             if (!endGroup()) {
               return false;
             }
+            break;
+          case EOF:
+            attribute.clear();
+            type.clear();
+            value.clear();
+            what = ATV_FINISHED;
+            if (!interpreter)
+              return false;
             break;
           default:
             unexpectedToken(t);
@@ -221,6 +234,9 @@ TATVParser::parse()
         }
         break;
       case 1: // string ?
+        attribute.clear();
+        type.clear();
+        value.clear();
         switch(t) {
           case '=':
             attribute = unknown;
@@ -228,20 +244,17 @@ TATVParser::parse()
             break;
           case '{':
             type = unknown;
+            state = 0;
             if (!startGroup()) {
               return false;
             }
-            state = 0;
             break;
           case '}':
             value = unknown;
+            state = 10;
             if (!single()) {
               return false;
             }
-            if (!endGroup()) {
-              return false;
-            }
-            state = 0;
             break;
           case TKN_STRING:
             value = unknown;
@@ -249,9 +262,17 @@ TATVParser::parse()
               return false;
             }
             unknown = yytext;
-            attribute.clear();
-            type.clear();
-            value.clear();
+            if (!interpreter)
+              return true;
+            break;
+          case EOF:
+            value = unknown;
+            state = 11;
+            if (!single()) {
+              return false;
+            }
+            if (!interpreter)
+              return true;
             break;
           default:
             unexpectedToken(t);
@@ -265,10 +286,10 @@ TATVParser::parse()
             state = 3;
             break;
           case '{':
+            state = 0;
             if (!startGroup()) {
               return false;
             }
-            state = 0;
             break;
           default:
             unexpectedToken(t);
@@ -279,41 +300,68 @@ TATVParser::parse()
         switch(t) {
           case '{': // attribute '=' string '{'
             type = unknown;
+            state = 0;
             if (!startGroup()) {
               return false;
             }
-            state = 0;
             break;
           case TKN_STRING:
             value = unknown;
+            state = 1;
+            unknown = yytext;
             if (!single()) {
               return false;
             }
-            unknown = yytext;
-            attribute.clear();
-            type.clear();
-            value.clear();
-            state = 1;
+            if (!interpreter) {
+//cout << __FILE__ << ":" << __LINE__ << endl;
+              return true;
+            }
             break;
           case '}':
             value = unknown;
+            state=10;
             if (!single()) {
               return false;
             }
-            if (!endGroup()) {
+            break;
+          case EOF:
+            value = unknown;
+            state = 0;
+            if (!single()) {
               return false;
             }
-            state = 0;
             break;
           default:
             unexpectedToken(t);
             return false;
         }
         break;
+      case 10:
+        what = ATV_FINISHED;
+        attribute.clear();
+        type.clear();
+        value.clear();
+        state=0;
+        if (!endGroup()) {
+          return false;
+        }
+        break;
+      case 11:
+        what = ATV_FINISHED;
+        attribute.clear();
+        type.clear();
+        value.clear();
+        state=0;
+        return false;
     }
+    if (t==EOF)
+      break;
+    if (!interpreter && (state==0 || state==10))
+      return true;
   }
   if (t==EOF && state!=0) {
       err << "incomplete atv triple";
+//err << ", state=" << state;
       err << " in line " << line << ':' << endl
           << line1 << line2 << endl;
       for(unsigned i=0; i<line1.size(); ++i)
@@ -451,8 +499,8 @@ TATVParser::single()
       cerr << "  ";
     cerr << "atv=(\""<< attribute << "\", \"" << type << "\", \"" << value << "\")" << endl;
   }
+  what = ATV_VALUE;
   if (interpreter) {
-    what = ATV_VALUE;
     if (!interpreter->interpret(*this)) {
       if (debug) {
         cerr << "  failed (value; "
@@ -474,6 +522,8 @@ TATVParser::single()
   return true;
 }
 
+//#error "write test cases for interpreter = 0!!!"
+
 bool
 TATVParser::startGroup()
 {
@@ -485,9 +535,9 @@ TATVParser::startGroup()
   }
   ++position;
   push();
+  what = ATV_GROUP;
   if (interpreter) {
     TATVInterpreter *oldintp = interpreter;
-    what = ATV_GROUP;
     if (!interpreter->interpret(*this)) {
       if (debug)
         cerr << "  failed (group; "
@@ -500,7 +550,7 @@ TATVParser::startGroup()
     }
     if (debug)
         cerr << "parsed group" << endl;
-    if (oldintp != interpreter) {
+    if (oldintp != interpreter && interpreter) {
       what = ATV_START;
       value.clear();
       interpreter->interpret(*this);
@@ -522,16 +572,18 @@ TATVParser::endGroup()
       cout << "  ";
     cout << "}" << endl;
   }
+  what = ATV_FINISHED;
+  attribute.clear();
+  type.clear();
+  value.clear();
   if (interpreter) {
-    attribute.clear();
-    type.clear();
-    value.clear();
-    what = ATV_FINISHED;
     if (!interpreter->interpret(*this)) {
       semanticError();
       return false;
     }
+    if (!pop()) {
+      return false;
+    }
   }
-  pop();
   return true;
 }

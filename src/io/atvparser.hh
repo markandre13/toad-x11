@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,10 @@ class TATVParser
     
     /**
      * Start parsing the input stream.
+     *
+     * When an interpreter is set, the interpreter's 'interpret' method
+     * will be called. When no interpret is set, which is the default,
+     * parse will return with the first ATV triple is has found.
      */
     bool parse();
     
@@ -106,6 +110,9 @@ class TATVParser
     
     /**
      * To set another interpreter, ie. after 'what==ATV_GROUP'.
+     *
+     * When no interpreter is set, which is the default 'parse' will 
+     * return after when an ATV triple is found.
      */
     void setInterpreter(TATVInterpreter *i) { interpreter = i; }
     TATVInterpreter * getInterpreter() const { return interpreter; }
@@ -136,6 +143,9 @@ class TATVParser
     bool fail() const { return err.str().empty(); }
     operator bool() const { return err.str().empty(); }
     bool operator!() const { return !err.str().empty(); }
+
+    unsigned stacksize() const { return stack.size(); }
+    void putback(char c) { in->putback(c); }
     
   protected:
     bool single();
@@ -144,7 +154,7 @@ class TATVParser
     
     TATVInterpreter * interpreter;
     void push();
-    void pop();
+    bool pop();
 
     struct TStackElement
     {
@@ -169,6 +179,8 @@ class TATVParser
 
     /* last string we got but don't know what it is */
     std::string unknown;
+    
+    int state;
     
     /* nesting */
     unsigned depth;
