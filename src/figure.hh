@@ -133,7 +133,7 @@ class TFigure:
     //--------------------------------------
     static double distance2Line(int x, int y, int x1, int y1, int x2, int y2);
 
-    static const double OUT_OF_RANGE = INFINITY;
+    static const double OUT_OF_RANGE = HUGE_VAL;
     static const double RANGE = 5.0;
     static const double INSIDE = 0.0;
 
