@@ -1908,6 +1908,8 @@ THTMLView::adjustPane()
   if (!parsed)
     return;
 
+  invalidateWindow();
+
   stage1 = true;
 
   if (width!=getWidth()) {
