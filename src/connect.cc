@@ -451,6 +451,4 @@ bool TSignal::delayedTrigger()
 
 #endif
 
-const toad::TNone *NONE=NULL;
-
 } // namespace toad
