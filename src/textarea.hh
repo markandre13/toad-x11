@@ -88,9 +88,9 @@ class TTextArea:
     {
       vscroll = 0;
       init();
-#ifndef OLDLIBSTD
+//#ifndef OLDLIBSTD
       setModel(m);
-#endif
+//#endif
     }
     template <class T> 
     TTextArea(TWindow *p, const string &t, T * m):
@@ -98,9 +98,9 @@ class TTextArea:
     {
       vscroll = 0;
       init();
-#ifdef OLDLIBSTD
+//#ifdef OLDLIBSTD
       setModel(m);
-#endif
+//#endif
     }
     ~TTextArea();
 
