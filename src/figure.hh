@@ -48,19 +48,6 @@ class TFigure:
       SELECT,
       EDIT
     };
-#if 0    
-    void setLineColor(const TRGB &color) {
-      line_color = color;
-    }
-    void setFillColor(const TRGB &color) {
-      fill_color = color;
-      filled = true;
-    }
-    void unsetFillColor() {
-      filled = false;
-    }
-    virtual void setFont(const string&);
-#endif
     virtual void setFromPreferences(TFigurePreferences*);
     
     //! Called to paint the gadget.
@@ -81,9 +68,7 @@ class TFigure:
      *    paint a marker with the default implementation of 'paintSelection'
      */
     virtual void getShape(TRectangle*) = 0;
-#if 0
-  protected:
-#endif  
+
   public:    
     /**
      * 'true' when TFigureEditor is allowed to delete this object.
@@ -167,6 +152,18 @@ class TColoredFigure:
 
   public:
     virtual void setFromPreferences(TFigurePreferences*);
+
+    void setLineColor(const TRGB &color) {
+      line_color = color;
+    }
+    void setFillColor(const TRGB &color) {
+      fill_color = color;
+      filled = true;
+    }
+    void unsetFillColor() {
+      filled = false;
+    }
+//    virtual void setFont(const string&);
 };
 
 
