@@ -176,13 +176,13 @@ TPen::_init()
   cmode = TColor::NEAREST;
   // cmode = TColor::DITHER28;
   region = 0;
+  using_bitmap = false;
   
   // make black the default color (needed by X11R5 on Sun)
   o_color.set(0,0,1);   // cheat SetColor to do it!
   setColor(0,0,0);
   
   bDeleteRegion = false;
-  using_bitmap = false;
 #ifdef HAVE_LIBXFT
   xftdraw = 0;
 #endif
