@@ -100,17 +100,17 @@ TScrollPane::doLayout()
 
   if (pane.w > visible.w || pane.x < 0) {
     need_hscroll = true;  
-    visible.h -= TScrollBar::getFixedSize();
+    visible.h -= TScrollBar::getFixedSize()-1;
   }
    
   if (pane.h > visible.h || pane.y < 0) {
     need_vscroll = true;  
-    visible.w -= TScrollBar::getFixedSize();
+    visible.w -= TScrollBar::getFixedSize()-1;
   }
    
   if (!need_hscroll && pane.w > visible.w) {
     need_hscroll = true;
-    visible.h -= TScrollBar::getFixedSize();
+    visible.h -= TScrollBar::getFixedSize()-1;
   }
   
   DBM(cout
@@ -128,9 +128,9 @@ TScrollPane::doLayout()
     vscroll->bNoFocus=true;
     vscroll->setShape(
       visible.x+visible.w,
-      visible.y,
+      visible.y -1,
       TScrollBar::getFixedSize(),
-      visible.h);
+      visible.h +2);
     vscroll->setExtent(visible.h);
     vscroll->setMinimum(pane.y);
     if (pane.y+pane.h < visible.y+visible.h)
@@ -154,9 +154,9 @@ TScrollPane::doLayout()
     }
     hscroll->bNoFocus=true;
     hscroll->setShape(
-      visible.x,
+      visible.x -1,
       visible.y+visible.h,
-      visible.w,
+      visible.w+2,
       TScrollBar::getFixedSize());
     hscroll->setExtent(visible.w);
     hscroll->setMinimum(pane.x);
