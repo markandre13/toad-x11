@@ -3,6 +3,7 @@
                          the "hacking again" release
 
         Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+                                 and others
                     
 CONTENTS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,6 +67,8 @@ CONTENTS
   - X Window System, Version 11, Release 6 or later
   - zlib 1.1.1
   - libpng 1.0.1
+  - fontconfig 2.2.0 or later
+  - Xutf8 0.1.1-1 or later
 
   The TOAD C++ GUI Library has been tested on the following platforms:
   - Debian GNU/Linux 3.0 (current)
@@ -97,7 +100,12 @@ CONTENTS
   Note, these instructions are somewhat out-of-date. There is no longer
   a script named `build' available.
 
-  - Run `build', type [1] and [0]
+  - run 
+      ./configure && make
+    or when your C++ compiler has another name
+    set the CXX environment variable. Ie.
+      CXX=g++-3.0 ./configure && make
+    on Debian GNU/Linux 3.0 (aka Woody)
   - Copy or link `toad/conf/MakefilePrg' to `~/.TOADMakefile' (or something
     alike)
   - Copy the files from `toad/examples/skeletons/menubar/' to a new directory
