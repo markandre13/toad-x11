@@ -62,8 +62,8 @@ class TUndoManager:
     static void disableUndoRegistration();
     static bool isUndoRegistrationEnabled();
     
-    static void beginUndoGrouping();
-    static void endUndoGrouping();
+    static void beginUndoGrouping(TModel *model = 0);
+    static void endUndoGrouping(TModel *model = 0);
     static unsigned groupingLevel();
     
     bool canUndo() const;

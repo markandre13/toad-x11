@@ -28,25 +28,31 @@ using namespace toad;
 /**
  * \class toad::TUndoManager
  *
- * An object of this class manages an undo/redo history and adds two 
- * TActions to it's parent to control it.
+ * An object of this class manages an undo/redo history for its parent
+ * window and also adds two TActions to the parent which can be found
+ * by eg. a TMenuBar to allow the user to invoke the undo and redo commands.
  *
- * This class is an interactor so it gets deleted together with it's
- * parent.
+ * Views must register their models for undo/redo with the static function
+ * TUndoManager::registerModel(TWindow*, TModel*) and models must register
+ * their undo events with the static function registerUndo(TModel*, TUndo*).
  *
- * You must add the TUndoManager before any views which want to register
- * themselfes and their models with TUndoManger::registerModel, otherwise
- * registerModel will fail and return 'false'.
+ * NOTE: You must add the TUndoManager before any views which want to
+ * register themselfes and their models with TUndoManger::registerModel,
+ * otherwise registerModel will fail and return 'false'.
+ *
+ * (TUndoManager is implemented as an interactor so it gets deleted along
+ * with it's parent.)
  *
  * \todo
  *   \li document how to use the undomanager (reference and manual)
+ *   \li nesting of groups when using spaning undo groups
  *   \li static method to disable undo/redo for a model when it's
  *       registered
  *   \li static methods which allow a window to call undo/redo
  *   \li static methods which allow a model to call undo/redo
  *   \li handle overflow of TUndo::serial counter
  *   \li limit number of stored undo event to a given maximum
- *   \li grouping of undo events
+ *       (to avoid huge memory consumption)
  */
 
 // How this stuff is organized:
@@ -335,11 +341,42 @@ TUndoGroupVector groupstack;
 TUndoGroupVector undogroups;
 TUndoGroupVector redogroups;
 
+TModel *span_undogroup = 0;
+
 } // namespace
 
-/*static*/ void
-TUndoManager::beginUndoGrouping()
+
+/**
+ * Start to group upcoming undo events.
+ *
+ * The optional 'model' parameter can be used to span the group
+ * over a longer period of user interaction, eg. TTextModel opens
+ * a undo group but only closes and opens a new group when starting
+ * a new line, removing after insert and vise versa, etc..
+ * When another model wants to register undo events or open a new
+ * group, the model parameter will be different and the previous group
+ * is closed before opening the new one.
+ *
+ * Please see the code for TTextModel for an example.
+ *
+ * \sa endUndoGrouping
+ */
+void
+TUndoManager::beginUndoGrouping(TModel *model)
 {
+  if (span_undogroup) {
+//cout << "spaning undogroup detected" << endl;
+    if (model!=span_undogroup) {
+//cout << "  for different model, closing old group" << endl;
+      endUndoGrouping();
+    } else {
+//cout << "  already open, don't open new group" << endl;
+      return;
+    }
+  }
+//if (model) cout << "spaning new undo group" << endl;
+  span_undogroup = model;
+
   DBM(cerr << __PRETTY_FUNCTION__ << endl;)
   TUndoGroup *g = new TUndoGroup();
   if (groupstack.empty()) {
@@ -357,10 +394,24 @@ TUndoManager::beginUndoGrouping()
   g->start = TUndo::counter;
 }
 
-/*static*/ void 
-TUndoManager::endUndoGrouping()
+/**
+ * Close an undo group which was opened with beginUndoGrouping.
+ *
+ * \sa beginUndoGrouping
+ */
+void 
+TUndoManager::endUndoGrouping(TModel *model)
 {
+  // don't do anything, in case the group was already closed
+  if (model && span_undogroup != model) {
+//    cout << "ignoring request to close already closed undo group" << endl;
+    return;
+  }
+
   DBM(cerr << __PRETTY_FUNCTION__ << endl;)
+  
+  span_undogroup = 0;
+  
   if (groupstack.empty()) {
     cerr << "TUndoManager::endUndoGrouping called but no group to be closed" << endl;
     // printStackTrace();
@@ -385,6 +436,11 @@ TUndoManager::groupingLevel()
 /*static*/ bool
 TUndoManager::registerUndo(TModel *model, TUndo *undo)
 {
+  if (span_undogroup && span_undogroup != model) {
+//    cout << "register undo event outside the currently spaned undo group" << endl;
+    endUndoGrouping();
+  }
+
   if (!undoregistration) {
     delete undo;
     return false;
