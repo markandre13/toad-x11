@@ -51,8 +51,89 @@
 #ifndef FC_WEIGHT_BOOK                       
 #define FC_WEIGHT_BOOK 75            
 #endif
+
 #ifndef FC_DUAL
 #define FC_DUAL 90
+#endif
+
+#ifndef FC_WEIGHT_THIN
+#define FC_WEIGHT_THIN 0
+#endif
+
+#ifndef FC_WEIGHT_EXTRALIGHT
+#define FC_WEIGHT_EXTRALIGHT 40
+#endif
+
+#ifndef FC_WEIGHT_ULTRALIGHT
+#define FC_WEIGHT_ULTRALIGHT FC_WEIGHT_EXTRALIGHT
+#endif
+
+#ifndef FC_WEIGHT_REGULAR
+#define FC_WEIGHT_REGULAR 80
+#endif
+
+#ifndef FC_WEIGHT_NORMAL
+#define FC_WEIGHT_NORMAL FC_WEIGHT_REGULAR
+#endif
+
+#ifndef FC_WEIGHT_SEMIBOLD
+#define FC_WEIGHT_SEMIBOLD FC_WEIGHT_DEMIBOLD
+#endif
+
+#ifndef FC_WEIGHT_EXTRABOLD
+#define FC_WEIGHT_EXTRABOLD 205
+#endif
+
+#ifndef FC_WEIGHT_ULTRABOLD
+#define FC_WEIGHT_ULTRABOLD FC_WEIGHT_EXTRABOLD
+#endif
+
+#ifndef FC_WEIGHT_HEAVY
+#define FC_WEIGHT_HEAVY FC_WEIGHT_BLACK
+#endif
+
+#ifndef FC_WIDTH_CONDENSED
+#define FC_WIDTH_CONDENSED 75
+#endif
+
+#ifndef FC_WIDTH_EXPANDED
+#define FC_WIDTH_EXPANDED 125
+#endif
+
+#ifndef FC_WIDTH_NORMAL
+#define FC_WIDTH_NORMAL 100
+#endif
+
+#ifndef FC_WIDTH_SEMICONDENSED
+#define FC_WIDTH_SEMICONDENSED 87
+#endif
+
+#ifndef FC_WIDTH_EXTRACONDENSED
+#define FC_WIDTH_EXTRACONDENSED 63
+#endif
+
+#ifndef FC_WIDTH_ULTRACONDENSED
+#define FC_WIDTH_ULTRACONDENSED 50
+#endif
+
+#ifndef FC_WIDTH_SEMICONDENSED
+#define FC_WIDTH_SEMICONDENSED 87
+#endif
+
+#ifndef FC_WIDTH_SEMIEXPANDED
+#define FC_WIDTH_SEMIEXPANDED 113
+#endif
+
+#ifndef FC_WIDTH_EXTRAEXPANDED
+#define FC_WIDTH_EXTRAEXPANDED 150
+#endif
+
+#ifndef FC_WIDTH_ULTRAEXPANDED
+#define FC_WIDTH_ULTRAEXPANDED 200
+#endif
+
+#ifndef FC_WIDTH
+#define FC_WIDTH "width"
 #endif
 
 using namespace toad;

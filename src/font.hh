@@ -28,12 +28,6 @@
 #include <toad/pointer.hh>
 #include <fontconfig/fontconfig.h>
 
-#if ( FC_VERSION < 20200 )
-  #warning "Fontconfig 2.2.0 or higher, ie. from the CVS at freedesktop.org, is required."
-#endif
-
-// #include <toad/tablemodels.hh>
-
 #ifdef HAVE_LIBXFT    
 typedef struct _XftFont XftFont;
 #endif
