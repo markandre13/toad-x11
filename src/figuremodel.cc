@@ -348,7 +348,7 @@ TFigureModel::ungroup(TFigureSet &grouped, TFigureSet *ungrouped)
         p = storage.begin() + pi;
 
         storage.insert(p, group->gadgets.storage.begin(), group->gadgets.storage.end());
-        p+=group->gadgets.storage.size()-1;
+        p = storage.begin() + pi + group->gadgets.storage.size()-1;
         memo.insert(group->gadgets.begin(), group->gadgets.end());
         group->gadgets.erase(group->gadgets.begin(),group->gadgets.end());
         delete group;
