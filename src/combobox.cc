@@ -75,6 +75,15 @@ TComboBox::paint()
     pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
     return;
   }
+#if 1
+  // checks which should already be handled in TTable...
+  if (table->getRenderer()->getRows() <= table->getLastSelectionRow()) {
+    cerr << "TComboBox '"<<getTitle()<<"': tables selection model was out of renderer range" << endl;
+    pen.setColor(128,64,64);
+    pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
+    return;
+  }
+#endif
   pen.translate(2, 2);
   table->getRenderer()->renderItem(
     pen,
@@ -185,6 +194,18 @@ TComboBox::selected()
   btn->setDown(false);
   invalidateWindow();
   sigSelection();
+}
+
+void
+TComboBox::_rendererChanged()
+{
+//  cerr << "TComboBox '"<<getTitle()<<"': the tables renderer triggered sigChanged" << endl;
+}
+
+void
+TComboBox::_selectionChanged()
+{
+//  cerr << "TComboBox '"<<getTitle()<<"': the tables selection model triggered sigChanged()" << endl;
 }
 
 //----------------

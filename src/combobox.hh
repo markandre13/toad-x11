@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,16 +31,30 @@ class TComboBox:
     typedef TWindow super;
   public:
     TComboBox(TWindow * parent, const string &title);
+    ~TComboBox() {
+      if (table->getRenderer())
+        disconnect(table->getRenderer()->sigChanged, this);
+      if (table->getSelectionModel())
+        disconnect(table->getSelectionModel()->sigChanged, this);
+    }
     
     void setRenderer(TAbstractTableCellRenderer *r) {
+      if (table->getRenderer())
+        disconnect(table->getRenderer()->sigChanged, this);
       table->setRenderer(r);
+      if (r)
+        connect(r->sigChanged, this, &TComboBox::_rendererChanged);
     }
     TAbstractTableCellRenderer* getRenderer() const { 
       return table->getRenderer(); 
     }
 
     void setSelectionModel(TAbstractTableSelectionModel *m) {
+      if (table->getSelectionModel())
+        disconnect(table->getSelectionModel()->sigChanged, this);
       table->setSelectionModel(m);
+      if (m)
+        connect(m->sigChanged, this, &TComboBox::_selectionChanged);
     }
     TAbstractTableSelectionModel* getSelectionModel() const {
       return table->getSelectionModel();
@@ -65,6 +79,9 @@ class TComboBox:
     void keyDown(TKey, char*, unsigned);
     void button();
     void selected();
+
+    void _rendererChanged();
+    void _selectionChanged();
 
     class TComboButton;
     TComboButton *btn;
