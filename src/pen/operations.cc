@@ -590,12 +590,13 @@ TPen::vdrawCircle(int x, int y, int w, int h) const
     // hmm, seem my X server ignores w,h>=800...
     XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, 0,360*64);
   } else {
-    int m = pow(max(w, h), 0.25);
+    double dw, dh;
+    mat->map(w,h, &dw, &dh);
+    unsigned long m = pow(max(dw, dh), 0.25);
     ++m;
     if (m<3) m = 3;
-    if (m>16) m = 15;
-  
-    int n = ( ((PIV2<<m) >> 16)+1 )*4;
+    if (m>14) m = 14; // maximum will be 102948 points
+    unsigned long n = ( ((PIV2<<m) >> 16)+1 )*4;
     XPoint pts[n];
     XPoint *p = pts;
   
