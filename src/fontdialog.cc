@@ -39,6 +39,29 @@
 
 using namespace toad;
 
+// TrueType font
+// supported since XFree86 4.x
+// - copy 'em to /usr/X11R6/lib/X11/fonts/TrueType/
+// - run 'ttmkfdir > fonts.scale' inside this directory
+// - add the module "xtt" or "freetype" to your XF86Config file
+//   (the later is faster but seems to fail for 180°, while the
+//   first seems to fail around 90° and 270°)
+
+// antialiased fonts
+// - xterm -fa 'Andale Mono' -fs 14
+// - env QT_XFT=true konqueror
+
+// http://fontconfig.org/
+
+/*
+ * X11 provides 2d transformations for text
+ *
+ * + : plus
+ * ~ : minus
+ *                  / a b 0 \
+ *  [ a b c d ] <-> | c d 0 |
+ *                  \ 0 0 1 /
+ */
 string
 d2s(double d)
 {
@@ -197,9 +220,6 @@ class TFontDialog:
     TTable *tfont;
     TTable *tstyle;
     TTable *tsize;
-    
-    // the last selected font
-    TFont font;
     
     TFontFamilyMap ff;
     TFontStyleMap fs;
@@ -389,7 +409,7 @@ TX11FontName::isScaleable() const
 }
 
 TFontDialog::TFontDialog(TWindow *parent, const string &title):
-  TDialog(parent, title), font(TFont::SANS, TFont::PLAIN, 12)
+  TDialog(parent, title)
 {
   /*
    * set a few default values
@@ -623,9 +643,6 @@ TFontDialog::updateStyle()
     fs.lock();
     fs.clear();
     for(int i=0; i<count; ++i) {
-      if (i==0) {
-        font.setFont(fl[0]);
-      }
       // cerr << fl[i] << endl;
       
       TX11FontName xfn;
@@ -729,7 +746,7 @@ TFontDialog::updateFont()
     xfn.points = size + "0";
     xfn.hdpi = xfn.vdpi = dpi;
   }
- 
+#if 0 
   #warning "encoding isn't selected" 
 //  cerr << "mask: '" << xfn.getXLFD() << "'\n";
   int count;
@@ -741,6 +758,7 @@ TFontDialog::updateFont()
 //    cerr << fl[i] << endl;
   }
   XFreeFontNames(fl);
+#endif
   invalidateWindow();
 }
 
@@ -748,12 +766,98 @@ void
 TFontDialog::paint()
 {
   TPen pen(this);
+  pen.rotate(15);
   
+  int x, y;
+  x = 8; y=160;
   string text("abcxyz ABCXYZ 123 `'´!?${}. áäæçëß ÂÄÆÇË");
 
+  const TFontFamily &f(ff.getElementAt(0, tfont->getSelectionModel()->begin().getY()));
+  const TFontStyle &s(fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY()));
+
   if (rendertype!=RENDER_FREETYPE) {
+    TX11FontName xfn;
+    xfn.setWildcards();
+    xfn.set(f);
+    xfn.set(s);
+    if (sizetype==SIZE_PIXEL) {
+      if(!pen.mat) {
+        xfn.pixels = size;
+      } else {
+        double d = atof(size.c_str());
+        string s;
+        s = "[";
+        s += d2s(pen.mat->a11 * d);
+        s += d2s(pen.mat->a12 * d);
+        s += d2s(pen.mat->a21 * d);
+        s += d2s(pen.mat->a22 * d);
+        s += "]";
+        xfn.pixels = s;
+      }
+    } else {
+      if (!pen.mat) {
+        xfn.points = size + "0";
+      } else {
+        double d = atof(size.c_str());
+        string s;
+        s = "[";
+        s += d2s(pen.mat->a11 * d);
+        s += d2s(pen.mat->a12 * d);
+        s += d2s(pen.mat->a21 * d);
+        s += d2s(pen.mat->a22 * d);
+        s += "]";
+        xfn.points = s;
+      }
+      xfn.hdpi = xfn.vdpi = dpi;
+    }
+
+    cerr << "paint X11 fontmask: " << xfn.getXLFD() << endl;
+
+    TFont font;
+    int count;
+    char **fl;
+    
+    fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
+//    cerr << "paint X11 fontmask: " << xfn.getXLFD() << endl;
+    for(int i=0; i<count; ++i) {
+        if (i==0)
+          font.setFont(fl[i]);
+//      cerr << fl[i] << endl;
+    }
+    XFreeFontNames(fl);
     pen.setFont(&font);
-    pen.drawString(8,160,text);
+    
+    if (!pen.mat) {
+      pen.drawString(x, y, text);
+    } else {
+      if (sizetype==SIZE_PIXEL) {
+        xfn.pixels = size;
+      } else {
+        xfn.points = size + "0";
+      }
+      TFont font_normal;
+      fl = XListFonts(x11display, xfn.getXLFD().c_str(), 8192, &count);
+//      cerr << "paint X11 fontmask: " << xfn.getXLFD() << endl;
+      for(int i=0; i<count; ++i) {
+          if (i==0)
+            font_normal.setFont(fl[i]);
+//        cerr << fl[i] << endl;
+      }
+      XFreeFontNames(fl);
+      
+      y-=font.getAscent();
+      y+=font_normal.getAscent();
+
+      string::iterator p(text.begin()), e(text.end());
+      while(p!=e) {
+        char buffer[2];
+        buffer[0]=*p;
+        buffer[1]=0;
+        pen.drawString(x,y, buffer);
+        x+=font_normal.getTextWidth(buffer);
+        ++p;
+      }
+    }
   } else {
     cerr << "render freetype" << endl;
 
@@ -764,15 +868,6 @@ TFontDialog::paint()
       return;
     }
     XftDrawSetClip(xftdraw, getUpdateRegion()->x11region);
-
-
-    const TFontFamily &f(
-      ff.getElementAt(0, tfont->getSelectionModel()->begin().getY())
-    );
-  
-    const TFontStyle &s(
-      fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY())
-    );
     
     XftFont *font;
     XftPattern *pattern = XftPatternCreate();
@@ -797,7 +892,7 @@ TFontDialog::paint()
       XftPatternAddDouble(pattern, XFT_SIZE, s);
       XftPatternAddDouble(pattern, XFT_DPI, d);
     }
-    
+
     const TFontStyle &style(
       fs.getElementAt(0, tstyle->getSelectionModel()->begin().getY())
     );
@@ -812,8 +907,7 @@ TFontDialog::paint()
     if (font) {
       XGlyphInfo gi;
       XftTextExtents8(x11display, font, (XftChar8*)text.c_str(), text.size(), &gi);
-      int x, y;
-      x = 8; y=160+font->ascent;
+       y+=font->ascent;
       if (pen.mat)
         pen.mat->map(x, y, &x, &y);
       XftColor color;
@@ -832,279 +926,3 @@ TFontDialog::paint()
 
   }
 }
-
-#if 0
-void
-TFontDialog::paint()
-{
-  TPen pen(this);
-  TFont *fn;
-  
-}  
-#if 0
-  int y = 0;
-  const int s = 12;
-
-  static const char *text = "I'm not okay, you're not okay. But hey, that's okay.";
-
-  fn = new TFont(TFont::SANS, TFont::PLAIN, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::SANS, TFont::ITALIC, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::SANS, TFont::BOLD, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::SANS, TFont::BOLD_ITALIC, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::SANSSERIF, TFont::PLAIN, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::SANSSERIF, TFont::ITALIC, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::SANSSERIF, TFont::BOLD, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::SANSSERIF, TFont::BOLD_ITALIC, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::TYPEWRITER, TFont::PLAIN, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::TYPEWRITER, TFont::ITALIC, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::TYPEWRITER, TFont::BOLD, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-  y+=25;
-
-  fn = new TFont(TFont::TYPEWRITER, TFont::BOLD_ITALIC, s);
-  pen.setFont(fn);
-  pen.drawString(5,y, text);
-  delete fn;
-#endif
-
-#if 0
-  /*
-   * X11 provides rotated fonts, but TOAD doesn't support it yet:
-   *
-   * + : plus
-   * ~ : minus
-   *                  / a b 0 \
-   *  [ a b c d ] <-> | c d 0 |
-   *                  \ 0 0 1 /
-   */
-  // the matrix can be used for pixel and for points
-  // fn->setFont("-adobe-utopia-medium-r-normal--0-[8+4~4+8]-110-110-p-0-iso8859-1");
-  pen.translate(200,150);
-
-#if 0
-  string f1 = "-adobe-new century schoolbook-medium-r-normal--";
-  string f2 = "-0-100-100-p-0-iso8859-1";
-#else
-  // TrueType font
-  // supported since XFree86 4.x
-  // - copy 'em to /usr/X11R6/lib/X11/fonts/TrueType/
-  // - run 'ttmkfdir > fonts.scale' inside this directory
-  // - add the module "xtt" or "freetype" to your XF86Config file
-  //   (the later is faster but seems to fail for 180°, while the
-  //   first seems to fail around 90° and 270°)
-  
-  // antialiased fonts
-  // - xterm -fa 'Andale Mono' -fs 14
-  // - env QT_XFT=true konqueror
-  
-  // http://fontconfig.org/
-  
-  string f1 = "-monotype-Times New Roman-medium-r-normal--";
-  string f2 = "-0-0-0-p-0-iso8859-1";
-#endif
-
-  TFont normal;
-  string normalname=f1+"20"+f2;
-  normal.setFont(normalname);
-  pen.rotate(0.0);
-
-  for(unsigned i=0; i<32; ++i) {
-    fn = new TFont();
-    string fontname;
-    double s = 20.0;
-
-    fontname = f1;  
-    fontname += "[";
-    fontname += d2s(pen.mat->a11 * s);
-    fontname += d2s(pen.mat->a12 * s);
-    fontname += d2s(pen.mat->a21 * s);
-    fontname += d2s(pen.mat->a22 * s);
-    fontname += "]";
-    fontname += f2;
-
-    //  cout << "fontname: '" << fontname << "'\n";
-
-    fn->setFont(fontname);
-  
-    pen.setFont(fn);
-
-    pen.setColor(255-i*7,0,i*7);
-    string txt="The good food";
-    unsigned x=0;
-    string::iterator p(txt.begin()), e(txt.end());
-    while(p!=e) {
-      char buffer[2];
-      buffer[0]=*p;
-      buffer[1]=0;
-      pen.drawString(28+x,5+normal.getAscent(), buffer);
-      x+=normal.getTextWidth(buffer);
-      ++p;
-    }
-//  pen.setColor(0,0,0);
-//  pen.drawRectangle(27,6,123,19);
-    delete fn;
-    pen.rotate(11.25);
-  }
-#endif
-
-#ifdef HAVE_LIBXFT
-#if 0
-  XftColor color;
-  pen.translate(100,100);
-#if 1
-  color.color.red = 0;
-  color.color.green = 0;
-  color.color.blue = 0xffff;
-  color.color.alpha = 0xa0a0;
-#endif
-#if 0
-  XRenderColor xrc;
-  xrc.red = 0;
-  xrc.green = 0;
-  xrc.blue = 0;
-  xrc.alpha = 0x8080;
-  if (!XftColorAllocValue(x11display, x11visual, x11colormap, &xrc, &color)) {
-    cerr << "failed to allocate color" << endl;
-  }
-#endif
-#if 0
-  if (!XftColorAllocName(x11display, x11visual, x11colormap, "black", &color)) {
-    cerr << "failed to allocate color" << endl;
-  }
-#endif
-
-  string text("Hello World!");
-  
-  XGlyphInfo gi;
-  
-  
-  XftDraw *xftdraw = XftDrawCreate(x11display, x11window, x11visual, x11colormap);
-  if (!xftdraw) {
-    cerr << "failed to create xftdraw" << endl;
-  }
-  XftDrawSetClip(xftdraw, getUpdateRegion()->x11region);
-
-for(unsigned i=0; i<15; ++i) {
-  XftMatrix xftmat;
-  
-  
-  XftMatrixInit(&xftmat);
-  if (pen.mat) {
-    xftmat.xx = pen.mat->a11;
-    xftmat.yx = pen.mat->a12;
-    xftmat.xy = pen.mat->a21;
-    xftmat.yy = pen.mat->a22;
-  }
-
-  if (font) {
-    XftFontClose(x11display, font);
-    font = 0;
-  }
-  font = XftFontOpen(x11display, x11screen,
-                     XFT_FAMILY, XftTypeString, "Arial",
-                     XFT_SIZE, XftTypeDouble, 24.0,
-                     XFT_MATRIX, XftTypeMatrix, &xftmat,
-                     0);
-
-  if (font) {
-    string text("TOAD Font Test");
-    XGlyphInfo gi;
-    XftTextExtents8(x11display, font, (XftChar8*)text.c_str(), text.size(), &gi);
-/*
-    cerr << "gi.width  = " << gi.width << endl
-         << "gi.height = " << gi.height << endl
-         << "gi.x      = " << gi.x << endl
-         << "gi.y      = " << gi.y << endl
-         << "gi.xOff   = " << gi.xOff << endl
-         << "gi.yOff   = " << gi.yOff << endl;
-    cerr << "ascent    = " << font->ascent << endl
-         << "descent   = " << font->descent << endl
-         << "height    = " << font->height << endl;
-*/
-    int x, y;
-    x = 50; y=0;
-    if (pen.mat)
-      pen.mat->map(x, y, &x, &y);
-
-    color.color.red += 0x1010;
-    color.color.blue -= 0x1010;
-
-
-    XftDrawString8(xftdraw, &color, font, x,y, (XftChar8*)text.c_str(), text.size());
-  } else {
-    cerr << "no font!" << endl;
-  }
-  
-  
-//  XftColorFree(x11display, x11visual, x11colormap, &color);
-  pen.setColor(255,0,0);
-  pen.drawLine(0,0,getWidth(),0);
-  
-  pen.setColor(0,255,0);
-  if (font) {
-    pen.drawLine(0,-font->ascent,getWidth(),-font->ascent);
-    pen.drawLine(0,font->descent,getWidth(),font->descent);
-  }
-  pen.rotate(12.0);
-}
-  XftDrawRect(xftdraw, &color, 200, 20, 80, 80);
-  XftDrawDestroy(xftdraw);
-  
-  
-#endif
-#endif
-
-}
-#endif
