@@ -30,6 +30,7 @@
 #include <toad/figureeditor/undoabledelete.hh>
 #include <toad/figureeditor/undoablecreate.hh>
 
+#include <cmath>
 #include <algorithm>
 
 using namespace toad;

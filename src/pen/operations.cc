@@ -48,6 +48,7 @@
 
 #include <assert.h>
 #include <cstring>
+#include <cmath>
 
 #define _TOAD_PRIVATE
 
