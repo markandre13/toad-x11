@@ -167,6 +167,8 @@ if (super::getHandle(n, p)) {
 void
 TFGroup::translateHandle(unsigned handle, int x, int y, unsigned m)
 {
+cerr << "TFGroup::translateHandle isn't implemented yet" << endl;
+#if 0
   double w0, w1, h0, h1;
 
   cerr << __FUNCTION__ << endl;
@@ -198,6 +200,7 @@ cerr << "  p2.x = " << p2.x << ", x = " << x << endl;
     case 3:
       break;
   }
+#endif
 }
 
 double
