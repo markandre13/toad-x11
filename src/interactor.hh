@@ -44,9 +44,10 @@ class TKeyEvent {
     TKey key;
     char * string;
     unsigned modifier;
-//      TKey Key();
-//      unsigned Modifier();
-//      const string& String();
+
+    TKey getKey() const { return key; }
+    unsigned getModifier() const { return modifier; }
+    const char* getString() const { return string; }
 };
 
 class TWindowEvent {
