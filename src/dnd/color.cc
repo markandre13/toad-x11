@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,12 +22,12 @@
 
 using namespace toad;
 
-// application/x-toad-color
+// application/x-color
 //---------------------------------------------------------------------------
 TDnDColor::TDnDColor(const TRGB &color)
 {
   rgb = color;
-  setType("application/x-toad-color", ACTION_COPY);
+  setType("application/x-color", ACTION_COPY);
 }
 
 TDnDColor::~TDnDColor()
@@ -36,7 +36,7 @@ TDnDColor::~TDnDColor()
 
 bool TDnDColor::select(TDnDObject &drop)
 {
-  return TDnDObject::select(drop, "application", "x-toad-color");
+  return TDnDObject::select(drop, "application", "x-color");
 }
 
 // Store
@@ -44,7 +44,12 @@ void TDnDColor::flatten()
 {
   flatdata.erase();
   flatdata+=(char)rgb.r;
+  flatdata+=(char)rgb.r;
   flatdata+=(char)rgb.g;
+  flatdata+=(char)rgb.g;
+  flatdata+=(char)rgb.b;
+  flatdata+=(char)0xFF;
+  flatdata+=(char)0xFF;
   flatdata+=(char)rgb.b;
 }
 
@@ -57,15 +62,15 @@ PDnDColor TDnDColor::convertData(TDnDObject &drop)
     return result;
 
   if (drop.type->major!="application" ||
-      drop.type->minor!="x-toad-color" ||
-      drop.flatdata.size()<3) {
+      drop.type->minor!="x-color" ||
+      drop.flatdata.size()<8) {
     return result;
   }
 
   TRGB rgb;
   rgb.r = drop.flatdata[0];
-  rgb.g = drop.flatdata[1];
-  rgb.b = drop.flatdata[2];
+  rgb.g = drop.flatdata[2];
+  rgb.b = drop.flatdata[4];
   result = new TDnDColor(rgb);
   result->x = drop.x;
   result->y = drop.y;
