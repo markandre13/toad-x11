@@ -18,6 +18,7 @@
  * MA  02111-1307,  USA
  */
 
+#include <cmath>
 #include <toad/os.hh>
 
 #ifdef __X11__
@@ -248,10 +249,10 @@ TFont::getTextWidth(const char *str, int len) const
 #ifdef HAVE_LIBXFT
   if (xftfont) {
     XGlyphInfo gi;
-    XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
+    XftTextExtentsUtf8(x11display, xftfont, (const XftChar8*)str, len, &gi);
     if (str[len-1]==' ') {
       XGlyphInfo gi2;
-      XftTextExtentsUtf8(x11display, xftfont, "  ", 2, &gi2);
+      XftTextExtentsUtf8(x11display, xftfont, (const XftChar8*)"  ", 2, &gi2);
       return gi.width+gi2.width;
     }
     return gi.width;
