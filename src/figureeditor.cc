@@ -25,6 +25,7 @@
 #include <toad/scrollbar.hh>
 #include <toad/checkbox.hh>
 #include <toad/action.hh>
+#include <toad/undomanager.hh>
 #include <toad/figureeditor/undoablemove.hh>
 #include <toad/figureeditor/undoablehandlemove.hh>
 #include <toad/figureeditor/undoabledelete.hh>
@@ -273,8 +274,6 @@ TFigurePreferences::selection2Top()
   if (current) current->selection2Top();
 }
 
-
-
 void
 TFigureEditor::init()
 {
@@ -291,7 +290,8 @@ TFigureEditor::init()
   mat = 0;
 //  vscroll = NULL;
 //  hscroll = NULL;
-  model = new TFigureModel();
+  model = 0;
+  setModel(new TFigureModel());
   x1=y1=x2=y2=0;
   update_scrollbars = false;
   
@@ -720,12 +720,12 @@ TFigureEditor::setPreferences(TFigurePreferences *p) {
   preferences = p;
   if (preferences) {
     preferences->setCurrent(this);
-    connect(preferences->sigChanged, this, &TThis::modelChanged);
+    connect(preferences->sigChanged, this, &TThis::preferencesChanged);
   }
 }
 
 void
-TFigureEditor::modelChanged()
+TFigureEditor::preferencesChanged()
 {
   if (!preferences)
     return;
@@ -814,15 +814,31 @@ TFigureEditor::setFont(const string &fontname)
   window->invalidateWindow();
 }
 
+void
+TFigureEditor::modelChanged()
+{
+  switch(model->type) {
+    case TFigureModel::ADD:
+      update_scrollbars = true;
+      invalidateFigure(model->figure);
+      break;
+    case TFigureModel::REMOVE: {
+      update_scrollbars = true;
+      invalidateFigure(model->figure);
+      TFigureSet::iterator p = selection.find(model->figure);
+      if (p!=selection.end())
+        selection.erase(p);
+      } break;
+  }
+}
+
 /**
  * Add a figure to the editors model.
  */
 void
-TFigureEditor::addFigure(TFigure *g)
+TFigureEditor::addFigure(TFigure *figure)
 {
-  model->add(g);
-  update_scrollbars = true;
-  invalidateFigure(g);
+  model->add(figure);
 }
 
 /**
@@ -1105,11 +1121,23 @@ TFigureEditor::ungroup()
 void
 TFigureEditor::setModel(TFigureModel *m)
 {
-  stopOperation();
-  clearSelection();
+  if (model==m)
+    return;
+  if (model) {
+    stopOperation();
+    clearSelection();
+    disconnect(model->sigChanged, this);
+    TUndoManager::unregisterModel(this, model);
+  }
   model = m;
-  invalidateWindow();
-  updateScrollbars();
+  if (model) {
+    connect(model->sigChanged, this, &TFigureEditor::modelChanged);
+    TUndoManager::registerModel(this, model);
+  }
+  if (isRealized()) {
+    invalidateWindow();
+    updateScrollbars();
+  }
 }
 
 /**

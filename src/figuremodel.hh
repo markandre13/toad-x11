@@ -42,7 +42,10 @@ class TFigureModel:
     /**
      * Kind of modification that took place.
      */
-    enum { MODIFIED, DELETE } type;
+    enum { MODIFIED, DELETE, 
+           ADD, REMOVE
+    } type;
+    TFigure *figure;
     
     class iterator
     {
@@ -88,10 +91,9 @@ class TFigureModel:
     TFigureModel(const TFigureModel&);
     ~TFigureModel();
     
-    void add(TFigure *g) {
-      storage.push_back(g);
-      sigChanged();
-    }
+    void add(TFigure *figure);
+    void erase(TFigure *figure);
+    
     void erase(const iterator&);
     void erase(const iterator&, const iterator&);
 

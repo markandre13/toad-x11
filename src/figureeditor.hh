@@ -161,6 +161,7 @@ class TFigureEditor:
     TFigurePreferences* getPreferences() const {
       return preferences;
     }
+    void preferencesChanged();
     void modelChanged();
 
     void enableScroll(bool);

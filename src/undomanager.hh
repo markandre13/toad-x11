@@ -51,10 +51,10 @@ class TUndoManager:
     static bool redoing;
   
   public:
-    static void registerModel(TWindow*, TModel*);
+    static bool registerModel(TWindow*, TModel*);
     static void unregisterModel(TModel*);
     static void unregisterModel(TWindow *, TModel*);
-    static void registerUndo(TModel*, TUndo*);
+    static bool registerUndo(TModel*, TUndo*);
     
     bool canUndo() const;
     bool canRedo() const;

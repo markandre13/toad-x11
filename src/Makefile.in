@@ -69,7 +69,7 @@ IO              = io/serializable.cc io/atvparser.cc io/binstream.cc io/urlstrea
 DND		= dragndrop.cc dnd/dropobject.cc \
 		  dnd/textplain.cc dnd/color.cc dnd/image.cc
 
-GADGET		= figure.cc figurewindow.cc \
+GADGET		= figure.cc figuremodel.cc figurewindow.cc \
 		  figure/circle.cc figure/group.cc figure/rectangle.cc \
 		  figure/text.cc figure/frame.cc figure/bezier.cc \
 		  figure/polygon.cc figure/line.cc figure/window.cc \

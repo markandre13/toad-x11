@@ -34,6 +34,10 @@ using namespace toad;
  * This class is an interactor so it gets deleted together with it's
  * parent.
  *
+ * You must add the TUndoManager before any views which want to register
+ * themselfes and their models with TUndoManger::registerModel, otherwise
+ * registerModel will fail and return 'false'.
+ *
  * \todo
  *   \li document how to use the undomanager (reference and manual)
  *   \li static method to disable undo/redo for a model when it's
@@ -134,7 +138,7 @@ bool TUndoManager::redoing = false;
 /**
  * Register model for an undomanager.
  */
-/*static*/ void
+/*static*/ bool
 TUndoManager::registerModel(TWindow *window, TModel *model)
 {
   DBM(cerr << "register model " << model << " for window " << window << endl;)
@@ -151,7 +155,7 @@ TUndoManager::registerModel(TWindow *window, TModel *model)
     }
   }  
   DBM(cerr << "no undomanager found for model " << model << endl;)
-  return;
+  return false;
   
 found:
   // add reference from TUndoManager to TModel
@@ -163,10 +167,11 @@ found:
   if (q==models.end()) {
     DBM(cerr << "  insert to new TModelUndoStore" << endl;)
     models[model].undomanagers.insert(*p);
-    return;
+  } else {
+    DBM(cerr << "  insert to existing TModelUndoStore" << endl;)
+    q->second.undomanagers.insert(*p);
   }
-  DBM(cerr << "  insert to existing TModelUndoStore" << endl;)
-  q->second.undomanagers.insert(*p);
+  return true;
 }
  
 /*static*/ void
@@ -187,7 +192,7 @@ TUndoManager::unregisterModel(TWindow *, TModel*)
   cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
 }
 
-/*static*/ void
+/*static*/ bool
 TUndoManager::registerUndo(TModel *model, TUndo *undo)
 {
   DBM(cerr << "register undo " << undo << " for model " << model << endl;)
@@ -195,10 +200,11 @@ TUndoManager::registerUndo(TModel *model, TUndo *undo)
   if (p==models.end()) {
     DBM(cerr << "no model registered" << endl;)
     delete undo;
-    return;
+    return false;
   }
   DBM(cerr << "found undomanager(s) for undo/redo" << endl;)
   p->second.addUndo(model, undo);
+  return true;
 }
 
 void
