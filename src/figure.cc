@@ -132,7 +132,7 @@ TFigure::paintSelection(TPenBase &pen)
   while(true) {
     if ( !getHandle(h, pt) )
       break;
-    short x, y;
+    int x, y;
     if (pen.mat) {
       pen.mat->map(pt.x, pt.y, &x, &y);
       pen.push();
@@ -149,10 +149,23 @@ TFigure::paintSelection(TPenBase &pen)
   if (h==0) {
     TRectangle r;
     getShape(r);
-    pen.fillRectanglePC(r.x-2       ,r.y-2,5,5);
-    pen.fillRectanglePC(r.x+r.w-1-2 ,r.y-2,5,5);
-    pen.fillRectanglePC(r.x+r.w-1-2 ,r.y+r.h-1-2,5,5);
-    pen.fillRectanglePC(r.x-2       ,r.y+r.h-1-2,5,5);
+    int x, y;
+    for(int i=0; i<4; ++i) {
+      switch(i) {
+        case 0: x = r.x;       y = r.y;       break;
+        case 1: x = r.x+r.w-1; y = r.y;       break;
+        case 2: x = r.x+r.w-1; y = r.y+r.h-1; break;
+        case 3: x = r.x;       y = r.y+r.h-1; break;
+      }
+      if (pen.mat) {
+        pen.mat->map(x, y, &x, &y);
+        pen.push();
+        pen.identity();
+      }
+      pen.fillRectanglePC(x-2,y-2,5,5);
+      if (pen.mat)
+        pen.pop();
+    }
   }
 }
 
