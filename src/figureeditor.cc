@@ -520,6 +520,7 @@ TFigureEditor::paintSelection(TPenBase &pen)
       pen.push();
       pen.multiply( (*sp)->mat );
     }
+    pen.setLineWidth(1);
     if (*sp!=gadget) {
       (*sp)->paintSelection(pen, -1);
     } else {
@@ -549,7 +550,7 @@ TFigureEditor::paintSelection(TPenBase &pen)
       x = rotx;
       y = roty;
     }
-    
+    pen.setLineWidth(1);
     pen.setLineColor(TColor::FIGURE_SELECTION);
     pen.setFillColor(TColor::WHITE);
     pen.drawCirclePC(x-3,y-3,7,7);
@@ -1087,7 +1088,7 @@ TFigureEditor::stopOperation()
     case STATE_CREATE:
       clearSelection();
       if (gadget) {
-        selection.insert(gadget);
+        // selection.insert(gadget);
         model->figures.clear();
         model->figures.insert(gadget);
         model->type = TFigureModel::MODIFIED;

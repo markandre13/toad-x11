@@ -230,6 +230,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
       x = pt.x;
       y = pt.y;
     }
+    pen.setLineWidth(1);
     if (handle!=h) {
       pen.fillRectanglePC(x-2,y-2,5,5);
     } else {
@@ -259,6 +260,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
         pen.push();
         pen.identity();
       }
+      pen.setLineWidth(1);
       pen.fillRectanglePC(x-2,y-2,5,5);
       if (pen.mat)
         pen.pop();
