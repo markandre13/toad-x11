@@ -190,15 +190,27 @@ TFigureModel::add(TFigure *figure) {
 }
 
 void 
-TFigureModel::add(TFigureSet &set) {
-cerr << __PRETTY_FUNCTION__ << ": isn't implemented yet" << endl;
+TFigureModel::add(TFigureVector &newfigures) {
+  figures.clear();
+  type = ADD;
+  TUndoInsert *undo = new TUndoInsert(this);
+  for(TFigureVector::iterator p = newfigures.begin();
+      p != newfigures.end();
+      ++p)
+  {
+    storage.push_back(*p);
+    figures.insert(*p);
+    undo->insert(*p);
+  }
+  TUndoManager::registerUndo(this, undo);
+  sigChanged();
 }
 
 void
 TFigureModel::insert(TFigureAtDepthList &store)
 {
   figures.clear();
-  type = TFigureModel::ADD;
+  type = ADD;
       
   TUndoInsert *undo = new TUndoInsert(this);
   for(TFigureAtDepthList::TStore::iterator p=store.store.begin();

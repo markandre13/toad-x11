@@ -60,6 +60,10 @@ using namespace toad;
  * dialog editor.
  *
  * Selection Mode
+ *
+ * The following is subject to change, the new behaviour will match
+ * TTable:
+ *
  * \li click           : select and move object
  * \li CTRL+click      : only select object
  * \li SHIFT+click     : add single object to selection
@@ -72,28 +76,15 @@ using namespace toad;
  *   \li
  *      scrollbars aren't setup properly during scaling
  *   \li
- *      ungroup must take care of the groups transformation matrix
- *   \li
  *      resize groups
  *   \li
  *      adjust getShape to check transformations
  *   \li
  *      adjust finding figures & handles for transformations
  *   \li
- *      undo history isn't erased when a new model is set
- *   \li
  *      scrollbars aren't update after and during object creation
  *   \li
- *      group/ungroup isn't part of undo/redo
- *   \li
- *      undo/redo entries are active also when they are a null operation
- *   \li
- *      text is misplaced during rotation (beside the fact that the text
- *      itself isn't rotated
- *   \li
  *      polgons contain bogus points (can be seen during/after rotation)
- *   \li
- *      help points of bezier must not be part of the bezier shape
  *   \li
  *      Make sure that we can have multiple views of one model
  *   \li
@@ -105,8 +96,6 @@ using namespace toad;
  *      an endless recursion; these calls are currently removed
  *   \li
  *      allow the usage of multiple models to provide layers
- *   \li
- *      segfault after certain number of undos
  *   \li
  *      color changes aren't part of undo/redo
  */
@@ -308,14 +297,14 @@ TFigureEditor::init()
   
 
   TAction *action;
-/*
+
   action = new TAction(this, "edit|cut");
-  CONNECT(action->sigActivate, this, _selection_cut);
+  CONNECT(action->sigActivate, this, selectionCut);
   action = new TAction(this, "edit|copy");
-  CONNECT(action->sigActivate, this, _selection_copy);
+  CONNECT(action->sigActivate, this, selectionCopy);
   action = new TAction(this, "edit|paste");
-  CONNECT(action->sigActivate, this, _selection_paste);
-*/
+  CONNECT(action->sigActivate, this, selectionPaste);
+
   action = new TAction(this, "edit|delete");
   CONNECT(action->sigActivate, this, deleteSelection);
 }
@@ -1132,20 +1121,19 @@ TFigureEditor::stopOperation()
 }
 
 namespace {
-  typedef vector<TFigure*> TFigureVector;
   TFigureVector clipboard;
 }
 
 void
 TFigureEditor::selectionCut()
 {
-  cerr << "cut selection, isn't implemented yet" << endl;
+  selectionCopy();
+  deleteSelection();
 }
 
 void
 TFigureEditor::selectionCopy()
 {
-  cerr << "copy selection" << endl;
   for(TFigureVector::iterator p = clipboard.begin();
       p != clipboard.end();
       ++p)
@@ -1167,16 +1155,18 @@ TFigureEditor::selectionCopy()
 void
 TFigureEditor::selectionPaste()
 {
-  cerr << "paste selection" << endl;
   clearSelection();
+
+  TFigureVector copy;
   for(TFigureVector::iterator p = clipboard.begin();
       p != clipboard.end();
       ++p)
   {
     TFigure *f = static_cast<TFigure*>( (*p)->clone() );
     selection.insert(f);
-    model->add(f);
+    copy.push_back(f);
   }
+  model->add(copy);
 }
 
 void

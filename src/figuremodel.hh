@@ -36,6 +36,7 @@ class TFGroup;
  * \ingroup figure
  */
 typedef set<TFigure*> TFigureSet;
+typedef vector<TFigure*> TFigureVector;
 
 class TFigureAtDepthList;
 
@@ -107,7 +108,7 @@ class TFigureModel:
     
     void add(TFigure*);
     void erase(TFigure*);
-    void add(TFigureSet&);
+    void add(TFigureVector&);
     void erase(TFigureSet&);
     
     void insert(TFigureAtDepthList &store);
