@@ -520,7 +520,10 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, int idx, int w, int h)
   }
   int x = (w - pen.getTextWidth(txt))>>1;
   int y = (h - pen.getHeight())>>1;
-      
+  
+  if (x<0)
+    x=0;
+    
   pen.setColor(TColor::BTNFACE);
   pen.fillRectanglePC(r);
   pen.setColor(TColor::BTNTEXT);
@@ -786,11 +789,11 @@ DBSCROLL({
       if (col_info[x].size==0)
         continue;
       pen.identity();
-      pen.translate(xp+1,0);
+      pen.translate(xp,0);
       int size = col_info[x].size;
       if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
         size = visible.x+visible.w-xp+1;
-      col_header_renderer->renderItem(pen, x, size-2, h);
+      col_header_renderer->renderItem(pen, x, size, h);
       xp+=col_info[x].size;
       if (border) {
         pen.setColor(0,0,0);
@@ -829,9 +832,34 @@ DBSCROLL({
     y1 = min(sy, cy);
     y2 = max(sy, cy);
 //cout << "sx="<<sx<<", sy="<<sy<<", cx="<<cx<<", cy="<<cy<<endl;
+//cout << "fake selection from "<<x1<<"-"<<x2<<", "<<y1<<"-"<<y2<<endl;
   }
 
   pen|=dummy;
+  pen.setColor(TColor::DIALOG);
+  pen.identity();
+
+  if (visible.x>0) {
+    if (visible.y>0) {
+      pen.fillRectanglePC(0, 0, visible.x, visible.y);
+    }
+    if (visible.y+visible.h<getHeight()) {
+      pen.fillRectanglePC(0, visible.y+visible.h,
+                          visible.x, getHeight()-visible.y-visible.h);
+    }
+  }
+
+  if (visible.x+visible.w<getWidth()) {
+    if (visible.y>0) {
+      pen.fillRectanglePC(visible.x+visible.w, 0,
+                          getWidth()-visible.x-visible.w, visible.y);
+    }
+    if (visible.y+visible.h<getHeight()) {
+      pen.fillRectanglePC(visible.x+visible.w, visible.y+visible.h,
+                          getWidth()-visible.x-visible.w, getHeight()-visible.y-visible.h);
+    }
+  }
+
   pen&=visible;
   pen&=*getUpdateRegion();
 
@@ -951,6 +979,7 @@ DBSCROLL(
     }
     yp += row_info[y].size + border;
   }
+  
   // clear unused window region (we must do it on our own because
   // background is disabled to reduce flicker)
   if (!stretchLastColumn && xp<=visible.x+visible.w) {
@@ -966,7 +995,7 @@ DBSCROLL(
     pen.identity();
     pen.setColor(64,64,128);
     pen.setColor(getBackground());
-    yp--;
+    // yp--;
     pen.fillRectanglePC(0,yp,getWidth(),visible.y+visible.h-yp);
   }
   DBM2(cerr << "leave paint" << endl << endl;)
@@ -989,8 +1018,9 @@ void
 TTable::selectAtCursor()
 {
 DBM2(cerr << "selectAtCursor" << endl;)
-  sx = (selection&&selection->perRow())?0:cx;
-  sy = (selection&&selection->perCol())?0:cy;
+  if (selecting)
+    return;
+  _setSXSY(cx, cy);
   if (selection) {
     if (selectionFollowsMouse) {
       DBM2(cerr << "set selection" << endl;)
@@ -1419,14 +1449,14 @@ TTable::center(int how)
 void
 TTable::setCursor(int col, int row)
 {
+  if (col>=cols)
+    col = cols ? cols-1 : 0;
+  if (row>=rows)
+    row = rows ? rows-1 : 0;
   if (cx == col && cy == row)
     return;
   invalidateCursor();
   cx = col; cy = row;
-  if (cx>=cols)
-    cx = cols-1;
-  if (cy>=rows)
-    cy = rows-1;
   if (selectionFollowsMouse) {
     _setSXSY(cx, cy);
   }
@@ -1469,6 +1499,8 @@ TTable::_moveCursor(int newcx, int newcy, unsigned modifier)
         selection->clearSelection();
       }
       _setSXSY(cx, cy);
+//      cout << "  create selection starting at" << endl;
+//      cout << "  cx="<<cx<<", cy="<<cy<<", sx="<<sx<<", sy="<<sy<<endl;
       selecting = true;
     }
     cy = newcy;
@@ -1527,14 +1559,16 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       sigDoubleClicked();
       break;
     case ' ': {
-      int osx = sx, osy=sy;
+      int osx=sx, osy=sy;
       _setSXSY(cx, cy);
       if (selection) {
 //        cout << "SPACE: toggle selection" << endl;
         if (!(modifier&MK_CONTROL)) {
+          bool flag = selection->isSelected(sx, sy);
           selection->clearSelection();
           if (!(modifier&MK_SHIFT) ) {
-            selection->setSelection(sx, sy);
+            if (!flag)
+              selection->setSelection(sx, sy);
           } else {
             int x1, y1, x2, y2;    
             x1 = min(osx, sx);
@@ -1570,7 +1604,7 @@ TTable::_setSXSY(int x, int y)
     if (selection->perCol())
       sy=0;
   }
-//  cout << "_setSXSY("<<x<<", "<<y<<") -> "<<sx<<", "<<sy<<endl;
+//cout << "_setSXSY("<<x<<", "<<y<<") -> "<<sx<<", "<<sy<<endl;
 }
 
 void
@@ -1591,6 +1625,7 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
         y1 = min(osy, sy);
         y2 = max(osy, sy);
         selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+        sx=osx; sy=osy;
       }
       break;
   }
@@ -1622,6 +1657,7 @@ TTable::rendererChanged()
 void
 TTable::_handleInsertRow()
 {
+//cout << "_handleInsertRow: where="<<renderer->where<<", size="<<renderer->size<<endl;
   int new_rows = rows + renderer->size;
   row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
 
@@ -1654,6 +1690,7 @@ TTable::_handleInsertRow()
   // selection model ??? ouch ....
 
   rows = new_rows;
+cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
   invalidateWindow();
 
   doLayout();
@@ -1662,6 +1699,13 @@ TTable::_handleInsertRow()
 void
 TTable::_handleRemovedRow()
 {
+//cout << "_handleRemovedRow: where="<<renderer->where<<", size="<<renderer->size<<endl;
+  if (renderer->where + renderer->size - 1> rows) {
+    cout << "_handleRemovedRow: where=" << renderer->where
+         << " and size="<<renderer->size
+         << " but only " << rows << " rows." << endl;
+    return;
+  }
   int new_rows = rows - renderer->size;
   // row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
 
@@ -1694,6 +1738,8 @@ TTable::_handleRemovedRow()
 
   rows = new_rows;
 //cout << "number of rows is now " << rows << endl;
+//cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
+  setCursor(cx, cy);
   invalidateWindow();
 
   doLayout();
@@ -1779,6 +1825,7 @@ TTable::handleNewModel()
     ++info;
   }
   DBM(cout << "pane.h: " << pane.h << endl;)
+cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
 
   doLayout();
 }
