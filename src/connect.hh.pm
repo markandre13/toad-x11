@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 #
 # This script generates the connect.hh file. This is done to genarate
-# the connection variants with 0, 1, 2 and 3 parameters from the same
+# the connection variants with 0, 1, 2, 3 and 4 parameters from the same
 # definition.
 #
 # The text printed by the license function below is for this Perl 
@@ -92,6 +92,18 @@ sub node
       $cp2= ", _p1(p1), _p2(p2), _p3(p3)";
       $mp = "_p1, _p2, _p3";
       $bp = ", p1, p2, p3";
+      last SWITCH; };
+    $_[6]==4 && do {
+      $tp = ", class U1, class U2, class U3, class U4";
+      $ap = ", class V1, class V2, class V3, class V4";
+      $vp = "  U1 _p1; U2 _p2; U3 _p3; U4 _p4;\n  ";
+      $dp = "U1, U2, U3, U4";
+      $ep = ", U1, U2, U3, U4";
+      $cp1= ", U1 p1, U2 p2, U3 p3, U4 p4";
+      $ap1= ", V1 p1, V2 p2, V3 p3, V4 p4";
+      $cp2= ", _p1(p1), _p2(p2), _p3(p3), _p4(p4)";
+      $mp = "_p1, _p2, _p3, _p4";
+      $bp = ", p1, p2, p3, p4";
       last SWITCH; };
   }
 
@@ -615,6 +627,29 @@ connect(SIG, closure::__f, V1, V2, V3); }
 /**
  * \\ingroup callback
  *
+ * This macro provides a substitute for 'closures' known from Smalltalk.
+ *
+ * \\param SIG TSignal which will invoke the closure.
+ * \\param P1  Type and name of variable inside closure.
+ * \\param V1  Value for P1
+ * \\param P2  Type and name of variable inside closure.
+ * \\param V2  Value for P2
+ * \\param P3  Type and name of variable inside closure.
+ * \\param V3  Value for P3
+ * \\param P4  Type and name of variable inside closure.
+ * \\param V4  Value for P4
+ * \\param DEF An argument list with two arguments and code block.
+ * \\sa CLOSURE2
+ */
+#define CLOSURE4(SIG, P1, V1, P2, V2, P3, V3, P4, V4, DEF) \\
+{ struct closure { \\
+  static void __f(P1, P2, P3, P4) DEF \\
+}; \\
+connect(SIG, closure::__f, V1, V2, V3, V4); }
+
+/**
+ * \\ingroup callback
+ *
  * A simplified variant of CLOSURE which requires a C++ compiler
  * with a 'typeof' operator like GNU C++.
  *
@@ -748,11 +783,39 @@ connect(SIG, closure::__f, V1, V2); }
 }; \\
 connect(SIG, closure::__f, V1, V2, V3); }
 
+/**
+ * \\ingroup callback
+ *
+ * A simplified variant of CLOSURE4 which requires a C++ compiler
+ * with a 'typeof' operator like GNU C++.
+ *
+ * \\param SIG TSignal which will invokes the closure.
+ * \\param P1  Name of variable inside closure.
+ * \\param V1  Value for P1.
+ * \\param P2  Name of variable inside closure.
+ * \\param V2  Value for P2.
+ * \\param P3  Name of variable inside closure.
+ * \\param V3  Value for P3.
+ * \\param P4  Name of variable inside closure.
+ * \\param V4  Value for P4.
+ * \\param DEF A code block which defines the closure.
+ * \\sa TCLOSURE2
+ */
+#define TCLOSURE4(SIG, P1, V1, P2, V2, P3, V3, P4, V4, DEF) \\
+{ struct closure { \\
+  typedef typeof(V1) __t1; \\
+  typedef typeof(V2) __t2; \\
+  typedef typeof(V3) __t3; \\
+  typedef typeof(V4) __t4; \\
+  static void __f(__t1 P1, __t2 P2, __t3 P3, __t4 P4) { DEF } \\
+}; \\
+connect(SIG, closure::__f, V1, V2, V3, V4); }
+
 /*
  * various signal nodes & connect's
  */
 EOT
-  for($i=0; $i<=3; $i++) {
+  for($i=0; $i<=4; $i++) {
     fnode("GSignalLinkF$i", $i);
     onode("GSignalLinkO$i", $i);
   }
