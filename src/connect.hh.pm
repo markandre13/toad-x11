@@ -677,7 +677,7 @@ int main() {
  */
 #define TCLOSURE1(SIG, P, V, DEF) \\
 { struct closure { \\
-  typedef typeof(V1) __t1; \\
+  typedef typeof(V) __t1; \\
   static void __f(__t1 P) { DEF } \\
 }; \\
 connect(SIG, closure::__f, V); }
