@@ -371,7 +371,7 @@ TFigure::restore(TInObjectStream &in)
 {
   if (
     ::restorePtr(in, "trans", &mat) ||
-    finished(in)
+    TSerializable::restore(in)
   ) return true;
   ATV_FAILED(in)
   return false;
