@@ -71,10 +71,7 @@ class TMatrix2D:
  
     TMatrix2D *next;
     
-    TCloneable* clone() const { return new TMatrix2D(*this); }
-    const char * name() const { return "toad::TMatrix2D"; }
-    void store (TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+    SERIALIZABLE_INTERFACE(toad::, TMatrix2D);
 };
 
 } // namespace toad

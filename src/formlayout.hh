@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -53,11 +53,8 @@ class TFormLayout:
     class TFormNode;
     TFormNode* _find(const string &window);
     TFormNode *flist, *lastadd;
-  
-    TCloneable* clone() const { return new TFormLayout(*this); }
-    const char * name() const { return "toad::TFormLayout"; }
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+
+    SERIALIZABLE_INTERFACE(toad::, TFormLayout)  
 };
 
 } // namespace toad

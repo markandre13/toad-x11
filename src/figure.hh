@@ -137,17 +137,16 @@ class TFigure:
     static const double RANGE = 5.0;
     static const double INSIDE = 0.0;
 
-    // storage stuff
-    //--------------------------------------
-    const char * name() const { return "toad::TFigure"; }
-    void store (TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
 
     // storage stuff for all gadgets
     //-------------------------------------- 
     static void initialize();
     static void terminate();
     static TInObjectStream serialize;
+
+//    SERIALIZABLE_INTERFACE(toad::, TFigure);
+    void store(TOutObjectStream &out) const;
+    bool restore(TInObjectStream &in);
 };
 
 /**
@@ -180,11 +179,8 @@ class TFRectangle:
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint &p);
     void translateHandle(unsigned handle, int mx, int my);
-    
-    TCloneable* clone() const { return new TFRectangle(*this); }
-    const char * name() const { return "toad::TFRectangle"; } 
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+
+    SERIALIZABLE_INTERFACE(toad::, TFRectangle);    
     
   protected:
     TPoint p1, p2;
@@ -215,11 +211,7 @@ class TFPolygon:
     bool getHandle(unsigned n, TPoint &p);
     void translateHandle(unsigned handle, int mx, int my);
     
-    TCloneable* clone() const { return new TFPolygon(*this); }
-    const char * name() const { return "toad::TFPolygon"; }
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
-
+    SERIALIZABLE_INTERFACE(toad::, TFPolygon);
   protected:
     typedef vector<TPoint> TPoints;
     TPolygon polygon;
@@ -259,9 +251,6 @@ class TFLine:
     void paint(TPenBase &, EPaintType);
     double distance(int x, int y);
 
-    TCloneable* clone() const { return new TFLine(*this); }
-    const char * name() const { return "toad::TFLine"; }
-    
     static void drawArrow(TPenBase &pen,
                           const TPoint &p1, const TPoint &p1, 
                           const TRGB &line, const TRGB &fill,
@@ -270,15 +259,14 @@ class TFLine:
     
   protected:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+    SERIALIZABLE_INTERFACE(toad::, TFLine);
 };
 
 class TFPolyline:
   public TFLine
 {
   public:
-    const char * name() const { return "toad::TFPolyline"; }
+    const char * getClassName() const { return "toad::TFPolyline"; }
 };
 
 /**
@@ -299,7 +287,7 @@ class TFBezierline:
     unsigned mouseRDown(TFigureEditor*, int, int, unsigned);
     
     TCloneable* clone() const { return new TFBezierline(*this); }
-    const char * name() const { return "toad::TFBezierline"; }
+    const char * getClassName() const { return "toad::TFBezierline"; }
 };
 
 /**
@@ -317,7 +305,7 @@ class TFBezier:
     void translateHandle(unsigned handle, int x, int y);
     
     TCloneable* clone() const { return new TFBezier(*this); }
-    const char * name() const { return "toad::TFBezier"; }
+    const char * getClassName() const { return "toad::TFBezier"; }
 };
 
 /**
@@ -335,7 +323,7 @@ class TFCircle:
     double distance(int x, int y);
     
     TCloneable* clone() const { return new TFCircle(*this); }
-    const char * name() const { return "toad::TFCircle"; } 
+    const char * getClassName() const { return "toad::TFCircle"; } 
 };
 
 /**
@@ -376,7 +364,7 @@ class TFText:
 
     TCloneable* clone() const { return new TFText(*this); }
 
-    const char * name() const { return "toad::TFText"; } 
+    const char * getClassName() const { return "toad::TFText"; } 
     void store(TOutObjectStream&) const;
     bool restore(TInObjectStream&);
     
@@ -412,7 +400,7 @@ class TFFrame:
     unsigned mouseLUp(TFigureEditor *e, int x, int y, unsigned m);
     
     TCloneable* clone() const { return new TFFrame(*this); }
-    const char * name() const { return "toad::TFFrame"; } 
+    const char * getClassName() const { return "toad::TFFrame"; } 
 
     void calcSize();
 };
@@ -433,7 +421,7 @@ class TFWindow:
     void translateHandle(unsigned handle, int x, int y);
     
     TCloneable* clone() const { return new TFWindow(*this); }
-    const char * name() const { return "toad::TFWindow"; }
+    const char * getClassName() const { return "toad::TFWindow"; }
     void store(TOutObjectStream&) const;
     bool restore(TInObjectStream&);
     
@@ -464,7 +452,7 @@ class TFGroup:
     TFigureModel gadgets;
 
     TCloneable* clone() const { return new TFGroup(*this); }
-    const char * name() const { return "toad::TFGroup"; }
+    const char * getClassName() const { return "toad::TFGroup"; }
     void store(TOutObjectStream&) const;
     bool restore(TInObjectStream&);
 

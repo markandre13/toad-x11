@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.de>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,7 @@ atv::getDefaultStore()
 void 
 TObjectStore::registerObject(TSerializable *obj)
 {
-  buffer[obj->name()]=obj;
+  buffer[obj->getClassName()]=obj;
 }
 
 void
@@ -129,7 +129,7 @@ void
 TOutObjectStream::store(const TSerializable *s)
 {
   indent();
-  (*this) << s->name();
+  (*this) << s->getClassName();
   startGroup();
   s->store(*this);
   endGroup();
@@ -225,7 +225,7 @@ TInObjectStream::interpret(TATVParser &p)
         case ATV_VALUE:
         case ATV_GROUP:
           if (!obj->restore(*this)) {
-            p.err << (obj ? obj->name() : "(NULL)") << " failed on ";
+            p.err << (obj ? obj->getClassName() : "(NULL)") << " failed on ";
             if (p.what==ATV_VALUE)
               p.err << "ATV_VALUE";
             else
@@ -239,7 +239,7 @@ TInObjectStream::interpret(TATVParser &p)
           return true;
         case ATV_FINISHED:
           if (!obj->restore(*this)) {
-            p.err << obj->name() << " failed on ATV_FINISHED";
+            p.err << obj->getClassName() << " failed on ATV_FINISHED";
             return false;
           }
           p.stop();
@@ -320,7 +320,7 @@ store(TOutObjectStream &out, const TSerializable *s)
   } else {
     // #warning "should call out.indent() when called directly"
     out.indent();
-    out << s->name() << " ";
+    out << s->getClassName() << " ";
     out.startGroup();
     s->store(out);
     out.endGroup();

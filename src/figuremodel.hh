@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -115,11 +115,7 @@ class TFigureModel:
       return const_iterator(this, storage.end());
     }
 */
-    TCloneable* clone() const { return new TFigureModel(*this); }
-    const char * name() const { return "toad::TFigureModel"; }
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
-
+    SERIALIZABLE_INTERFACE_PUBLIC(toad::, TFigureModel)
   protected:
     TStorage storage;
 };

@@ -81,10 +81,7 @@ struct TSerializableRGB:
       r=rn;g=gn;b=bn;
     }
 */
-    TCloneable* clone() const { return new TSerializableRGB(*this); }
-    const char * name() const { return "toad::TRGB"; }
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+    SERIALIZABLE_INTERFACE(toad::, TSerializableRGB)
 };
 
 class TColor

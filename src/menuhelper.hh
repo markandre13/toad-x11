@@ -52,10 +52,7 @@ class TMenuLayout:
     } scope;
     TInteractor *interactor;
 
-    TCloneable* clone() const { return new TMenuLayout(*this); }
-    const char * name() const { return "toad::TMenuLayout"; }
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+    SERIALIZABLE_INTERFACE(toad::, TMenuLayout)
 };
 
 class TMenuButton;
@@ -197,10 +194,7 @@ class TMenuEntry:
     TMenuHelper::TNode::EType type;
     TMenuEntryList entries;
 
-    TCloneable* clone() const { return new TMenuEntry(*this); }
-    const char * name() const { return "toad::TMenuEntry"; }
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+    SERIALIZABLE_INTERFACE(toad::, TMenuEntry)
 };
 
 class TMenuSeparator:
@@ -208,13 +202,8 @@ class TMenuSeparator:
 {
     typedef TMenuEntry super;
   public:
-    TCloneable* clone() const { return new TMenuSeparator(*this); }
-    const char * name() const { return "toad::TMenuSeparator"; }
-    void store(TOutObjectStream&) const;
-    bool restore(TInObjectStream&);
+    SERIALIZABLE_INTERFACE(toad::, TMenuSeparator)
 };
-
-
 
 } // namespace toad
 

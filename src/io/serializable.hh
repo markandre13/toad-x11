@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.de>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -129,7 +129,7 @@ class TSerializable:
   private:
     bool interpret(TATVParser &p) { return restore(static_cast<TInObjectStream&>(p)); }
   public:
-    virtual const char * name() const = 0;
+    virtual const char * getClassName() const = 0;
     virtual void store(TOutObjectStream&) const;
     virtual bool restore(TInObjectStream&);
 };
@@ -176,8 +176,20 @@ TResource::restore(TInObjectStream &in)
 #define SERIALIZABLE_INTERFACE(PREFIX, CLASS) \
   public:\
     TCloneable* clone() const { return new CLASS(*this); }\
-    const char * name() const { return #PREFIX #CLASS ;} \
+    const char * getClassName() const { return #PREFIX #CLASS ;} \
   protected:\
+    void store(TOutObjectStream&) const;\
+    bool restore(TInObjectStream&);
+
+/**
+ * A variant of SERIALIZABLE_INTERFACE but with public store and
+ * restore method. Used ie. for TFigureModel and TFGroup where
+ * group is a wrapper class for TFigureModel.
+ */
+#define SERIALIZABLE_INTERFACE_PUBLIC(PREFIX, CLASS) \
+  public:\
+    TCloneable* clone() const { return new CLASS(*this); }\
+    const char * getClassName() const { return #PREFIX #CLASS ;} \
     void store(TOutObjectStream&) const;\
     bool restore(TInObjectStream&);
 
@@ -189,7 +201,6 @@ class TATVNullInterpreter:
 };
 
 extern TATVNullInterpreter null;
-
 
 } // namespace atv
 

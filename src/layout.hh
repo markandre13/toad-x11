@@ -53,11 +53,6 @@ class TLayout:
   
     virtual TLayoutEditor * createEditor(TWindow *inWindow, TWindow *forWindow);
 
-#if 0  
-    TCloneable* clone() const = 0;
-    const char * name() const = 0;
-    void store(TOutObjectStream&) const = 0;
-#endif
     bool restore(TInObjectStream&);
     
     /**
