@@ -299,6 +299,28 @@ class TOADBase
     #endif
 };
 
+// wrappers for static methods inside the TOADBase class
+// this is the recommended interface
+inline TWindow* getFocusWindow() { return TOADBase::getFocusWindow(); }
+inline void setFocusWindow(TWindow* wnd) { TOADBase::setFocusWindow(wnd); }
+inline void insertEventFilter(TEventFilter *f, TWindow *w, EEventFilterPos p) { TOADBase::insertEventFilter(f, w, p); }
+inline void removeEventFilter(TEventFilter *f) { TOADBase::removeEventFilter(f); }
+inline void placeWindow(TWindow *w, EWindowPlacement h, TWindow *p=0) { TOADBase::placeWindow(w, h, p); }
+inline void postQuitMessage(int ret) { TOADBase::postQuitMessage(ret); }
+inline void flush() { TOADBase::flush(); }
+inline const string& getExecutablePath() { return TOADBase::getExecutablePath(); }
+inline const string& getExecutableName() { return TOADBase::getExecutableName(); }
+inline void bell(int volume = 0, int frequency=-1) { TOADBase::bell(volume, frequency); }
+inline void sendMessage(TCommand *cmd) { TOADBase::sendMessage(cmd); }
+inline void removeMessage(void *cmd) { TOADBase::removeMessage(cmd); }
+inline void removeAllIntMsg() { TOADBase::removeAllIntMsg(); }
+inline void sendMessageDeleteWindow(TWindow *w) { TOADBase::sendMessageDeleteWindow(w); }
+inline int getScreenWidth() { return TOADBase::getScreenWidth(); }
+inline int getScreenHeight() { return TOADBase::getScreenHeight(); }
+inline void getMousePos(int *x, int *y) { return TOADBase::getMousePos(x, y); }
+inline void setMousePos(int x,int y) { return TOADBase::setMousePos(x, y); }
+inline void startDrag(TDnDObject *obj, unsigned modifier = 0) { TOADBase::startDrag(obj, modifier); }
+
 } // namespace toad
 
 #endif
