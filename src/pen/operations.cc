@@ -192,48 +192,6 @@ TMatrix2D::map(int inX, int inY, short int *outX, short int *outY)
   *outY = a21 * x + a22 * y + ty;
 }
 
-#if 0
-void
-TPen::setOrigin(int x, int y) 
-{
-  if (!mat) {
-    if (x==0 && y==0)
-      return;
-    mat = new TMatrix2D();
-  }
-  mat->tx = x;
-  mat->ty = y;
-}
-
-void
-TPen::translate(int x, int y)
-{
-  if (!mat) {
-    if (x==0 && y==0)
-      return;
-    mat = new TMatrix2D();
-  }
-  mat->tx += x;
-  mat->ty += y;
-}
-
-int
-TPen::originX() const
-{
-  if (!mat)
-    return 0;
-  return mat->tx;
-}
-
-int
-TPen::originY() const
-{
-  if (!mat)
-    return 0;
-  return mat->ty;
-}
-#endif
-
 void
 TPen::identity()
 {
@@ -244,8 +202,11 @@ TPen::identity()
 void
 TPen::translate(double dx, double dy)
 {
-  if (!mat)
+  if (!mat) {
+    if (dx==0.0 && dy==0.0)
+      return;
     mat = new TMatrix2D();
+  }
   mat->translate(dx, dy);
 }
 
