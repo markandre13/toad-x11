@@ -24,9 +24,9 @@ CONTENTS
   The TOAD C++ GUI Library is distributed under the terms of the GNU Lesser
   General Public License (LGPL) See the file COPYING.LIB for more details.
 
-  Some programs coming with the TOAD C++ GUI Library may be under the terms
-  of the GNU General Public License (GPL). See the file COPYING for more
-  details.
+  Some programs that come with the TOAD C++ GUI Library may be under the
+  terms of the GNU General Public License (GPL). See the file COPYING for
+  more details.
 
   The TOAD C++ GUI Library comes WITHOUT ANY WARRANTY; without even the
   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -35,18 +35,18 @@ CONTENTS
 2. A WORD OF WARNING
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   Current releases are named 0.x.y indicating that the TOAD C++ GUI Library
+  Current releases are named 0.x.y indicating that the TOAD C++ GUI Library
   is still under construction and a lot of things may change from one
   release to another.
 
-   But if you want to experiment with a GNU LGPLed C++ GUI toolkit this
+  But if you want to experiment with a GNU LGPLed C++ GUI toolkit this
   one might be the right stuff for you.
 
 
 3. WHAT IS THE TOAD C++ GUI LIBRARY?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   The TOAD C++ GUI Library is a set of C++ classes for developing X Window
+  The TOAD C++ GUI Library is a set of C++ classes for developing X Window
   applications. Since there are so many other GUI libraries around (the
   living ones: GTK+, Qt, LessTif, Motif, fltk, Xclasses, notif, OpenLook,
   wxWindows, Fox and the dead ones: SUIT, Andrew Toolkit, InterViews,
@@ -94,6 +94,9 @@ CONTENTS
 
  5.2 WRITING PROGRAMS WITHOUT INSTALLATION
 
+  Note, these instructions are somewhat out-of-date. There is no longer
+  a script named `build' available.
+
   - Run `build', type [1] and [0]
   - Copy or link `toad/conf/MakefilePrg' to `~/.TOADMakefile' (or something
     alike)
@@ -104,8 +107,22 @@ CONTENTS
   - Run `make run'
 
  5.3 FULL INSTALLATION
-
-  - Run `build', type [1] and [2], follow the instructions and you're done.
+ 
+  If you downloaded the tar.bz2 file from the TOAD web site, follow the
+  instructions below. If you got the source via CVS, you will have a `toad'
+  directory rather than `toad-YYYY-MM-DD', and there will the extra step
+  of running `autoconf' (from the `toad' directory) before `./configure'.
+  - cd into the `toad-YYYY-MM-DD' directory
+  - run
+      ./configure
+      make
+      su
+      make install
+    (By default, the last step will install the TOAD files in /usr/local.)
+   
+  To build and try out the examples one by one:
+  - cd examples/exampleYouAreInterestedIn
+  - make
 
 
 6. DOCUMENTATION AND HELP
