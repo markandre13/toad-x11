@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -276,12 +276,26 @@ static void curve(
   double x2, double y2,
   double x3, double y3)
 {
-  double tx, ty, ax, ay, bx, by;
-  ax = x1-x0; ay = y1-y0;
-  tx = x2-x1; ty = y2-y1;
-  bx = x3-x2; by = y3-y2;
-  double f = fabs(ax*ty - ay*tx) + fabs(tx*by - ty*bx);
-  if (f*f < 100.0 ) {
+  double vx0 = x1-x0;
+  double vx1 = x2-x1;
+  double vx2 = x3-x2;
+  double vy0 = y1-y0;
+  double vy1 = y2-y1;
+  double vy2 = y3-y2;
+  double vx3 = x2-x0;
+  double vx4 = x3-x0;
+  double vy3 = y2-y0;
+  double vy4 = y3-y0;
+
+  double w0 = vx0 * vy1 - vy0 * vx1;
+  double w1 = vx1 * vy2 - vy1 * vx2;
+  double w2 = vx3 * vy4 - vy3 * vx4;
+  double w3 = vx0 * vy4 - vy0 * vx4;
+
+  if (fabs(w0)+fabs(w1)+fabs(w2)+fabs(w3)<80.0) {
+    poly.push_back(TPoint((int)x0, (int)y0));
+    poly.push_back(TPoint((int)x1, (int)y1));
+    poly.push_back(TPoint((int)x2, (int)y2));
     poly.push_back(TPoint((int)x3, (int)y3));
   } else {
     double xx  = mid(x1, x2);
@@ -308,13 +322,27 @@ static void fcurve(
   double x2, double y2,
   double x3, double y3)
 {
-  double tx, ty, ax, ay, bx, by;
-  ax = x1-x0; ay = y1-y0;
-  tx = x2-x1; ty = y2-y1;
-  bx = x3-x2; by = y3-y2;
-  double f = fabs(ax*ty - ay*tx) + fabs(tx*by - ty*bx);
-  if (f*f < 100.0 ) {
-    poly.push_back(TDPoint((int)x3, (int)y3));
+  double vx0 = x1-x0;
+  double vx1 = x2-x1;
+  double vx2 = x3-x2;
+  double vy0 = y1-y0;
+  double vy1 = y2-y1;
+  double vy2 = y3-y2;
+  double vx3 = x2-x0;
+  double vx4 = x3-x0;
+  double vy3 = y2-y0;
+  double vy4 = y3-y0;
+
+  double w0 = vx0 * vy1 - vy0 * vx1;
+  double w1 = vx1 * vy2 - vy1 * vx2;
+  double w2 = vx3 * vy4 - vy3 * vx4;
+  double w3 = vx0 * vy4 - vy0 * vx4;
+
+  if (fabs(w0)+fabs(w1)+fabs(w2)+fabs(w3)<80.0) {
+    poly.push_back(TDPoint(x0, y0));
+    poly.push_back(TDPoint(x1, y1));
+    poly.push_back(TDPoint(x2, y2));
+    poly.push_back(TDPoint(x3, y3));
   } else {
     double xx  = mid(x1, x2);
     double yy  = mid(y1, y2);
