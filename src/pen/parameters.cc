@@ -94,7 +94,7 @@ TPen::TPen(TWindow *wnd)
     bmp = 0;
     x11drawable = wnd->x11window;
   }
-  _init();  
+  _init();
   translate(wnd->_dx, wnd->_dy);
 
   if (wnd->bDoubleBuffer) {

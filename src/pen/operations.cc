@@ -18,6 +18,31 @@
  * MA  02111-1307,  USA
  */
 
+/**
+ * \file operation.cc
+ * \todo
+ *   \li
+ *     rotate fonts
+ *   \li
+ *     rotate bitmaps
+ *   \li
+ *     rotate arcs
+ *   \li
+ *     improve quality of rotated arcs
+ *   \li
+ *     implement shear
+ *   \li
+ *     move TMatrix2D definition into a separate header file
+ *   \li
+ *     make TMatrix2D map virtual in for more complicated transformation
+ *   \li
+ *     add TPenBase::push(TMatrix2D*)
+ *   \li
+ *     make TMatrix2D serializable
+ *   \li
+ *     allow multiplication of TMatrix2Ds
+ */
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -33,19 +58,6 @@
 #include <iostream>
 
 using namespace toad;
-
-// Copy TPoint array to XPoint array and add translation in (_dx, _dy).
-#define TPOINT_2_XPOINT(SRC, DST, SIZE) \
-  XPoint DST[n]; \
-  const TPoint *sp = SRC; \
-  const TPoint *se = SRC+SIZE; \
-  XPoint *dp = DST; \
-  while(sp!=se) { \
-    dp->x = sp->x; \
-    dp->y = sp->y; \
-    dp++; \
-    sp++; \
-  }
 
 // Adjust (width, height) to pixel coordinates for XDraw... operations.
 #define XDRAW_PIXEL_COORD(w,h) \
@@ -73,7 +85,6 @@ using namespace toad;
     y-=h; \
   }
 
-
 class toad::TMatrix2D
 {
   public:
@@ -97,10 +108,55 @@ class toad::TMatrix2D
       this->ty  = ty;
     }
     
-    void map(int inX, int inY, short int *outX, short int *outY);
+    void map(int inX, int inY, short int *outX, short int *outY) const;
  
     TMatrix2D *next;
 };
+
+namespace {
+
+inline void
+tpoint2xpoint(const TPoint *in, XPoint *out, int n, const TMatrix2D *mat) {
+  const TPoint *sp = in;
+  const TPoint *se = in+n;
+  XPoint *dp = out;
+  if (!mat) {
+    while(sp!=se) {
+      dp->x = sp->x;
+      dp->y = sp->y;
+      ++dp;
+      ++sp;
+    }
+  } else {
+    while(sp!=se) {
+      mat->map(sp->x, sp->y, &dp->x, &dp->y);
+      ++dp;
+      ++sp;
+    }
+  }
+}
+
+inline void
+polygon2xpoint(const TPolygon &in, XPoint *out, const TMatrix2D *mat) {
+  TPolygon::const_iterator sp(in.begin()), se(in.end());
+  XPoint *dp = out;
+  if (!mat) {
+    while(sp!=se) {
+      dp->x = sp->x;
+      dp->y = sp->y;
+      ++dp;
+      ++sp;
+    }
+  } else {
+    while(sp!=se) {
+      mat->map(sp->x, sp->y, &dp->x, &dp->y);
+      ++dp;
+      ++sp;
+    }
+  }
+}
+
+} // namespace
 
 TMatrix2D::TMatrix2D()
 {
@@ -184,7 +240,7 @@ TMatrix2D::shear(double, double)
    \endpre
  */
 void
-TMatrix2D::map(int inX, int inY, short int *outX, short int *outY)
+TMatrix2D::map(int inX, int inY, short int *outX, short int *outY) const
 {
   double x, y;
   x = inX; y=inY;
@@ -298,52 +354,23 @@ TPen::vdrawLine(int x1, int y1, int x2, int y2) const
   }
 }
 
+
+
 void
 TPen::drawLines(const TPoint *s, int n) const
 {
-  if (!mat) {
-    TPOINT_2_XPOINT(s,d,n)
-    XDrawLines(x11display, x11drawable, o_gc, d, n, CoordModeOrigin);
-  } else {
-    XPoint xp[n];
-    const TPoint *sp = s;
-    const TPoint *se = s+n;
-    XPoint *dp = xp;
-    while(sp!=se) {
-      mat->map(sp->x, sp->y, &dp->x, &dp->y);
-      ++dp;
-      ++sp;
-    }
-    XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
-  }
+  XPoint xp[n];
+  tpoint2xpoint(s, xp, n, mat);
+  XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
 }
 
 void
 TPen::drawLines(const TPolygon &polygon) const
 {
   unsigned n = polygon.size();
-  XPoint DST[n];
-  TPolygon::const_iterator sp, se;
-  sp = polygon.begin();
-  se = polygon.end();
-  XPoint *dp = DST;
-  if (!mat) {
-    while(sp!=se) {
-      dp->x = sp->x;
-      dp->y = sp->y;
-      ++dp;
-      ++sp;
-    }
-  } else {
-    while(sp!=se) {
-      mat->map(sp->x, sp->y, &dp->x, &dp->y);
-      ++dp;
-      ++sp;
-    }
-  }
-
-  XDrawLines(x11display, x11drawable, o_gc, 
-    DST, n, CoordModeOrigin);
+  XPoint xp[n];
+  polygon2xpoint(polygon, xp, mat);
+  XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
 }
 
 // rectangle
@@ -455,43 +482,43 @@ map2(const TMatrix2D *m, long &x, long &y)
 XPoint *
 qtr_elips(const TPen *pen, XPoint *p, long xP, long yP, long xQ, long yQ, long xK, long yK, int m)
 {
-    int i, x, y;
-    FIX vx, ux, vy, uy, w, xJ, yJ;
-    if (pen->mat) {
-      map2(pen->mat, xP, yP);
-      map2(pen->mat, xQ, yQ);
-      map2(pen->mat, xK, yK);
-    }
-    xP<<=16;   
-    yP<<=16;   
-    xQ<<=16;   
-    yQ<<=16;   
-    xK<<=16;   
-    yK<<=16;   
-    vx = xK - xQ;                 /* displacements from center */
-    ux = xK - xP;
-    vy = yK - yQ;
-    uy = yK - yP;
-    xJ = xP - vx + HALF;          /* center of ellipse J */
-    yJ = yP - vy + HALF;
-    ux -= (w = ux >> (2*m + 3));  /* cancel 2nd-order error */
-    ux -= (w >>= (2*m + 4));      /* cancel 4th-order error */
-    ux -= w >> (2*m + 3);         /* cancel 6th-order error */
-    ux += vx >> (m + 1);          /* cancel 1st-order error */
-    uy -= (w = uy >> (2*m + 3));  /* cancel 2nd-order error */
-    uy -= (w >>= (2*m + 4));      /* cancel 4th-order error */
-    uy -= w >> (2*m + 3);         /* cancel 6th-order error */
-    uy += vy >> (m + 1);          /* cancel 1st-order error */
-    for (i = (PIV2 << m) >> 16; i >= 0; --i) {
-        p->x = (xJ + vx) >> 16;
-        p->y = (yJ + vy) >> 16;
-        ++p;
-        ux -= vx >> m;
-        vx += ux >> m;
-        uy -= vy >> m;
-        vy += uy >> m;
-    }
-    return p;
+  int i, x, y;
+  FIX vx, ux, vy, uy, w, xJ, yJ;
+  if (pen->mat) {
+    map2(pen->mat, xP, yP);
+    map2(pen->mat, xQ, yQ);
+    map2(pen->mat, xK, yK);
+  }
+  xP<<=16;   
+  yP<<=16;   
+  xQ<<=16;   
+  yQ<<=16;   
+  xK<<=16;   
+  yK<<=16;   
+  vx = xK - xQ;                 /* displacements from center */
+  ux = xK - xP;
+  vy = yK - yQ;
+  uy = yK - yP;
+  xJ = xP - vx + HALF;          /* center of ellipse J */
+  yJ = yP - vy + HALF;
+  ux -= (w = ux >> (2*m + 3));  /* cancel 2nd-order error */
+  ux -= (w >>= (2*m + 4));      /* cancel 4th-order error */
+  ux -= w >> (2*m + 3);         /* cancel 6th-order error */
+  ux += vx >> (m + 1);          /* cancel 1st-order error */
+  uy -= (w = uy >> (2*m + 3));  /* cancel 2nd-order error */
+  uy -= (w >>= (2*m + 4));      /* cancel 4th-order error */
+  uy -= w >> (2*m + 3);         /* cancel 6th-order error */
+  uy += vy >> (m + 1);          /* cancel 1st-order error */
+  for (i = (PIV2 << m) >> 16; i >= 0; --i) {
+    p->x = (xJ + vx) >> 16;
+    p->y = (yJ + vy) >> 16;
+    ++p;
+    ux -= vx >> m;
+    vx += ux >> m;
+    uy -= vy >> m;
+    vy += uy >> m;
+  }
+  return p;
 }
 
 void
@@ -615,62 +642,45 @@ TPen::drawPolygon(const TPoint points[], int n) const
 void
 TPen::fillPolygon(const TPoint s[], int n) const
 {
-   TPOINT_2_XPOINT(s,d,n);
-   XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
-   d, n, Nonconvex, CoordModeOrigin);
-   XDrawLines(x11display, x11drawable, o_gc, 
-       d, n, CoordModeOrigin);
-   XDrawLine(x11display, x11drawable, o_gc,
-      s[0].x,s[0].y,
-      s[n-1].x,s[n-1].y);
+  XPoint d[n];
+  tpoint2xpoint(s, d, n, mat);
+  XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
+    d, n, Nonconvex, CoordModeOrigin);
+  XDrawLines(x11display, x11drawable, o_gc, 
+      d, n, CoordModeOrigin);
+  XDrawLine(x11display, x11drawable, o_gc,
+     s[0].x,s[0].y,
+     s[n-1].x,s[n-1].y);
 }
 
 void
 TPen::drawPolygon(const TPolygon &polygon) const
 {
   unsigned n = polygon.size();
-  XPoint DST[n];
-  TPolygon::const_iterator sp, se;
-  sp = polygon.begin();
-  se = polygon.end();
-  XPoint *dp = DST;
-  while(sp!=se) {
-   dp->x = sp->x;
-   dp->y = sp->y;
-   dp++;
-   ++sp;
-  }
+  XPoint d[n];
+  polygon2xpoint(polygon, d, mat);
 
   XDrawLines(x11display, x11drawable, o_gc, 
-    DST, n, CoordModeOrigin);
+    d, n, CoordModeOrigin);
   XDrawLine(x11display, x11drawable, o_gc,
-    DST[0].x,DST[0].y,
-    DST[n-1].x,DST[n-1].y);
+    d[0].x, d[0].y,
+    d[n-1].x, d[n-1].y);
 }
 
 void
 TPen::fillPolygon(const TPolygon &polygon) const
 {
   unsigned n = polygon.size();
-  XPoint DST[n];
-  TPolygon::const_iterator sp, se;
-  sp = polygon.begin();
-  se = polygon.end();
-  XPoint *dp = DST;
-  while(sp!=se) {
-   dp->x = sp->x;
-   dp->y = sp->y;
-   dp++;
-   ++sp;
-  }
+  XPoint d[n];
+  polygon2xpoint(polygon, d, mat);
 
   XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
-    DST, n, Nonconvex, CoordModeOrigin);
+    d, n, Nonconvex, CoordModeOrigin);
   XDrawLines(x11display, x11drawable, o_gc, 
-    DST, n, CoordModeOrigin);
+    d, n, CoordModeOrigin);
   XDrawLine(x11display, x11drawable, o_gc,
-    DST[0].x,DST[0].y,
-    DST[n-1].x,DST[n-1].y);
+    d[0].x, d[0].y,
+    d[n-1].x, d[n-1].y);
 }
 
 // bitmap
