@@ -166,6 +166,9 @@ class TWindow:
     //! X11 internal: use original X11 GC (needed for OpenGL window)
     bool bX11GC:1;              // use the Xlib default gc
 
+    //! don't add a menu to a shell window
+    bool bNoMenu:1;
+
     //! Return 'true' when the window is created on the screen.
     #ifdef __X11__
     bool isRealized() const {return x11window!=0;}

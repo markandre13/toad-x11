@@ -258,7 +258,7 @@ TWindow::TWindow(TWindow *p, const string &new_title)
   // public flags
   bShell = bPopup = bExplicitCreate = bSaveUnder = bStaticFrame =
   bBackingStore = bNoBackground = bX11GC = bFocusManager = bNoFocus = 
-  bTabKey = bDialogEditRequest = bDoubleBuffer = false;
+  bNoMenu = bTabKey = bDialogEditRequest = bDoubleBuffer = false;
   
   bFocusTraversal = true;
 
@@ -800,7 +800,9 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
   
       PropMotifWmHints motif_hints;
       motif_hints.flags = MWM_HINTS_FUNCTIONS|MWM_HINTS_DECORATIONS|MWM_HINTS_INPUT_MODE;
-      motif_hints.decorations=MWM_DECOR_BORDER|MWM_DECOR_TITLE|MWM_DECOR_MENU;
+      motif_hints.decorations=MWM_DECOR_BORDER|MWM_DECOR_TITLE;
+      if (!bNoMenu)
+        motif_hints.decorations |= MWM_DECOR_MENU;
       motif_hints.functions=MWM_FUNC_MOVE|MWM_FUNC_CLOSE ;
       motif_hints.inputMode = MWM_INPUT_MODELESS;
       motif_hints.status = 0;
