@@ -32,7 +32,10 @@ class TComboBox::TComboButton:
 {
   public:
     TComboButton(TWindow *parent, const string &title)
-    :TButtonBase(parent,title){};
+      :TButtonBase(parent,title)
+    {
+      setBorder(false);
+    };
 
   protected:
     void paint();
@@ -46,6 +49,7 @@ TComboBox::TComboBox(TWindow * parent, const string &title):
   super(parent, title)
 {
   setSize(320, 20);
+  setBorder(false);
 
   btn = new TComboButton(this,"combobox.combobutton");
   connect(btn->sigArm, this, &TComboBox::button);
@@ -63,25 +67,29 @@ TComboBox::TComboBox(TWindow * parent, const string &title):
 void
 TComboBox::paint()
 {
+  TPen pen(this);
+
+  pen.draw3DRectangle(0,0, getWidth()-1, getHeight()-1);
+
   TTableSelectionModel *s = table->getSelectionModel();
   TTableSelectionModel::iterator p(s->begin());
   if (p==s->end())
     return;
-  TPen pen(this);
+  pen.translate(2, 2);
   table->getRenderer()->renderItem(
     pen,
     p.getX(), p.getY(),
-    getWidth(), getHeight(),
+    btn->getXPos()-2, getHeight()-4,
     false,
-    false);
+    isFocus());
 }
 
 void
 TComboBox::resize()
 {
   btn->setShape(
-    getWidth()-TScrollBar::getFixedSize()+1,-1,
-    TScrollBar::getFixedSize(),getHeight()+2
+    getWidth()-TScrollBar::getFixedSize()+1 -2, 2,
+    TScrollBar::getFixedSize(), getHeight()-4
   );
 }
 
@@ -115,23 +123,22 @@ TComboBox::selected()
 void
 TComboBox::TComboButton::paint()
 {
-  TPen g(this);
-  drawShadow(g, bDown);
-  TPoint p[4];
-  const int d=6;
+  TPen pen(this);
+  drawShadow(pen, bDown, true);
+
   int n=bDown?1:0;
+  int cx = (getWidth() >> 1)+n;
+  int cy = (getHeight() >> 1)+n - 1;
 
-  int max = _h>_w ? _h : _w;
-  int x = (_w-max)>>1;
-  int y = (_h-max)>>1;
+  TPoint p[3];
+  p[0].set(cx-4,cy-2);
+  p[1].set(cx+4,cy-2);
+  p[2].set(cx,  cy+2);
 
-  p[0].set(x+n+(max>>1) , y+n+_h-d);
-  p[1].set(x+n+max-d  , y+n+d-1);   
-  p[2].set(x+n+d      , y+n+d-1);   
-
-  g.setColor(TColor::BTNTEXT);
-  g.fillPolygon(p,3);
-  g.fillRectanglePC(n+d-2, n+_h-d+1, _w-d-d+4,2);
+  pen.setColor(TColor::BTNTEXT);
+  pen.fillPolygon(p,3);
+  
+  pen.drawRectanglePC(cx-4, cy+4, 9, 2);
 }
 
 void
