@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@ class TScrollPane:
     void getPanePos(int *x, int *y, bool setall=true) const;
     void setPanePos(int x, int y);
     void setUnitIncrement(int uix, int uiy);
-    void paintCorner(TPen&);
+    void paintCorner(TPenBase&);
     
     void pageUp();
     void pageDown();

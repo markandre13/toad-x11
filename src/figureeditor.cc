@@ -427,6 +427,7 @@ TFigureEditor::paint()
     updateScrollbars();
     update_scrollbars = false;
   }
+
   TBitmap bmp(visible.w, visible.h, TBITMAP_SERVER);
   TPen pen(&bmp);
 
@@ -434,11 +435,40 @@ TFigureEditor::paint()
   pen.identity();
   pen.fillRectanglePC(0,0,visible.w,visible.h);
   pen.translate(window->getOriginX(), window->getOriginY());
-
   if (mat)
     pen.multiply(mat);
     
+  paintGrid(pen);
+  print(pen, true);
+  paintSelection(pen);
 
+  // put the result onto the screen
+  TPen scr(window);
+/*
+TRectangle foo;
+scr.getClipBox(&foo);
+cout << "clip box " << foo << endl;
+*/
+  scr.identity();
+  scr.drawBitmap(visible.x,visible.y, &bmp);
+/*
+static bool bar=true;
+if (bar)
+  scr.setColor(255,0,0);
+else
+  scr.setColor(0,255,0);
+bar=!bar;
+  scr.drawLine(0,64, 64,0);
+*/
+  paintDecoration(scr);
+}
+
+/**
+ * Called from 'paint' to draw the grid.
+ */
+void
+TFigureEditor::paintGrid(TPenBase &pen)
+{
   if (preferences->drawgrid && preferences->gridsize) {
     pen.setColor(
       background_color.r > 128 ? background_color.r-64 : background_color.r+64,
@@ -487,9 +517,14 @@ TFigureEditor::paint()
       }
     }
   }
-  
-  print(pen, true);
+}  
 
+/**
+ * Called from 'paint' to draw the selection marks.
+ */
+void
+TFigureEditor::paintSelection(TPenBase &pen)
+{
   // draw the selection marks over all figures
   for(TFigureSet::iterator sp = selection.begin();
       sp != selection.end();
@@ -574,25 +609,14 @@ TFigureEditor::paint()
     }
     pen.pop();
   }
+}
 
-  // put the result onto the screen
-  TPen scr(window);
-/*
-TRectangle foo;
-scr.getClipBox(&foo);
-cout << "clip box " << foo << endl;
-*/
-  scr.identity();
-  scr.drawBitmap(visible.x,visible.y, &bmp);
-/*
-static bool bar=true;
-if (bar)
-  scr.setColor(255,0,0);
-else
-  scr.setColor(0,255,0);
-bar=!bar;
-  scr.drawLine(0,64, 64,0);
-*/  
+/**
+ * Called from 'paint' to draw the corners and the row and column headers
+ */
+void
+TFigureEditor::paintDecoration(TPenBase &scr)
+{
   paintCorner(scr);
   
   if (row_header_renderer) {

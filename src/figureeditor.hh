@@ -40,7 +40,7 @@ class TScrollBar;
 class TFigureEditorHeaderRenderer
 {
   public:
-    virtual void render(TPen &pen, int pos, int size, TMatrix2D *mat) = 0;
+    virtual void render(TPenBase &pen, int pos, int size, TMatrix2D *mat) = 0;
     virtual int getSize() = 0;
     virtual void mouseEvent(TMouseEvent&);
 };
@@ -306,7 +306,12 @@ class TFigureEditor:
     TFigureSet selection;
 
     void paint();
+    
+    void paintGrid(TPenBase &pen);
+    void paintSelection(TPenBase &pen);
+    void paintDecoration(TPenBase &pen);
     void print(TPenBase &pen, bool withSelection=false);
+    
     void resize();
     void mouseEvent(TMouseEvent&);
     void mouseLDown(int,int,unsigned);
