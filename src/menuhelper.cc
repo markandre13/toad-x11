@@ -44,6 +44,8 @@ using namespace toad;
  *
  * \todo
  *   \li
+ *     nodes aren't removed in TMenuHelper's destructor
+ *   \li
  *     popup menu's are outside the screen when opened at the left or
  *     right screen side
  *   \li
@@ -113,7 +115,7 @@ using namespace toad;
                                     --node--> node->trigger()
                                    /
  TMenuHelper --------> TMenuButton -popup--> TMenuHelper
-             <-master-             <-master-
+             <-master-             <-btnmaster-
  
      \endpre
  */
@@ -121,7 +123,7 @@ using namespace toad;
 TMenuHelper::TMenuHelper(TWindow *p, const string& t):
   super(p, t), root(this)
 {
-  setBackground(TColor::LIGHTGRAY);
+  setBackground(TColor::MENU);
   setSize(320, 16);
   active = NULL;
   vertical = true;
@@ -143,6 +145,7 @@ TMenuHelper::~TMenuHelper()
   
   // if tree owner then delete nodes!
   // (missing)
+  // cerr << "parent: " << root.parent << endl;
 }
 
 /**
@@ -428,7 +431,7 @@ TMenuHelper::TRootNode::TRootNode(TMenuHelper *owner)
 
 TMenuHelper::TRootNode::~TRootNode()
 {
-//  deleteTree(down);
+//  clear();
 }
 
 
@@ -730,7 +733,7 @@ TMenuHelper::TNode::setSize(int w, int h)
 }
 
 /**
- * This one is very stupid design
+ * This one is a very stupid design
  */
 void
 TMenuHelper::TNode::noWindow()
@@ -841,6 +844,13 @@ TMenuLayout::~TMenuLayout()
   disconnect(TAction::actions.sigChanged, this);
 }
 
+/**
+ * Rebuild the menuhelpers node tree according to TMenuLayout
+ *
+ * \li clear the menubars node tree
+ * \li rebuild the menubars node tree
+ * \li add actions from the action list to the node tree
+ */
 void
 TMenuLayout::arrange()
 {
