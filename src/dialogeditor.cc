@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -74,7 +74,7 @@ TDialogEditor::TFilter::mouseEvent(TMouseEvent &me)
   TWindow * w = NULL;
   
   // when the event is part of the dialog editor window, deliver it
-  // here. this is to work around modal dialogs
+  // here. this is to work around modal dialogs used by TDialogEditor
   if (me.window == parent ||
       me.window->isChildOf(parent)) 
   {
