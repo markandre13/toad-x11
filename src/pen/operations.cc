@@ -1097,10 +1097,9 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 
   y+=font->getAscent();
 
-  if (!mat || (mat->a21 == 0.0 && mat->a12 == 0.0)) {
+  if (!mat || mat->isIdentity()) {
     if (mat)
       mat->map(x, y, &x, &y);
-    bool use_r = mat && !mat->isIdentity();
     switch(font->getRenderType()) {
       case TFont::RENDER_X11:
 #ifdef TOAD_OLD_FONTCODE
@@ -1111,18 +1110,22 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 #endif
 #ifdef HAVE_LIBXUTF8
         if (transparent)
-          XUtf8DrawString(x11display, x11drawable, use_r?font->xutf8font_r:font->xutf8font, o_gc, x, y, str, strlen);
+          XUtf8DrawString(x11display, x11drawable, font->xutf8font, o_gc, x, y, str, strlen);
         else
-          XUtf8DrawImageString(x11display, x11drawable, use_r?font->xutf8font_r:font->xutf8font, o_gc, x, y, str, strlen);
+          XUtf8DrawImageString(x11display, x11drawable, font->xutf8font, o_gc, x, y, str, strlen);
 #endif
         break;
       case TFont::RENDER_FREETYPE:
 #ifdef HAVE_LIBXFT
-        XftDrawStringUtf8(xftdraw, &color, use_r?font->xftfont_r:font->getXftFont(), x,y, (XftChar8*)str, strlen);
+        XftDrawStringUtf8(xftdraw, &color, font->getXftFont(), x,y, (XftChar8*)str, strlen);
 #endif
         break;
     }
   } else {
+    // Draw rotated and downscaled font char by char, using the horizontal
+    // unscaled font as a reference. This is much slower than a single
+    // X*DrawString call but the precision is required, even for horizontal
+    // and just scaled fonts.
     int x2, y2;
     const char *p = str;
     int len=0;
