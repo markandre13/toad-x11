@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -27,6 +27,7 @@
 using namespace toad;
 
 #define DBM(M)
+#define DBM2(M)
 #define DBSCROLL(M)
 
 /**
@@ -97,15 +98,17 @@ TAbstractTableCellRenderer::renderCell(TPen &pen, int col, int row, int w, int h
     } else {
       pen.setColor(TColor::SELECTED_GRAY);
     }
-    pen.fillRectangle(0,0,w, h);
-    pen.setColor(TColor::SELECTED_TEXT);
+  } else {
+    pen.setColor(TColor::WHITE);
   }
+  pen.fillRectanglePC(0,0,w,h);
+  pen.setColor(TColor::SELECTED_TEXT);
   renderItem(pen, col, row, w, h, cursor, selected, focus);
   if (selected) {
     pen.setColor(TColor::BLACK);
   }
   if (cursor) {
-    pen.drawRectangle(0,0,w, h);
+    pen.drawRectanglePC(0,0,w, h);
   }
 }
 
@@ -451,10 +454,15 @@ TTableSelectionModel::setSelection(int x, int y, int w, int h)
 void
 TTableSelectionModel::toggleSelection(int x, int y)
 {
-  if (selection_mode!=MULTIPLE_INTERVAL)
+DBM2(cerr << "toggle " << x << ", " << y << endl;)
+  if (selection_mode!=MULTIPLE_INTERVAL) {
+DBM2(cerr << "  not multiple interval, clear selection" << endl;)
     region.clear();
+  }
+DBM2(cerr << "  position before change " << isSelected(x,y) << endl;)
   TRectangle r(x,y,1,1);
   region ^= r;
+DBM2(cerr << "  position after change " << isSelected(x,y) << endl;)
   sigChanged();
 }
 
@@ -532,6 +540,7 @@ TTable::TTable(TWindow *p, const string &t):
   stretchLastColumn = true;
   noCursor = false;
   selectionFollowsMouse = false;
+  bNoBackground = true;
 }
 
 void
@@ -706,6 +715,7 @@ TTable::invalidateChangedArea(int sx, int sy,
 void
 TTable::paint()
 {
+DBM2(cerr << "enter paint" << endl;)
   // 'dummy' is only used until the clipping methods in
   // TPen are improved.
   TRectangle dummy(0,0,getWidth(), getHeight());
@@ -740,7 +750,7 @@ DBSCROLL({
       pen.translate(xp+1,0);
       int size = col_info[x].size;
       if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
-        size = visible.x+visible.w-xp;
+        size = visible.x+visible.w-xp+1;
       col_header_renderer->renderItem(pen, x, size-2, h);
       xp+=col_info[x].size;
       if (border) {
@@ -828,12 +838,15 @@ DBSCROLL({
         bool selected;
         if (selection) {
           selected = selection->isSelected(per_row?0:x,per_col?0:y);
+          DBM2(cerr << "  render " << x << ", " << y << ": has sm: selected=" << selected << endl;)
         } else {
           // no selection model, assume usage of simplified selection
           // with getLastSelectionRow() and getLastSelectionCol()
-          selected = (per_row?0:x == sx) && (per_col?0:y == sy);
+          DBM2(selected = (per_row?0:x == sx) && (per_col?0:y == sy);)
+          cerr << "  render " << x << ", " << y << ": no sm: selected=" << selected << endl;
         }
         if (selecting) {
+DBM2(cerr << "  selecting is enabled, fake selected" << endl;)
           if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
             selected = true;
           if (per_row && y>=y1 && y<=y2)
@@ -843,7 +856,7 @@ DBSCROLL({
         }
         int size = col_info[x].size;
         if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
-          size = visible.x+visible.w-xp-1;
+          size = visible.x+visible.w-xp;
 
 DBSCROLL(
   pen.setColor(255,255,255);
@@ -856,6 +869,7 @@ DBSCROLL(
                   (per_row && cy==y) ||
                   (per_col && cx==x);
         }
+
         renderer->renderCell(
             pen,
             x, y,
@@ -869,6 +883,14 @@ DBSCROLL(
     }
     xp += col_info[x].size + border;
   }
+  if (!stretchLastColumn) {
+    pen|=dummy;
+    pen.identity();
+    pen.setColor(128,64,64);
+    xp--;
+    pen.fillRectanglePC(xp,0,visible.x+visible.w-xp,getHeight());
+  }
+  DBM2(cerr << "leave paint" << endl << endl;)
 }
 
 void
@@ -887,13 +909,17 @@ TTable::focus(bool)
 void
 TTable::selectAtCursor()
 {
+DBM2(cerr << "selectAtCursor" << endl;)
   sx = per_row?0:cx;
   sy = per_col?0:cy;
   if (selection) {
-    if (selectionFollowsMouse)
+    if (selectionFollowsMouse) {
+      DBM2(cerr << "set selection" << endl;)
       selection->setSelection(sx, sy);
-    else
+    } else {
+      DBM2(cerr << "  toggle selection" << endl;)
       selection->toggleSelection(sx, sy);
+    }
   } else {
     selectionChanged();
   }
@@ -983,78 +1009,117 @@ cerr << " y=" << y
 void
 TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
-//cerr << __PRETTY_FUNCTION__ << endl;
+DBM2(cerr << "enter mouseLDown" << endl;)
   setFocus();
 
   int x, y;
-  if (!mouse2field(mx, my, &x, &y))
+  if (!mouse2field(mx, my, &x, &y)) {
+    DBM2(cerr << "  mouse2field failed" << endl;
+    cerr << "leave mouseLDown" << endl << endl;)
     return;
+  }
 
   DBM(cout << "click on item " << x << ", " << y << endl;)
 
   sigPressed();
 
-  if (cx!=x && cy!=y)
+  if (!(modifier&MK_CONTROL) && selection && !selection->isEmpty()) {
+    DBM2(cerr << "  clear the whole selection" << endl;)
+    selection->clearSelection();
+  }
+
+  if ((selectionFollowsMouse || !selection) && cx==x && cy==y) {
+    DBM2(cerr << "  assume that nothing has changed" << endl;
+    cerr << "leave mouseLDown" << endl << endl;)
     return;
-
-  cx = x; cy = y;
-
-// this is not my job, it the models one:
-//  if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::MULTIPLE_INTERVAL)
-//    selection->clearSelection();
+  }  
 
   selecting = false;
-  if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::SINGLE)
+  if (selection && selection->getSelectionMode() != TAbstractTableSelectionModel::SINGLE) {
     selecting=true;
+    if (modifier&MK_SHIFT) {
+      // shift was hold, start selecting from the previous cursor position
+      sx = cx; sy = cy;
+      invalidateWindow();
+    } else {
+      // start selecting at the cursor position
+      sx = x; sy = y;
+    }
+  }
 
   invalidateCursor();
-
-  selectAtCursor();
+  cx = x; cy = y;
+  invalidateCursor();
 
   if (modifier & MK_DOUBLE)
     sigDoubleClicked();
   else  
     sigCursor();
+    
+  DBM2(cerr << "leave mouseLDown" << endl << endl;)
 }
 
 void
 TTable::mouseMove(int mx, int my, unsigned)
 {
+DBM2(cerr << "enter mouseMove" << endl;)
+  if (!selecting) {
+    DBM2(cerr << "  not selecting" << endl;
+    cerr << "leave mouseMove" << endl << endl;)
+  }
+
 //cerr << __PRETTY_FUNCTION__ << endl;
   int x, y;
-  if (!mouse2field(mx, my, &x, &y))
+  if (!mouse2field(mx, my, &x, &y)) {
+    DBM2(cerr << "  mouse2field failed" << endl;
+    cerr << "leave mouseMove" << endl << endl;)
     return;
+  }
 //  cout << "mouse move on field " << x << ", " << y << endl;
 
-  invalidateChangedArea(sx,sy,cx,cy,cx,cy);
-
-  if (cx!=x && cy!=y)
+  if (cx==x && cy==y) {
+    DBM2(cerr << "  cursor position wasn't modified" << endl;
+    cerr << "leave mouseMove" << endl << endl;)
     return;
-  cx = x; cy = y;
+  }
 
   invalidateChangedArea(sx,sy,cx,cy,cx,cy);
+  cx = x; cy = y;
+  invalidateChangedArea(sx,sy,cx,cy,cx,cy);
 
-  selectAtCursor();
+//  selectAtCursor();
   sigCursor();
+  DBM2(cerr << "leave mouseMove" << endl << endl;)
 }
 
 void
 TTable::mouseLUp(int mx, int my, unsigned)
 {
+DBM2(cerr << "enter mouseLUp" << endl;)
 //cerr << __PRETTY_FUNCTION__ << endl;
   int x, y;
-  if (!mouse2field(mx, my, &x, &y))
+  if (!mouse2field(mx, my, &x, &y)) {
+    DBM2(cerr << "  mouse2field failed" << endl;
+    cerr << "leave mouseLUp" << endl << endl;)
+    selecting = false;
     return;
+  }
 
   if (selection && selecting) {
-    selecting=false;
-    int x1, y1, x2, y2;    
-    x1 = min(sx, cx);
-    x2 = max(sx, cx);
-    y1 = min(sy, cy);
-    y2 = max(sy, cy);
-    selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+    if (cx==sx && cy==sy) {
+      DBM2(cerr << "  toggle current field" << endl;)
+      selection->toggleSelection(cx, cy);
+    } else {
+      DBM2(cerr << "  select range" << endl;)
+      int x1, y1, x2, y2;    
+      x1 = min(sx, cx);
+      x2 = max(sx, cx);
+      y1 = min(sy, cy);
+      y2 = max(sy, cy);
+      selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+    }
   }
+  selecting = false;
   sigClicked();
 /*
   if (cx!=x && cy!=y)
@@ -1063,6 +1128,7 @@ TTable::mouseLUp(int mx, int my, unsigned)
   selectAtCursor();
   sigCursor();
 */
+  DBM2(cerr << "leave mouseLUp" << endl << endl;)
 }
 
 /**
