@@ -34,13 +34,13 @@
 // and provide the location of the new statement instead of malloc for
 // the GNU C libraries mtrace utility, by provinding a new implementation
 // of the new and delete operator.
-#define DEBUG_MEMORY
+// #define DEBUG_MEMORY
 
 // Don't free memory but print stacktraces when memory was tried to
 // free twice. The printed stacktraces are: locations of the allocation,
 // location of the first free and location of the second free. Works only
 // for C++ 'new' and 'delete' operator when DEBUG_MEMORY was defined.
-#define LIKE_ELECTRIC_FENCE
+// #define LIKE_ELECTRIC_FENCE
 
 // uncomment this to enable the ENTRYEXIT class, nice when also the debugger 
 // fails to locate the segmentation fault
