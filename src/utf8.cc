@@ -19,6 +19,11 @@
  */
 
 #include <toad/utf8.hh>
+#include <inttypes.h>
+
+#include <iostream>
+
+using namespace std;
 
 namespace toad {
 
@@ -28,7 +33,11 @@ namespace toad {
 size_t
 toad::utf8charcount(const string &text, size_t start, size_t bytelen)
 {
-  return XCountUtf8Char((const unsigned char*)text.c_str()+start, bytelen);
+  size_t i = 0;
+  for(size_t p=start; p<start+bytelen; utf8inc(text, &p)) {
+    ++i;
+  }
+  return i;
 }
 
 /**
@@ -52,6 +61,29 @@ toad::utf8bytecount(const string &text, size_t start, size_t charlen)
   return result;
 }
 
+#if 0
+string
+toad::utf8toiso88591(const string &text) {
+
+  string r;
+  const char *p = text.c_str();
+  while(*p) {
+    if ( (*p & 0x3f) == 0xC0 ) {
+      // start of extended utf8
+    } else
+    if ( (*p & 0x3f) == 0x80 ) {
+      // inside extended utf8
+    } else {
+      r += *p;
+    }
+  }
+  return r;
+}
+#endif
+
+/**
+ * This function encodes to utf8
+ */
 string
 toad::utf8fromwchar(wchar_t c)
 {
@@ -127,3 +159,17 @@ toad::utf8fromwchar(wchar_t c)
 }
 
 } // namespace toad
+
+#if 0
+
+using namespace std;
+using namespace toad;
+
+int
+main()
+{
+  string x = "äbc";
+  cout << utf8charcount(x, 0, x.size()) << endl;
+}
+
+#endif
