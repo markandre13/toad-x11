@@ -18,7 +18,7 @@
  * MA  02111-1307,  USA
  */
 
-#define DBM(X)
+#define DBM(CMD)
 
 // debugging code added to implement popup menus
 #define DBM2(X)
@@ -303,78 +303,80 @@ TMenuKeyFilter::keyEvent(TKeyEvent &ke)
   TMenuHelper::TNode *ptr;
   
   switch(key) {
+    case TK_ESCAPE:
+      i = active; // 
+      i->deactivate();
+      i->collapse();
+      i->dropKeyboard();
+      return true;
+      break;
     case TK_SPACE:
     case TK_RETURN:
-      active->trigger();
-#if 0
-      // causes segfault
-      if (active->master)
-        active->master->state=MHS_WAIT;
-#endif
-      active->dropKeyboard();
-      break;
+      i = active;
+      i->trigger();
+      i->dropKeyboard();
+      return true;
     case TK_RIGHT:
+      DBM(cerr << "want to go right\n";)
       // use the order of nodes to find the next window
       // (make a subroutine out of it and add a helper function to
       // node as a node can contain multiple windows in the future!)
       ptr = active->node->next;
       while(ptr) {
-#if 1
-        if (ptr->winarray && ptr->nwinarray>=1) {
-          i = ptr->winarray[0];
+        TMenuButton *window = 0;
+        if (ptr->winarray && ptr->nwinarray>0)
+          window = ptr->winarray[0];
+        if (window && ptr->isEnabled()) {
+          i = window;
           break;
         }
-#else
-        if (ptr->window && ptr->isEnabled()) {
-          i = ptr->window;
-          break;
-        }
-#endif
         ptr=ptr->next;
       }
       break;
     case TK_LEFT:
-#if 0 
-      ptr = active->node->parent->down;
-      while(ptr) {
-#if 1
-        TWindow * window = 0;
+      DBM(
+        cerr << "want to go left\n";
+        ptr = active->node;
+        cerr << "  currently at node " << ptr->getLabel(0) << endl;
+        if (ptr->parent) {
+          cerr << "  its parent is " << ptr->parent->getLabel(0) << endl;
+        } else {
+          cerr << "  it has no parent\n";
+        }
+        cerr << "the master of the active node is " << active->master->getTitle() << endl;
+      )
+      ptr = 0;
+      if (active->master->root.down) {
+        DBM(cerr << "  it has a root.down: " << active->master->root.down->getLabel(0) << endl;)
+        ptr = active->master->root.down;
+      } else {
+        DBM(cerr << "  is has no root.down" << endl;)
+      }
+      DBM(cerr << "traversing nodes...\n";)
+      while(ptr->next) {
+        DBM(cerr << "  next node is " << ptr->next->getLabel(0) << endl;)
+        TMenuButton *window = 0;
         if (ptr->winarray && ptr->nwinarray>0)
           window = ptr->winarray[0];
-        if (window == active)
+        if (window == active) {
+          DBM(cerr << "  it's the active one, stop here!" << endl;)
           break;
+        }
         if (window && ptr->isEnabled()) {
+          DBM(cerr << "  it's enabled, so its a candidate for the next window\n";)
           i = window;
         }
-#else
-        if (ptr->window == active)
-          break;
-        if (ptr->window && ptr->isEnabled()) {
-          i = ptr->window;
-        }
-#endif
-        ptr=ptr->next;
+        ptr = ptr->next;
       }
-      // no left window, one level up
-      if (i==NULL || ptr->window == i) {
-        cout << "UP" << endl;
-        if (active->master->master) {
-          TMenuButton *old = active;
-          active=active->master->master;
-          old->master->active=NULL;
-          old->invalidate();
-          old->closePopup();
-          active->activate();
-        }
-        return true;
-      }
-#endif
       break;
   }
+
+  DBM(
+    cerr << "keyboard navigation: found menubutton " <<
+      (i ? i->getTitle().c_str() : "(none)") << endl;
+  )
   
   if (i) {
-    if (active->master->active)
-      active->master->active->deactivate();
     i->activate();
     active->master->state=MHS_UP_N_HOLD;
     return true;
@@ -382,27 +384,38 @@ TMenuKeyFilter::keyEvent(TKeyEvent &ke)
   
   switch(key) {
     case TK_DOWN:
-#if 0
-cout << "TK_DOWN" << endl;
+      DBM(
+        cerr << "try to go down\n";
+        cerr << "want to go down\n";
+      )
+      ptr = active->node;
+      DBM(cerr << "  currently at node " << ptr->getLabel(0) << endl;)
       ptr = active->node->down;
       while(ptr) {
-#if 1
-        Window * window = 0;
+        TMenuButton * window = 0;
         if (ptr->winarray && ptr->nwinarray>0)
           window = ptr->winarray[0];
         if (window && ptr->isEnabled()) {
           i = window;
           break;
         }
-#else
-        if (ptr->window && ptr->isEnabled()) {
-          i = ptr->window;
-          break;
-        }
-#endif 
         ptr = ptr->next;
       }
-#endif
+      break;
+    case TK_UP:
+    case TK_LEFT:
+      DBM(
+        cerr << "\ntry to go up\n";
+        cerr << "the master of the active node is " << active->master->getTitle() << endl;
+      )
+      if (active->master->btnmaster) {
+        DBM(cerr << "  it's master is " << active->master->btnmaster->getTitle();)
+        i = active->master->btnmaster;
+        active->master->active = 0;
+        active->invalidateWindow();
+      } else {
+        DBM(cerr << "  it has no master itself\n";)
+      }
       break;
   }
   
