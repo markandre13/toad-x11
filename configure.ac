@@ -17,30 +17,14 @@ AC_PROG_MAKE_SET
 
 # Checks for libraries.
 AC_PATH_XTRA
-LIBS="${LIBS} ${X_LIBS}"
-
-AC_PATH_X
+XLIBS="${X_LIBS} ${X_PRE_LIBS} ${X_EXTRA_LIBS}"
 
 # AC_CHECK_LIB([MesaGL], [main])
 # AC_CHECK_LIB([MesaGLU], [main])
-AC_CHECK_LIB([Xext], [main])
+AC_CHECK_LIB([X11], [XOpenDisplay],,AC_MSG_ERROR([Could not link with X11]), $XLIBS)
+# AC_CHECK_LIB([Xext], [main])
+AC_CHECK_LIB([Xmu], [XmuClientWindow],,AC_MSG_ERROR([Could not link with Xmu]),$XLIBS)
 AC_CHECK_LIB([m], [main])
-
-# freetype (required)
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AC_ARG_WITH(freetype-config, [  --with-freetype-config=PROG Use FreeType configuration program PROG], freetype_config=$withval, freetype_config=yes)
-if test "$freetype_config" = "yes"; then
-  AC_PATH_PROG(ft_config,freetype-config,no)
-  if test "$ft_config" = "no"; then
-    AC_MSG_ERROR([You must have freetype installed; see http://www.freetype.org/])
-  fi
-else
-  ft_config="$freetype_config"
-fi
-
-CXXFLAGS="$CXXFLAGS `$ft_config --cflags`"
-LDFLAGS="$LDFLAGS `$ft_config --libs`"
-AC_CHECK_LIB([Xft], [XftFontOpen])
 
 # pkg-config (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -63,25 +47,43 @@ if test $? -ne 0 ; then
 fi
 AC_MSG_RESULT([yes])
 CXXFLAGS="$CXXFLAGS `$pkg_config --cflags fontconfig`"
-LDFLAGS="$LDFLAGS `$pkg_config --libs fontconfig`"
+LIBS="$LIBS `$pkg_config --libs fontconfig`"
+
+# freetype (required)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AC_ARG_WITH(freetype-config, [  --with-freetype-config=PROG Use FreeType configuration program PROG], freetype_config=$withval, freetype_config=yes)
+if test "$freetype_config" = "yes"; then
+  AC_PATH_PROG(ft_config,freetype-config,no)
+  if test "$ft_config" = "no"; then
+    AC_MSG_ERROR([You must have freetype installed; see http://www.freetype.org/])
+  fi
+else
+  ft_config="$freetype_config"
+fi
+
+CXXFLAGS="$CXXFLAGS `$ft_config --cflags`"
+LIBS="$LIBS `$ft_config --libs`"
+AC_CHECK_LIB([Xft], [XftFontOpen],,,$XLIBS)
 
 # libpng (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AC_CHECK_LIB([z], [zlibVersion],,
-  AC_MSG_ERROR(Could not link with libz))
+  AC_MSG_ERROR(Could not link with libz),$XLIBS)
 AC_CHECK_LIB([png], [png_create_read_struct],, 
-  AC_MSG_ERROR(Could not link with libpng))
+  AC_MSG_ERROR(Could not link with libpng),$XLIBS)
 
 # libjpeg (optional)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AC_CHECK_LIB([jpeg], [jpeg_start_decompress])
+AC_CHECK_LIB([jpeg], [jpeg_start_decompress],$XLIBS)
 
 # libXutf8 (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 dnl Test to see if libXutf8 is on this machine:
 XUTFLIB=
-AC_CHECK_LIB([Xutf8], [XUtf8DrawString],,
-  AC_MSG_ERROR(Could not link with Xutf8))
+AC_CHECK_LIB(
+  [Xutf8], [XUtf8DrawString],,
+  AC_MSG_ERROR([Could not link with Xutf8; see http://www.oksid.ch/xutf8/]),
+  $XLIBS)
 
 # Checks for header files.
 AC_HEADER_DIRENT

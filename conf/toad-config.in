@@ -1,8 +1,9 @@
 #!/bin/sh
 # toad-config - script to get information about the installed
 # version of the TOAD C++ GUI Libary.
+# $Id$
 #
-# Copyleft 2003 Mark-André Hopf <mhopf@mark13.de>
+# Copyleft 2003-2004 Mark-André Hopf <mhopf@mark13.de>
 # All Rights Reversed.
 #
 
@@ -15,7 +16,7 @@ datadir=@datadir@
 
 CXX=@CXX@
 CXXFLAGS="-I${includedir} @X_CFLAGS@"
-LIBS="@LDFLAGS@ -L${libdir} @LIBS@ -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11"
+LIBS="@LDFLAGS@ @X_LIBS@ @X_PRE_LIBS@ @X_EXTRA_LIBS@ -L${libdir} -ltoad @LIBS@"
 
 usage() {
 cat<<EOF
@@ -30,7 +31,7 @@ Options:
   --help               Display this information
 
 For bug reporting instructions, please see:
-<URL:http://www.mark13.de/toad/contact.html>.
+<URL:http://www.mark13.org/toad/contact.html>.
 EOF
 }
 
@@ -82,22 +83,160 @@ depend::
 EOF
 cat > ${project}.cc <<EOF
 #include <toad/toad.hh>
+#include <toad/form.hh>
+#include <toad/menubar.hh>
+#include <toad/action.hh>
+
+#define RESOURCE(file) "file://" file
 
 using namespace toad;
+
+class TMainWindow:
+  public TForm
+{
+    typedef TForm super;
+    typedef TMainWindow This;
+  public:
+    TMainWindow(TWindow *parent, const string &title);
+    void menuAbout();
+};
 
 int
 main(int argc, char **argv, char **envv)
 {
   toad::initialize(argc, argv, envv);
   {
-    TWindow window(0, "${project}");
+    TMainWindow window(0, "${project}");
     toad::mainLoop();
   }
   toad::terminate();
   return 0;
 }
+
+TMainWindow::TMainWindow(TWindow *parent, const string &title):
+  super(parent, title)
+{
+  TMenuBar *menubar = new TMenuBar(this, "menubar");
+  menubar->loadLayout(RESOURCE("menubar.atv"));
+  attach(menubar, TOP|LEFT|RIGHT);
+  
+  TAction *action;
+  action = new TAction(this, "file|quit");
+  connect(action->sigActivate, &toad::postQuitMessage, 0);
+  
+  action = new TAction(this, "help|about");
+  connect(action->sigActivate, this, &This::menuAbout);
+}
+
+void
+TMainWindow::menuAbout()
+{  
+  messageBox(
+    this,
+    "About ${project}",
+    "Generated with toad-config on `date -I` by `whoami`@`hostname -f`.");
+}
+EOF
+cat > menubar.atv <<EOF
+toad::TMenuLayout{
+  scope = "toplevel"
+  toad::TMenuEntry {
+    name = "file"
+    label = "File"
+    toad::TMenuEntry {
+      name = "new"
+      label = "New"
+      shortcut = "Alt+N"
+    }
+    toad::TMenuEntry {
+      name = "open"
+      label = "Open"
+      shortcut = "Alt+O"
+    }
+    toad::TMenuEntry {
+      name = "save"
+      label = "Save"
+      shortcut = "Alt+S"
+    }
+    toad::TMenuEntry {
+      name = "save_as"
+      label = "Save As..."
+      shortcut = "Alt+A"
+    }
+    toad::TMenuEntry {
+      name = "close"
+      label = "Close"
+      shortcut = ""
+      icon = ""
+    }
+    toad::TMenuSeparator { }
+    toad::TMenuEntry {
+      name = "quit"
+      label = "Quit"
+      shortcut = "Alt+F4"
+      icon = "exit.png"
+    }
+  }
+  toad::TMenuEntry {
+    name = "edit"
+    label = "Edit"
+    toad::TMenuEntry {
+      name = "undo"
+      label = "Undo"
+      shortcut = "Alt+Z"
+    }
+    toad::TMenuEntry {
+      name = "redo"
+      label = "Redo"
+      shortcut = "Alt+Y"
+    }
+    toad::TMenuSeparator { }
+    toad::TMenuEntry {
+      name = "cut" 
+      label = "Cut"
+      shortcut = "Alt+X"  
+      icon = "editcut.png"
+    }
+    toad::TMenuEntry {
+      name = "copy" 
+      label = "Copy"
+      shortcut = "Alt+C"   
+      icon = "editcopy.png"
+    }
+    toad::TMenuEntry {  
+      name = "paste"    
+      label = "Paste"   
+      shortcut = "Alt+V"
+      icon = "editpaste.png"
+    }
+    toad::TMenuEntry {
+      name = "delete" 
+      label = "Delete"
+      shortcut = "Del"
+    }
+  }
+  toad::TMenuEntry {
+    name = "help"
+    label = "Help"
+    shortcut = ""   
+    icon = ""
+    toad::TMenuEntry {
+      name = "manual"
+      label = "Show Manual"
+      shortcut = ""   
+      icon = ""
+    }
+    toad::TMenuEntry {
+      name = "about"
+      label = "About"
+      shortcut = ""   
+      icon = ""
+    }
+  }
+}
 EOF
 }
+
 
 if test $# -eq 0 ; then
   usage
