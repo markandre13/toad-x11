@@ -34,8 +34,11 @@ class TScrollPane:
     TScrollPane(TWindow *p, const string &t);
     
   protected:
-    //! the pane (rename this one!)
+    //! the visible part of the pane (better: pane?)
     TRectangle visible;
+
+    //! pane location and size in pixels (better: area, world?)
+    TRectangle pane;
     
     void resetScrollPane();
     
@@ -48,8 +51,6 @@ class TScrollPane:
     void setPanePos(int x, int y);
     void setUnitIncrement(int uix, int uiy);
 
-    // pane location and size in pixels
-    TRectangle pane;
     
     void paintCorner(TPen&);
 

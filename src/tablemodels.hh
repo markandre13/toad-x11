@@ -130,7 +130,7 @@ class TTableCellRenderer_CString:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
       if (selected) {
         if (focus) {
           pen.setColor(TColor::SELECTED);
@@ -146,7 +146,7 @@ class TTableCellRenderer_CString:
       if (selected) {
         pen.setColor(TColor::BLACK);
       }
-      if (focus) {
+      if (cursor) {
         pen.drawRectangle(0,0,w, h);
       }
     }
@@ -395,7 +395,7 @@ class GTableCellRenderer_String:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
       if (selected) {
         if (focus) {
           pen.setColor(TColor::SELECTED);
@@ -411,7 +411,7 @@ class GTableCellRenderer_String:
       if (selected) {
         pen.setColor(TColor::BLACK);
       }
-      if (focus) {
+      if (cursor) {
         pen.drawRectangle(0,0,w, h);
       }
     }
@@ -471,7 +471,7 @@ class GTableCellRenderer_Text:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
       if (selected) {
         if (focus) {
           pen.setColor(TColor::SELECTED);
@@ -487,7 +487,7 @@ class GTableCellRenderer_Text:
       if (selected) {
         pen.setColor(TColor::BLACK);
       }
-      if (focus) {
+      if (cursor) {
         pen.drawRectangle(0,0,w, h);
       }
     }
@@ -549,7 +549,7 @@ class GTableCellRenderer_PText:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool cursor, bool selected, bool focus) {
       if (selected) {
         if (focus) {
           pen.setColor(TColor::SELECTED);
@@ -565,7 +565,7 @@ class GTableCellRenderer_PText:
       if (selected) {
         pen.setColor(TColor::BLACK);
       }
-      if (focus) {
+      if (cursor) {
         pen.drawRectangle(0,0,w, h);
       }
     }
@@ -621,7 +621,7 @@ class GTableRowRenderer:
       }
       return max+2;
     }
-    void renderItem(TPen &pen, int col, int index, int w, int h, bool selected, bool focus) {
+    void renderItem(TPen &pen, int col, int index, int w, int h, bool cursor, bool selected, bool focus) {
       if (selected) {
         if (focus) {
           pen.setColor(TColor::SELECTED);
@@ -637,7 +637,7 @@ class GTableRowRenderer:
       if (selected) {
         pen.setColor(TColor::BLACK);
       }
-      if (focus) {
+      if (cursor) {
         pen.drawLine(0,0,w,0);
         pen.drawLine(0,h,w,h);
         if (col==0) {
@@ -646,6 +646,7 @@ class GTableRowRenderer:
           pen.drawLine(w,0,w,h);
         }
       }
+
     }
 };
 
@@ -667,13 +668,6 @@ class GSTLRandomAccess:
   public GAbstractTableModel<TYPE>
 {
   public:
-    GSTLRandomAccess() {
-      cerr << __PRETTY_FUNCTION__ << endl;
-    }
-    ~GSTLRandomAccess() {
-      cerr << __PRETTY_FUNCTION__ << endl;
-    }
-  
     int getRows() {
       return size();
     }

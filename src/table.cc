@@ -61,6 +61,13 @@ using namespace toad;
  * }
  * \endcode
  *
+ * \note
+ *   TTable comes with a vast collection of classes and is difficult
+ *   to use and currently not well document, the first being the reason
+ *   for the second. My idea is a add more and more utility classes for
+ *   some time and boil it down to a minimum later when all requirements
+ *   have become visible.
+ *
  * \todo
  *   \li TTableModel_CString and TStringVector should be subclassed
  *       with an extra step, which provides an abstraction to C arrays
@@ -69,7 +76,7 @@ using namespace toad;
  *       a way to put it into the template
  *   \li show focus mark
  *   \li model & render can have different size, use this to set
- *       SELECT_PER_ROW & SELECT_PER_COL automaticly
+ *       SELECT_PER_ROW & SELECT_PER_COL automatically
  *   \li insert/remove col/row
  *   \li implement SELECT_PER_ROW & SELECT_PER_COL
  *   \li invalidateChangedArea
@@ -387,6 +394,9 @@ TTable::TTable(TWindow *p, const string &t):
   row_header_renderer = col_header_renderer = NULL;
   selecting = false;
   stretchLastColumn = true;
+  noCursor = false;
+  selectionFollowsMouse = false;
+
   connect(selection->sigChanged, this, &TTable::selectionChanged);
 }
 
@@ -623,6 +633,7 @@ DBSCROLL({
   pen&=visible;
   pen&=*getUpdateRegion();
 
+  // draw border between the fields
   if (border) {
     int panex, paney;
     getPanePos(&panex, &paney);
@@ -653,17 +664,10 @@ DBSCROLL({
   if (!renderer)
     return;
 
+  // draw the fields with the table renderer
   bool perRow, perCol; // true when to select whole row/column
-#if 0
-  perRow = perCol = false;
-  if (renderer->getModel()) { // this looks like a stupid hack to me...
-    perRow = renderer->getCols()!=renderer->getModel()->getCols();
-    perCol = renderer->getRows()!=renderer->getModel()->getRows();
-  }
-#else
   perRow = per_row;
   perCol = per_col;
-#endif  
   xp = fpx + visible.x;
   for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
     yp = fpy + visible.y;
@@ -678,6 +682,10 @@ DBSCROLL({
         if (selecting) {
           if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
             selected = true;
+          if (perRow && y>=y1 && y<=y2)
+            selected = true;
+          if (perCol && x>=x1 && x<=x2)
+            selected = true;
         }
         int size = col_info[x].size;
         if (stretchLastColumn && x==cols-1 && xp+size<visible.x+visible.w)
@@ -688,9 +696,9 @@ DBSCROLL(
   pen.fillRectanglePC(0,0,col_info[x].size, row_info[y].size);
   pen.setColor(0,0,0);
 )
-        bool focus = false;
+        bool cursor = false;
         if (isFocus()) {
-          focus = (cx == x && cy == y) ||
+          cursor = (cx == x && cy == y) ||
                   (per_row && cy==y) ||
                   (per_col && cx==x);
         }
@@ -698,8 +706,9 @@ DBSCROLL(
             pen,
             x, y,
             size, row_info[y].size,
+            cursor && !noCursor,
             selected,
-            focus
+            isFocus()
         );
       }
       yp += row_info[y].size + border;
@@ -722,6 +731,18 @@ TTable::focus(bool)
 }
 
 void
+TTable::selectAtCursor()
+{
+  bool perRow, perCol; // true when to select whole row/column
+  perRow = perCol = false;
+  if (renderer->getModel()) { // this looks like a stupid hack to me...
+    perRow = renderer->getCols()!=renderer->getModel()->getCols();
+    perCol = renderer->getRows()!=renderer->getModel()->getRows();
+  }
+  selection->toggleSelection(perRow?0:cx, perCol?0:cy);
+}
+
+void
 TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
   setFocus();
@@ -729,8 +750,12 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
   int pos1, pos2;
   int x, y;
   
-  if (!visible.isInside(mx, my))
+  if (!visible.isInside(mx, my)) {
+    // code to handle this event outside the visible area is missing
     return;
+  }
+  
+  // transform (mx, my) from screen pixel to table pixel coordinates
   mx -= visible.x + fpx;
   my -= visible.y + fpy;
 
@@ -751,7 +776,8 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
   }
   
   pos1 = 0;
-  for(y=ffy; ; y++) {
+  y = ffy;  // first upper left field
+  while(true) {
     if (y>=rows /* || pos1>visible.y+visible.h */) {
 /*
 cerr << __FILE__ << ':' << __LINE__ << endl;  
@@ -760,14 +786,15 @@ cerr << " y=" << y
      << " pos1=" << pos1
      << " visible.y+visible.h=" << (visible.y+visible.h)
      << endl;
-      return;
 */
+      return;
     }
     pos2 = pos1 + row_info[y].size;
     if (pos1 <= my && my < pos2) {
       break;
     }
     pos1 = pos2;
+    ++y;
   }
 
   if (per_row)
@@ -775,19 +802,18 @@ cerr << " y=" << y
   if (per_col)
     y=0;
 
-  cx = x; cy = y;
-
-  bool perRow, perCol; // true when to select whole row/column
-  perRow = perCol = false;
-  if (renderer->getModel()) { // this looks like a stupid hack to me...
-    perRow = renderer->getCols()!=renderer->getModel()->getCols();
-    perCol = renderer->getRows()!=renderer->getModel()->getRows();
-  }
-  selection->toggleSelection(perRow?0:x, perCol?0:y);
   DBM(cout << "click on item " << x << ", " << y << endl;)
 
+  sigPressed();
+
+  if (cx!=x && cy!=y)
+    return;
+
+  cx = x; cy = y;
+  selectAtCursor();
+
   if (modifier & MK_DOUBLE)
-    sigDoubleClick();
+    sigDoubleClicked();
   else  
     sigCursor();
 }
@@ -868,11 +894,20 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       if (!per_col && cy<rows-1) {
         if (!selecting) {
           invalidateCursor();
-          cy++;
-          invalidateCursor();
+          // in case nothing indicates the cursor position, don't move
+          // the cursor now:
+          if (! (noCursor && selectionFollowsMouse &&
+                (!getSelectionModel() || getSelectionModel()->isEmpty())))
+          {
+            cy++;
+            invalidateCursor();
+          }
           sigCursor();
         } else {
           invalidateChangedArea(sx,sy,cx,cy,cx,++cy);
+        }
+        if (selectionFollowsMouse) {
+          selectAtCursor();
         }
         center(CENTER_VERT);
       }
@@ -887,18 +922,34 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
         } else {
           invalidateChangedArea(sx,sy,cx,cy,cx,--cy);
         }
+        if (selectionFollowsMouse) {
+          selectAtCursor();
+        }
         center(CENTER_VERT);
+      } else {
+        if (noCursor && selectionFollowsMouse) {
+          selectAtCursor();
+        }
       }
       break;
     case TK_RIGHT:
       if (!per_row && cx<cols-1) {
         if (!selecting) {
           invalidateCursor();
-          cx++;
-          invalidateCursor();
+          // in case nothing indicates the cursor position, don't move
+          // the cursor now:
+          if (!(noCursor && selectionFollowsMouse &&
+               (!getSelectionModel() || getSelectionModel()->isEmpty())))
+          {
+            cx++;
+            invalidateCursor();
+          }
           sigCursor();
         } else {
           invalidateChangedArea(sx,sy,cx,cy,++cx,cy);
+        }
+        if (selectionFollowsMouse) {
+          selectAtCursor();
         }
         center(CENTER_HORZ);
       }
@@ -913,8 +964,14 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
         } else {
           invalidateChangedArea(sx,sy,cx,cy,--cx,cy);
         }
+        if (selectionFollowsMouse) {
+          selectAtCursor();
+        }
         center(CENTER_HORZ);
       }
+      break;
+    case TK_RETURN:
+      sigDoubleClicked();
       break;
     case ' ': {
       bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
@@ -1093,7 +1150,7 @@ class TTableCellRenderer_CString:
       }
       return max+2;
     }
-    virtual void renderItem(TPen &pen, int, int index, int w, int h, bool selected, bool focus) {
+    virtual void renderItem(TPen &pen, int, int index, int w, int h, bool cursor, bool selected, bool focus) {
       if (selected) {
         if (focus) {
           pen.setColor(TColor::SELECTED);
@@ -1109,7 +1166,7 @@ class TTableCellRenderer_CString:
       if (selected) {
         pen.setColor(TColor::BLACK);
       }
-      if (focus) {
+      if (cursor) {
         pen.drawRectanglePC(0,0,w, h);
       }
     }

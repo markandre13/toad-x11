@@ -190,7 +190,7 @@ class TAbstractTableCellRenderer:
      * GTableSelectionModel?
      */
     virtual TAbstractTableModel * getModel() { return 0; }
-    virtual void renderItem(TPen&, int xindex, int yindex, int w, int h, bool selected, bool focus) = 0;
+    virtual void renderItem(TPen&, int xindex, int yindex, int w, int h, bool cursor, bool selected, bool focus) = 0;
 
     void modelChanged() {
       sigChanged();
@@ -288,12 +288,28 @@ class TTable:
     
     int getCursorX() const { return cx; }
     int getCursorY() const { return cy; }
+    void selectAtCursor();
     
+    //! the cursor was moved
     TSignal sigCursor;
-    TSignal sigDoubleClick;
     
-    //! 'true': expand the last column to match the table's width
+    //! mouse is pressed down on an entry
+    TSignal sigPressed;
+    
+    //! click (down-up) on an entry
+    TSignal sigClicked;
+    
+    //! double click (down-up-down-up) on an entry
+    TSignal sigDoubleClicked;
+    
+    //! true: expand the last column to match the table's width
     bool stretchLastColumn;
+    
+    //! true: don't paint a cursor
+    bool noCursor;
+    
+    //! true: the current mouse position will always be selected
+    bool selectionFollowsMouse;
     
   protected:
     static const int CENTER_VERT=1;

@@ -81,6 +81,7 @@ TComboBox::paint()
     p.getX(), p.getY(),
     btn->getXPos()-2, getHeight()-4,
     false,
+    false,
     isFocus());
 }
 

@@ -211,7 +211,7 @@ TScrollBar::_drawArea(TPen &pen)
 //pen.setColor(255,0,0);  // red
     n = rectSlider.y-_w-2;
     if (n>0)
-      pen.fillRectanglePC(v+1,_w+1, _w-2-(v<<1), n);
+      pen.fillRectanglePC(v+1,_w+1, _w-2-(v<<1), n+1);
 //pen.setColor(255,128,0); // orange
     n += rectSlider.h + _w + 2;
     m = _h-_w-n;
@@ -527,11 +527,13 @@ TScrollBar::_placeChildren()
     btn1->setType(ARROW_UP);
     btn2->setType(ARROW_DOWN);
     btn1->setShape(0,0,_w,_w);
+    // btn1->setShape(0,_h-_w-_w,_w,_w);
     btn2->setShape(0,_h-_w,_w,_w);
   } else {  
     btn1->setType(ARROW_LEFT);
     btn2->setType(ARROW_RIGHT);
     btn1->setShape(0,0,_h,_h);
+    // btn1->setShape(_w-_h-_h,0,_h,_h);
     btn2->setShape(_w-_h,0,_h,_h);
   }
 }

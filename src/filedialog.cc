@@ -45,7 +45,7 @@
 
 using namespace toad;
 
-typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableCellRenderer_DirectoryEntrySet;
+typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableRowRenderer_DirectoryEntrySet;
 typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
 namespace {
 TBitmap bmp;
@@ -98,7 +98,7 @@ TDirectoryEntry::renderItem(TPen &pen, int col, int w, int h) const {
   switch(col) {
     case 0:
       if (S_ISDIR(mode)) {
-        pen.drawBitmap(0,0,bmp);
+        pen.drawBitmap(0, (h - bmp.getHeight())/2, bmp);
       }
       break;
     case 1:
@@ -150,19 +150,14 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
 
   // create widgets (going to be obsolete after TOAD 1.0)
   tfiles = new TTable(this, "fileview");
-  tfiles->setRenderer(new TTableCellRenderer_DirectoryEntrySet(&entries));
+  tfiles->noCursor = true;
+  tfiles->selectionFollowsMouse = true;
+  tfiles->setRenderer(new TTableRowRenderer_DirectoryEntrySet(&entries));
   connect(tfiles->sigSelection, this, &This::fileSelected);
-  connect(tfiles->sigDoubleClick, this, &This::doubleClick);
+  connect(tfiles->sigDoubleClicked, this, &This::doubleClick);
 
-  new TCheckBox(this, "show hidden", &show_hidden);
-  connect(show_hidden.sigChanged, this, &This::hidden);
   new TTextField(this, "filename", &filename);
   connect(filename.sigChanged, this, &This::filenameEdited);
-
-  cb = new TComboBox(this, "previous");
-  cb->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
-  cb->getSelectionModel()->setSelection(0,0);
-  connect(cb->sigSelection, this, &This::jumpDirectory);
 
   filter = 0;
   addFileFilter("All Files (*)");
@@ -173,6 +168,9 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   connect(cb_filter->sigSelection, this, &This::filterSelected);
   cb_filter->getSelectionModel()->setSelection(0,0);
 
+  new TCheckBox(this, "show hidden", &show_hidden);
+  connect(show_hidden.sigChanged, this, &This::hidden);
+
   result = TMessageBox::ABORT;
   
   btn_ok = new TPushButton(this, "ok");
@@ -181,6 +179,11 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
           this, &This::button, TMessageBox::OK);
   connect((new TPushButton(this, "cancel"))->sigActivate, 
           this, &This::button, TMessageBox::ABORT);
+
+  cb = new TComboBox(this, "previous");
+  cb->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
+  cb->getSelectionModel()->setSelection(0,0);
+  connect(cb->sigSelection, this, &This::jumpDirectory);
   
 //  loadDirectory();
   
@@ -377,7 +380,7 @@ TFileDialog::fileSelected()
   const TDirectoryEntry &file(
     entries.getElementAt(0, tfiles->getSelectionModel()->begin().getY())
   );
-  cerr << "selected " << file.name << endl;
+//  cerr << "selected " << file.name << endl;
   filename = file.name;
   adjustOkButton();
 }
