@@ -36,10 +36,8 @@ class TScrollBar;
  * \ingroup figure
  */
 class TFigureEditor:
-//  public TFigureWindow
   public TScrollPane
 {
-//    typedef TFigureWindow super;
     typedef TScrollPane super;
     PFigureModel model;    
   public:
@@ -53,6 +51,7 @@ class TFigureEditor:
 
     void enableScroll(bool);
     void enableGrid(bool);
+    void setGrid(int x, int y);
     void setBackground(int,int,int);
 
     unsigned result;            // values are defined in TFigure
@@ -156,6 +155,7 @@ class TFigureEditor:
     TFigureSet selection;
 
     void paint();
+    void print(TPenBase&);
     void resize();
     void mouseLDown(int,int,unsigned);
     void mouseMove(int,int,unsigned);
@@ -199,12 +199,9 @@ class TFigureEditor:
     int handle;             // the current handle or -1 during select
     
     bool use_scrollbars;
-//    TScrollBar *vscroll, *hscroll;
     int x1,x2, y1,y2;
     bool update_scrollbars; // checked during paint
     void updateScrollbars();
-//    void actVScroll(int);
-//    void actHScroll(int);
     void scrolled(int dx, int dy);
     
     void adjustPane();

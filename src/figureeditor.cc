@@ -176,7 +176,7 @@ TFigureEditor::init()
   filled = false;
   background_color.set(192,192,192);
 
-  gridx = gridy = 4;
+  gridx = gridy = 8;
   draw_grid = true;
   fuzziness = 2;
   handle = -1;
@@ -241,10 +241,24 @@ TFigureEditor::identity()
   if (mat) mat->identity();
 }
 
+/**
+ * This method is doing nothing yet.
+ */
 void TFigureEditor::rotate(double) {}
+
+/**
+ * This method is doing nothing yet.
+ */
 void TFigureEditor::rotateAt(double x, double y, double degree) {}
+
+/**
+ * This method is doing nothing yet.
+ */
 void TFigureEditor::translate(double, double) {}
 
+/**
+ * Scale the edit pane.
+ */
 void TFigureEditor::scale(double sx, double sy)
 {
   if (!mat)
@@ -258,7 +272,14 @@ fuzziness = 2.0 / sx;
   invalidateWindow();
 }
 
+/**
+ * This method is doing nothing yet.
+ */
 void TFigureEditor::shear(double, double) {}
+
+/**
+ * This method is doing nothing yet.
+ */
 void TFigureEditor::multiply(const TMatrix2D*) {}
 
 /**
@@ -277,6 +298,21 @@ void
 TFigureEditor::enableGrid(bool b)
 {
   draw_grid = b;
+}
+
+/**
+ * Set the size of the grid.
+ */
+void
+TFigureEditor::setGrid(int gx, int gy) {
+  if (gx<0)
+    gx=0;
+  if (gy<0)
+    gy=0;
+  gridx = gx;
+  gridy = gy;
+  if (window)
+    window->invalidateWindow(visible);
 }
 
 /**
@@ -314,74 +350,67 @@ TFigureEditor::paint()
     updateScrollbars();
     update_scrollbars = false;
   }
-  TBitmap bmp(window->getWidth(), window->getHeight(), TBITMAP_SERVER);
+  TBitmap bmp(visible.w, visible.h, TBITMAP_SERVER);
   TPen pen(&bmp);
-  
-  // prepare the pen to draw a grid
-  if (draw_grid && gridx && gridy) {
-    TBitmap bitmap(gridx,gridy, TBITMAP_SERVER);
-    TPen bpen(&bitmap);
-    bpen.setColor(background_color);
-    bpen.fillRectanglePC(0,0,gridx,gridy);
-    bpen.setColor(
-      background_color.r > 128 ? background_color.r-128 : background_color.r+128,
-      background_color.g > 128 ? background_color.g-128 : background_color.g+128,
-      background_color.b > 128 ? background_color.b-128 : background_color.b+128
-    );
-    int ox = window->getOriginX() % gridx;
-    if (ox<0)
-      ox+=gridx;
-    int oy = window->getOriginY() % gridy;
-    if (oy<0)
-      oy+=gridy;
-    
-    bpen.drawPoint(ox, oy);
-    pen.setBitmap(&bitmap);
-  } else {
-    pen.setColor(background_color);
-  }
+
+  pen.setColor(background_color);
   pen.identity();
-  pen.fillRectanglePC(0,0,window->getWidth(),window->getHeight());
+  pen.fillRectanglePC(0,0,visible.w,visible.h);
   pen.translate(window->getOriginX(), window->getOriginY());
 
   if (mat)
     pen.multiply(mat);
-  
-  pen.setColor(TColor::BLACK);
+    
+  pen.setColor(
+    background_color.r > 128 ? background_color.r-128 : background_color.r+128,
+    background_color.g > 128 ? background_color.g-128 : background_color.g+128,
+    background_color.b > 128 ? background_color.b-128 : background_color.b+128
+  );
 
-  TFigureModel::iterator p, e;
-  
-  // draw the figures
-  p = model->begin();
-  e = model->end();
-  while(p!=e) {
-    TFigure::EPaintType pt = TFigure::NORMAL;
-    unsigned pushs = 0;
-    if ((*p)->mat) {
-      pen.push();
-      pushs++;
-      pen.multiply( (*p)->mat );
-    }
-    if (gadget==*p) {
-      if (state==STATE_ROTATE) {
-        pen.push();
-        pushs++;
-        pen.translate(rotx, roty);
-        pen.rotate(rotd);
-        pen.translate(-rotx, -roty);
+  if (draw_grid && gridx && gridy) {
+    int x1, x2, y1, y2;
+    
+    getPanePos(&x1, &y1, true);
+    x2 = x1 + visible.w;
+    y2 = y1 + visible.h;
+    
+    if (mat) {
+      int gx, gy;
+      mat->map(gridx, gridy, &gx, &gy);
+      if (gx<2 || gy<2) {
+//        cerr << "don't draw grid, it's too small" << endl;
+        x1=y1=1;
+        x2=y2=0;
       } else {
-        pt = TFigure::EDIT;
+        TMatrix2D m(*mat);
+        m.invert();
+//        cerr << "draw grid of size " << gx << ", " << gy << endl;
+        m.map(x1, y1, &x1, &y1);
+        m.map(x2, y2, &x2, &y2);
+        if (x1>x2) {
+          int a = x1; x1 = x2; x2 = a;
+        }
+        if (y1>y2) {
+          int a = y1; y1 = y2; y2 = a;
+        }
       }
-    } else if (selection.find(*p)!=selection.end()) {
-      pt = TFigure::SELECT;
     }
-    (*p)->paint(pen, pt);
-    while(pushs) {
-      pen.pop();
-      pushs--;
+
+    // justify to grid
+    x1 -= x1 % gridx;
+    y1 -= y1 % gridy;
+
+//    cerr << "draw grid from (" << x1 << ", " << y1 << ") to ("
+//         << x2 << ", " << y2 << ")" << endl;
+
+    for(int y=y1; y<=y2; y+=gridy) {
+      for(int x=x1; x<=x2; x+=gridx) {
+        pen.drawPoint(x, y);
+      }
     }
-    ++p;
   }
+  
+  print(pen);
 
   // draw the selection marks over all gadgets
   pen.setColor(0,0,0);
@@ -434,9 +463,47 @@ TFigureEditor::paint()
   // put the result onto the screen
   TPen scr(window);
   scr.identity();
-  scr.drawBitmap(0,0, &bmp);
+  scr.drawBitmap(visible.x,visible.y, &bmp);
   
   paintCorner(scr);
+}
+  
+void
+TFigureEditor::print(TPenBase &pen)
+{
+  TFigureModel::iterator p, e;
+  
+  // draw the figures
+  p = model->begin();
+  e = model->end();
+  while(p!=e) {
+    TFigure::EPaintType pt = TFigure::NORMAL;
+    unsigned pushs = 0;
+    if ((*p)->mat) {
+      pen.push();
+      pushs++;
+      pen.multiply( (*p)->mat );
+    }
+    if (gadget==*p) {
+      if (state==STATE_ROTATE) {
+        pen.push();
+        pushs++;
+        pen.translate(rotx, roty);
+        pen.rotate(rotd);
+        pen.translate(-rotx, -roty);
+      } else {
+        pt = TFigure::EDIT;
+      }
+    } else if (selection.find(*p)!=selection.end()) {
+      pt = TFigure::SELECT;
+    }
+    (*p)->paint(pen, pt);
+    while(pushs) {
+      pen.pop();
+      pushs--;
+    }
+    ++p;
+  }
 }
 
 void
@@ -880,6 +947,8 @@ TFigureEditor::mouseLDown(int mx,int my, unsigned m)
 
   int x = ((mx+gridx/2)/gridx)*gridx;
   int y = ((my+gridy/2)/gridy)*gridy;
+//cerr << "mouse down at " << mx << ", " << my << endl;
+//cerr << " with grid at " << x << ", " << y << endl;
 
   down_x = x;
   down_y = y;
@@ -1519,6 +1588,18 @@ TFigureEditor::findGadgetAt(int mx, int my)
 void
 TFigureEditor::adjustPane()
 {
+#if 0
+  visible.set(0,0,getWidth(),getHeight());
+
+  if (true /*row_header_renderer*/) {
+    visible.x = 16; // row_header_renderer->getWidth();
+    visible.w -= visible.x;
+  }
+  if (true /*col_header_renderer*/) {
+    visible.y = 16; // col_header_renderer->getHeight();
+    visible.h -= visible.y;
+  }
+#endif
 }
 
 void
