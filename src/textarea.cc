@@ -805,8 +805,13 @@ TTextArea::adjustScrollbars()
   visible.set(2,2,getWidth()-4,getHeight()-4);
 //  cerr << "'" << getTitle() << "', adjustScrollbars: visible = " << visible << endl;
 
-  if (!preferences || !model)
+  if (!preferences || preferences->singleline || !model) {
+    if (vscroll) {
+      vscroll->setMapped(false);
+      vscroll->setValue(0);
+    }
     return;
+  }
 
   if (preferences->singleline)
     return;
@@ -1463,6 +1468,9 @@ TTextArea::resize()
 void
 TTextArea::_catch_cursor()
 {
+  if (!model)
+    return;
+
   MARK
 
   TFont *font = TPen::lookupFont(preferences->getFont());
