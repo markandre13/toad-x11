@@ -4,26 +4,27 @@ Mark-André Hopf <mhopf@mark13.de>
 
 feedback, ideas, code and inspiration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Michael Müller
-  bug reports and feedback since 1998
 
 Amine Chadly
   code updates in examples/
 
-helpfull bug reports and feature requests
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  
 Alain Rougé
   bug reports, testing & feedback
 
 Armin Faltl
   inspiration for void TWindow::handleX11Event()
 
+Michael Müller
+  bug reports and feedback
+
 Rob O'Connell
   bug report
 
 Sachin Bhandare
   bug report
+
+Ullal Devappa Kini
+  some fixes for Cygwin
 
 Ziggy Uszkurat
   bug report
