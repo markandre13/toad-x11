@@ -61,14 +61,12 @@ enum {
   VMAS_MAX
 };
 
-#define _vmas_cast(f) ((void*)f)
-
+typedef void (*pmf)(TIOObserver*);
 #define SET_VMAS(const, func) \
-  _vmas_table[const] = _vmas_cast(&TIOObserver::func)
+  _vmas_table[const] = (pmf)(this->*(&TIOObserver::func))
 #define CHK_VMAS(const, func) \
-  (_vmas_table[const] != _vmas_cast(&TIOObserver::func))
-
-static const void* _vmas_table[VMAS_MAX] = { NULL, };
+  _vmas_table[const] != (pmf)(this->*(&TIOObserver::func))
+static pmf _vmas_table[VMAS_MAX] = { NULL, };
 
 namespace toad {
   bool debug_select = false;
@@ -111,7 +109,8 @@ static TSortedList _sorted_list;
 // wrapper for the C library `select' call
 // handles X11, TIOObserver & TSimpleTimer
 //----------------------------------------------------------------
-void TOADBase::select()
+void 
+TOADBase::select()
 {
 #ifdef __X11__
   // add new io observers to the list
@@ -292,20 +291,58 @@ TIOObserver::TIOObserver(int fd)
     SET_VMAS(VMAS_EXCEPTION, gotException);
   }
   setFD(fd);
+#endif
 }
 
+#ifdef __X11__
+/**
+ * Assign a file descriptor to the io observer.
+ *
+ * \param fd
+ *   A value >= 0 will add the observer for the specified file
+ *   descriptor to the message loop. A value < 0 will remove the
+ *   observer from the messsage loop.
+ */
 void
 TIOObserver::setFD(int fd)
 {
   if (debug_select)
     cerr << "select: new fd " << fd << endl;
 
-  fcntl(fd, F_SETFL, O_NONBLOCK);
+  // remove old FD from message loop
+  if (_fd >= 0) {
+    FD_CLR(_fd, &fd_set_rd);
+    FD_CLR(_fd, &fd_set_wr);
+    FD_CLR(_fd, &fd_set_ex);
+    TList::iterator p;
+    p = fd_new.begin();
+    while(p!=fd_new.end()) {
+      if (*p==this) {
+        fd_new.erase(p);
+        break;
+      }
+    }
+    p++;
+    p = fd_list.begin();
+    while(p!=fd_list.end()) {
+      if (*p==this) {
+        fd_list.erase(p);
+        break;
+      }
+      p++;
+    }
+  }
+
   _fd = fd;
-  fd_list.push_back(this);
-  fd_new.push_back(this);
-#endif
+
+  // add new FD to message loop
+  if (_fd >= 0) {
+    fcntl(fd, F_SETFL, O_NONBLOCK);
+    fd_list.push_back(this);
+    fd_new.push_back(this);
+  }
 }
+#endif
 
 void TIOObserver::_check(int &r)
 {
@@ -321,17 +358,7 @@ TIOObserver::~TIOObserver()
 {
   if (debug_select)
     cerr << "select: delete fd " << _fd << endl;
-  FD_CLR(_fd, &fd_set_rd);
-  FD_CLR(_fd, &fd_set_wr);
-  FD_CLR(_fd, &fd_set_ex);
-  TList::iterator p = fd_list.begin();
-  while(p!=fd_list.end()) {
-    if (*p==this) {
-      fd_list.erase(p);
-      break;
-    }
-    p++;
-  }
+  setFD(-1);
 }
 
 /**
