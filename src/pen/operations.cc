@@ -20,6 +20,7 @@
 
 // XDrawLines is broken for pixmaps with coordinates <0
 // verified on MacOS X, ...
+#if 0
 #define PIXMAP_FIX_001(xp, n) \
   if (bmp) { \
     for(unsigned i=0; i<n; ++i) { \
@@ -27,7 +28,9 @@
         xp[i].x--; \
     } \
   }
-
+#else
+#define PIXMAP_FIX_001(xp, n)
+#endif
 /**
  * \file operation.cc
  * \todo
@@ -382,7 +385,7 @@ void
 TPen::drawLines(const TPolygon &polygon)
 {
 #ifdef __X11__
-  unsigned n = polygon.size();
+  size_t n = polygon.size();
   XPoint xp[n];
   polygon2xpoint(polygon, xp, mat);
   PIXMAP_FIX_001(xp, n)
@@ -391,7 +394,7 @@ TPen::drawLines(const TPolygon &polygon)
 
 #ifdef __WIN32__
   activateW32();
-  unsigned n = polygon.size();
+  size_t n = polygon.size();
   POINT pts[n];
   polygon2wpoint(polygon, pts, mat);
   ::MoveToEx(w32hdc, pts[0].x, pts[0].y, NULL);
@@ -620,7 +623,7 @@ TPen::vdrawCircle(int x, int y, int w, int h)
   } else {
     double dw, dh;
     mat->map(w,h, &dw, &dh);
-    unsigned long m = static_cast<unsigned long>(pow(max(dw, dh), 0.25));
+    unsigned long m = lround(pow(max(dw, dh), 0.25));
     ++m;
     if (m<3) m = 3;
     if (m>14) m = 14; // maximum will be 4*102948 points
@@ -647,7 +650,7 @@ TPen::vfillCircle(int x, int y, int w, int h)
     XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
     XDrawArc(x11display, x11drawable, o_gc, x, y,w,h, 0,360*64);
   } else {
-    unsigned long m = static_cast<unsigned long>(pow(max(w, h), 0.25));
+    unsigned long m = lround(pow(max(w, h), 0.25));
     ++m;
     if (m<3) m = 3;
     if (m>14) m = 14; // maximum will be 4*102948 points
@@ -789,7 +792,7 @@ void
 TPen::drawPolygon(const TPolygon &polygon)
 {
 #ifdef __X11__
-  unsigned n = polygon.size();
+  size_t n = polygon.size();
   XPoint d[n];
   polygon2xpoint(polygon, d, mat);
   XDrawLine(x11display, x11drawable, o_gc,
@@ -801,7 +804,7 @@ TPen::drawPolygon(const TPolygon &polygon)
 #endif
 
 #ifdef __WIN32__
-  unsigned n = polygon.size();
+  size_t n = polygon.size();
   POINT pts[n+1];
   polygon2wpoint(polygon, pts, mat);
   pts[n].x=pts[0].x;
@@ -818,7 +821,7 @@ void
 TPen::fillPolygon(const TPolygon &polygon)
 {
 #ifdef __X11__
-  unsigned n = polygon.size();
+  size_t n = polygon.size();
   XPoint d[n];
   polygon2xpoint(polygon, d, mat);
 
@@ -833,7 +836,7 @@ TPen::fillPolygon(const TPolygon &polygon)
 #endif
 
 #ifdef __WIN32__
-  unsigned n = polygon.size();
+  size_t n = polygon.size();
   POINT d[n];
   polygon2wpoint(polygon, d, mat);
   ::Polygon(w32hdc, d, n);

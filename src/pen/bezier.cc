@@ -33,6 +33,7 @@
 
 // XDrawLines is broken for pixmaps with coordinates <0
 // verified on MacOS X, ...
+#if 0
 #define PIXMAP_FIX_001(xp, n) \
   if (bmp) { \
     for(unsigned i=0; i<n; ++i) { \
@@ -40,6 +41,9 @@
         xp[i].x--; \
     } \
   }
+#else
+#define PIXMAP_FIX_001(xp, n)
+#endif
 
 using namespace toad;
 
