@@ -50,6 +50,7 @@ TCheckBox::_init(TBoolModel *m)
 {
   setBackground(TColor::DIALOG);
   setBorder(false);
+  model = 0;
   if (!m)
     m = new TBoolModel();
   setModel(m);
