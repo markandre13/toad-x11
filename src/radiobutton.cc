@@ -49,8 +49,10 @@ TRadioButton::paint()
   // draw text
   int y = ( (getHeight()-pen.getHeight()) >> 1 );
 
+  pen.setColor(128,128,128);
+  pen.fillCirclePC(0,0,11,11);
   pen.setColor(255,255,255);
-  pen.fillCirclePC(1,1,11,11);
+  pen.fillCirclePC(1,1,12,12);
   pen.setColor(128,128,128);
   pen.drawCirclePC(0,0,11,11);
   pen.drawCirclePC(1,1,10,10);
