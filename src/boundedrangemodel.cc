@@ -229,3 +229,15 @@ toad::createTextModel(TBoundedRangeModel * m)
 {
   return new TBoundedRangeTextModel(m);
 }
+
+bool
+restore(atv::TInObjectStream &in, toad::TBoundedRangeModel *value)
+{
+  if (in.what != ATV_VALUE)
+    return false;
+  char *endptr;  
+  *value = strtol(in.value.c_str(), &endptr, 10);
+  if (endptr!=0 && *endptr!=0)
+    return false;
+  return true;   
+}
