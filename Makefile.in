@@ -30,6 +30,7 @@ install:
 	cd src ; $(MAKE) install DESTDIR=$(DESTDIR)
 	$(INSTALL) -d $(DESTDIR)/$(bindir)
 	$(INSTALL) bin/toadtrace $(DESTDIR)/$(bindir)
+	$(INSTALL) bin/toadbin2c $(DESTDIR)/$(bindir)
 	$(INSTALL) -m 0755 conf/toad-config $(DESTDIR)/$(bindir)
 	
 doc:
