@@ -1929,42 +1929,36 @@ void TWindow::setTitle(const string &title)
 }
 
 void
-TWindow::loadLayout(const string &file)
+TWindow::loadLayout(const string &filename)
 {
   TLayout * new_layout = NULL;
-  // bDialogEditRequest = true; ???
-  string filename = file;
   try {
     iurlstream url(filename);
     TInObjectStream in(&url);
     TSerializable *s = in.restore();
-    if (!s) {
-      cerr << "loading layout failed:\n" << in.getErrorText() << endl;
-      return;
-    }
-    if (!in) {
-      cerr << "loading layout failed:\n" << in.getErrorText() << endl;
-    }
-    
-    new_layout = dynamic_cast<TLayout*>(s);
-    if (!new_layout) {
-      cerr << "loading layout failed:\nfile '"<<filename<<"' doesn't provide TLayout object" << endl;
-      cerr << "  got '" << typeid(*s).name() << "'\n";
-      delete s;
+    if (!s || !in) {
+      cerr << "loading layout '" << filename << "' failed " << in.getErrorText() << endl;
+    } else {
+      new_layout = dynamic_cast<TLayout*>(s);
+      if (!new_layout) {
+        cerr << "loading layout '" << filename << "' failed: doesn't provide TLayout object, "
+             << "  got '" << typeid(*s).name() << "'\n";
+        delete s;
+      }
     }
   }
   catch(exception &e) {
-    cerr << "loading layout failed:\ncaught exception: " << e.what() << endl;
+    cerr << "loading layout '" << filename << "' failed:\ncaught exception: " << e.what() << endl;
   }
   if (new_layout) {
     new_layout->setFilename(filename);
     setLayout(new_layout);
   } else {
     if (layout) {
-      layout->arrange();
-      layout->setFilename(filename);
-      layout->setModified(true);
-      layout->toFile();
+      TLayout *l = layout;
+      l->setFilename(filename);
+      layout = 0;
+      setLayout(l);
     }
   }
 }
@@ -1981,12 +1975,13 @@ TWindow::loadLayout(const string &file)
 void
 TWindow::setLayout(TLayout *l)
 {
+  if (layout == l)
+    return;
   string oldfilename;
   if (layout) {
     oldfilename = layout->getFilename();
     layout->setFilename("");
     delete layout;
-  } else {
   }
   /**
    * windows without a paint method, don't get paint events, but the
@@ -2002,7 +1997,6 @@ TWindow::setLayout(TLayout *l)
   if (layout) {
     if (layout->getFilename().size()==0 && oldfilename.size()!=0) {
       layout->setFilename(oldfilename);
-    } else {
     }
     layout->window = this;
     layout->arrange();
