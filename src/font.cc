@@ -187,7 +187,7 @@ TFont::getAscent() const
 #endif
 #ifdef HAVE_LIBXUTF8
   if (xutf8font) {
-    return xutf8font->ascent;
+    return x11scale * xutf8font->ascent;
   }
 #endif
 #ifdef HAVE_LIBXFT
@@ -209,7 +209,7 @@ TFont::getDescent() const
 #endif
 #ifdef HAVE_LIBXUTF8
   if (xutf8font) {
-    return xutf8font->descent;
+    return x11scale * xutf8font->descent;
   }
 #endif
 #ifdef HAVE_LIBXFT
@@ -304,11 +304,10 @@ void
 TFont::createX11Font(TMatrix2D *mat)
 {
   FcPattern *pattern;
-
   // check that the required transformation matches the current font
   string newid;
   if (mat && !mat->isIdentity()) {
-    double d;
+    double d = 12.0;
     pattern = XftNameParse(fontname.c_str());
     FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
     newid = "[";
@@ -317,7 +316,6 @@ TFont::createX11Font(TMatrix2D *mat)
     newid += d2s(mat->a21 * d);
     newid += d2s(mat->a22 * d);
     newid += "]";
-
     if (newid != id) {
 #ifdef TOAD_OLD_FONTCODE
       if (x11font) {  
@@ -387,10 +385,8 @@ TFont::createX11Font(TMatrix2D *mat)
   TX11FontName xfn;
   xfn.setXLFD((char*)filename);
 
-  FcBool scaleable;
-  FcPatternGetBool(found, FC_SCALABLE, 0, &scaleable);
-  if (scaleable) {
-    double size, dpi;
+  if (xfn.isScaleable()) {
+    double size=12.0, dpi=100.0;
     FcPatternGetDouble(found, FC_SIZE, 0, &size);
     FcPatternGetDouble(found, FC_DPI, 0, &dpi);
     
@@ -520,7 +516,7 @@ TFont::createXftFont(TMatrix2D *mat)
   XftPattern *pattern;
   string newid;
   if (mat && !mat->isIdentity()) {
-    double d;
+    double d=12.0;
     pattern = XftNameParse(fontname.c_str());
     FcPatternGetDouble(pattern, FC_SIZE, 0, &d);
     newid = "[";
@@ -802,7 +798,7 @@ X11ConfigBuildFonts(FcConfig *config)
       }
     }
 
-    if (xfn.isScaleable()) {    
+    if (xfn.isScaleable()) {
       FcPatternAddBool(font, FC_SCALABLE, FcTrue);
       FcPatternAddBool(font, FC_OUTLINE, FcTrue);
     } else {
@@ -977,8 +973,6 @@ TX11FontName::isScaleable() const
 {
    return (pixels=="0" &&
            points=="0" && 
-           hdpi=="0" && 
-           vdpi=="0" &&
            avg_width=="0");
 }
 
