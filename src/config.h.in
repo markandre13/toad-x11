@@ -44,6 +44,6 @@
 #undef HAVE_LIBXFT
 
 /* Xutf8 library with UTF8 support for X11 */
-#undef HAVE_XUTF8
+#undef  HAVE_LIBXUTF8
 
 /* end of config.hin */

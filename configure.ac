@@ -70,20 +70,18 @@ LDFLAGS="$LDFLAGS `$pkg_config --libs fontconfig`"
 AC_CHECK_LIB([z], [zlibVersion],,
   AC_MSG_ERROR(Could not link with libz))
 AC_CHECK_LIB([png], [png_create_read_struct],, 
-  AC_MSG_ERROR(Could not linkwith libpng))
+  AC_MSG_ERROR(Could not link with libpng))
 
 # libjpeg (optional)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AC_CHECK_LIB([jpeg], [jpeg_start_decompress])
 
-# libXutf8 (not used yet)
+# libXutf8 (required)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 dnl Test to see if libXutf8 is on this machine:
 XUTFLIB=
-AC_CHECK_LIB(Xutf8, XUtf8IsNonSpacing, \
-        AC_DEFINE(HAVE_XUTF8) XUTFLIB=" -lXutf8", ,\
-        -lX11 $X_EXTRA_LIBS)
-AC_SUBST(XUTFLIB)
+AC_CHECK_LIB([Xutf8], [XUtf8DrawString],,
+  AC_MSG_ERROR(Could not link with Xutf8))
 
 # Checks for header files.
 AC_HEADER_DIRENT
