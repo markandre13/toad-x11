@@ -33,6 +33,7 @@ print<<EOT;
  */
 
 #include <cstdlib>
+#include <cassert>
 #include <toad/debug.hh>
 
 EOT
@@ -99,6 +100,8 @@ class $_[0]:
  */
 template <class R$_[11]$tp$ap>
 TSignalLink* connect(TSignal &s, $_[8]R($_[7]*m)($dp)$ap1) {
+  assert(o!=NULL);
+  assert(m!=NULL);
   return s.add(new $_[0]<R$_[10]$ep>($_[9]m$bp));
 }
 
@@ -107,6 +110,8 @@ TSignalLink* connect(TSignal &s, $_[8]R($_[7]*m)($dp)$ap1) {
  */
 template <class R$_[11]$tp>
 void disconnect(TSignal &s, $_[8]R($_[7]*m)($dp)) {
+	assert(o!=NULL);
+	assert(m!=NULL);
 	$_[14]
 }
 
