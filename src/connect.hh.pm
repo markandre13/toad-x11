@@ -33,7 +33,6 @@ print<<EOT;
  */
 
 #include <cstdlib>
-#include <cassert>
 #include <toad/debug.hh>
 
 EOT
@@ -100,8 +99,6 @@ class $_[0]:
  */
 template <class R$_[11]$tp$ap>
 TSignalLink* connect(TSignal &s, $_[8]R($_[7]*m)($dp)$ap1) {
-  assert(o!=NULL);
-  assert(m!=NULL);
   return s.add(new $_[0]<R$_[10]$ep>($_[9]m$bp));
 }
 
@@ -110,8 +107,6 @@ TSignalLink* connect(TSignal &s, $_[8]R($_[7]*m)($dp)$ap1) {
  */
 template <class R$_[11]$tp>
 void disconnect(TSignal &s, $_[8]R($_[7]*m)($dp)) {
-	assert(o!=NULL);
-	assert(m!=NULL);
 	$_[14]
 }
 
@@ -294,10 +289,11 @@ class GSignalCodeLink:
 	class unnamed:\\
 		public GSignalCodeLink<TS, TD>\\
 	{\\
+	    typedef GSignalCodeLink<TS, TD> TThis;\\
 		public:\\
 			unnamed(TS s, TD d): TThis(s,d) {}\\
 			void execute() {\\
-				dst->DM(src->SM);\\
+				this->dst->DM(this->src->SM);\\
 			}\\
 	};\\
 	SIG.add(new unnamed(S, D));\\
@@ -322,6 +318,7 @@ TSignalLink* connect_value_of(TSignal &sig, D *d, R(D::*dm)(V), S *s, V(S::*sm)(
 	struct unnamed:
 		public GSignalCodeLink<S, D>
 	{
+	    typedef GSignalCodeLink<S, D> TThis;
 			typedef R(D::*DM)(V);
 			typedef V(S::*SM)();
       typedef typename GSignalCodeLink<S, D>::TD TD;
@@ -331,7 +328,7 @@ TSignalLink* connect_value_of(TSignal &sig, D *d, R(D::*dm)(V), S *s, V(S::*sm)(
 		public:
 			unnamed(TD d, DM dm, TS s, SM sm): TThis(s,d), _dm(dm), _sm(sm) {}
 			void execute() {
-				(dst->*_dm)((src->*_sm)());
+				(this->dst->*_dm)((this->src->*_sm)());
 			}
 	};
 	return sig.add(new unnamed(d, dm, s, sm));
@@ -405,6 +402,7 @@ TSignalLink* connect_value(TSignal &sig, D *d, R(D::*dm)(V), S *s)
 	struct unnamed:
 		public GSignalCodeLink<S, D>
 	{
+	    typedef GSignalCodeLink<S, D> TThis;
 			typedef R(D::*DM)(V);
 			typedef typename GSignalCodeLink<S, D>::TD TD;
 			typedef typename GSignalCodeLink<S, D>::TS TS;
@@ -412,7 +410,7 @@ TSignalLink* connect_value(TSignal &sig, D *d, R(D::*dm)(V), S *s)
 		public:
 			unnamed(TD d, DM dm, TS s): TThis(s,d), _dm(dm) {}
 			void execute() {
-				(dst->*_dm)(src->getValue());
+				(this->dst->*_dm)(this->src->getValue());
 			}
 	};
 	return sig.add(new unnamed(d, dm, s));
@@ -452,6 +450,7 @@ extern const TNone *NONE;
 		class A:\\
 			public GSignalCodeLink<TS,TD>\\
 		{\\
+		    typedef GSignalCodeLink<TS,TD> TThis;\\
 			public:\\
 				A(TS s, TD d): TThis(s,d) {}\\
 				void execute() {
