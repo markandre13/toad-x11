@@ -24,7 +24,6 @@
 #include <cstdio>
 #include <assert.h>
 
-
 #if 0
 #define DBM(M) M
 #define MARK { cout << __PRETTY_FUNCTION__ << endl; }
@@ -51,16 +50,34 @@ utf8dec(const string &text, unsigned int *cx)
     --*cx;
 }
 
+// return the number of characters in text from start to start+bytelen
 inline int
-utf8charcount(const string &text, int start, int len)
+utf8charcount(const string &text, int start, int bytelen)
 {
-  return XCountUtf8Char((const unsigned char*)text.c_str()+start, len);
+  return XCountUtf8Char((const unsigned char*)text.c_str()+start, bytelen);
+}
+
+inline int
+utf8bytecount(const string &text, int start, int charlen)
+{
+  int result = 0;
+  unsigned char *ptr = (unsigned char*)text.c_str() + start;
+  while(charlen>0) {
+    ++ptr;
+    --charlen;
+    ++result;
+    while( (*ptr & 0xC0) == 0x80 ) {
+      ++result;
+      ++ptr;
+    }
+  }
+  return result;
 }
 
 inline int
 utf8charsize(const string &text, int pos)
 {
-  return XUtf8CharByteLen((const unsigned char*)text.c_str()+pos, 5);
+  return utf8bytecount(text, pos, 1);
 }
 
 TTextModel *
@@ -125,6 +142,7 @@ static TTextArea::TBlink blink;
 void
 TTextArea::TBlink::tick()
 {
+//return;
   if (!current) {      // sanity check, not needed
     cout << "  no current => " << endl;
     return;
@@ -146,7 +164,8 @@ TTextArea::TPreferences::TPreferences()
   tabwidth = 8;
   singleline = false;
   password = false;
-  fontname = "fixed,monospace:size=12";
+//  fontname = "fixed,monospace:size=12";
+  fontname = "sans-serif:size=12";
 }
 
 TTextArea::TPreferences::~TPreferences()
@@ -798,7 +817,7 @@ TTextArea::paint()
       // line = line with tabs converted to spaces
       // sx   = cx in line with tabs converted to spaces
       sx = _tx+_cx;
-cerr << "1 sx=" << sx << endl;
+//cerr << "\n1 sx=" << sx << endl;
       
       unsigned _bos = this->_bos;
       unsigned _eos = this->_eos;
@@ -811,16 +830,16 @@ cerr << "1 sx=" << sx << endl;
       unsigned bos = _bos;
       unsigned eos = _eos;
       for(unsigned i=0, j=0; 
-          i<line.size(); 
+          j<line.size();
           i++, utf8inc(line, &j))
       {
         if (line[j]=='\t') {
           unsigned m = (preferences->tabwidth-i-1) % preferences->tabwidth;
           if (!preferences->viewtabs) {
-            line.replace(i, 1, m+1, ' ');
+            line.replace(j, 1, m+1, ' ');
           } else {
-            line.replace(i, 1, m+1, '·');
-            line.replace(i, 1, 1  , '¬');
+            line.replace(j, 1, m+1, 'Â·');
+            line.replace(j, 1, 1  , 'Â»');
           }
           if (sx>i)
             sx+=m;
@@ -913,9 +932,11 @@ cerr << "1 sx=" << sx << endl;
       // draw cursor
       if (blink.visible && blink.current==this && sy==_cy) {
         pen.setColor(0,0,0);
-cerr << "2 sx=" << sx << endl;
-        // sx = pen.getTextWidth(line.substr(0, sx));
-        sx = pen.getTextWidth("x") * (sx-_tx);
+//cerr << "2 sx=" << sx << endl;
+//string l2 = line.substr(0, utf8bytecount(line, 0, sx));
+//cerr << "'" << l2 << "'\n";
+        sx = pen.getTextWidth(line.substr(0, utf8bytecount(line, 0, sx)));
+        // sx = pen.getTextWidth("x") * (sx-_tx);
         pen.setMode(TPen::INVERT);
         pen.drawLine(sx,y,sx,y+pen.getHeight()-1);
         pen.setMode(TPen::NORMAL);
@@ -1045,14 +1066,13 @@ TTextArea::_cursor_left(unsigned n)
   MARK
   for(unsigned i=0; i<n; ++i) {
     if (_pos>_bol) {
+      utf8dec(model->getValue(), &_pos);
       if (_cx>0) {
         --_cx;
-        utf8dec(model->getValue(), &_pos);
         _invalidate_line(_cy);
         _catch_cursor();
       } else {
         _tx--;
-        utf8dec(model->getValue(), &_pos);
         invalidateWindow();
       }
     } else 
@@ -1072,7 +1092,7 @@ cerr << "cursor_right" << endl;
 cerr << "   _cx = " << _cx << endl;
 cerr << "  _pos = " << _pos << endl;
   for(unsigned i=0; i<n; ++i) {
-    if (_pos<_eol-_bol) {
+    if (_pos<_eol) {
       ++_cx;
       utf8inc(model->getValue(), &_pos);
       _invalidate_line(_cy);
@@ -1091,6 +1111,7 @@ cerr << "  _pos = " << _pos << endl;
 void
 TTextArea::_cursor_down(unsigned n)
 {
+#warning "_cursor_down doesn't handle utf-8"
   MARK
   for(unsigned i=0; i<n; ++i) {
     if(_eol+1<model->getValue().size()) {
@@ -1112,6 +1133,7 @@ TTextArea::_cursor_down(unsigned n)
 void
 TTextArea::_cursor_up(unsigned n)
 {
+#warning "_cursor_up doesn't handle utf-8"
   MARK
   for(unsigned i=0; i<n; ++i) {
     if (_bol>0) {
@@ -1144,7 +1166,7 @@ TTextArea::_cursor_home()
   MARK
   if (_tx+_cx!=0) {
     bool flag = _tx == 0;
-    _pos-=_cx+_tx;
+    _pos=_bol;
     _cx=0;
     _tx=0;
     if (flag) {
@@ -1162,8 +1184,8 @@ TTextArea::_cursor_end()
   MARK
   unsigned n = _eol - _pos;
   if (n!=0) {
-    _pos+=n;
-    _cx+=n;
+    _cx+=utf8charcount(model->getValue(), _pos, n);
+    _pos=_eol;
     _invalidate_line(_cy);
     _catch_cursor();
     blink.visible=true;
@@ -1378,6 +1400,7 @@ TTextArea::getValue() const
 void
 TTextArea::setCursor(unsigned x, unsigned y)
 {
+#warning "setCursor doesn't handle utf-8"
   if (!model)
     return;
     
