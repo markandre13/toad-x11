@@ -251,6 +251,7 @@ TUndoManager::doUndo()
   } else {
     pms->second.undostack.pop_back();
     undo->undo();
+    delete undo;
   }
   if (undocount<=1) {
     this->undo->setEnabled(false);
@@ -307,6 +308,7 @@ TUndoManager::doRedo()
   } else {
     pms->second.redostack.pop_back();
     undo->undo();
+    delete undo;
   }
   if (redocount<=1) {
     this->redo->setEnabled(false);
@@ -514,7 +516,7 @@ TModelUndoStore::addUndo(TModel *model, TUndo *undo)
 void
 TModelUndoStore::clearRedo() {
   while(!redostack.empty()) { 
-    delete redostack.back();  
+    delete redostack.back();
     redostack.pop_back();     
   }
 }  
