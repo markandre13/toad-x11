@@ -21,6 +21,7 @@
 #ifndef TPen
 #define TPen TPen
 
+#include <toad/os.hh>
 #include <toad/font.hh>
 #include <toad/color.hh>
 #include <toad/bitmap.hh>

@@ -21,6 +21,8 @@
 #ifndef TCursor
 #define TCursor TCursor
 
+#include <toad/os.hh>
+
 namespace toad {
 
 class TWindow;

@@ -21,6 +21,7 @@
 #ifndef TWindow
 #define TWindow TWindow
 
+#include <toad/os.hh>
 #include <toad/toadbase.hh>
 #include <toad/interactor.hh>
 #include <toad/pen.hh>

@@ -229,7 +229,7 @@ class TTextArea:
       super(p, t)
     {
       vscroll = 0;
-#ifdef __X11__
+#ifndef OLDLIBSTD
       setModel(new TTextModel());
 #endif
       init();
@@ -238,7 +238,7 @@ class TTextArea:
       super(p, t)
     {
       vscroll = 0;
-#ifdef __X11__
+#ifndef OLDLIBSTD
       setModel(m);
 #endif
       init();
@@ -248,7 +248,7 @@ class TTextArea:
       super(p, t)
     {
       vscroll = 0;
-#ifdef __X11__
+#ifdef OLDLIBSTD
       setModel(m);
 #endif
       init();

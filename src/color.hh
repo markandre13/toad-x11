@@ -21,6 +21,7 @@
 #ifndef TColor
 #define TColor TColor
 
+#include <toad/os.hh>
 #include <toad/pointer.hh>
 
 #include <toad/io/serializable.hh>

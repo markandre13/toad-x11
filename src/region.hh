@@ -21,6 +21,8 @@
 #ifndef TRegion
 #define TRegion TRegion
 
+#include <toad/os.hh>
+
 namespace toad {
 
 class TRectangle;

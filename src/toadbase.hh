@@ -31,6 +31,8 @@
 
 #define TOAD_VERSION(A,B,C) __TOAD_MAJOR__==A && __TOAD_MINOR__==B && __TOAD_SUBLVL__==C
 
+#include <toad/os.hh>
+
 // hiding X11 types (better to be generated from the X11 headers!)
 //-----------------------------------------------
 #ifdef _TOAD_PRIVATE

@@ -18,6 +18,8 @@
  * MA  02111-1307,  USA
  */
 
+#include <toad/os.hh>
+
 #ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -100,7 +102,7 @@ void TColor::set(TColor::EColor16 c16)
 {
   const TColor &c = _palette(c16);
   r = c.r; g = c.g; b = c.b;
-#if __X11__
+#ifdef __X11__
   _data = NULL;
 #endif
 #ifdef __WIN32__
@@ -112,7 +114,7 @@ void TColor::set(ESystemColor sc)
 {
   const TColor &c = sysrgb[sc];
   r = c.r; g = c.g; b = c.b;
-#if __X11__
+#ifdef __X11__
   _data = NULL;
 #endif
 #ifdef __WIN32__

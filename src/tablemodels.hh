@@ -316,7 +316,7 @@ typedef GTableCellRenderer_String<TStringVector> TTableCellRenderer_StringVector
 typedef GTableCellRenderer_String<TStringSet> TTableCellRenderer_StringSet;
 
 /**
- * Render items by printing the result of their 'toText()' method.
+ * Render items by printing the result of their 'toText(int)' method.
  */
 template <class T>
 class GTableCellRenderer_Text:
@@ -358,7 +358,7 @@ class GTableCellRenderer_Text:
       int max = 0;
       for(int i=0; i<n; i++) {
         int w = TOADBase::getDefaultFont().getTextWidth(
-          model->getElementAt(0, i).toText()
+          model->getElementAt(0, i).toText(i)
         );
         if (w>max)
           max = w;
@@ -372,7 +372,7 @@ class GTableCellRenderer_Text:
         pen.setColor(TColor::SELECTED_TEXT);
       }
       pen.drawString(
-        1, 1, model->getElementAt(0, index).toText()
+        1, 1, model->getElementAt(0, index).toText(index)
       );
       if (selected) {
         pen.setColor(TColor::BLACK);

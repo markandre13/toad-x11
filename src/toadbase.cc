@@ -24,6 +24,7 @@
  */
 
 #include <errno.h>
+#include <toad/os.hh>
 
 #ifdef __X11__
 #include <X11/Xlib.h>
@@ -1350,7 +1351,7 @@ TOADBase::doModalLoop(TWindow *wnd)
     }
 #else
     try {
-#if __X11__
+#ifdef __X11__
       handleMessage();
 #endif
     } catch(exception &e) {
@@ -1641,7 +1642,7 @@ const string& TOADBase::getResourcePrefix()
   return resource_prefix;
 }
 
-#if __X11__
+#ifdef __X11__
 // duplicated from dragndrop.cc for experiments:
 //-----------------------------------------------
 string 

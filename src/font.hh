@@ -21,6 +21,7 @@
 #ifndef TFont
 #define TFont TFont
 
+#include <toad/os.hh>
 #include <toad/toadbase.hh>
 #include <toad/pointer.hh>
 

@@ -18,6 +18,8 @@
  * MA  02111-1307,  USA
  */
 
+#include <toad/os.hh>
+
 #ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

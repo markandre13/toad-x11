@@ -64,6 +64,8 @@
  * a pushbutton, a textfield, a scrollbar, a slider and so on.
  */
 
+#include <toad/os.hh>
+
 #ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

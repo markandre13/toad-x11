@@ -39,6 +39,8 @@
  *      remove the X11 specific parts and let TOAD register an TIOObserver
  */
 
+#include <toad/os.hh>
+
 #include <toad/toadbase.hh>
 #include <toad/ioobserver.hh>
 #include <toad/simpletimer.hh>
@@ -67,6 +69,10 @@ enum {
   (_vmas_table[const] != _vmas_cast(&TIOObserver::func))
 
 static const void* _vmas_table[VMAS_MAX] = { NULL, };
+
+namespace toad {
+  bool debug_select = false;
+}
 
 typedef vector<TIOObserver*> TList;
 static TList fd_list;
@@ -115,14 +121,27 @@ void TOADBase::select()
     p = fd_new.begin();
     while(p!=fd_new.end()) {
       int fd = (*p)->fd();
+      if (debug_select)
+        cerr << "select: adding checks for fd " << fd << endl;
+      if (fd>=fd_max)
+        fd_max = fd+1;
       int flag = 0;
       (*p)->_check(flag);
-      if (flag&1)
+      if (flag&1) {
+        if (debug_select)
+          cerr << "select: adding fd " << fd << " for read check\n";
         FD_SET(fd, &fd_set_rd);
-      if (flag&2)
+      }
+      if (flag&2) {
+        if (debug_select)
+          cerr << "select: adding fd " << fd << " for write check\n";
         FD_SET(fd, &fd_set_wr);
-      if (flag&4)
+      }
+      if (flag&4) {
+        if (debug_select)
+          cerr << "select: adding fd " << fd << " for exception check\n";
         FD_SET(fd, &fd_set_ex);
+      }
       p++;
     }
     fd_new.erase(fd_new.begin(), fd_new.end());
@@ -140,6 +159,8 @@ void TOADBase::select()
     int n;
 
     if (_sorted_list.empty()) {
+      if (debug_select)
+        cerr << "select: waiting for fd to become ready (fd_max=" << fd_max << ")\n";
       n = ::select(fd_max, &rd, &wr, &ex, NULL);
     } else {
       // dispatch timer events
@@ -200,21 +221,43 @@ void TOADBase::select()
         }
       }
       flush();
+      if (debug_select)
+        cerr << "select: waiting for fd to become ready (fd_max=" << fd_max << ")\n";
       n = ::select(fd_max, &rd, &wr, &ex, &wait_time);
     }
+    
+    if (debug_select)
+      cerr << "select: got " << n << " valid fd's\n";
 
     if (n>=0) {
       p = fd_list.begin();
       while(p!=fd_list.end()) {
         int fd = (*p)->fd();
-        if (FD_ISSET(fd, &rd)) (*p)->canRead();
-        if (FD_ISSET(fd, &wr)) (*p)->canWrite();
-        if (FD_ISSET(fd, &ex)) (*p)->gotException();
+        if (debug_select)
+          cerr << "select: checking fd " << fd << endl;
+        if (FD_ISSET(fd, &rd)) {
+          if (debug_select)
+            cerr << "  rd\n";
+          (*p)->canRead();
+        }
+        if (FD_ISSET(fd, &wr)) {
+          if (debug_select)
+            cerr << "  wr\n";
+          (*p)->canWrite();
+        }
+        if (FD_ISSET(fd, &ex)) {
+          if (debug_select)
+            cerr << "  ex\n";
+          (*p)->gotException();
+        }
         p++;
       }
     }
-    if (peekMessage())
+    if (peekMessage()) {
+      if (debug_select)
+        cerr << "select: got x11 message\n";
       return;
+    }
     flush();
   }
 #endif
@@ -228,6 +271,15 @@ void TOADBase::select()
  * have to use <I>TIOObserver</I>.
  */
 
+TIOObserver::TIOObserver()
+{
+  if (!_vmas_table[0]) {
+    SET_VMAS(VMAS_READ, canRead);
+    SET_VMAS(VMAS_WRITE, canWrite);
+    SET_VMAS(VMAS_EXCEPTION, gotException);
+  }
+}
+
 /**
  * Creates a new asynchronous observer for file descriptor <VAR>fd</VAR>.
  */
@@ -239,10 +291,17 @@ TIOObserver::TIOObserver(int fd)
     SET_VMAS(VMAS_WRITE, canWrite);
     SET_VMAS(VMAS_EXCEPTION, gotException);
   }
+  setFD(fd);
+}
+
+void
+TIOObserver::setFD(int fd)
+{
+  if (debug_select)
+    cerr << "select: new fd " << fd << endl;
+
   fcntl(fd, F_SETFL, O_NONBLOCK);
   _fd = fd;
-  if (fd>=fd_max)
-    fd_max = fd+1;
   fd_list.push_back(this);
   fd_new.push_back(this);
 #endif
@@ -260,6 +319,8 @@ void TIOObserver::_check(int &r)
 
 TIOObserver::~TIOObserver()
 {
+  if (debug_select)
+    cerr << "select: delete fd " << _fd << endl;
   FD_CLR(_fd, &fd_set_rd);
   FD_CLR(_fd, &fd_set_wr);
   FD_CLR(_fd, &fd_set_ex);
