@@ -565,6 +565,7 @@ TTextArea::_set_model(TTextModel *m)
     disconnect(model->sigTextArea, this);
   model = m;
   _cx = 0;
+  _cxpx = -1;
   _cy = 0;
   _ty = 0;
   _bol = 0;
@@ -676,6 +677,7 @@ if (opcount==591) {
     case TTextModel::CHANGE:
       _cx = 0;
       _cy = 0;
+      _cxpx = -1;
       _ty = 0;
       _bol = 0;
       _pos = 0;
