@@ -60,6 +60,7 @@ class TFigureEditor:
     
     void setModel(TFigureModel *m) {
       model = m;
+      invalidateWindow();
     }
     TFigureModel * getModel() const {
       return model;
