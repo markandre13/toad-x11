@@ -271,7 +271,7 @@ namespace toad {
 bool 
 TMenuKeyFilter::keyEvent(TKeyEvent &ke)
 {
-  TKey key = ke.key;
+  TKey key = ke.getKey();
   
   if (!active) {
     if (toad::debug_menubutton) {

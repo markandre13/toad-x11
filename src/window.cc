@@ -1635,10 +1635,10 @@ TWindow::keyEvent(TKeyEvent &ke)
 {
   switch(ke.type) {
     case TKeyEvent::DOWN:
-      keyDown(ke.key, ke.string, ke.modifier);
+      keyDown(ke.getKey(), const_cast<char*>(ke.getString()), ke.getModifier());
       break;
     case TKeyEvent::UP:
-      keyUp(ke.key, ke.string, ke.modifier);
+      keyUp(ke.getKey(), const_cast<char*>(ke.getString()), ke.getModifier());
       break;
   }
 }

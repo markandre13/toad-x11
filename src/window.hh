@@ -86,13 +86,10 @@ class TKeyEvent {
       DOWN, UP
     } type;
     TWindow *window;
-    TKey key;
-    char * string;
-    unsigned modifier;
-
-    TKey getKey() const { return key; }
-    unsigned getModifier() const { return modifier; }
-    const char* getString() const { return string; }
+    const char* getString() const;
+    TKey getKey() const;
+    unsigned getModifier() const;
+    void setModifier(unsigned);
 };
 
 #ifdef __WIN32__

@@ -587,6 +587,8 @@ print(TInteractor *p, unsigned d=0)
   } while(c!=NULL);
 }
 
+extern bool new_key_eventhack;
+
 // called from the message loop to distribute the `keyDown' event
 void
 TOADBase::handleKeyDown(TKey key, char* t, unsigned m)
@@ -664,10 +666,14 @@ printf("keyDown for %08x\n", current_domain->focus_window);
     static TKeyEvent keyevent;
     keyevent.type = TKeyEvent::DOWN;
     keyevent.window = current_domain->focus_window;
+
+new_key_eventhack=true;
+
+/*
     keyevent.key = key;
     keyevent.string = t;
     keyevent.modifier = m;
-  
+*/  
     filter = toad::global_evt_filter;
     while(filter) {
       if (filter->keyEvent(keyevent))
@@ -692,8 +698,15 @@ printf("keyDown for %08x\n", current_domain->focus_window);
 void
 TOADBase::handleKeyUp(TKey key, char* t, unsigned m)
 {
-  if (current_domain && current_domain->focus_window)
-    current_domain->focus_window->keyUp(key,t,m);
+  if (current_domain && current_domain->focus_window) {
+    static TKeyEvent keyevent;
+    keyevent.type = TKeyEvent::UP;
+    keyevent.window = current_domain->focus_window;
+
+new_key_eventhack=true;
+
+    current_domain->focus_window->keyEvent(keyevent);
+  }
 }
 
 

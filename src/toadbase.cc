@@ -1090,61 +1090,14 @@ cout << endl;
     // KeyPress
     //----------
     case KeyPress:
-      {
-        toolTipClose();
+      toolTipClose();
 // i guess we don't need modal break anymore, focusmanager.cc
 // should be enough
 #if 0
-        if (!window->isChildOf(TDialogEditor::getCtrlWindow()))
-          MODAL_BREAK;
+      if (!window->isChildOf(TDialogEditor::getCtrlWindow()))
+        MODAL_BREAK;
 #endif
-        int count;
-        char buffer[KB_BUFFER_SIZE+1];
-        KeySym key;
-        
-        if (xic_current) {
-          Status status;
-#ifndef HAVE_LIBXUTF8
-          count = XmbLookupString(
-#else
-          count = XUtf8LookupString(
-#endif
-            xic_current, 
-            &x11event.xkey, 
-            buffer, KB_BUFFER_SIZE,
-            &key,
-            &status );
-
-          if (status==XLookupNone)
-            break;
-          if (status==XBufferOverflow) {
-            cerr << "TOAD keyboard buffer overflow" << endl;
-            XmbResetIC(xic_current);
-            break;
-          }
-        } else {
-          static XComposeStatus compose_status = {NULL, 0};
-          count = XLookupString(&x11event.xkey,
-                                buffer, KB_BUFFER_SIZE, 
-                                &key, 
-                                &compose_status);
-        }
-        buffer[count]=0;        // add zero terminator to string
-
-#if 0
-        if (TDialogEditor::running && 
-            TDialogEditor::enabled && 
-            TDialogEditor::getEditWindow() &&
-            window!=TDialogEditor::getCtrlWindow() )
-        {
-          TDialogEditor::getDialogEditor()->keyDown(key, buffer, x11event.xkey.state);
-        } else {
-          handleKeyDown(key, buffer, x11event.xkey.state);
-        }
-#else
-        handleKeyDown(key, buffer, x11event.xkey.state);
-#endif
-      }
+      handleKeyDown(0, 0, x11event.xkey.state);
       break;
 
     // KeyRelease
@@ -1155,12 +1108,7 @@ cout << endl;
 #if 0
         MODAL_BREAK;
 #endif
-        char buffer[KB_BUFFER_SIZE+1];
-        KeySym key;
-        XComposeStatus dummy;   // not needed since X11R5
-        int count = XLookupString(&x11event.xkey, buffer, KB_BUFFER_SIZE, &key, &dummy);
-        buffer[count]=0;        // add zero terminator to string
-        handleKeyUp(key, buffer, x11event.xkey.state);
+        handleKeyUp(0, 0, x11event.xkey.state);
       }
       break;
 
@@ -1691,3 +1639,78 @@ GetWindowProperty(Window source, Atom property, Atom type)
   return data;
 }
 #endif
+
+// The following section is some rather ugly hack to test some new
+// design decisions for TKeyEvent (namely TKeyEvent::setModifier
+// which will ease the implementation of TMenuBar keyboard shortcuts):
+
+namespace toad {
+bool new_key_eventhack;
+}
+static char buffer[KB_BUFFER_SIZE+1];
+static KeySym key;
+static unsigned modifier;
+
+unsigned
+TKeyEvent::getModifier() const
+{
+  return x11event.xkey.state;
+}
+
+void
+TKeyEvent::setModifier(unsigned m)
+{
+  new_key_eventhack=true;
+  x11event.xkey.state = m;
+}
+
+TKey
+TKeyEvent::getKey() const
+{
+  if (!new_key_eventhack) {
+    getString();
+  }
+  return key;
+}
+
+const char *
+TKeyEvent::getString() const
+{
+  if (new_key_eventhack) {
+    new_key_eventhack = false;
+
+  int count;
+        
+  if (xic_current) {
+    Status status;
+#ifndef HAVE_LIBXUTF8
+    count = XmbLookupString(
+#else
+    count = XUtf8LookupString(
+#endif
+      xic_current, 
+      &x11event.xkey, 
+      buffer, KB_BUFFER_SIZE,
+      &key,
+      &status );
+
+    if (status==XLookupNone)
+      return 0;
+    if (status==XBufferOverflow) {
+      cerr << "TOAD keyboard buffer overflow" << endl;
+      XmbResetIC(xic_current);
+      return 0;
+    }
+  } else {
+    static XComposeStatus compose_status = {NULL, 0};
+    count = XLookupString(&x11event.xkey,
+                          buffer, KB_BUFFER_SIZE, 
+                          &key, 
+                          &compose_status);
+  }
+  buffer[count]=0;        // add zero terminator to string
+  
+  }
+  
+  return buffer;
+}
