@@ -1,0 +1,168 @@
+// this is a generated file
+
+toad::TDialogLayout{
+  width = 577
+  height = 261
+  drawfocus = false
+  toad::TFigureModel {
+    toad::TFWindow {
+      x = 4
+      y = 20
+      w = 233
+      h = 129
+      title = "font family"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 240
+      y = 20
+      w = 113
+      h = 129
+      title = "font style"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 4
+      w = 30
+      h = 16
+      text = "Font:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 240
+      y = 4
+      w = 62
+      h = 16
+      text = "Font Style:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 356
+      y = 4
+      w = 29
+      h = 16
+      text = "Size:"
+    }
+    toad::TFWindow {
+      x = 476
+      y = 232
+      w = 97
+      h = 25
+      title = "abort"
+      label = "Abort"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 356
+      y = 20
+      w = 57
+      h = 17
+      title = "font size"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 356
+      y = 40
+      w = 57
+      h = 109
+      title = "font size table"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 376
+      y = 232
+      w = 97
+      h = 25
+      title = "ok"
+      label = "OK"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 424
+      y = 96
+      w = 121
+      h = 13
+      title = "type bitmap"
+      label = "Bitmap"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 424
+      y = 128
+      w = 145
+      h = 13
+      title = "type scaleable ft"
+      label = "Scaleable (FreeType)"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 424
+      y = 112
+      w = 113
+      h = 13
+      title = "type scaleable x11"
+      label = "Scaleable (X11)"
+      taborder = 0
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 416
+      y = 84
+      w = 157
+      h = 65
+      text = "Types"
+    }
+    toad::TFWindow {
+      x = 424
+      y = 40
+      w = 73
+      h = 13
+      title = "metric pt"
+      label = "Point (pt)"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 424
+      y = 56
+      w = 73
+      h = 13
+      title = "metric px"
+      label = "Pixel (px)"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 500
+      y = 36
+      w = 41
+      h = 17
+      title = "dpi"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 544
+      y = 40
+      w = 19
+      h = 16
+      text = "dpi"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 416
+      y = 28
+      w = 157
+      h = 49
+      text = "Metric"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 156
+      w = 569
+      h = 73
+      text = "Font"
+    }
+  }
+}
