@@ -746,7 +746,7 @@ connect(SIG, closure::__f, V1, V2); }
   typedef typeof(V3) __t3; \\
   static void __f(__t1 P1, __t2 P2, __t3 P3) { DEF } \\
 }; \\
-connect(SIG, closure::__f, V1, V2); }
+connect(SIG, closure::__f, V1, V2, V3); }
 
 /*
  * various signal nodes & connect's
