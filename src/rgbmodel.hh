@@ -22,9 +22,8 @@
 #define _TOAD_RGBMODEL_HH
 
 #include <toad/model.hh>
-#include <toad/boundedrangemodel.hh>
+#include <toad/integermodel.hh>
 #include <toad/textarea.hh>
-// #include <toad/textmodel.hh>
 
 namespace toad {
 
@@ -40,7 +39,7 @@ class TRGBModel:
       return *this; 
     }
     operator TRGB() const { TRGB c(r, g, b); return c; }
-    TBoundedRangeModel r, g, b;
+    TIntegerModel r, g, b;
     
     void set(int r, int g, int b) {
       if (this->r == r && this->g == g && this->b == b)

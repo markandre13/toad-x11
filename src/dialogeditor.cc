@@ -191,7 +191,7 @@ TDialogEditor::TDialogEditor():
   
   TPushButton *pb;
   pb = new TPushButton(this, "Store");
-  connect(pb->sigActivate, this, &TDialogEditor::store);
+  connect(pb->sigClicked, this, &TDialogEditor::store);
   pb->setShape(5+80+5,5,80,25);
   
   layouteditor = 0;

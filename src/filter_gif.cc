@@ -616,7 +616,7 @@ void TConfig::create()
     sb->setRange(0,palette_size-1);
 
   TPushButton *pb = new TPushButton(this, "Ok");
-    OLD_CONNECT(this, closeRequest, pb, pb->sigActivate);
+    OLD_CONNECT(this, closeRequest, pb, pb->sigClicked);
     pb->setShape(10,200-30,100,20);
 }
 

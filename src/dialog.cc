@@ -76,7 +76,7 @@ class TLayoutEditDialog:
 
     string selectionname;
     TTextModel label;
-    TBoundedRangeModel width, height;
+    TIntegerModel width, height;
     TLabelOwner * labelowner;
     
     void enabled();
@@ -389,28 +389,28 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
     switch(i) {
       case 0:
         rb = new TFatRadioButton(this, "Select", state);
-        CONNECT(rb->sigActivate, &gedit, setOperation, TFigureEditor::OP_SELECT);
+        CONNECT(rb->sigClicked, &gedit, setOperation, TFigureEditor::OP_SELECT);
         rb->setDown(true);
         break;
       case 1:
         rb = new TFatRadioButton(this, "Frame", state);
-        CONNECT(rb->sigActivate, &gedit, setCreate, &gframe);
+        CONNECT(rb->sigClicked, &gedit, setCreate, &gframe);
         break;
       case 2:
         rb = new TFatRadioButton(this, "Line", state);
-        CONNECT(rb->sigActivate, &gedit, setCreate, &gline);
+        CONNECT(rb->sigClicked, &gedit, setCreate, &gline);
         break;
       case 3:
         rb = new TFatRadioButton(this, "Rect", state);
-        CONNECT(rb->sigActivate, &gedit, setCreate, &grect);
+        CONNECT(rb->sigClicked, &gedit, setCreate, &grect);
         break;
       case 4:
         rb = new TFatRadioButton(this, "Circle", state);
-        CONNECT(rb->sigActivate, &gedit, setCreate, &gcirc);
+        CONNECT(rb->sigClicked, &gedit, setCreate, &gcirc);
         break;
       case 5:
         rb = new TFatRadioButton(this, "Text", state);
-        CONNECT(rb->sigActivate, &gedit, setCreate, &gtext);
+        CONNECT(rb->sigClicked, &gedit, setCreate, &gtext);
         break;
     }
     if (rb) {
@@ -426,27 +426,27 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
     switch(i) {
       case 0:
         pb = new TPushButton(this, "Top");
-        CONNECT(pb->sigActivate, &gedit, selection2Top);
+        CONNECT(pb->sigClicked, &gedit, selection2Top);
         break;
       case 1:
         pb = new TPushButton(this, "Up");
-        CONNECT(pb->sigActivate, &gedit, selectionUp);
+        CONNECT(pb->sigClicked, &gedit, selectionUp);
         break;
       case 2:
         pb = new TPushButton(this, "Down");
-        CONNECT(pb->sigActivate, &gedit, selectionDown);
+        CONNECT(pb->sigClicked, &gedit, selectionDown);
         break;
       case 3:
         pb = new TPushButton(this, "Bottom");
-        CONNECT(pb->sigActivate, &gedit, selection2Bottom);
+        CONNECT(pb->sigClicked, &gedit, selection2Bottom);
         break;
       case 4:
         pb = new TPushButton(this, "Group");   
-        CONNECT(pb->sigActivate, &gedit, group);
+        CONNECT(pb->sigClicked, &gedit, group);
         break;
       case 5:
         pb = new TPushButton(this, "Ungroup");   
-        CONNECT(pb->sigActivate, &gedit, ungroup);
+        CONNECT(pb->sigClicked, &gedit, ungroup);
         break;
     }
     if (pb) {

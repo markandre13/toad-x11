@@ -132,10 +132,10 @@ TUndoManager::init()
   undoing = redoing = false;
   undomanagers.insert(this);
   
-  connect(undo->sigActivate, this, &TUndoManager::doUndo);
+  connect(undo->sigClicked, this, &TUndoManager::doUndo);
   undo->setEnabled(false);
   
-  connect(redo->sigActivate, this, &TUndoManager::doRedo);
+  connect(redo->sigClicked, this, &TUndoManager::doRedo);
   redo->setEnabled(false);
 }
 
@@ -223,7 +223,7 @@ TUndoManager::registerModel(TWindow *window, TModel *model)
  * use the views getModel() method for unregistering a model:
  *
  * \code
- * TBoundedRangeModel number;
+ * TIntegerModel number;
  * TTextField *txt = new TTextField(0, "text", &number);
  * TUndoManager::unregisterModel(&number);         // failure
  * TUndoManager::unregisterModel(txt->getModel()); // okay

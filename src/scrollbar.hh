@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,11 +18,11 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TScrollBar
-#define TScrollBar TScrollBar
+#ifndef _TOAD_SCROLLBAR_HH
+#define _TOAD_SCROLLBAR_HH
 
 #include <toad/control.hh>
-#include <toad/boundedrangemodel.hh>
+#include <toad/integermodel.hh>
 
 namespace toad {
 
@@ -40,14 +40,14 @@ class TScrollBar:
     int unitIncrement;
 
   public:
-    TScrollBar(TWindow*, const string&, TBoundedRangeModel *model=0);
+    TScrollBar(TWindow*, const string&, TIntegerModel *model=0);
     
     PBoundedRangeModel model;
     
     static int getFixedSize();
 
-    void setModel(TBoundedRangeModel*);
-    TBoundedRangeModel* getModel() const { return model; }
+    void setModel(TIntegerModel*);
+    TIntegerModel* getModel() const { return model; }
     
     void setValue(int v) { model->setValue(v); }
     void setMinimum(int m) { model->setMinimum(m); }

@@ -258,14 +258,14 @@ TFigureEditor::init(TFigureModel *m)
   TAction *action;
 
   action = new TAction(this, "edit|cut");
-  CONNECT(action->sigActivate, this, selectionCut);
+  CONNECT(action->sigClicked, this, selectionCut);
   action = new TAction(this, "edit|copy");
-  CONNECT(action->sigActivate, this, selectionCopy);
+  CONNECT(action->sigClicked, this, selectionCopy);
   action = new TAction(this, "edit|paste");
-  CONNECT(action->sigActivate, this, selectionPaste);
+  CONNECT(action->sigClicked, this, selectionPaste);
 
   action = new TAction(this, "edit|delete");
-  CONNECT(action->sigActivate, this, deleteSelection);
+  CONNECT(action->sigClicked, this, deleteSelection);
 }
 
 bool

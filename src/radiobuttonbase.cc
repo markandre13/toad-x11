@@ -59,7 +59,7 @@ TRadioStateModel::add(TRadioButtonBase *rb)
   listener.push_back(rb);
   
   // to be called from button
-  connect(rb->sigActivate, this, &TRadioStateModel::setCurrent, rb);
+  connect(rb->sigClicked, this, &TRadioStateModel::setCurrent, rb);
 }
 
 void 
@@ -76,7 +76,7 @@ TRadioStateModel::remove(TRadioButtonBase *rb)
     ++p;
   }  
 
-  disconnect(rb->sigActivate, this);
+  disconnect(rb->sigClicked, this);
 }
 
 void 

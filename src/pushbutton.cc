@@ -35,6 +35,6 @@ void
 TPushButton::paint()
 {
   TPen pen(this);
-  drawLabel(pen, getLabel(), bDown && bInside, sigActivate.isConnected());
+  drawLabel(pen, getLabel(), bDown && bInside, sigClicked.isConnected());
   drawShadow(pen, bDown && bInside);
 }

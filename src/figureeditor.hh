@@ -28,7 +28,7 @@
 
 #include <toad/boolmodel.hh>
 #include <toad/textmodel.hh>
-#include <toad/boundedrangemodel.hh>
+#include <toad/integermodel.hh>
 
 
 namespace toad {
@@ -137,7 +137,7 @@ class TFigureAttributes:
     TRGB background_color;
     TBoolModel drawgrid;
     // TBoolModel use_grid;
-    TBoundedRangeModel gridsize;
+    TIntegerModel gridsize;
     
     unsigned linewidth;
     TPen::ELineStyle linestyle;

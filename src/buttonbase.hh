@@ -38,7 +38,7 @@ class TButtonBase:
     
     bool loadBitmap(const string&);
     
-    TSignal sigActivate;
+    TSignal sigClicked;
     TSignal sigArm, sigDisarm;
     
     void mouseLDown(int,int,unsigned);

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,6 @@
 #include <toad/region.hh>
 #include <toad/pushbutton.hh>
 #include <toad/simpletimer.hh>
-#include <toad/boundedrangemodel.hh>
 #include <toad/scrollbar.hh>
 #include <toad/arrowbutton.hh>
 
@@ -48,13 +47,13 @@ using namespace toad;
 
 // Constructor
 //---------------------------------------------------------------------------
-TScrollBar::TScrollBar(TWindow *parent, const string &title, TBoundedRangeModel *model)
+TScrollBar::TScrollBar(TWindow *parent, const string &title, TIntegerModel *model)
   :TControl(parent,title)
 {
   _b = DEFAULT_FIXED_BORDER;
   bNoBackground = true;
   if (!model)
-    model = new TBoundedRangeModel();
+    model = new TIntegerModel();
   this->model = model;
   CONNECT(model->sigChanged, this, modelChanged);
   
@@ -67,15 +66,15 @@ TScrollBar::TScrollBar(TWindow *parent, const string &title, TBoundedRangeModel 
   btn1 = new TArrowButton(this, "up/left", bVertical ? 
                                 TArrowButton::ARROW_UP : 
                                 TArrowButton::ARROW_LEFT);
-  CONNECT(btn1->sigActivate, this, decrement);
+  CONNECT(btn1->sigClicked, this, decrement);
   btn2 = new TArrowButton(this, "down/right", bVertical ? 
                                 TArrowButton::ARROW_DOWN : 
                                 TArrowButton::ARROW_RIGHT);
-  CONNECT(btn2->sigActivate, this, increment);
+  CONNECT(btn2->sigClicked, this, increment);
 }
 
 void
-TScrollBar::setModel(TBoundedRangeModel *m)
+TScrollBar::setModel(TIntegerModel *m)
 {
   disconnect(model->sigChanged, this);
   CONNECT(model->sigChanged, this, modelChanged);

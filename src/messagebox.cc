@@ -129,7 +129,7 @@ TMessageBox::TMessageBox(TWindow* p,
     if (btn&1) {
       // create button
       TPushButton *pb = new TPushButton(this, label[i]);
-        CONNECT(pb->sigActivate, this, button, 1<<i);
+        CONNECT(pb->sigClicked, this, button, 1<<i);
         pb->setShape(x,y,btn_width,btn_height);
       x=x+btn_width+btn_hspace;
       // MB_DEFBUTTON?

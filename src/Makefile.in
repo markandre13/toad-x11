@@ -97,7 +97,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		select.cc pointer.cc \
 		dialogeditor.cc colordialog.cc \
 		table.cc tablemodels.cc combobox.cc textarea.cc \
-		model.cc boundedrangemodel.cc rgbmodel.cc \
+		model.cc integermodel.cc rgbmodel.cc \
 		resource.cc utf8.cc \
 		$(MDI) \
 		$(GADGET) $(IO) $(NEW_CHECKER) $(FILTER) \

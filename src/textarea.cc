@@ -154,13 +154,13 @@ TTextArea::init()
   TAction *action;
 
   action = new TAction(this, "edit|cut");
-  CONNECT(action->sigActivate, this, _selection_cut);
+  CONNECT(action->sigClicked, this, _selection_cut);
   action = new TAction(this, "edit|copy");
-  CONNECT(action->sigActivate, this, _selection_copy);
+  CONNECT(action->sigClicked, this, _selection_copy);
   action = new TAction(this, "edit|paste");
-  CONNECT(action->sigActivate, this, _selection_paste);
+  CONNECT(action->sigClicked, this, _selection_paste);
   action = new TAction(this, "edit|delete");
-  CONNECT(action->sigActivate, this, _selection_erase);
+  CONNECT(action->sigClicked, this, _selection_erase);
 }
 
 TTextArea::~TTextArea()

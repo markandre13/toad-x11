@@ -212,9 +212,9 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   
   btn_ok = new TPushButton(this, "ok");
   
-  connect(btn_ok->sigActivate, 
+  connect(btn_ok->sigClicked, 
           this, &This::button, TMessageBox::OK);
-  connect((new TPushButton(this, "cancel"))->sigActivate, 
+  connect((new TPushButton(this, "cancel"))->sigClicked, 
           this, &This::button, TMessageBox::ABORT);
 
   cb_prev = new TComboBox(this, "previous");

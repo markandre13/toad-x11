@@ -67,7 +67,7 @@ TArrowButton::mouseLDown(int,int,unsigned)
   bDown=true;
   invalidateWindow();
   sigArm();
-  sigActivate();
+  sigClicked();
   delay = 0;
   startTimer(0, 1000000/12);
 }
@@ -87,5 +87,5 @@ TArrowButton::tick()
   if(delay<3)
     delay++;
   else if (bInside)
-    sigActivate();
+    sigClicked();
 }

@@ -101,7 +101,7 @@ TAction::isEnabled() const
 {
   if (!enabled)
     return false;
-  if (!sigActivate.isConnected())
+  if (!sigClicked.isConnected())
     return false;
   switch(activation) {
     case ALWAYS:
@@ -119,7 +119,7 @@ TAction::trigger(unsigned idx)
 {
   if (!isEnabled())
     return false;
-  return sigActivate.trigger();
+  return sigClicked.trigger();
 }
 
 bool
@@ -127,7 +127,7 @@ TAction::delayedTrigger(unsigned idx)
 {
   if (!isEnabled())
     return false;
-  return sigActivate.delayedTrigger();
+  return sigClicked.delayedTrigger();
 }
 
 unsigned

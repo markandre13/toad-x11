@@ -180,7 +180,7 @@ TButtonBase::drawShadow(TPen &pen, bool down, bool onwhite)
 void
 TButtonBase::mouseLDown(int,int,unsigned)
 {
-  if (!isEnabled() || !sigActivate.isConnected())
+  if (!isEnabled() || !sigClicked.isConnected())
     return;
     
   bDown=true;
@@ -201,7 +201,7 @@ TButtonBase::mouseLUp(int,int,unsigned)
     if (bInside) {
       invalidateWindow(true);
       sigDisarm();
-      sigActivate();
+      sigClicked();
     }
   }
 }
@@ -209,13 +209,13 @@ TButtonBase::mouseLUp(int,int,unsigned)
 void
 TButtonBase::keyDown(TKey key, char* str, unsigned modifier)
 {
-  if (!isEnabled() || !sigActivate.isConnected())
+  if (!isEnabled() || !sigClicked.isConnected())
     return;
 
   if (!bDown && modifier==0 && (key==TK_RETURN || *str==' ')) {
     sigArm();
     sigDisarm();
-    sigActivate();
+    sigClicked();
   }
 }
 

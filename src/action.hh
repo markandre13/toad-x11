@@ -72,7 +72,7 @@ class TAction:
     bool isEnabled() const;
     
     //! this signal is triggered when the action has to be performed
-    TSignal sigActivate;
+    TSignal sigClicked;
     
     virtual bool trigger(unsigned idx=0);
     virtual bool delayedTrigger(unsigned idx=0);
@@ -183,21 +183,21 @@ class GChoice:
     virtual const string& getID(unsigned idx) const { return model->getID(idx); }
     virtual void select(unsigned idx=0) {
       model->select(idx);
-      sigActivate();
+      sigClicked();
     }
     virtual bool trigger(unsigned idx=0)
     {
       if (!isEnabled())
         return false;
       model->select(idx);
-      return sigActivate.trigger();
+      return sigClicked.trigger();
     }
     virtual bool delayedTrigger(unsigned idx=0)
     {
       if (!isEnabled())
         return false;
       model->select(idx);
-      return sigActivate.delayedTrigger();
+      return sigClicked.delayedTrigger();
     }
     virtual unsigned getSelection() const { return model->getSelection(); }
     GChoiceModel<T> *model;

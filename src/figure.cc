@@ -63,9 +63,9 @@ using namespace toad;
  */
 
 #if 0
-const double TFigure::OUT_OF_RANGE;
-const double TFigure::RANGE;
-const double TFigure::INSIDE;
+const double toad::TFigure::OUT_OF_RANGE = HUGE_VAL;
+const double toad::TFigure::RANGE = 5.0;
+static const double toad::TFigure::INSIDE = -1.0;
 #endif
 
 // this class is for backward compability

@@ -89,6 +89,12 @@ TModel
  *       edit cell, row, column; delete row, column
  */
 
+TAbstractTableCellRenderer::TAbstractTableCellRenderer()
+{
+   type = CHANGED;
+   per_row = per_col = false;
+}
+
 /**
  * Draws selection indicators, calls renderItem and draws the cursor.
  */
@@ -562,10 +568,10 @@ TTable::setRenderer(TAbstractTableCellRenderer *r)
   if (r==renderer)
     return;
   if (renderer)
-    disconnect(renderer->sigChanged, this, &TTable::handleNewModel);
+    disconnect(renderer->sigChanged, this, &TTable::rendererChanged);
   renderer = r;
   if (renderer)
-    connect(renderer->sigChanged, this, &TTable::handleNewModel);
+    connect(renderer->sigChanged, this, &TTable::rendererChanged);
   handleNewModel();
 }
 
@@ -840,6 +846,9 @@ DBSCROLL({
   // draw the fields with the table renderer
   yp = fpy + visible.y;
   for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
+    if (row_info[y].size==0) {
+      continue;
+    }
     xp = fpx + visible.x;
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
 
@@ -973,7 +982,7 @@ TTable::doubleClickAtCursor()
  * or return 'false' in case it isn't possible.
  */
 bool
-TTable::mouse2field(int mx, int my, int *fx, int *fy)
+TTable::mouse2field(int mx, int my, int *fx, int *fy, int *rfx, int *rfy)
 {
   int pos1, pos2, x, y;
 
@@ -1001,6 +1010,8 @@ TTable::mouse2field(int mx, int my, int *fx, int *fy)
     }
     pos1 = pos2;
   }
+  if (rfx)
+    *rfx = mx - pos1;
   
   pos1 = 0;
   y = ffy;  // first upper left field
@@ -1023,6 +1034,8 @@ cerr << " y=" << y
     pos1 = pos2;
     ++y;
   }
+  if (rfy)
+    *rfy = my - pos1;
 
   if (per_row)
     x=0;
@@ -1041,8 +1054,8 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
 DBM2(cerr << "enter mouseLDown" << endl;)
   setFocus();
 
-  int x, y;
-  if (!mouse2field(mx, my, &x, &y)) {
+  int x, y, fx, fy;
+  if (!mouse2field(mx, my, &x, &y, &fx, &fy)) {
     DBM2(cerr << "  mouse2field failed" << endl;
     cerr << "leave mouseLDown" << endl << endl;)
     return;
@@ -1052,8 +1065,8 @@ DBM2(cerr << "enter mouseLDown" << endl;)
   if (renderer) {
     TMouseEvent me;
     me.window = this;
-    me.x = mx;
-    me.y = my;
+    me.x = fx;
+    me.y = fy;
     me.modifier = modifier;
     renderer->mouseEvent(me, x, y, col_info[x].size, row_info[y].size);
   }
@@ -1087,6 +1100,9 @@ DBM2(cerr << "enter mouseLDown" << endl;)
       // start selecting at the cursor position
       sx = x; sy = y;
     }
+  }
+  else if (selectionFollowsMouse) {
+    sx = x; sy = y;
   }
 
   invalidateCursor();
@@ -1403,6 +1419,96 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
   }
 }
 
+void
+TTable::rendererChanged()
+{
+  switch(renderer->type) {
+    case TAbstractTableCellRenderer::INSERT_ROW:
+      _handleInsertRow();
+      break;
+    case TAbstractTableCellRenderer::RESIZED_ROW:
+      _handleResizedRow();
+      break;
+    default:
+      handleNewModel();
+      break;
+  }
+}
+
+void
+TTable::_handleInsertRow()
+{
+  int new_rows = rows + renderer->size;
+  row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
+
+//cerr << "move from " << renderer->where << " to " << (renderer->where + renderer->size) << " an amount of " << (rows - renderer->where) << " entries" << endl;
+  memmove(
+    row_info + renderer->where + renderer->size,
+    row_info + renderer->where,
+    (rows - renderer->where) * sizeof(TRCInfo)
+  );
+
+  TRCInfo *info = row_info + renderer->where;
+  for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
+    DBM(cout << "pane.h: " << pane.h << endl;)
+    int n = renderer->getRowHeight(i);
+    info->size = n;
+    pane.h += n + border;
+    ++info;
+  }
+    
+  if (renderer->where<cy)
+    cy+=renderer->size;
+  if (renderer->where<sy)
+    sy+=renderer->size;
+  if (renderer->where<ffy)
+    ffy+=renderer->size;
+  // fpy ...
+    
+  // scrolling, screen update
+      
+  // selection model ??? ouch ....
+
+  rows = new_rows;
+  invalidateWindow();
+
+  doLayout();
+}
+
+void
+TTable::_handleResizedRow()
+{
+  TRCInfo *info = row_info + renderer->where;
+  for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
+    DBM(cout << "pane.h: " << pane.h << endl;)
+    pane.h -= info->size;
+    info->size = renderer->getRowHeight(i);
+    pane.h += info->size;
+    ++info;
+  }
+#if 0    
+  if (renderer->where<cy)
+    cy+=renderer->size;
+  if (renderer->where<sy)
+    sy+=renderer->size;
+  if (renderer->where<ffy)
+    ffy+=renderer->size;
+#endif
+  // fpy ...
+    
+  // scrolling, screen update
+      
+  // selection model ??? ouch ....
+
+  invalidateWindow();
+
+  doLayout();
+}
+
+
+/**
+ * reset the TTable widget to adjust to a new renderer
+ */
 void
 TTable::handleNewModel()
 {

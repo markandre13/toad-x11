@@ -173,13 +173,13 @@ TColorDialog::_init()
   
   pb = new TPushButton(this, "Abort");
   pb->setShape(x,y,w,h);
-  connect(pb->sigActivate, this, &TColorDialog::done, false);
+  connect(pb->sigClicked, this, &TColorDialog::done, false);
 
   x+=w+8;
   
   pb = new TPushButton(this, "OK");
   pb->setShape(x,y,w,h);
-  connect(pb->sigActivate, this, &TColorDialog::done, true);
+  connect(pb->sigClicked, this, &TColorDialog::done, true);
   
   TDropSiteColor *ds = new TDropSiteColor(this, 
                            TRectangle(ORIGCOLOR_X+64,

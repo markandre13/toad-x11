@@ -33,7 +33,7 @@ class TColorDialog:
     typedef TDialog super;
     TRGB *color;
     TRGB origcolor;
-    TBoundedRangeModel hue, saturation, value;
+    TIntegerModel hue, saturation, value;
     TRGBModel rgb;
     bool lock;
 

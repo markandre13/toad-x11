@@ -50,14 +50,14 @@ TColorSelector::TColorSelector(TWindow *parent,
   pb1->loadBitmap("memory://toad/colorpalette.png");
   pb1->setToolTip("Open Color Palette");
   pb1->setShape(w2,0,getWidth()-w2,getHeight()/2);
-  connect(pb1->sigActivate, this, &TColorSelector::openColorPalette);
+  connect(pb1->sigClicked, this, &TColorSelector::openColorPalette);
 
   pb2 = new TPushButton(this, "coloreditor");
   pb2->bNoFocus = true;
   pb2->loadBitmap("memory://toad/colordialog.png");
   pb2->setToolTip("Open Color Editor");
   pb2->setShape(w2,getHeight()/2,getWidth()-w2,getHeight()/2);
-  connect(pb2->sigActivate, this, &TColorSelector::openColorDialog);
+  connect(pb2->sigClicked, this, &TColorSelector::openColorDialog);
 
   ds = new TDropSiteColor(this, TRectangle(0,0,w2,h));
   connect_value(ds->sigDrop, this, &TColorSelector::dropColor, ds);

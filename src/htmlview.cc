@@ -1832,7 +1832,7 @@ THTMLView::THTMLView(TWindow *parent, const string &title):
   pane.set(0,0,getWidth(),getHeight());
   
   TAction *action = new TAction(this, "file|open");
-  connect(action->sigActivate, open_file, this);
+  connect(action->sigClicked, open_file, this);
   
   new TUndoManager(this, "undomanager", "go|back", "go|forward");
 }

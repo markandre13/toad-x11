@@ -491,7 +491,7 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
   rendertype.add(new TRadioButton(this, "type freetype"), TFont2::RENDER_FREETYPE);
 
   pb = new TPushButton(this, "table");
-  connect(pb->sigActivate, this, &This::showFontTable);  
+  connect(pb->sigClicked, this, &This::showFontTable);  
   pb = new TPushButton(this, "ok");
   pb = new TPushButton(this, "abort");
 
@@ -1347,11 +1347,11 @@ TFontTable::TFontTable(TWindow *parent, const string &title, TFont2 &aFont):
   TPushButton *pb;
   
   pb = new TPushButton(this, "<");
-  connect(pb->sigActivate, this, &TFontTable::table, -1);
+  connect(pb->sigClicked, this, &TFontTable::table, -1);
   pb->setShape(5,5,80,25);
 
   pb = new TPushButton(this, ">");
-  connect(pb->sigActivate, this, &TFontTable::table, 1);
+  connect(pb->sigClicked, this, &TFontTable::table, 1);
   pb->setShape(5+80+5,5,80,25);
   
   ct = 0;

@@ -175,7 +175,7 @@ TMDIShell::TTitleBar::create()
 {
   TXButton *w;
   w = new TXButton(this, "titlebar.xbutton");
-    CONNECT(w->sigActivate, this, cmdButton);
+    CONNECT(w->sigClicked, this, cmdButton);
     w->setBorder(false);
     w->setPosition(1,1);
     w->setSize(_h-2,_h-2);

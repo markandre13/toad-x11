@@ -169,10 +169,8 @@ class TAbstractTableCellRenderer:
   public TModel
 {
   public:
-    TAbstractTableCellRenderer() {
-      per_row = per_col = false;
-    }
-  
+    TAbstractTableCellRenderer();
+
     virtual int getRows() { return 1; }
     virtual int getCols() { return 1; }
     virtual int getRowHeight(int row) = 0;
@@ -186,6 +184,19 @@ class TAbstractTableCellRenderer:
 
     // this method is to enable signals to trigger our signal:
     void modelChanged() { sigChanged(); }
+    
+    // sigChanged protocol:
+    enum {
+      CHANGED,
+      INSERT_ROW,
+      RESIZED_ROW,
+      REMOVED_ROW,
+      INSERT_COL,
+      RESIZED_COL,
+      REMOVED_COL,
+    } type;
+    int where;
+    int size;
 
     bool per_row, per_col;
 };
@@ -320,8 +331,12 @@ class TTable:
 
     void adjustPane();
     void scrolled(int dx, int dy);
-    bool mouse2field(int mx, int my, int *fx, int *fy);
+    bool mouse2field(int mx, int my, int *fx, int *fy, int *rfx=0, int *rfy=0);
     
+    void rendererChanged();
+    void _handleInsertRow();
+    void _handleResizedRow();
+
     // precalculated values for optimization
     void handleNewModel();
     int rows, cols;     // table size in rows & columns

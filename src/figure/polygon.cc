@@ -234,7 +234,7 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
   if (!found) {
     action = new TAction(dummy, "add point", TAction::ALWAYS);
     TCLOSURE4(
-      action->sigActivate,
+      action->sigClicked,
       figure, this,
       edit, editor,
       _x, x,
@@ -246,7 +246,7 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
   } else {
     action = new TAction(dummy, "delete point", TAction::ALWAYS);
     TCLOSURE3(
-      action->sigActivate,
+      action->sigClicked,
       figure, this,
       edit, editor,
       _i, i,

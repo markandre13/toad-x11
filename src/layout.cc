@@ -124,11 +124,11 @@ TLayoutEditGeneric::TLayoutEditGeneric(TWindow *parent,
   
   pb = new TPushButton(this, "Fetch");
   pb->setShape(x,y,80,25);
-  connect(pb->sigActivate, this, &TLayoutEditGeneric::fetch);
+  connect(pb->sigClicked, this, &TLayoutEditGeneric::fetch);
   
   pb = new TPushButton(this, "Apply");
   pb->setShape(x+80+5,y,80,25);
-  connect(pb->sigActivate, this, &TLayoutEditGeneric::apply);
+  connect(pb->sigClicked, this, &TLayoutEditGeneric::apply);
 
   y+=25+5;
   

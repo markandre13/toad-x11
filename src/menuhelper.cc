@@ -696,7 +696,7 @@ void TMenuHelper::TRootNode::actionChanged()
 }
 
 /**
- * Triggers <code>sigActivate</code> in all assigned actions.
+ * Triggers <code>sigClicked</code> in all assigned actions.
  *
  * \note
  *   This method uses DelayedTrigger to trigger the actions signal
