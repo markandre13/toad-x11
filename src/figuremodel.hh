@@ -22,6 +22,7 @@
 #define _TOAD_FIGUREMODEL_HH
 
 #include <vector>
+#include <set>
 #include <toad/toad.hh>
 #include <toad/model.hh>
 #include <toad/io/serializable.hh>
@@ -30,12 +31,19 @@ namespace toad {
 
 class TFigure;
 
+typedef set<TFigure*> TFigureSet;
+
 /**
  * \ingroup figure
  */
 class TFigureModel:
   public TModel, public TSerializable
 {
+    class TUndoRemove;
+    friend class TUndoRemove;
+    class TUndoInsert;
+    friend class TUndoInsert;
+
     friend class TFigureWindow; // debugging
     typedef std::vector<TFigure*> TStorage;
   public:
@@ -45,7 +53,7 @@ class TFigureModel:
     enum { MODIFIED, DELETE, 
            ADD, REMOVE
     } type;
-    TFigure *figure;
+    TFigureSet figures;
     
     class iterator
     {
@@ -91,8 +99,13 @@ class TFigureModel:
     TFigureModel(const TFigureModel&);
     ~TFigureModel();
     
-    void add(TFigure *figure);
-    void erase(TFigure *figure);
+    void add(TFigure*);
+    void erase(TFigure*);
+    void add(TFigureSet&);
+    void erase(TFigureSet&);
+    
+    TFigure* group(TFigureSet &);
+    void ungroup(TFigureSet*, TFigure*);
     
     void erase(const iterator&);
     void erase(const iterator&, const iterator&);

@@ -31,7 +31,7 @@ class TUndoableMove:
   public TUndo
 {
   public:
-    TUndoableMove(int, int, const TFigureEditor::TFigureSet&);
+    TUndoableMove(int, int, const TFigureSet&);
     ~TUndoableMove();
 
     bool getRedoName(string *name) const { *name = "Redo: Move Object"; return true; }

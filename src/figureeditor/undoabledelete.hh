@@ -32,7 +32,7 @@ class TUndoableDelete:
 {
   public:
     TUndoableDelete(TFigureModel&,
-                    const TFigureEditor::TFigureSet&);
+                    const TFigureSet&);
     ~TUndoableDelete();
 
     bool getRedoName(string *name) const { *name = "Redo: Delete"; return true; }

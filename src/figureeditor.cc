@@ -41,6 +41,8 @@
 
 using namespace toad;
 
+double TFigure::INSIDE = 4.0;
+
 #define DBM(CMD)
 // #define VERBOSE 1
 
@@ -759,15 +761,26 @@ TFigureEditor::modelChanged()
   switch(model->type) {
     case TFigureModel::ADD:
       update_scrollbars = true;
-      invalidateFigure(model->figure);
+      for(TFigureSet::iterator p=model->figures.begin();
+          p!=model->figures.end();
+          ++p)
+      {
+        invalidateFigure(*p);
+      }
       break;
-    case TFigureModel::REMOVE: {
+    case TFigureModel::REMOVE:
       update_scrollbars = true;
-      invalidateFigure(model->figure);
-      TFigureSet::iterator p = selection.find(model->figure);
-      if (p!=selection.end())
-        selection.erase(p);
-      } break;
+      for(TFigureSet::iterator p=model->figures.begin();
+          p!=model->figures.end();
+          ++p)
+      {
+        invalidateFigure(*p);
+        TFigureSet::iterator q = selection.find(*p);
+        if (q!=selection.end()) {
+          selection.erase(q);
+        }
+      }
+      break;
   }
 }
 
@@ -791,23 +804,13 @@ TFigureEditor::deleteFigure(TFigure *g)
   if (g==gtemplate)
     gtemplate=NULL;
   
-  TFigureModel::iterator p,e;
-  p = model->begin();
-  e = model->end();
-  while(p!=e) {
-    if (g==*p) {
-      model->erase(p);
-      break;
-    }
-    ++p;
-  }
 
   TFigureSet::iterator s;
   s = selection.find(g);
   if (s!=selection.end())
     selection.erase(s); 
 
-  delete g;
+  model->erase(g);
 }
 
 void
@@ -824,34 +827,16 @@ void
 TFigureEditor::deleteSelection()
 {
 //cout << "delete selection" << endl;
-#if 1
-  cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
-#else
-  history.add(new TUndoableDelete(*model, selection));
-#endif
-//cout << "selection size: " << selection.size() << endl;
 
-  TFigureModel::iterator p,e,del;
-  p = model->begin();
-  e = model->end();
-  while(p!=e) {
-    if (selection.find(*p)!=selection.end() &&
-        (*p)->removeable )
-    {
-      del = p;
-      ++p;
-      if (gadget==*del)
-        gadget=NULL;
-//      cout << "removing gadget " << *del << endl;
-      model->erase(del);
-    } else {
-      p++;
-    }
+  if (gadget && selection.find(gadget)!=selection.end()) {
+    gadget = 0;
   }
-
+  model->erase(selection);
+/*
   clearSelection();
   update_scrollbars = true;
   window->invalidateWindow();
+*/
 }
 
 void
@@ -995,6 +980,13 @@ TFigureEditor::selectionDown()
 void
 TFigureEditor::group()
 {
+#if 1
+  TFigure *group = model->group(selection);
+  if (group) {
+    clearSelection();
+    selection.insert(group);
+  }
+#else
   if (selection.size()<2)
     return;
   TFGroup *group = new TFGroup();
@@ -1017,6 +1009,7 @@ TFigureEditor::group()
   group->calcSize();
   model->insert(p, group);
   selection.insert(group);
+#endif
 }
 
 void
@@ -1134,12 +1127,6 @@ TFigureEditor::stopOperation()
       clearSelection();
       if (gadget) {
         selection.insert(gadget);
-#if 1
-        cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
-#else
-        history.add(new TUndoableCreate(*model, selection));
-#endif
-//        clearSelection();
       }
       setMouseMoveMessages(TMMM_ANYBUTTON);
       break;
@@ -1746,12 +1733,14 @@ redo:
       memo_x += dx;
       memo_y += dy;
 #endif
+      if (memo_x!=0 || memo_y!=0) {
 #if 1
-      cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
+        cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
 #else
-      TUndoableMove *undo = new TUndoableMove(memo_x, memo_y, selection);
-      history.add(undo);
+        TUndoableMove *undo = new TUndoableMove(memo_x, memo_y, selection);
+        history.add(undo);
 #endif
+      }
 #if 0
       while(p!=e) {
         invalidateFigure(*p);
@@ -1953,6 +1942,9 @@ TFigureEditor::findFigureAt(int mx, int my)
   p = found = model->end();
   b = model->begin();
   TMatrix2D stack;
+
+  TFigure::INSIDE = 0.4 * fuzziness * TFigure::RANGE;
+
   while(p!=b) {
     --p;
     if (*p!=gadget) {
@@ -1977,9 +1969,11 @@ TFigureEditor::findFigureAt(int mx, int my)
   }
   if (found == model->end())
     return NULL;
+
 //  if (distance > TFigure::RANGE)
-  if (distance > 0.5*fuzziness*TFigure::RANGE)
+  if (distance > 0.5*fuzziness*TFigure::RANGE) {
     return NULL;
+  }
   return *found;
 }
 

@@ -22,7 +22,7 @@
 
 using namespace toad;
 
-TUndoableMove::TUndoableMove(int x, int y, const TFigureEditor::TFigureSet& s)
+TUndoableMove::TUndoableMove(int x, int y, const TFigureSet& s)
 {
   dx=x; dy=y;
   gadgets = new TFigure*[s.size()+1];

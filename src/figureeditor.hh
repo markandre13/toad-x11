@@ -30,7 +30,6 @@
 #include <toad/textmodel.hh>
 #include <toad/boundedrangemodel.hh>
 
-#include <set>
 
 namespace toad {
 
@@ -279,7 +278,6 @@ class TFigureEditor:
     // triggered after `selection' was modified
     TSignal sigSelectionChanged;
 
-    typedef set<TFigure*> TFigureSet;
     TFigureSet selection;
 
     void paint();

@@ -30,7 +30,7 @@ class TUndoableCreate:
 {
   public:
     TUndoableCreate(TFigureModel &g,
-                    const TFigureEditor::TFigureSet &s):
+                    TFigureSet &s):
       TUndoableDelete(g,s)
     {
       done = false;
