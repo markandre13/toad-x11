@@ -1499,9 +1499,7 @@ TTable::_handleRemovedRow()
   TRCInfo *info = row_info + renderer->where;
   for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
-    int n = renderer->getRowHeight(i);
-    info->size = n;
-    pane.h -= n + border;
+    pane.h -= info->size + border;
     ++info;
   }
 
