@@ -839,10 +839,10 @@ TTextArea::paint()
       }
       
       if (_tx==0) {
-        pen.drawString(0,y,line,false);
+        pen.fillString(0,y,line);
       } else {
         if (_tx < line.size())
-          pen.drawString(0,y,line.substr(_tx),false);
+          pen.fillString(0,y,line.substr(_tx));
       }
       
       if (part) {
@@ -891,7 +891,7 @@ TTextArea::paint()
         if (len>0 && pos<line.size()) {
           pen.setLineColor(255,255,255);
           pen.setFillColor(0,0,0);
-          pen.drawString(x, y, line.substr(pos, len), false);
+          pen.fillString(x, y, line.c_str()+pos, len);
         }
       }
       
