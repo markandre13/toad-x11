@@ -22,7 +22,6 @@
 #define _TOAD_UTF8_HH
 
 #include <string>
-#include <libXutf8/Xutf8.h>
 
 namespace toad {
 
