@@ -250,6 +250,7 @@ TFText::setFromPreferences(TFigurePreferences *preferences)
     case TFigurePreferences::ALLCHANGED:
     case TFigurePreferences::FONTNAME:
       fontname = preferences->fontname;
+      calcSize();
       break;
   }
 }
