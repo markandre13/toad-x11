@@ -1017,7 +1017,9 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
   assert(font!=NULL);
   font->createFont(mat);
 
+#ifdef HAVE_LIBXFT
   XftColor color;
+#endif
 
   switch(font->getRenderType()) {
     case TFont::RENDER_X11:
