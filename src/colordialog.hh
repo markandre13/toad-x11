@@ -51,6 +51,8 @@ class TColorDialog:
     
     void done(bool apply);
     
+    bool apply;
+    
     TBitmap *bmp1 , *bmp2;
 };
 

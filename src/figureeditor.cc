@@ -60,8 +60,10 @@ using namespace toad;
  *
  * \todo
  *   \li
- *      rectangle selection is so slow because the rectangle is painted
- *      during mouseMove which avoids compression of paint events
+ *      group followed by undo causes a segfault or inifinite recursion
+ *      or something like that
+ *   \li
+ *      scrollbars aren't setup properly during scaling
  *   \li
  *      ungroup must take care of the groups transformation matrix
  *   \li
@@ -124,6 +126,16 @@ TFigureEditor::TFigureEditor():
   window = NULL;
 }
 
+TFigureEditor::TFigureEditor(TWindow *p, const string &t):
+  super(p, t)
+{
+  init();
+  setMouseMoveMessages(TMMM_LBUTTON);
+  bNoBackground = true;
+  window = this;
+}
+
+
 /**
  * Handle events for another window.
  *
@@ -143,15 +155,6 @@ TFigureEditor::setWindow(TWindow *w)
     window->invalidateWindow();
 }
 
-TFigureEditor::TFigureEditor(TWindow *p, const string &t):
-  super(p, t)
-{
-  init();
-  setMouseMoveMessages(TMMM_LBUTTON);
-  bNoBackground = true;
-  window = this;
-}
-
 void
 TFigureEditor::init()
 {
@@ -167,6 +170,7 @@ TFigureEditor::init()
   operation = OP_SELECT;
   state = STATE_NONE;
   use_scrollbars = true;
+  mat = 0;
   vscroll = NULL;
   hscroll = NULL;
   x1=y1=x2=y2=0;
@@ -236,13 +240,13 @@ TFigureEditor::resize()
   updateScrollbars();
 }
 
-double xscale = 1.0;
-double yscale = 1.0;
-
 int rotx=100;
 int roty=100;
 double rotd=0.0;
 double rotd0;
+
+int select_x;
+int select_y;
 
 void
 TFigureEditor::paint()
@@ -285,7 +289,9 @@ TFigureEditor::paint()
   pen.identity();
   pen.fillRectanglePC(0,0,window->getWidth(),window->getHeight());
   pen.translate(window->getOriginX(), window->getOriginY());
-  pen.scale(xscale, yscale);
+
+  if (mat)
+    pen.multiply(mat);
   
   pen.setColor(TColor::BLACK);
 
@@ -350,6 +356,12 @@ TFigureEditor::paint()
     ++sp;
   }
 
+  if (state==STATE_SELECT_RECT) {
+    pen.setColor(0,0,0);
+    pen.setLineStyle(TPen::DOT);
+    pen.drawRectanglePC(down_x, down_y, select_x-down_x, select_y-down_y);
+  }
+
   // draw rotation center  
   if (operation==OP_ROTATE) {
     int r1=10;
@@ -378,6 +390,8 @@ TFigureEditor::paint()
     pen|=r;
     pen.fillRectanglePC(r);
   }
+  
+  
   // put the result onto the screen
   TPen scr(window);
   scr.identity();
@@ -807,8 +821,11 @@ redo:
 void
 TFigureEditor::mouseLDown(int mx,int my, unsigned m)
 {
-mx/=xscale;
-my/=yscale;
+  if (mat) {
+    TMatrix2D m(*mat);
+    m.invert();
+    m.map(mx, my, &mx, &my);
+  }
 
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
@@ -950,6 +967,8 @@ redo:
                 sigSelectionChanged();
                 if (m&MK_CONTROL) {
                   state =  STATE_SELECT_RECT;
+                  select_x = x;
+                  select_y = y;
                 } else {
                   memo_x = memo_y = 0;
                   state = STATE_MOVE;
@@ -960,6 +979,8 @@ redo:
                   selection.insert(g);
                   sigSelectionChanged();
                   state =  STATE_SELECT_RECT;
+                  select_x = x;
+                  select_y = y;
                 } else {
                   state = STATE_MOVE;
                   memo_x = memo_y = 0;
@@ -978,6 +999,8 @@ redo:
               sigSelectionChanged();
             }
             state =  STATE_SELECT_RECT;
+            select_x = x;
+            select_y = y;
           }
         } break;
 
@@ -1061,9 +1084,11 @@ redo:
 void
 TFigureEditor::mouseMove(int x, int y, unsigned m)
 {
-x/=xscale;
-y/=yscale;
-
+  if (mat) {
+    TMatrix2D m(*mat);
+    m.invert();
+    m.map(x, y, &x, &y);
+  }
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
@@ -1175,10 +1200,14 @@ redo:
         cout << "  STATE_SELECT_RECT => redrawing rectangle" << endl;
       #endif
       window->invalidateWindow();
+      select_x = x;
+      select_y = y;
+/*
       window->paintNow();
       TPen pen(window);
       pen.setLineStyle(TPen::DOT);
       pen.drawRectanglePC(down_x, down_y, x-down_x, y-down_y);
+*/
     } break;
     
     case STATE_ROTATE: {
@@ -1194,8 +1223,11 @@ redo:
 void
 TFigureEditor::mouseLUp(int x, int y, unsigned m)
 {
-x/=xscale;
-y/=yscale;
+  if (mat) {
+    TMatrix2D m(*mat);
+    m.invert();
+    m.map(x, y, &x, &y);
+  }
 #if VERBOSE
   cout << __PRETTY_FUNCTION__ << endl;
 #endif
@@ -1338,53 +1370,58 @@ redo:
 void
 TFigureEditor::invalidateFigure(TFigure* figure)
 {
-  if (window) {
-    TRectangle r;
-    figure->getShape(r);
-    if (figure->mat) {
-      int x1, x2, y1, y2;
-      short x, y;
-      figure->mat->map(r.x, r.y, &x, &y);
-      x1 = x2 = x;
-      y1 = y2 = y;
-      for(int i=1; i<4; ++i) {
-        switch(i) {
-          case 1:
-            figure->mat->map(r.x+r.w, r.y, &x, &y);
-            break;
-          case 2:
-            figure->mat->map(r.x+r.w, r.y+r.h, &x, &y);
-            break;
-          case 3:
-            figure->mat->map(r.x, r.y+r.h, &x, &y);
-            break;
-        }
-        if (x1>x)
-          x1=x;
-        if (x2<x)
-          x2=x;
-        if (y1>y)
-          y1=y;
-        if (y2<y)
-          y2=y;
-      }
-      r.set(TPoint(x1,y1), TPoint(x2, y2));
+  if (!window)
+    return;
+
+  TRectangle r;
+  figure->getShape(r);
+  if (mat || figure->mat) {
+    TMatrix2D m;
+    if (mat) {
+      m=*mat;
     }
-//cout << "invalidating shape " << r.x << "," << r.y << "," << r.w << "," << r.h << endl;
-r.x*=xscale;
-r.y*=yscale;
-r.w*=xscale;
-r.h*=yscale;
-    r.x-=3;
-    r.y-=3;
-    r.w+=6;
-    r.h+=6;
-
-    r.x+=window->getOriginX();
-    r.y+=window->getOriginY();
-
-    window->invalidateWindow(r);
+    if (figure->mat)
+      m.multiply(figure->mat);
+      
+    int x1, x2, y1, y2;
+    short x, y;
+    m.map(r.x, r.y, &x, &y);
+    x1 = x2 = x;
+    y1 = y2 = y;
+    for(int i=1; i<4; ++i) {
+      switch(i) {
+        case 1:
+          m.map(r.x+r.w, r.y, &x, &y);
+          break;
+        case 2:
+          m.map(r.x+r.w, r.y+r.h, &x, &y);
+          break;
+        case 3:
+          m.map(r.x, r.y+r.h, &x, &y);
+          break;
+      }
+      if (x1>x)
+        x1=x;
+      if (x2<x)
+        x2=x;
+      if (y1>y)
+        y1=y;
+      if (y2<y)
+        y2=y;
+    }
+    r.set(TPoint(x1,y1), TPoint(x2, y2));
   }
+//cout << "invalidating shape " << r.x << "," << r.y << "," << r.w << "," << r.h << endl;
+
+  r.x-=3;
+  r.y-=3;
+  r.w+=6;
+  r.h+=6;
+
+  r.x+=window->getOriginX();
+  r.y+=window->getOriginY();
+
+  window->invalidateWindow(r);
 }
 
 /**
@@ -1415,9 +1452,9 @@ TFigureEditor::findGadgetAt(int mx, int my)
         x = mx;
         y = my;
       }
-cerr << "  after rotation ("<<x<<", "<<y<<")\n";
+//cerr << "  after rotation ("<<x<<", "<<y<<")\n";
       double d = (*p)->distance(x, y);
-cerr << "  distance = " << d << endl;
+//cerr << "  distance = " << d << endl;
       stack->identity();
       if (d<distance) {
         distance = d;
@@ -1672,9 +1709,10 @@ TFigureEditor::TColorSelector::mouseLDown(int x, int y, unsigned modifier)
     TColorDialog ce(this, "Fill Color", &fillcolor);
     TCheckBox *fill = new TCheckBox(&ce, "Filled");
     fill->setShape(x=8+256+8+16+8+12, 228, 80, 32);
-    fill->getModel()->setValue(filled);
+    fill->getModel()->setValue(true);
     ce.doModalLoop();
-    filled = fill->getModel()->getValue();
+    if (ce.apply)
+      filled = fill->getModel()->getValue();
     invalidateWindow();
   }
   gedit->setLineColor(linecolor);

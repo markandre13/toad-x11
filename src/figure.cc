@@ -126,11 +126,14 @@ TFigure::paintSelection(TPenBase &pen)
     if ( !getHandle(h, pt) )
       break;
     short x, y;
-    pen.mat->map(pt.x, pt.y, &x, &y);
-    pen.push();
-    pen.identity();
+    if (pen.mat) {
+      pen.mat->map(pt.x, pt.y, &x, &y);
+      pen.push();
+      pen.identity();
+    }
     pen.fillRectanglePC(x-2,y-2,5,5);
-    pen.pop();
+    if (pen.mat)
+      pen.pop();
     h++;
   }
   if (h==0) {

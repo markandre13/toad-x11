@@ -57,6 +57,7 @@ class TFigureEditor:
 
   protected:
     TWindow *window;            // current window
+    TMatrix2D *mat;
 
   public:
     static const unsigned OP_SELECT = 0;
