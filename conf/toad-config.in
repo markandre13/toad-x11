@@ -1,4 +1,10 @@
 #!/bin/sh
+# toad-config - script to get information about the installed
+# version of the TOAD C++ GUI Libary.
+#
+# Copyleft 2003 Mark-André Hopf <mhopf@mark13.de>
+# All Rights Reversed.
+#
 
 prefix=@prefix@
 exec_prefix=@prefix@
@@ -13,13 +19,83 @@ LIBS="@LDFLAGS@ -L${libdir} @LIBS@ -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11"
 
 usage() {
 cat<<EOF
-Usage: $0 [OPTIONS]
+Usage: $0 [options]
 Options:
-  [--prefix]
-  [--exec-prefix]
-  [--libs]
-  [--cxxflags]
-  [--cxx]
+  --prefix
+  --exec-prefix
+  --cxx                Display the C++ compiler to be used with the library
+  --cxxflags           Display compiler Options
+  --libs               Display linker Options
+  --new-project <name> Create minimal project with 'Makefile' and '<name>.cc'
+  --help               Display this information
+
+For bug reporting instructions, please see:
+<URL:http://www.mark13.de/toad/contact.html>.
+EOF
+}
+
+new_project() {
+  project=$1
+  if test -f Makefile ; then
+    echo "Can't create project '${project}': file 'Makefile' already exists"
+    exit 1
+  fi
+  if test -f ${project}.cc ; then
+    echo "Can't create project '${project}': file '${project}.cc' already exists"
+    exit 1
+  fi
+cat > Makefile <<EOF
+PRGFILE=${project}
+SRCS=${project}.cc
+
+CXX=\`toad-config --cxx\`
+CXXFLAGS=\`toad-config --cxxflags\`
+LD=\$(CXX)
+LDFLAGS=\`toad-config --libs\`
+OBJS=\$(SRCS:.cc=.o)
+
+all: \$(PRGFILE)
+
+.SUFFIXES: .cc
+
+.cc.o:
+	@echo compiling \$*.cc ...
+	@\$(CXX) \$(CXXFLAGS) \$*.cc -c -o \$*.o
+
+\$(PRGFILE): \$(OBJS)
+	@echo linking \$(PRGFILE) ...
+	@\$(LD) \$(LDFLAGS) \$(OBJS) -o \$(PRGFILE) \$(LDFLAGS)
+	@echo Ok
+
+clean::
+	@echo removing generated files in `pwd`
+	@rm -f \$(PRGFILE) .depend \$(CLEAN)
+	@find . -name "*.o" -exec rm -f {} \;
+	@find . -name "*.bak" -exec rm -f {} \;
+	@find . -name "*~" -exec rm -f {} \;
+	@find . -name "core" -exec rm -f {} \;
+	@find . -name "DEADJOE" -exec rm -f {} \;
+	@find . -name "a.out" -exec rm -f {} \;
+
+depend::
+	@/usr/X11R6/bin/makedepend \$(INCDIRS) -Y \$(SRCS) 2> /dev/null
+EOF
+cat > ${project}.cc <<EOF
+#include <toad/toad.hh>
+
+using namespace toad;
+
+int
+main(int argc, char **argv, char **envv)
+{
+  toad::initialize(argc, argv, envv);
+  {
+    TWindow window(0, "${project}");
+    toad::mainLoop();
+  }
+  toad::terminate();
+  return 0;
+}
 EOF
 }
 
@@ -53,6 +129,14 @@ case $arg in
     ;;
   --cxx)
     echo $CXX
+    ;;
+  --new-project)
+    new_project $1
+    shift
+    ;;
+  --help)
+    usage
+    exit 0
     ;;
   *)
     echo "unknown argument '$arg'"
