@@ -363,7 +363,7 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       }
       break;
     default:
-      if ((unsigned char)str[0]>=32 && str[1]==0) {
+      if ((unsigned char)str[0]>=32 || str[1]!=0) {
         if (preferences->mode==TPreferences::NORMAL)
           _selection_clear();
         _insert(str);

@@ -1084,11 +1084,16 @@ cout << endl;
         
         if (xic_current) {
           Status status;
-          count = XmbLookupString(xic_current, 
-                                  &x11event.xkey, 
-                                  buffer, KB_BUFFER_SIZE,
-                                  &key,
-                                  &status );
+#ifndef HAVE_LIBXUTF8
+          count = XmbLookupString(
+#else
+          count = XUtf8LookupString(
+#endif
+            xic_current, 
+            &x11event.xkey, 
+            buffer, KB_BUFFER_SIZE,
+            &key,
+            &status );
 
           if (status==XLookupNone)
             break;

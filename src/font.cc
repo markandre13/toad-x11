@@ -127,10 +127,15 @@ TFont::init()
       }
     }
   }
-
+  x11scale = 1.0;
+#ifdef TOAD_OLD_FONTCODE
   x11font = 0;
   x11fs = 0;
-  x11scale = 1.0;
+#endif
+#ifdef HAVE_LIBXUTF8
+  xutf8font = 0;
+  xutf8font_r = 0;
+#endif
 #ifdef HAVE_LIBXFT
   xftfont = 0;
 #endif
@@ -142,6 +147,7 @@ TFont::init()
 void
 TFont::clear()
 {
+#ifdef TOAD_OLD_FONTCODE
   if (x11font) {
     XUnloadFont(x11display, x11font);
     x11font = 0;
@@ -151,6 +157,17 @@ TFont::clear()
     XFreeFontInfo(NULL, x11fs, 0);
     x11fs = 0;
   }
+#endif
+#ifdef HAVE_LIBXUTF8
+  if (xutf8font) {
+    XFreeUtf8FontStruct(x11display, xutf8font);
+    xutf8font = 0;
+  }
+  if (xutf8font_r) {
+    XFreeUtf8FontStruct(x11display, xutf8font_r);
+    xutf8font = 0;
+  }
+#endif
 #ifdef HAVE_LIBXFT
   if (xftfont) {
     XftFontClose(x11display, xftfont);
@@ -162,9 +179,16 @@ TFont::clear()
 int
 TFont::getAscent() const
 {
+#ifdef TOAD_OLD_FONTCODE
   if (x11fs) {
     return x11scale * x11fs->ascent;
   }
+#endif
+#ifdef HAVE_LIBXUTF8
+  if (xutf8font) {
+    return xutf8font->ascent;
+  }
+#endif
 #ifdef HAVE_LIBXFT
   if (xftfont)
     return xftfont->ascent;
@@ -175,9 +199,16 @@ TFont::getAscent() const
 int
 TFont::getDescent() const
 {
+#ifdef TOAD_OLD_FONTCODE
   if (x11fs) {
     return x11scale * x11fs->descent;
   }
+#endif
+#ifdef HAVE_LIBXUTF8
+  if (xutf8font) {
+    return xutf8font->descent;
+  }
+#endif
 #ifdef HAVE_LIBXFT
   if (xftfont)
     return xftfont->descent;
@@ -200,9 +231,16 @@ TFont::getTextWidth(const char *str) const
 int
 TFont::getTextWidth(const char *str, int len) const
 {
+#ifdef TOAD_OLD_FONTCODE
   if (x11fs) {
     return x11scale * XTextWidth(x11fs,str,len);
   }
+#endif
+#ifdef HAVE_LIBXUTF8
+  if (xutf8font) {
+    return x11scale * XUtf8TextWidth(xutf8font,str,len);
+  }
+#endif
 #ifdef HAVE_LIBXFT
   if (xftfont) {
     XGlyphInfo gi;
@@ -230,6 +268,7 @@ TFont::createFont(TMatrix2D *mat)
   }
 }
 
+#ifdef TOAD_OLD_FONTCODE
 Font
 TFont::getX11Font() const
 {
@@ -239,6 +278,7 @@ TFont::getX11Font() const
     return x11fs->fid;
   return 0;
 }
+#endif
 
 static bool dummy;
 
@@ -266,19 +306,42 @@ TFont::createX11Font(TMatrix2D *mat)
     newid += "]";
 
     if (newid != id) {
+#ifdef TOAD_OLD_FONTCODE
       if (x11font) {  
         // we have an rotated font, but not the one we need
         XUnloadFont(x11display, x11font);
         x11font = 0;
       }
+#endif
+#ifdef HAVE_LIBXUTF8
+      if (xutf8font_r) {
+        XFreeUtf8FontStruct(x11display, xutf8font_r);
+        xutf8font_r = 0;
+      }
+#endif
       id = newid;
     } else {
+#ifdef TOAD_OLD_FONTCODE
       if (x11font) {
         // we have an rotated font and it's the one we need
         return;
       }
+#endif
+#ifdef HAVE_LIBXUTF8
+      if (xutf8font_r) {
+        return;
+      }
+#endif
     }
   } else {
+    // no rotation
+#ifdef HAVE_LIBXUTF8
+    if (xutf8font_r) {
+      XFreeUtf8FontStruct(x11display, xutf8font_r);
+      xutf8font_r = 0;
+    }
+#endif
+#ifdef TOAD_OLD_FONTCODE
     if (x11font) {
       XUnloadFont(x11display, x11font);
       x11font = 0;
@@ -287,6 +350,12 @@ TFont::createX11Font(TMatrix2D *mat)
       // no rotated font is required and we have the normal font
       return;
     }
+#endif
+#ifdef HAVE_LIBXUTF8
+    if (xutf8font) {
+      return;
+    }
+#endif
   }
 
   // Execute substitutions
@@ -320,8 +389,14 @@ TFont::createX11Font(TMatrix2D *mat)
 
   FcPatternDestroy(pattern);
 
+#ifdef TOAD_OLD_FONTCODE
   XFontStruct *new_fs = NULL;
   if (!x11fs) {
+#endif
+#ifdef HAVE_LIBXUTF8
+  XUtf8FontStruct *xutf8font_new = 0;
+  if (!xutf8font) {
+#endif
   
     // In case someone is scaling, font size may become bigger
     // than the ones actually used on the screen, so we set a
@@ -336,24 +411,36 @@ TFont::createX11Font(TMatrix2D *mat)
     }
 
     // finally load the font
+#ifdef TOAD_OLD_FONTCODE
     new_fs = XLoadQueryFont(x11display, xfn.getXLFD().c_str());
     if (!new_fs) {
       cerr << "error while loading font '" << fontname << "':\n"
            << "  failed to load X11 font structure '" << xfn.getXLFD() << "'\n";
       return;
     }
+#endif
+#ifdef HAVE_LIBXUTF8
+    xutf8font_new = XCreateUtf8FontStruct(x11display, xfn.getXLFD().c_str());
+    if (!xutf8font_new) {
+      cerr << "error while loading font '" << fontname << "':\n"
+           << "  failed to load Utf8 font structure '" << xfn.getXLFD() << "'\n";
+    }
+#endif
   }
   
   // In case a matrix is available, we need to load a 2nd font,
   // which will be used for output. The untransformed font will
   // then be used to get text extents.
+#ifdef TOAD_OLD_FONTCODE
   Font new_font = 0;
+#endif
+#ifdef HAVE_LIBXUTF8
+  XUtf8FontStruct *xutf8font_r_new = 0;
+#endif
   if (mat && !mat->isIdentity()) {
     xfn.points = id;
     xfn.pixels = "0";
 
-    new_font = 0;
-  
     // Some matrizes, ie. small ones, cause XLoadFont to fail, so we
     // need to temporary install an error handler or the default error
     // handler would call 'exit(..)'. the XSync below is done because
@@ -361,21 +448,34 @@ TFont::createX11Font(TMatrix2D *mat)
     XErrorHandler oldhandler;
     oldhandler = XSetErrorHandler(dummyhandler);
     dummy = false;
+#ifdef TOAD_OLD_FONTCODE
     new_font = XLoadFont(x11display, xfn.getXLFD().c_str());
+#endif
+#ifdef HAVE_LIBXUTF8
+    xutf8font_r_new = XCreateUtf8FontStruct(x11display, xfn.getXLFD().c_str());
+#endif
     XSync(x11display, False);
     XSetErrorHandler(oldhandler);
     if (dummy) {
       cerr << "error while loading font '" << fontname << "':\n"
            << "  failed to load X11 font '" << xfn.getXLFD() << "'\n";
+#ifdef TOAD_OLD_FONTCODE
       if (new_fs) {
         XUnloadFont(x11display, new_fs->fid);
         XFreeFontInfo(NULL,new_fs,0);
       }
+#endif
+#ifdef HAVE_LIBXUTF8
+      if (xutf8font_r_new) {
+        XFreeUtf8FontStruct(x11display, xutf8font_r_new);
+      }
+#endif
       return;
     }
   }
   
   // set new font
+#ifdef TOAD_OLD_FONTCODE
   if (new_font) {
     assert(x11font==0);
     x11font = new_font;
@@ -384,6 +484,17 @@ TFont::createX11Font(TMatrix2D *mat)
     assert(x11fs==NULL);
     x11fs = new_fs;
   }
+#endif
+#ifdef HAVE_LIBXUTF8
+  if (xutf8font_new) {
+    assert(xutf8font==0);
+    xutf8font = xutf8font_new;
+  }
+  if (xutf8font_r_new) {
+    assert(xutf8font_r==0);
+    xutf8font_r = xutf8font_r_new;
+  }
+#endif
 }
 
 #ifdef HAVE_LIBXFT

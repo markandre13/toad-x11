@@ -26,7 +26,6 @@
 #include <toad/toadbase.hh>
 #include <toad/matrix2d.hh>
 #include <toad/pointer.hh>
-
 #include <fontconfig/fontconfig.h>
 
 #if ( FC_VERSION < 20200 )
@@ -37,6 +36,10 @@
 
 #ifdef HAVE_LIBXFT    
 typedef struct _XftFont XftFont;
+#endif
+
+#ifdef HAVE_LIBXUTF8
+#include <libXutf8/Xutf8.h>
 #endif
 
 namespace toad {
@@ -62,9 +65,18 @@ class TFont:
 //  private:
     string id;
 #ifdef __X11__
-    _TOAD_FONTSTRUCT x11fs;
     double x11scale;          // only used for rotated fonts
+
+#ifdef TOAD_OLD_FONTCODE
+    _TOAD_FONTSTRUCT x11fs;
     _TOAD_FONT       x11font; // only used for rotated fonts
+#endif
+
+#ifdef HAVE_LIBXUTF8
+    XUtf8FontStruct *xutf8font;   // horizontal
+    XUtf8FontStruct *xutf8font_r; // rotated
+#endif
+
     void createX11Font(TMatrix2D*);
 
 #ifdef HAVE_LIBXFT    
@@ -86,7 +98,9 @@ class TFont:
     void createFont(TMatrix2D*);
 
 #ifdef __X11__    
+#ifdef TOAD_OLD_FONTCODE
     _TOAD_FONT getX11Font() const;
+#endif
     
 #ifdef HAVE_LIBXFT
     XftFont * getXftFont() const {

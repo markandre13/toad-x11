@@ -126,16 +126,27 @@ TFText::stop(TFigureEditor*)
 unsigned 
 TFText::keyDown(TFigureEditor *editor, TKey key, char *str, unsigned)
 {
-cerr << "TFText::keyDown: '" << str << "'\n";
   editor->invalidateFigure(this);
   switch(key) {
     case TK_LEFT:
-      if (cx>0)
+      if (cx>0) {
         cx--;
+#ifdef TOAD_OLD_FONTCODE
+        if (toad::_x11corefontmethod!=TOAD_X11CFM_DEPRECATED)
+#endif
+        while( ((unsigned char)text[cx] & 0xC0) == 0x80)
+          --cx;
+      }
       break;
     case TK_RIGHT:
-      if (cx<text.size())
+      if (cx<text.size()) {
         cx++;
+#ifdef TOAD_OLD_FONTCODE
+        if (toad::_x11corefontmethod!=TOAD_X11CFM_DEPRECATED)
+#endif
+        while( ((unsigned char)text[cx] & 0xC0) == 0x80)
+          cx++;
+      }
       break;
     case TK_UP:
       break;
@@ -156,12 +167,24 @@ cerr << "TFText::keyDown: '" << str << "'\n";
         cx=text.size();
       break;
     case TK_BACKSPACE:
-      if (cx>0)
+      if (cx>0) {
         cx--;
-      else
+#ifdef TOAD_OLD_FONTCODE
+        if (toad::_x11corefontmethod!=TOAD_X11CFM_DEPRECATED)
+#endif
+        while( ((unsigned char)text[cx] & 0xC0) == 0x80)
+          --cx;
+      } else {
         break;
+      }
     case TK_DELETE:
       text.erase(cx,1);
+#ifdef TOAD_OLD_FONTCODE
+      if (toad::_x11corefontmethod!=TOAD_X11CFM_DEPRECATED)
+#endif
+      while( ((unsigned char)text[cx] & 0xC0) == 0x80) {
+        text.erase(cx,1);
+      }
       break;
     case TK_RETURN:
       text.insert(cx, 1, '\n');

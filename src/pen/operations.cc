@@ -1025,12 +1025,13 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
   switch(font->getRenderType()) {
 
     case TFont::RENDER_X11:
+#ifdef TOAD_OLD_FONTCODE
       if (!font->getX11Font()) {
         cout << "no X11 font found" << endl;
         return;
       }
-//      cout << "setting X11 font" << endl;
       XSetFont(x11display, o_gc, font->getX11Font());
+#endif
       y+=font->getAscent();
 
       if (!transparent && using_bitmap) {
@@ -1040,33 +1041,58 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
       if (!mat || mat->isIdentity()) {
         if (mat)
           mat->map(x, y, &x, &y);
+#ifdef TOAD_OLD_FONTCODE
         if (transparent)
           XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
         else
           XDrawImageString(x11display, x11drawable, o_gc, x,y, str, strlen);
+#endif
+#ifdef HAVE_LIBXUTF8
+        if (transparent)
+          XUtf8DrawString(x11display, x11drawable, font->xutf8font, o_gc, x, y, str, strlen);
+        else
+          XUtf8DrawImageString(x11display, x11drawable, font->xutf8font, o_gc, x, y, str, strlen);
+#endif
       } else {
         int x2, y2;
         const char *p = str;
         int len=0;
         while(*p && len<strlen) {
-          char buffer[2];
+          char buffer[5];
+          unsigned clen=1;
           buffer[0]=*p;
-          buffer[1]=0;
+          ++p;
+          ++len;
+#ifdef HAVE_LIBXUTF8
+          while( ((unsigned char)*p & 0xC0) == 0x80) {
+            buffer[clen]=*p;
+            ++len;
+            ++p;
+            ++clen;
+          }
+#endif          
 
           int direction, fasc, fdesc;
 
-          XCharStruct xcs1;
-          XTextExtents(font->x11fs, buffer, 1, &direction, &fasc, &fdesc, &xcs1);
           mat->map(x,
               y,
             &x2, &y2);
+#ifdef TOAD_OLD_FONTCODE
           if (transparent)
             XDrawString(x11display, x11drawable, o_gc, x2,y2, buffer, 1);
           else
             XDrawImageString(x11display, x11drawable, o_gc, x2,y2, buffer, 1);
+          XCharStruct xcs1;
+          XTextExtents(font->x11fs, buffer, 1, &direction, &fasc, &fdesc, &xcs1);
           x+=font->x11scale * xcs1.width;
-          ++len;
-          ++p;
+#endif
+#ifdef HAVE_LIBXUTF8
+          if (transparent)
+            XUtf8DrawString(x11display, x11drawable, font->xutf8font_r, o_gc, x2, y2, buffer, clen);
+          else
+            XUtf8DrawImageString(x11display, x11drawable, font->xutf8font_r, o_gc, x2, y2, buffer, clen);
+          x+=font->x11scale * XUtf8TextWidth(font->xutf8font,buffer,clen);
+#endif
         }
       }
 
