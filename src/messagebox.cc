@@ -58,8 +58,8 @@ TMessageBox::TMessageBox(TWindow* p,
     icon_width = bitmap->width;
     icon_height = bitmap->height;
   } else {
-    icon_width = 32;
-    icon_height = 32;
+    icon_width = 34;
+    icon_height = 22;
   }
 
   // button dimensions
