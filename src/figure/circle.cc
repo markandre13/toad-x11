@@ -37,12 +37,16 @@ void
 TFCircle::paint(TPenBase &pen, EPaintType)
 {
   pen.setLineColor(line_color);
+  pen.setLineStyle(line_style);
+  pen.setLineWidth(line_width);
   if (!filled) {
     pen.drawCircle(p1,p2);
   } else {
     pen.setFillColor(fill_color);
     pen.fillCircle(p1,p2);
   }
+  pen.setLineStyle(line_style);
+  pen.setLineWidth(line_width);
 }
 
 double 

@@ -52,7 +52,11 @@ TFBezierline::paint(TPenBase &pen, EPaintType type)
   }
 
   pen.setColor(line_color);
+  pen.setLineStyle(line_style);
+  pen.setLineWidth(line_width);
   pen.drawPolyBezier(polygon);
+  pen.setLineStyle(TPen::SOLID);
+  pen.setLineWidth(0);
 }
 
 /**
@@ -458,12 +462,19 @@ void
 TFBezier::paint(TPenBase &pen, EPaintType type)
 {
   pen.setLineColor(line_color);
+  pen.setLineStyle(line_style);
+  pen.setLineWidth(line_width);
+  
   if (!filled) {
     pen.drawPolyBezier(polygon);
   } else {
     pen.setFillColor(fill_color);
     pen.fillPolyBezier(polygon);
   }
+  
+  pen.setLineStyle(TPen::SOLID);
+  pen.setLineWidth(0);
+  
   if (type==EDIT || type==SELECT) {
     pen.setColor(TColor::FIGURE_SELECTION);
 //    pen.setLineStyle(TPen::DOT);

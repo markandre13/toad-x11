@@ -32,12 +32,16 @@ void
 TFRectangle::paint(TPenBase &pen, EPaintType)
 {
   pen.setLineColor(line_color);
+  pen.setLineStyle(line_style);
+  pen.setLineWidth(line_width);
   if (!filled) {
     pen.drawRectangle(p1,p2);
   } else {
     pen.setFillColor(fill_color);
     pen.fillRectangle(p1,p2);
   }
+  pen.setLineStyle(TPen::SOLID);
+  pen.setLineWidth(0);
 }
 
 double 
