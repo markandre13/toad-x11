@@ -136,7 +136,7 @@ toad::initialize(int argc, char **&argv, char **envv)
         cerr << "error: missing option for argument " << argv[i] << endl;
         exit(1);
       }
-      fontengine = argv[i++];
+      fontengine = argv[++i];
     } else {
       cerr << "unknown option " << argv[i] << endl;
     }
