@@ -7,8 +7,9 @@ bindir=@bindir@
 includedir=@includedir@
 datadir=@datadir@
 
-CXXFLAGS="-I${includedir} @XML2_FLAGS@ @X_CFLAGS@"
-LIBS="@LDFLAGS@ -L${libdir} @LIBS@ @XML2_LIBS@ -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11"
+CXX=@CXX@
+CXXFLAGS="-I${includedir} @X_CFLAGS@"
+LIBS="@LDFLAGS@ -L${libdir} @LIBS@ -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11"
 
 usage() {
 cat<<EOF
@@ -18,6 +19,7 @@ Options:
   [--exec-prefix]
   [--libs]
   [--cxxflags]
+  [--cxx]
 EOF
 }
 
@@ -48,6 +50,9 @@ case $arg in
     ;;
   --cxxflags)
     echo $CXXFLAGS
+    ;;
+  --cxx)
+    echo $CXX
     ;;
   *)
     echo "unknown argument '$arg'"
