@@ -187,13 +187,8 @@ class TWindow:
     void invalidateWindow(bool clearbg=true);
     void invalidateWindow(int,int,int,int, bool clearbg=true);
     void invalidateWindow(const TRectangle&, bool clearbg=true);
-    void invalidateWindow(const TRectangle *rect, bool clearbg=true) {
-      invalidateWindow(*rect, clearbg);
-    }
     void invalidateWindow(const TRegion&, bool bClrBG=true);
-    void invalidateWindow(const TRegion *reg, bool clearbg=true) {
-      invalidateWindow(*reg, clearbg);
-    }
+
     void paintNow();
     
     void raiseWindow();
