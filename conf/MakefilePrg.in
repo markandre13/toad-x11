@@ -1,8 +1,8 @@
 ############################################################################
 #                                                                          #
 # TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System    #
-# Master Makefile for Programs                                             #
-# Copyleft 1996-2002 by Mark-André Hopf <mhopf@mark13.de>                  #
+# Master Makefile for the example programs                                 #
+# Copyleft 1996-2005 by Mark-AndrÃ© Hopf <mhopf@mark13.org>                 #
 #                                                                          #
 ############################################################################
 
@@ -21,12 +21,12 @@
 # make run	run program (with modified LD_LIBRARY_PATH)
 # make clean	remove created files
 
-top_builddir= @top_builddir@
+top_builddir= ../..
 TOAD_INC    = $(top_builddir)/src/include
-TOAD_LIB    = $(top_builddir)/src
+TOAD_LIB    = $(top_builddir)/src/.libs
 
 CC 	= @CC@
-CFLAGS  += $(DEFINES) @CFLAGS@ $(INCDIRS)
+CFLAGS  += $(DEFINES) @CFLAGS@ $(TOAD_INC) $(INCDIRS)
 CXX     = @CXX@   
 CXXFLAGS+= $(DEFINES) @CXXFLAGS@ -I$(TOAD_INC) $(INCDIRS)
 LD      = $(CXX)
@@ -82,7 +82,8 @@ clean::
 # for ulimit and core dumps to work
 run::
 	@echo starting program
-	@ulimit -c unlimited ; LD_LIBRARY_PATH=$(TOAD_LIB):$(LD_LIBRARY_PATH) ./$(PRGFILE)
+	@ulimit -c unlimited ; LD_LIBRARY_PATH=$(TOAD_LIB):$(LD_LIBRARY_PATH) \
+	DYLD_LIBRARY_PATH=$(TOAD_LIB):$(DYLD_LIBRARY_PATH) ./$(PRGFILE)
 
 # X11R6 makedepend has the `-Y' option
 dep:

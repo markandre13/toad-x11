@@ -1,10 +1,11 @@
 #
-# include extra packages from the standard debian paths
+# include extra packages from the standard paths
 #
 
-#sinclude(/usr/share/aclocal/pkg.m4)
-#sinclude(/usr/share/aclocal/libtool.m4)
+# GNU/Debian Sarge
+sinclude(/usr/share/aclocal/pkg.m4)
+sinclude(/usr/share/aclocal/libtool.m4)
 
-# Darwin Fink
+# Darwin/MacOS X Fink
 sinclude(/sw/share/aclocal/pkg.m4)
 sinclude(/sw/share/aclocal/libtool.m4)
