@@ -49,19 +49,31 @@ TRadioButton::paint()
   // draw text
   int y = ( (getHeight()-pen.getHeight()) >> 1 );
 
-  pen.setColor(128,128,128);
+  pen.setColor(TColor::BTNSHADOW);
   pen.fillCirclePC(0,0,11,11);
-  pen.setColor(255,255,255);
+  pen.setColor(TColor::BTNLIGHT);
   pen.fillCirclePC(1,1,12,12);
-  pen.setColor(128,128,128);
+  pen.setColor(TColor::BTNSHADOW);
   pen.drawCirclePC(0,0,11,11);
   pen.drawCirclePC(1,1,10,10);
   pen.setColor(  0,  0,  0);
   pen.drawArcPC(1,1,11,11, 90, 180);
+  if (!isEnabled()) {
+    pen.setColor(TColor::DIALOG);
+    pen.fillCircle(2,2, 8,8);
+    pen.setColor(0,0,0);
+  }
   if (isDown())
     pen.fillCircle(3,3, 6,6);
-    
-  pen.drawString(20,y, getLabel());
+
+  if (isEnabled()) {    
+    pen.drawString(20,y, getLabel());
+  } else {
+    pen.setColor(TColor::BTNLIGHT);
+    pen.drawString(20+1,y+1, getLabel());
+    pen.setColor(TColor::BTNSHADOW);
+    pen.drawString(20,y, getLabel());   
+  }
   
   if (isFocus()) {
     pen.setLineStyle(TPen::DOT);
