@@ -46,7 +46,6 @@ class TComboBox:
       return table->getSelectionModel();
     }
     TSignal sigSelection;
-
     int getLastSelectionCol() const { return table->getLastSelectionCol(); }
     int getLastSelectionRow() const { return table->getLastSelectionRow(); }
 
@@ -54,7 +53,6 @@ class TComboBox:
     int getCursorCol() const { return table->getCursorCol(); }
     int getCursorRow() const { return table->getCursorRow(); }
     void selectAtCursor() { table->selectAtCursor(); }
-
 
   protected:
     void resize();

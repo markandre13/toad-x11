@@ -69,8 +69,14 @@ TComboBox::paint()
 {
   TPen pen(this);
 
-  pen.draw3DRectangle(0,0, getWidth()-1, getHeight()-1);
+  pen.draw3DRectanglePC(0,0, getWidth(), getHeight());
 #if 1
+#if 1
+  if (!table->getRenderer()) {
+    pen.setColor(TColor::DIALOG);
+    pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
+    return;
+  }
   pen.translate(2, 2);
   table->getRenderer()->renderItem(
     pen,
@@ -79,6 +85,7 @@ TComboBox::paint()
     false,
     false,
     isFocus());
+#endif
 #else
   TAbstractTableSelectionModel *s = table->getSelectionModel();
   TTableSelectionModel::iterator p(s->begin());
@@ -124,7 +131,6 @@ TComboBox::button()
 void
 TComboBox::selected()
 {
-cerr << __PRETTY_FUNCTION__ << endl;
   btn->setDown(false);
   invalidateWindow();
   sigSelection();
