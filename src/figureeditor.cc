@@ -43,7 +43,7 @@ using namespace toad;
  * 
  * It's still experimental so expect major changes in the future before
  * using it. One major goal is to make it possible to edit scaleable and
- * rotateable 2D gadgets and to create 3D objects.
+ * rotateable 2D figures and to create 3D objects.
  * <P>
  * Originally written for the dialog editor, it can be used for lots of
  * other jobs, e.g. a MacOS(tm) alike file folder.
@@ -71,7 +71,7 @@ using namespace toad;
  *   \li
  *      adjust getShape to check transformations
  *   \li
- *      adjust finding gadget & handles for transformations
+ *      adjust finding figures & handles for transformations
  *   \li
  *      undo history isn't erased when a new model is set
  *   \li
@@ -146,11 +146,11 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t):
 void
 TFigureEditor::setWindow(TWindow *w)
 {
-  // [store gadgets to `window']
+  // [store figures to `window']
   if (window)
     window->invalidateWindow();
   window = w;
-  // [get gadgets from `window']
+  // [get figures from `window']
   if (window)
     window->invalidateWindow();
 }
@@ -171,10 +171,12 @@ TFigureEditor::init()
   state = STATE_NONE;
   use_scrollbars = true;
   mat = 0;
-  vscroll = NULL;
-  hscroll = NULL;
+//  vscroll = NULL;
+//  hscroll = NULL;
+  model = new TFigureModel();
   x1=y1=x2=y2=0;
   update_scrollbars = false;
+  
 
   TAction *action;
 /*
@@ -203,8 +205,8 @@ TFigureEditor::~TFigureEditor()
 bool
 TFigureEditor::restore(TInObjectStream &in)
 {
-  clearSelection();
-  super::restore(in);
+//  clearSelection();
+//  super::restore(in);
 }
 
 /**
@@ -298,8 +300,8 @@ TFigureEditor::paint()
   TFigureModel::iterator p, e;
   
   // draw the figures
-  p = gadgets->begin();
-  e = gadgets->end();
+  p = model->begin();
+  e = model->end();
   while(p!=e) {
     TFigure::EPaintType pt = TFigure::NORMAL;
     unsigned pushs = 0;
@@ -377,6 +379,7 @@ TFigureEditor::paint()
     pen.fillCirclePC(rotx-r1, roty-r1, r1*2, r1*2);
   }
 
+#if 0
   // draw the litle gray box between the two scrollbars (when we have
   // two of 'em)
   if (vscroll && vscroll->isMapped() &&
@@ -390,7 +393,7 @@ TFigureEditor::paint()
     pen|=r;
     pen.fillRectanglePC(r);
   }
-  
+#endif  
   
   // put the result onto the screen
   TPen scr(window);
@@ -449,7 +452,7 @@ TFigureEditor::setFilled(bool b)
 void
 TFigureEditor::add(TFigure *g)
 {
-  gadgets->add(g);
+  model->add(g);
   update_scrollbars = true;
   invalidateFigure(g);
 }
@@ -463,11 +466,11 @@ TFigureEditor::deleteGadget(TFigure *g)
     gtemplate=NULL;
   
   TFigureModel::iterator p,e;
-  p = gadgets->begin();
-  e = gadgets->end();
+  p = model->begin();
+  e = model->end();
   while(p!=e) {
     if (g==*p) {
-      gadgets->erase(p);
+      model->erase(p);
       break;
     }
     ++p;
@@ -495,12 +498,12 @@ void
 TFigureEditor::deleteSelection()
 {
 //cout << "delete selection" << endl;
-  history.add(new TUndoableDelete(*gadgets, selection));
+  history.add(new TUndoableDelete(*model, selection));
 //cout << "selection size: " << selection.size() << endl;
 
   TFigureModel::iterator p,e,del;
-  p = gadgets->begin();
-  e = gadgets->end();
+  p = model->begin();
+  e = model->end();
   while(p!=e) {
     if (selection.find(*p)!=selection.end() &&
         (*p)->removeable )
@@ -510,7 +513,7 @@ TFigureEditor::deleteSelection()
       if (gadget==*del)
         gadget=NULL;
 //      cout << "removing gadget " << *del << endl;
-      gadgets->erase(del);
+      model->erase(del);
     } else {
       p++;
     }
@@ -525,8 +528,8 @@ void
 TFigureEditor::selectAll()
 {
   TFigureModel::iterator p,e;
-  p = gadgets->begin();
-  e = gadgets->end();
+  p = model->begin();
+  e = model->end();
   while(p!=e) {
     selection.insert(*p);
     ++p;
@@ -539,19 +542,21 @@ TFigureEditor::deleteAll()
   selectAll();
   deleteSelection();
   setOrigin(0,0);
+/*
   if (vscroll)
     vscroll->setValue(0);
   if (hscroll)
     hscroll->setValue(0);
   updateScrollbars();
+*/
 }
 
 void
 TFigureEditor::selection2Top()
 {
   TFigureModel::iterator p,b,np;
-  p = gadgets->end();
-  b = gadgets->begin();
+  p = model->end();
+  b = model->begin();
 
   if (p==b)
     return;
@@ -587,8 +592,8 @@ void
 TFigureEditor::selection2Bottom()
 {
   TFigureModel::iterator p, e, np;
-  p = np = gadgets->begin();
-  e = gadgets->end();
+  p = np = model->begin();
+  e = model->end();
   if (p==e)
     return;
 
@@ -618,8 +623,8 @@ void
 TFigureEditor::selectionUp()
 {
   TFigureModel::iterator p,e,b,prev;
-  p = e = prev = gadgets->end();
-  b = gadgets->begin();
+  p = e = prev = model->end();
+  b = model->begin();
   if (p==b)
     return;
   while(true) {
@@ -644,8 +649,8 @@ void
 TFigureEditor::selectionDown()
 {
   TFigureModel::iterator p,e,prev;
-  p = gadgets->begin();
-  e = prev = gadgets->end();
+  p = model->begin();
+  e = prev = model->end();
   while(p!=e) {
     if (selection.find(*p)!=selection.end()) {
       if (prev!=e) {
@@ -670,14 +675,14 @@ TFigureEditor::group()
   TFGroup *group = new TFGroup();
   TFigureModel::iterator p,e;
 
-  p = gadgets->begin();
-  e = gadgets->end();
+  p = model->begin();
+  e = model->end();
   while(p!=e) {
     if (selection.find(*p)!=selection.end()) {
       group->gadgets.add(*p);
       TFigureModel::iterator del = p;
       ++p;
-      gadgets->erase(del);
+      model->erase(del);
     } else {
       ++p;
     }
@@ -685,7 +690,7 @@ TFigureEditor::group()
 
   clearSelection();
   group->calcSize();
-  gadgets->insert(p, group);
+  model->insert(p, group);
   selection.insert(group);
 }
 
@@ -693,8 +698,8 @@ void
 TFigureEditor::ungroup()
 {
   TFigureModel::iterator p,e;
-  p = gadgets->begin();
-  e = gadgets->end();
+  p = model->begin();
+  e = model->end();
   while(p!=e) {
     if (selection.find(*p)!=selection.end()) {
       TFGroup *group = dynamic_cast<TFGroup*>(*p);
@@ -702,12 +707,12 @@ TFigureEditor::ungroup()
         TFigureModel::iterator vp,ve;
         vp = group->gadgets.begin();
         ve = group->gadgets.end();
-        gadgets->insert(p, vp,ve);
+        model->insert(p, vp,ve);
         group->gadgets.erase(group->gadgets.begin(),group->gadgets.end());
         delete group;
         TFigureModel::iterator del = p;
         ++p;
-        gadgets->erase(del);
+        model->erase(del);
         continue;
       }
     }
@@ -772,7 +777,7 @@ TFigureEditor::stopOperation()
       clearSelection();
       if (gadget) {
         selection.insert(gadget);
-        history.add(new TUndoableCreate(*gadgets, selection));
+        history.add(new TUndoableCreate(*model, selection));
 //        clearSelection();
       }
       setMouseMoveMessages(TMMM_ANYBUTTON);
@@ -1010,7 +1015,7 @@ redo:
           #endif
           clearSelection();
           gadget = static_cast<TFigure*>(gtemplate->clone());
-          gadgets->add(gadget);
+          model->add(gadget);
           window->invalidateWindow();
           state = STATE_START_CREATE;
           setMouseMoveMessages(TWindow::TMMM_ALL);
@@ -1335,8 +1340,8 @@ redo:
       }
       if (selecting) {
         TFigureModel::iterator p, e;
-        p = gadgets->begin();
-        e = gadgets->end();
+        p = model->begin();
+        e = model->end();
         TRectangle r1(TPoint(down_x,down_y), TPoint(x,y));
         TRectangle r2;
         while(p!=e) {
@@ -1437,8 +1442,8 @@ TFigureEditor::findGadgetAt(int mx, int my)
 #endif
   double distance = TFigure::OUT_OF_RANGE;
   TFigureModel::iterator p,b,found;
-  p = found = gadgets->end();
-  b = gadgets->begin();
+  p = found = model->end();
+  b = model->begin();
   TMatrix2D *stack = new TMatrix2D();
   while(p!=b) {
     --p;
@@ -1468,6 +1473,11 @@ TFigureEditor::findGadgetAt(int mx, int my)
 }
 
 void
+TFigureEditor::adjustPane()
+{
+}
+
+void
 TFigureEditor::updateScrollbars()
 {
   if (!window || !use_scrollbars)
@@ -1494,8 +1504,8 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
 //DBM(cout << "y-axis (1): " << y1 << " - " << y2 << endl;)
   
   TFigureModel::iterator p, e;
-  p = gadgets->begin();
-  e = gadgets->end();
+  p = model->begin();
+  e = model->end();
   TRectangle r;
   while(p!=e) {
     int a;
@@ -1572,7 +1582,7 @@ DBM(cout << "height, width       : " << w << ", " << h << endl;)
 //DBM(cout << "x-axis (4): " << x1 << " - " << x22 << endl;)
 //DBM(cout << "y-axis (4): " << y1 << " - " << y22 << endl;)
 
-
+#if 0
   if (hs) {
     if (!hscroll) {
       hscroll = new TScrollBar(window, "hscroll");
@@ -1616,24 +1626,29 @@ DBM(cout << "updateScrollbars: vscroll to " << -window->getOriginY() << endl;)
       vscroll->setMapped(false);
     }
   }
+#endif
 DBM(cout << __PRETTY_FUNCTION__ << ": exit" << endl << endl;)
 }
 
 void
 TFigureEditor::actVScroll(int v)
 {
+#if 0
 DBM(cout << "actVScroll: v=" << v << " vscroll range=" << vscroll->getMinimum() << " - " << vscroll->getMaximum() << endl;)
 
   window->scrollTo(window->getOriginX(), -v);
   updateScrollbars();
+#endif
 }
 
 void
 TFigureEditor::actHScroll(int v)
 {
+#if 0
 DBM(cout << "actHScroll: v=" << v << " hscroll range=" << hscroll->getMinimum() << " - " << hscroll->getMaximum() << endl;)
   window->scrollTo(-v, window->getOriginY());
   updateScrollbars();
+#endif
 }
 
 void

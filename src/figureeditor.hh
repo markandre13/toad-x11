@@ -21,7 +21,8 @@
 #ifndef _TOAD_FIGUREEDITOR
 #define _TOAD_FIGUREEDITOR
 
-#include <toad/figurewindow.hh>
+// #include <toad/figurewindow.hh>
+#include <toad/scrolledarea.hh>
 #include <toad/figureeditor/undoable.hh>
 #include <toad/util/history.hh>
 
@@ -36,10 +37,12 @@ class TScrollBar;
  * \ingroup figure
  */
 class TFigureEditor:
-  public TFigureWindow
+//  public TFigureWindow
+  public TScrollPane
 {
-    typedef TFigureWindow super;
-    
+//    typedef TFigureWindow super;
+    typedef TScrollPane super;
+    PFigureModel model;    
   public:
     
     TFigureEditor();
@@ -54,6 +57,13 @@ class TFigureEditor:
     void setBackground(int,int,int);
 
     unsigned result;            // values are defined in TFigure
+    
+    void setModel(TFigureModel *m) {
+      model = m;
+    }
+    TFigureModel * getModel() const {
+      return model;
+    }
 
   protected:
     TWindow *window;            // current window
@@ -179,13 +189,14 @@ class TFigureEditor:
     int handle;             // the current handle or -1 during select
     
     bool use_scrollbars;
-    TScrollBar *vscroll;
-    TScrollBar *hscroll;
+//    TScrollBar *vscroll, *hscroll;
     int x1,x2, y1,y2;
     bool update_scrollbars; // checked during paint
     void updateScrollbars();
     void actVScroll(int);
     void actHScroll(int);
+    
+    void adjustPane();
 
     void stopOperation();   // stop the current operation
 };
