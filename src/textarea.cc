@@ -182,6 +182,7 @@ TTextArea::init()
     _eol = 0;
   _bos = _eos = 0;
   _cx = _cy = 0;
+  _cxpx = -1;
   _tx = _ty = 0;
   _pos = 0;
   
@@ -440,14 +441,10 @@ DBM(cout << "LEAVE keyDown" << endl;
 void
 TTextArea::mouseLDown(int x, int y, unsigned)
 {
+  #warning "mouseLDown doesn't handle proportional tabs"
   if (!model)
     return;
-  TFont *font = TPen::lookupFont(preferences->getFont());
-  int h = font->getHeight();
-  int w = font->getTextWidth("x");
-  x /= w;
-  y /= h;
-  setCursor(x + _tx, y + _ty);
+  _goto_pixel(x, y);
   _bos = _eos = _pos;
   blink.visible=true;
   setFocus();
@@ -456,23 +453,58 @@ TTextArea::mouseLDown(int x, int y, unsigned)
 void
 TTextArea::mouseMove(int x, int y, unsigned)
 {
-  TFont *font = TPen::lookupFont(preferences->getFont());
-  int h = font->getHeight();
-  int w = font->getTextWidth("x");
-  x /= w;
-  y /= h;
-  
-  if (_cx==x && _cy==y)
+  #warning "mouseMove doesn't handle proportional fonts and tabs"
+  if (!model)
     return;
-  setCursor(x + _tx, y + _ty);
-  _eos = _pos;
-  invalidateWindow(true);
-  // _invalidate_line(_cy);
+  _goto_pixel(x, y);
+  if (_eos != _pos) {
+    _eos = _pos;
+    invalidateWindow(true);
+    // _invalidate_line(_cy);
+  }
 }
 
 void
 TTextArea::mouseLUp(int x, int y, unsigned)
 {
+}
+
+void
+TTextArea::_goto_pixel(int x, int y)
+{
+x-=2;
+y-=2;
+  TFont *font = TPen::lookupFont(preferences->getFont());
+  int h = font->getHeight();
+  y /= h;
+
+  setCursor(0, y + _ty);
+
+  string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
+  cerr << "found line '" << line << "'\n";
+
+  int w1 = 0, w2 = 0;
+  unsigned p;
+  for(p=0; p<=line.size(); utf8inc(line, &p)) {
+    w2 = font->getTextWidth(line.substr(0, p));
+    if (w2>x)
+      break;
+    w1 = w2;
+  }
+//cerr << "x-w1=" << (x-w1) << ", w2-x=" << (w2-x) << endl;
+
+  if ( x-w1 < w2-x ) {
+    utf8dec(line, &p);
+    _cxpx = w1;
+  } else {
+    _cxpx = w2;
+  }
+  
+//  cerr << "w1 = " << w1 << ", w2 = " << w2 << endl;
+  
+//cerr << "position " << p << ", " << y << endl;
+
+  setCursor(p + _tx, y + _ty);
 }
 
 void
@@ -534,6 +566,8 @@ TTextArea::modelChanged()
     return;
   }
 */
+  int oldcx=_cx, oldtx=_tx;
+
   // check 'blink.current' before modifing blink.visible
   // we might not own the cursor
   if (blink.current==this)
@@ -697,6 +731,8 @@ DBM(cout << "leave modelChanged (" << getTitle() << ")" << endl;
     cout << "  _pos " << _pos << endl;
     cout << "----------------------------------------------------" << endl;)
 
+  if (oldcx!=_cx || oldtx!=_tx)
+    _cxpx = -1;
   adjustScrollbars();
   invalidateWindow();
   sigStatus();
@@ -769,6 +805,60 @@ TTextArea::scrolled()
   }
 }
 
+void
+TTextArea::_get_line(string *line, 
+          unsigned bol, unsigned eol,
+          int *sx,
+          unsigned *bos, unsigned *eos)
+{
+  assert(line!=0);
+  assert(sx!=0);
+  *line = model->getValue().substr(bol, eol==string::npos ? eol : eol-bol);
+      
+  // substitute tabs with spaces
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // line = line with tabs converted to spaces
+  // sx   = cx in line with tabs converted to spaces
+  *sx = _tx+_cx;
+//cerr << "\n1 sx=" << sx << endl;
+
+  if (bos) {
+    // _bos < _eos
+    unsigned _bos = this->_bos;
+    unsigned _eos = this->_eos;
+    if (_bos > _eos) {
+      unsigned a = _bos;
+      _bos = _eos;
+      _eos = a;
+    }
+    *bos = _bos;
+    *eos = _eos;
+  }
+  for(unsigned i=0, j=0; 
+    j<line->size();
+    i++, utf8inc(*line, &j))
+  {
+    if ((*line)[j]=='\t') {
+      unsigned m = (preferences->tabwidth-i-1) % preferences->tabwidth;
+//      if (!preferences->viewtabs) {
+        line->replace(j, 1, m+1, ' ');
+//      } else {
+//        line->replace(j, 1, m+1, '·');
+//        line->replace(j, 1, 1  , '»');
+//      }
+      if (*sx>i)
+        *sx+=m;
+      if (bos) {
+        if (*bos > bol && *bos-bol > j)
+          *bos+=m; // utf8bytes
+        if (*eos > bol && *eos-eol > j)
+          *eos+=m; // utf8bytes
+      }
+      i+=m;
+    }
+  }
+}
+
 /**
  * Paint the screen.
  * \todo
@@ -810,46 +900,10 @@ TTextArea::paint()
     unsigned n = eol==string::npos ? eol : eol-bol; // n=characters in line
     if (y+pen.getHeight()>=clipbox.y) { // loop has reached the visible area
 //cout << "line " << bol << "-" << eol << endl;
-      string line(data.substr(bol, n));
-      
-      // substitute tabs with spaces
-      //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      // line = line with tabs converted to spaces
-      // sx   = cx in line with tabs converted to spaces
-      sx = _tx+_cx;
-//cerr << "\n1 sx=" << sx << endl;
-      
-      unsigned _bos = this->_bos;
-      unsigned _eos = this->_eos;
-      if (_bos > _eos) {
-        unsigned a = _bos;
-        _bos = _eos;
-        _eos = a;
-      }
-      
-      unsigned bos = _bos;
-      unsigned eos = _eos;
-      for(unsigned i=0, j=0; 
-          j<line.size();
-          i++, utf8inc(line, &j))
-      {
-        if (line[j]=='\t') {
-          unsigned m = (preferences->tabwidth-i-1) % preferences->tabwidth;
-          if (!preferences->viewtabs) {
-            line.replace(j, 1, m+1, ' ');
-          } else {
-            line.replace(j, 1, m+1, '·');
-            line.replace(j, 1, 1  , '»');
-          }
-          if (sx>i)
-            sx+=m;
-          if (bos > bol && bos-bol > i)
-            bos+=m;
-          if (eos > bol && eos-eol > i)
-            eos+=m;
-          i+=m;
-        }
-      }
+
+      string line;
+      unsigned bos, eos;
+      _get_line(&line, bol, eol, &sx, &bos, &eos);
 
 //cerr << "draw line: '" << line << "'\n";
 //cerr << "  line     : " << bol << " - " << eol << endl;
@@ -935,10 +989,12 @@ TTextArea::paint()
 //cerr << "2 sx=" << sx << endl;
 //string l2 = line.substr(0, utf8bytecount(line, 0, sx));
 //cerr << "'" << l2 << "'\n";
-        sx = pen.getTextWidth(line.substr(0, utf8bytecount(line, 0, sx)));
+        if (_cxpx<0) {
+          _cxpx = pen.getTextWidth(line.substr(0, utf8bytecount(line, 0, sx)));
+        }
         // sx = pen.getTextWidth("x") * (sx-_tx);
         pen.setMode(TPen::INVERT);
-        pen.drawLine(sx,y,sx,y+pen.getHeight()-1);
+        pen.drawLine(_cxpx,y,_cxpx,y+pen.getHeight()-1);
         pen.setMode(TPen::NORMAL);
       }
     }
@@ -1081,6 +1137,7 @@ TTextArea::_cursor_left(unsigned n)
       _cursor_end();
     }
   }
+  _cxpx = -1;
   blink.visible=true;
 }
 
@@ -1105,6 +1162,7 @@ cerr << "  _pos = " << _pos << endl;
   }
 cerr << "   _cx = " << _cx << endl;
 cerr << "  _pos = " << _pos << endl;
+  _cxpx = -1;
   blink.visible=true;
 }
 
@@ -1174,6 +1232,7 @@ TTextArea::_cursor_home()
     } else {
       invalidateWindow();
     }
+    _cxpx = -1;
     blink.visible=true;
   }
 }
@@ -1188,6 +1247,7 @@ TTextArea::_cursor_end()
     _pos=_eol;
     _invalidate_line(_cy);
     _catch_cursor();
+    _cxpx = -1;
     blink.visible=true;
   }
 }
@@ -1345,6 +1405,7 @@ TTextArea::_scroll_right(unsigned n)
     return;
   _cx-=n;
   _tx+=n;
+  _cxpx = -1;
   invalidateWindow();  
 }
 
@@ -1358,6 +1419,7 @@ TTextArea::_scroll_left(unsigned n)
     n = _tx;
   _cx+=n;
   _tx-n;
+  _cxpx = -1;
   invalidateWindow();
 }
 

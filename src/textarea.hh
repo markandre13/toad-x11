@@ -131,6 +131,17 @@ class TTextArea:
     
     void resize();
     void paint();
+    void _goto_pixel(int x, int y);
+    void _get_line(string *line, 
+                   unsigned bol, unsigned eol,
+                   int *sx,
+                   unsigned *bos, unsigned *eos);
+    void _get_line(string *line, 
+                   unsigned bol, unsigned eol,
+                   int *sx)
+    {
+      _get_line(line, bol, eol, sx, 0, 0);
+    }
     
     void _invalidate_line(unsigned line, bool statusChanged=true);
 
@@ -140,6 +151,9 @@ class TTextArea:
     //! cursor position (relative to screen)
     int _cx, _cy;
 
+    // cursor position in pixels
+    int _cxpx;
+    
     //! last and first char of current line inside data
     unsigned _bol, _eol;
     
@@ -148,7 +162,7 @@ class TTextArea:
     
     //! begin and end of selection
     unsigned _bos, _eos;
-    
+
     // methods to handle keyboard input
     void _cursor_left(unsigned n=1);
     void _cursor_right(unsigned n=1);
