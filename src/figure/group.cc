@@ -90,7 +90,7 @@ TFGroup::calcSize()
     if (f->mat)
       m.multiply(f->mat);
     for(int i=0; i<4; ++i) {
-      short x, y;
+      int x, y;
       switch(i) {
         case 0:
           m.map(r.x, r.y, &x, &y);
