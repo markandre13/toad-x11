@@ -148,11 +148,11 @@ class TTextArea:
     void paint();
     void _goto_pixel(int x, int y);
     void _get_line(string *line, 
-                   unsigned bol, unsigned eol,
+                   size_t bol, size_t eol,
                    int *sx,
-                   unsigned *bos, unsigned *eos) const;
+                   size_t *bos, size_t *eos) const;
     void _get_line(string *line, 
-                   unsigned bol, unsigned eol,
+                   size_t bol, size_t eol,
                    int *sx) const
     {
       _get_line(line, bol, eol, sx, 0, 0);
@@ -172,13 +172,13 @@ class TTextArea:
     int _cxpx;
     
     //! last and first char of current line inside data
-    unsigned _bol, _eol;
+    size_t _bol, _eol;
     
     //! position of cursor inside data (_bol <= _pos <= _eol)
-    unsigned _pos;
+    size_t _pos;
     
     //! begin and end of selection
-    unsigned _bos, _eos;
+    size_t _bos, _eos;
 
     // methods to handle keyboard input
     void _cursor_left(unsigned n=1);
@@ -242,7 +242,7 @@ class TTextArea:
     bool isModified() const;
     
     void setValue(const string&);
-    void setValue(const char *data, unsigned len);
+    void setValue(const char *data, size_t len);
     const string& getValue() const;
     
     void setCursor(unsigned x, unsigned y);
@@ -253,7 +253,7 @@ class TTextArea:
     void find(const string&);
     unsigned getLines() const;
     
-    unsigned getPos() const { return _pos; }
+    size_t getPos() const { return _pos; }
 };
 
 } // namespace toad

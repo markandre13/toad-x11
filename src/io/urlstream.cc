@@ -96,7 +96,7 @@ class fdbuf:
 
     
     // input
-    int showmanyc();
+    streamsize showmanyc();
     int_type uflow(void);
     int_type underflow(void);
     streamsize xsgetn(char_type* s, streamsize n);
@@ -165,7 +165,7 @@ fdbuf::sync(void)
 // input
 //----------------------------------------------------------------------------
 
-int
+streamsize
 fdbuf::showmanyc(void)
 {
 //  cout << "[showmanyc]" << endl;
@@ -276,7 +276,7 @@ void urlstreambase::parse(const string &url)
     { P_FTP,    "ftp",    true },
 #endif
   };
-  unsigned p,l;
+  size_t p,l;
 
   // get protocol
   //--------------------
@@ -286,7 +286,7 @@ void urlstreambase::parse(const string &url)
   l = url.size() - p;
   unsigned type;
   for(type=0; type<sizeof(typetable)/sizeof(TType); type++) {
-    unsigned tl = strlen(typetable[type].name);
+    size_t tl = strlen(typetable[type].name);
     if ( tl+3 <= l &&
          strncasecmp(typetable[type].name, url.c_str()+p, tl) == 0 &&
          strncmp("://", url.c_str()+p+tl, 3)==0 )

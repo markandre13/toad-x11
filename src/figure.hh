@@ -391,7 +391,7 @@ class TFText:
     string text;
     string fontname;
     virtual void calcSize();
-    static int cx;  // cursor position while editing
+    static size_t cx;  // cursor position while editing
 };
 
 /**

@@ -247,7 +247,7 @@ TFileDialog::create()
 void
 TFileDialog::setFilename(const string &s)
 {
-  unsigned n = s.rfind('/');
+  size_t n = s.rfind('/');
   if (n==string::npos) { 
     filename = s;
   } else {
@@ -294,7 +294,7 @@ TSimpleFileFilter::TSimpleFileFilter(const string &name)
   
   unsigned state = 0;
   unsigned b;
-  for(unsigned i=0; i<name.size(); ++i) {
+  for(size_t i=0; i<name.size(); ++i) {
     char c = name[i];
     switch(state) {
       case 0:
@@ -495,7 +495,7 @@ TFileDialog::doubleClick()
 //  cerr << "selected " << file.name << endl;
   if (S_ISDIR(file.mode)) {
     if (file.name=="..") {
-      unsigned p = cwd.rfind('/');
+      size_t p = cwd.rfind('/');
       if (p>0) {
         cwd.erase(p);
       } else {

@@ -366,7 +366,7 @@ if (pen) {
     int Left() const { return left; }
     int Right() const { return right; }
     int getBottom() const { return bottom; }
-    unsigned getSize(int *w, int *h) const {
+    void getSize(int *w, int *h) const {
       *w = right - s_left;
       *h = bottom - s_top;
     }
@@ -757,7 +757,7 @@ TParser::setBase(const string &url)
   base_host.clear();
   base_path.clear();
 //cerr << "set base" << endl;
-  unsigned p1 = url.find("://");
+  size_t p1 = url.find("://");
 //cerr << "  " << p1 << endl;
   if (p1!=string::npos) {
     p1 = url.find("/", p1+3);
@@ -767,7 +767,7 @@ TParser::setBase(const string &url)
     p1 = 0;
   }
 
-  unsigned p2 = url.rfind("/");
+  size_t p2 = url.rfind("/");
   if (p2!=string::npos) {
     base_path = url.substr(p1, p2-p1+1);
 //cerr << "  path '" << base_path << "'\n";

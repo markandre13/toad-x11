@@ -312,7 +312,7 @@ insert_node(
   unsigned depth=0)
 {
   bool added = false;
-  unsigned strpos;
+  size_t strpos;
   string left;
   
 //for(unsigned i=0; i<depth; ++i) cerr << "  "; cerr << "str = '" << str << "'\n";

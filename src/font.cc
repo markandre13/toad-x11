@@ -869,7 +869,7 @@ cerr << "build x11 fontconfig" << endl;
 
     string xlfd = xfn.getXLFD();
     
-    unsigned j = xlfd.rfind('-');
+    size_t j = xlfd.rfind('-');
     j = xlfd.rfind('-', j-1);
     mymap[xlfd.substr(0,j)].insert(xlfd.substr(j+1));
   }
@@ -921,7 +921,7 @@ cerr << "build x11 fontconfig" << endl;
 
     if (!xfn.family.empty()) {
       bool flag = true;
-      for(unsigned i=0; i<xfn.family.size(); ++i) {
+      for(size_t i=0; i<xfn.family.size(); ++i) {
         if (flag)
           xfn.family[i] = toupper(xfn.family[i]);
         flag = (xfn.family[i]==' ');

@@ -839,7 +839,7 @@ TDnDType::TDnDType(const string &m, unsigned actions_in)
   wanted = false;
   actions = actions_in;
   mime=m;
-  unsigned n1, n2;
+  size_t n1, n2;
   n1 = mime.find("/");
   if (n1==string::npos) {
     major="x-not-mime";

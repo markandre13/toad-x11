@@ -54,11 +54,11 @@ class TTextModel:
     /**
      * Start of modification.
      */
-    unsigned offset;
+    size_t offset;
     /**
      * Length of modification.
      */
-    unsigned length;
+    size_t length;
     /**
      * The number of lines modified.
      */
@@ -70,7 +70,7 @@ class TTextModel:
     unsigned nlines;
     
     void setValue(const string&);
-    void setValue(const char *data, unsigned len);
+    void setValue(const char *data, size_t len);
     const string& getValue() const { return data; }
     
     TTextModel(const TTextModel &model) {
@@ -97,9 +97,9 @@ class TTextModel:
       }
     }
     
-    void insert(unsigned offset, int c);
-    void insert(unsigned offset, const string&);
-    void remove(unsigned offset, unsigned length=1);
+    void insert(size_t offset, int c);
+    void insert(size_t offset, const string&);
+    void remove(size_t offset, size_t length=1);
 
     static const int CHARACTER_NONE = 0;
     static const int CHARACTER_TABULATOR = 8;
@@ -118,10 +118,10 @@ class TTextModel:
       public TUndo
     {
         TTextModel *model;
-        unsigned offset;
-        unsigned length;
+        size_t offset;
+        size_t length;
       public:
-        TUndoInsert(TTextModel *m, unsigned o, unsigned l) {
+        TUndoInsert(TTextModel *m, size_t o, size_t l) {
           model  = m;
           offset = o;
           length = l;
@@ -137,10 +137,10 @@ class TTextModel:
       public TUndo
     {
         TTextModel *model;
-        unsigned offset;
+        size_t offset;
         string text;
       public:
-        TUndoRemove(TTextModel *m, unsigned o, const string &t) {        
+        TUndoRemove(TTextModel *m, size_t o, const string &t) {
           model  = m;
           offset = o;
           text   = t;

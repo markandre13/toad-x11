@@ -23,13 +23,13 @@
 
 using namespace toad;
 
-int TFText::cx = 0;
+size_t TFText::cx = 0;
 
 void 
 TFText::calcSize()
 {
   int w=0, h=0;
-  unsigned l,r;
+  size_t l,r;
   l = 0;
   PFont font = TPen::lookupFont(fontname);
   while(true) {
@@ -69,7 +69,7 @@ TFText::paint(TPenBase &pen, EPaintType type)
     }
   }
 #endif  
-  unsigned l, r;
+  size_t l, r;
   int yp = p1.y;
   l = 0;
   while(true) {

@@ -244,9 +244,9 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
             _selection_paste();
             break;
           case TPreferences::WORDSTAR: {
-            unsigned oldpos = _pos;
+            size_t oldpos = _pos;
             _selection_paste();
-            unsigned l = _eos - _bos; // _eos and _bos were sorted by 'paste()'
+            size_t l = _eos - _bos; // _eos and _bos were sorted by 'paste()'
             _bos = oldpos;
             _eos = _bos + l;
             } break;
@@ -365,7 +365,11 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       }
       break;
     default:
-      if ((unsigned char)str[0]>=32 || str[1]!=0) {
+      if ( (unsigned char)str[0]>=32 || 
+           (str[0]!=0 && str[1]!=0) ) 
+      {
+//cout << "insert " << strlen(str) << endl;
+//cout << (unsigned char)str[0] << endl;
         _insert(str);
       }
 //      else
@@ -439,12 +443,13 @@ y-=2;
 //  string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
   string line;
   int sx;
-  unsigned d2, d3;
+  size_t d2, d3;
   _get_line(&line, _bol, _eol, &sx, &d2, &d3);
 //  cerr << "found line '" << line << "'\n";
 
   int w1 = 0, w2 = 0;
-  unsigned p, cx;
+  size_t p;
+  unsigned cx;
   for(p=0, cx=0; p<line.size(); utf8inc(line, &p), cx++) {
     w2 = font->getTextWidth(line.substr(0, p));
     if (w2>x)
@@ -528,11 +533,11 @@ TTextArea::_set_model(TTextModel *m)
 void
 checkCursor2(TTextArea *ta)
 {
-  unsigned pos = ta->getPos();
+  size_t pos = ta->getPos();
   unsigned x, y;
   x = y = 0;
   const string &str = ta->getModel()->getValue();
-  for(unsigned i=0; i<pos; ++i) {
+  for(size_t i=0; i<pos; ++i) {
     ++x;
     if (str[i]=='\n') {
       x=0;
@@ -550,14 +555,14 @@ checkCursor2(TTextArea *ta)
 }
 
 void
-checkCursor3(TTextArea *ta, unsigned offset, unsigned size)
+checkCursor3(TTextArea *ta, size_t offset, size_t size)
 {
-  unsigned pos = ta->getPos();
+  size_t pos = ta->getPos();
   unsigned x, y;
   x = y = 0;
   string str = ta->getModel()->getValue();
   str.erase(offset, size);
-  for(unsigned i=0; i<pos; ++i) {
+  for(size_t i=0; i<pos; ++i) {
     ++x;
     if (str[i]=='\n') {
       x=0;
@@ -689,8 +694,8 @@ if (opcount==591) {
       {
         const string s(model->getValue());
         _bos = _eos = 0;
-        unsigned m1 = model->offset;
-        unsigned m2 = model->offset+model->length;
+        size_t m1 = model->offset;
+        size_t m2 = model->offset+model->length;
         
         DBM(
           cout << "  REMOVE: offset=" << model->offset << endl
@@ -699,13 +704,13 @@ if (opcount==591) {
         
         // update _cy, _ty
         
-        unsigned n = 0;
+        size_t n = 0;
         if (m2 <= _bol) {
           n = model->lines;
         } else
         if (m1 < _bol && _bol < m2) {
           n = 0;
-          for(unsigned i=m1; i<=_bol; ++i) {
+          for(size_t i=m1; i<=_bol; ++i) {
             if (s[i] == '\n')
               n++;
           }
@@ -882,9 +887,9 @@ TTextArea::scrolled()
  */
 void
 TTextArea::_get_line(string *line, 
-          unsigned bol, unsigned eol,
+          size_t bol, size_t eol,
           int *sx,
-          unsigned *bos, unsigned *eos) const
+          size_t *bos, size_t *eos) const
 {
   assert(line!=0);
   assert(sx!=0);
@@ -894,10 +899,10 @@ TTextArea::_get_line(string *line,
   //^^^^^^^^^^^^^^^^^^
   if (bos) {
     // _bos < _eos
-    unsigned _bos = this->_bos;
-    unsigned _eos = this->_eos;
+    size_t _bos = this->_bos;
+    size_t _eos = this->_eos;
     if (_bos > _eos) {
-      unsigned a = _bos;
+      size_t a = _bos;
       _bos = _eos;
       _eos = a;
     }
@@ -912,7 +917,7 @@ TTextArea::_get_line(string *line,
   *sx = _cx;
 //cerr << "\n1 sx=" << *sx << endl;
 
-  for(unsigned i=0, j=0; 
+  for(size_t i=0, j=0; 
     j<line->size();
     ++i, utf8inc(*line, &j))
   {
@@ -1005,24 +1010,24 @@ TTextArea::paint()
   
   // paint the lines
   //^^^^^^^^^^^^^^^^^
-  unsigned bol = 0;
-  unsigned eol;
+  size_t bol = 0;
+  size_t eol;
   int y=-_ty * pen.getHeight();
   int sy, sx;
   sy = -_ty;
   
   while(true) {
     eol = data.find('\n', bol);
-    unsigned n = eol==string::npos ? eol : eol-bol; // n=characters in line
+    size_t n = eol==string::npos ? eol : eol-bol; // n=characters in line
     if (y+pen.getHeight()>=clipbox.y) { // loop has reached the visible area
 //cerr << "line " << bol << "-" << eol << endl;
 
       string line;
-      unsigned bos, eos;
+      size_t bos, eos;
       _get_line(&line, bol, eol, &sx, &bos, &eos);
 /*
 // cerr << "draw line: '" << line << "'\n";
-for(unsigned i=0; i<line.size(); ++i) {
+for(size_t i=0; i<line.size(); ++i) {
   int c=line[i];
   switch(c) {
     case '\t':
@@ -1040,7 +1045,7 @@ cerr << "  selection: " << bos << " - " << eos << endl;
       // draw text
       bool part=false;
       
-      unsigned bos2, eos2;
+      size_t bos2, eos2;
       if (_bos < _eos) {
         bos2 = _bos;
         eos2 = _eos;
@@ -1079,8 +1084,8 @@ cerr << "  selection: " << bos << " - " << eos << endl;
             <<endl;
 #endif            
         int x=0;
-        unsigned pos = 0;
-        unsigned len = eol-bol;
+        size_t pos = 0;
+        size_t len = eol-bol;
         if (bol < bos2) { // start is inside
 //cerr << "start is inside" << endl;
           pos = bos-bol;
@@ -1150,7 +1155,7 @@ TTextArea::_insert(const string &s)
       _selection_erase();
   }
   if (preferences->singleline) {
-    unsigned p = s.find('\n');
+    size_t p = s.find('\n');
     if (p!=string::npos) {
       string s2(s.substr(0,p));
       model->insert(_pos, s2);
@@ -1168,7 +1173,7 @@ TTextArea::_selection_erase()
 {
   MARK
   if (_bos > _eos) {
-    unsigned a = _bos;
+    size_t a = _bos;
     _bos = _eos;
     _eos = a;
   }
@@ -1188,7 +1193,7 @@ TTextArea::_selection_copy()
 {
   MARK
   if (_bos > _eos) {
-    unsigned a = _bos;
+    size_t a = _bos;
     _bos = _eos;
     _eos = a;
   }
@@ -1300,7 +1305,7 @@ TTextArea::_cxpx_from_cx()
 {
   string line;
   int sx;
-  unsigned d2, d3;
+  size_t d2, d3;
   _get_line(&line, _bol, _eol, &sx, &d2, &d3);
   TFont *font = TPen::lookupFont(preferences->getFont());
   _cxpx = font->getTextWidth(line.substr(0,utf8bytecount(line, 0, sx)));
@@ -1317,7 +1322,8 @@ TTextArea::_pos_from_cxpx()
   string line = model->getValue().substr(_bol, _eol==string::npos ? _eol : _eol-_bol);
 
   int w1 = 0, w2 = 0;
-  unsigned p, cx;
+  size_t p;
+  unsigned cx;
   for(p=0, cx=0; p<=line.size(); utf8inc(line, &p), ++cx) {
     w2 = font->getTextWidth(line.substr(0, p));
     if (w2>_cxpx)
@@ -1387,7 +1393,7 @@ void
 TTextArea::_cursor_end()
 {
   MARK
-  unsigned n = _eol - _pos;
+  size_t n = _eol - _pos;
   if (n!=0) {
     _cx+=utf8charcount(model->getValue(), _pos, n);
     _pos=_eol;
@@ -1421,7 +1427,7 @@ TTextArea::_return()
   string indent;
   if (preferences->autoindent) {
     const string &s = model->getValue();
-    unsigned i;
+    size_t i;
     for(i=_bol; i<_eol; i++) {
       if (s[i]!=' ' && s[i]!='\t')
         break;
@@ -1592,7 +1598,7 @@ TTextArea::setValue(const string &txt)
 }
 
 void
-TTextArea::setValue(const char *data, unsigned len)
+TTextArea::setValue(const char *data, size_t len)
 {
   assert(model!=NULL);
   return model->setValue(data, len);
@@ -1618,7 +1624,8 @@ TTextArea::setCursor(unsigned cx, unsigned cy)
   // _ty, _cx, _cy, _bol, _eol, _pos
   
   const string &data = model->getValue();
-  unsigned i, j, y;
+  size_t i;
+  unsigned j, y;
   
   // calculate _bol and _eol
   i = 0;
@@ -1671,7 +1678,7 @@ unsigned
 TTextArea::getCursorX() const
 {
   int cx;
-  unsigned d2, d3;
+  size_t d2, d3;
   string line;
   _get_line(&line, _bol, _eol, &cx, &d2, &d3);
   return cx;
@@ -1735,10 +1742,10 @@ TTextModel::setValue(const string &d)
   offset = 0;
   data = d;
   length = data.size();
-  lines = (unsigned)-1;   // all lines have changed
+  lines = (size_t)-1;   // all lines have changed
 
   nlines = 0;
-  unsigned pos = 0;
+  size_t pos = 0;
   while(true) {
     pos = d.find('\n', pos);
     if (pos==string::npos)
@@ -1754,7 +1761,7 @@ TTextModel::setValue(const string &d)
 }
 
 void
-TTextModel::setValue(const char *d, unsigned len)
+TTextModel::setValue(const char *d, size_t len)
 {
 //cerr << "TTextModel[" << this << "]::setValue(char*)\n";
 #ifndef OLDLIBSTD
@@ -1772,10 +1779,10 @@ TTextModel::setValue(const char *d, unsigned len)
   offset = 0;
   length = len;
   data.assign(d, len);
-  lines = (unsigned)-1;   // all lines have changed
+  lines = (size_t)-1;   // all lines have changed
 
   nlines = 0;
-  unsigned pos = 0;
+  size_t pos = 0;
   while(true) {
     pos = data.find('\n', pos);
     if (pos==string::npos)
@@ -1794,7 +1801,7 @@ TTextModel::setValue(const char *d, unsigned len)
  * insert a single char
  */
 void
-TTextModel::insert(unsigned p, int c)
+TTextModel::insert(size_t p, int c)
 {
   c = filter(c);
   if (!c)
@@ -1829,7 +1836,7 @@ TTextModel::insert(unsigned p, int c)
  * insert multiple chars
  */
 void
-TTextModel::insert(unsigned p, const string &aString)
+TTextModel::insert(size_t p, const string &aString)
 {
   if (aString.size()==0)
     return;
@@ -1860,7 +1867,7 @@ TTextModel::insert(unsigned p, const string &aString)
   offset = p;
   length = s.size();
   lines = 0;
-  for(unsigned i=0; i<length; i++) {
+  for(size_t i=0; i<length; i++) {
     if (s[i]=='\n')
       lines++;
   }
@@ -1880,7 +1887,7 @@ TTextModel::insert(unsigned p, const string &aString)
  * \param undo store in undo history if true
  */
 void
-TTextModel::remove(unsigned p, unsigned l)
+TTextModel::remove(size_t p, size_t l)
 {
   if (l==0)
     return;
@@ -1894,7 +1901,7 @@ TTextModel::remove(unsigned p, unsigned l)
   TUndoManager::registerUndo(this, new TUndoRemove(this, p, data.substr(p,l)));
 
   lines = 0;
-  for(unsigned i=p; i<p+l; ++i) {
+  for(size_t i=p; i<p+l; ++i) {
     if (data[i]=='\n')
       ++lines;
   }
