@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2004 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -95,6 +95,8 @@ TComboBox::paint()
 
   if (isFocus()) {
     pen.setColor(0,0,0);
+    pen.setLineStyle(TPen::SOLID);
+    pen.setLineWidth(1);
     pen.drawRectanglePC(0,0, getWidth()-4-btn->getWidth(), getHeight()-4);
   }
 }
@@ -141,9 +143,25 @@ TComboBox::button()
 }
 
 void
-TComboBox::mouseLDown(int, int, unsigned)
+TComboBox::mouseEvent(TMouseEvent &me)
 {
-  setFocus();
+  switch(me.type) {
+    case TMouseEvent::LDOWN:
+      setFocus();
+      break;
+    case TMouseEvent::ROLL_UP:
+      table->keyDown(TK_UP, const_cast<char*>(""), 0);
+      table->keyUp(TK_UP, const_cast<char*>(""), 0);
+      invalidateWindow();
+      sigSelection();
+      break;
+    case TMouseEvent::ROLL_DOWN:
+      table->keyDown(TK_DOWN, const_cast<char*>(""), 0);
+      table->keyUp(TK_DOWN, const_cast<char*>(""), 0);
+      invalidateWindow();
+      sigSelection();
+      break;
+  }
 }
 
 void
