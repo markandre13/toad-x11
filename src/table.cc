@@ -826,10 +826,13 @@ DBSCROLL({
         pen.identity();
         pen.translate(xp, yp);
         bool selected;
-        if (selection)
+        if (selection) {
           selected = selection->isSelected(per_row?0:x,per_col?0:y);
-        else
-          selected = (per_row?0:x == cx) && (per_col?0:y == cy);
+        } else {
+          // no selection model, assume usage of simplified selection
+          // with getLastSelectionRow() and getLastSelectionCol()
+          selected = (per_row?0:x == sx) && (per_col?0:y == sy);
+        }
         if (selecting) {
           if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
             selected = true;
@@ -1012,7 +1015,6 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
     sigDoubleClicked();
   else  
     sigCursor();
-
 }
 
 void
@@ -1176,6 +1178,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
         }
         center(CENTER_VERT);
       } else {
+        // why did we include 'noCursor' in the following statement?
         if (noCursor && selectionFollowsMouse) {
           selectAtCursor();
         }
@@ -1226,23 +1229,23 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       }
       break;
     case TK_RETURN:
+      selectAtCursor();
       sigDoubleClicked();
       break;
     case ' ': {
-#if 1
-      sx=cx; sy=cy;
       if (selection) {
         if (selectionFollowsMouse)
           selection->setSelection(per_row?0:cx, per_col?0:cy);
         else
           selection->toggleSelection(per_row?0:cx, per_col?0:cy);
-      } else {
-        selectionChanged();
       }
-#else
-      bool perRow = renderer->getCols()!=renderer->getModel()->getCols();
-      bool perCol = renderer->getRows()!=renderer->getModel()->getRows();
-      selection->toggleSelection(perRow?0:cx, perCol?0:cy);
+#if 0
+      else {
+        // sx=cx; sy=cy;
+        // selectionChanged();
+        selectAtCursor();
+        sigDoubleClicked();
+      }
 #endif
       } break;
     case TK_SHIFT_L:
