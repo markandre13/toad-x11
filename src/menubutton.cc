@@ -18,6 +18,7 @@
  * MA  02111-1307,  USA
  */
 
+#define DBM(X)
 #define DBM_FEEL(A)
 
 #include <toad/menubutton.hh>
@@ -25,6 +26,11 @@
 #include <toad/action.hh>
 
 using namespace toad;
+
+namespace {
+  TMenuButton * stopat = 0;
+  TMenuButton * inside = 0;
+}
 
 /**
  *
@@ -213,10 +219,22 @@ TMenuButton::paint()
 void 
 TMenuButton::closeRequest()
 {
-  deactivate();
-  collapse();
-  dropKeyboard();
-  master->state=MHS_WAIT;
+/*
+  The meaning of '!inside':
+  We will receive closeRequest when a mouse button is pressed outside
+  the current popup window and our parent, which is this popup, is
+  closing.
+  When 'inside' isn't set, we received it, because the mouse was pressed
+  outside the menubar and must close everything.
+*/
+  if (!inside) {
+    DBM(cerr << "+ closeRequest " << this << "\n";)
+    deactivate();
+    collapse();
+    dropKeyboard();
+    master->state=MHS_WAIT;
+    DBM(cerr << "- closeRequest " << this << "\n";)
+  }
 }
 
 namespace toad {
@@ -408,23 +426,24 @@ TMenuButton::dropKeyboard()
   }
 }
 
-/**
- * When receiving a closeRequest message we do call Collapse() to deactivate
- * the whole menubar. Collapse() sets stop_collapse to `false' and appends a
- * message to TOADs message queue, which will perform the real job of
- * deactivation.
- * Now in case we receive a mouseLDown message, stop_collapse will be set to
- * `true', which will disable the deactivation.
- */
-static bool stop_collapse;
+const char * statename(EMenuHelperState n) {
+  static const char* a[] = {
+    "MHS_WAIT",
+    "MHS_DOWN",
+    "MHS_UP_N_HOLD",
+    "MHS_DOWN_N_HOLD",
+    "MHS_RESERVED",
+    "MHS_DOWN_N_OUTSIDE",
+    "MHS_DOWN_N_INSIDE_AGAIN"
+  };
+  return a[n];
+}
 
 void 
 TMenuButton::mouseLDown(int,int,unsigned)
 {
-  stop_collapse=true;
-  if (toad::debug_menubutton) {
-    cout << "+ mouseLDown " << this << ": state " << master->state << endl;
-  }
+  stopat = this;
+  DBM(cerr << "+ mouseLDown " << this << ": state " << statename(master->state) << endl;)
   switch(master->state) {
     case MHS_WAIT:
       activate();
@@ -433,26 +452,23 @@ TMenuButton::mouseLDown(int,int,unsigned)
     case MHS_UP_N_HOLD:
       if (master->active!=this) {
         activate();
-      } else {
+        master->state=MHS_DOWN;
+      } 
+      else {
         master->state=MHS_DOWN_N_HOLD;
       }
       break;
     default:
-      cout << __PRETTY_FUNCTION__ << ": unexpected state " << master->state << endl;
+      cerr << __PRETTY_FUNCTION__ << ": unexpected state " << statename(master->state) << endl;
   }
-  if (toad::debug_menubutton) {
-    cout << "- mouseLDown " << this << ": state " << master->state << endl;
-  }
+  DBM(cerr << "- mouseLDown " << this << ": state " << statename(master->state) << endl;)
 }
-
-
 
 void 
 TMenuButton::mouseLUp(int,int,unsigned)
 {
-  if (toad::debug_menubutton) {
-    cout << "+ mouseLUp " << this << ": state " << master->state << endl;
-  }
+  stopat = 0;
+  DBM(cerr << "+ mouseLUp " << this << ": state " << statename(master->state) << endl;)
   switch(master->state) {
     case MHS_DOWN:
       if (
@@ -480,20 +496,28 @@ TMenuButton::mouseLUp(int,int,unsigned)
       dropKeyboard();
       trigger();
       break;
+//    case MHS_UP_N_HOLD:
+//      break;
     default:
-      cout << __PRETTY_FUNCTION__ << ": unexpected state " << master->state << endl;
+      cout << __PRETTY_FUNCTION__ << ": unexpected state " << statename(master->state) << endl;
   }
-  if (toad::debug_menubutton) {
-    cout << "- mouseLUp " << this << ": state " << master->state << endl;
-  }
+  DBM(cerr << "- mouseLUp " << this << ": state " << statename(master->state) << endl;)
 }
 
+/**
+ * Delegate to mouseLDown for popup menus, which are controlled with
+ * the right mouse button.
+ */
 void 
 TMenuButton::mouseRDown(int x, int y, unsigned m)
 {
   mouseLDown(x, y, m);
 }
 
+/**
+ * Delegate to mouseLUp for popup menus, which are controlled with
+ * the right mouse button.
+ */
 void 
 TMenuButton::mouseRUp(int x, int y, unsigned m)
 {
@@ -503,13 +527,13 @@ TMenuButton::mouseRUp(int x, int y, unsigned m)
 void 
 TMenuButton::mouseLeave(int,int,unsigned m)
 {
-  if (toad::debug_menubutton) {
-    cout << "+ mouseLeave " << this << ": state " << master->state << endl;
-  }
+  inside = 0;
+  DBM(cerr << "+ mouseLeave " << this << ": state " << statename(master->state) << endl;)
   switch(master->state) {
     case MHS_WAIT:
     case MHS_DOWN_N_OUTSIDE:
     case MHS_UP_N_HOLD:
+    case MHS_DOWN_N_HOLD:
       break;
     case MHS_DOWN:
     case MHS_DOWN_N_INSIDE_AGAIN:
@@ -517,51 +541,51 @@ TMenuButton::mouseLeave(int,int,unsigned m)
       invalidateWindow();
       break;
     default:
-      cout << __PRETTY_FUNCTION__ << ": unexpected state " << master->state << endl;
+      cout << __PRETTY_FUNCTION__ << ": unexpected state " << statename(master->state) << endl;
   }
-  if (toad::debug_menubutton) {
-    cout << "- mouseLeave " << this << ": state " << master->state << endl;
-  }
+  DBM(cerr << "- mouseLeave " << this << ": state " << statename(master->state) << endl;)
 }
 
 void TMenuButton::mouseEnter(int,int,unsigned m)
 {
-  if (toad::debug_menubutton) {
-    cout << "+ mouseEnter " << this << ": state " << master->state << endl;
-  }
-#warning "menu starts just by moving into with pressed button, check upper button!"
+  inside = this;
+  DBM(cerr << "+ mouseEnter " << this << ": state " << statename(master->state) << endl;)
   switch(master->state) {
     case MHS_WAIT:
     case MHS_UP_N_HOLD:
     case MHS_DOWN_N_OUTSIDE:
+    case MHS_DOWN_N_HOLD:
       if (m&(MK_LBUTTON|MK_RBUTTON) && node->isEnabled()) {
+        stopat = this;
         if (master->active)
           master->active->deactivate();
         activate();
         master->state = MHS_DOWN_N_INSIDE_AGAIN;
+        stopat = 0;
       }
       break;
     default:
-      cout << __PRETTY_FUNCTION__ << ": unexpected state " << master->state << endl;
+      cout << __PRETTY_FUNCTION__ << ": unexpected state " << statename(master->state) << endl;
   }
-  if (toad::debug_menubutton) {
-    cout << "- mouseEnter " << this << ": state " << master->state << endl;
-  }
+  DBM(cerr << "- mouseEnter " << this << ": state " << statename(master->state) << endl;)
 }
 
 void 
 TMenuButton::closePopup()
 {
+  DBM(cerr << "+ closePopup " << this << "\n";)
   if (popup) {
     delete popup;
     popup = NULL;
   }
+  DBM(cerr << "- closePopup " << this << "\n";)
 }
 
 void 
 TMenuButton::openPopup()
 {
   if (node->down && node->isEnabled() && popup==NULL) {
+    DBM(cerr << "+ openPopup " << this << "\n";)
     popup = new TPopup(this, "popup");
     popup->btnmaster = this;
     popup->root.down = node->down;
@@ -573,12 +597,14 @@ TMenuButton::openPopup()
       popup->setPosition(x, y+getHeight());
     popup->setSize(80,200);
     popup->createWindow();
+    DBM(cerr << "- openPopup " << this << "\n";)
   }
 }
 
 void 
 TMenuButton::activate()
 {
+  DBM(cerr << "+ activate " << this << "\n";)
 //  GrabPopupMouse(TMMM_PREVIOUS, TCursor::MOVE);
   grabPopupMouse(TMMM_PREVIOUS);
   grabKeyboard();
@@ -597,11 +623,13 @@ TMenuButton::activate()
   invalidateWindow();
 
   openPopup();
+  DBM(cerr << "- activate " << this << "\n";)
 }
 
 void
 TMenuButton::deactivate()
 {
+  DBM(cerr << "+ deactivate " << this << " with master " << master << endl;)
   if (master->active) {
     master->active->closePopup();
     master->active->invalidateWindow();
@@ -617,6 +645,7 @@ TMenuButton::deactivate()
   }
   closePopup();
   master->state = MHS_WAIT;
+  DBM(cerr << "- deactivate " << this << endl;)
 }
 
 namespace toad {
@@ -627,14 +656,24 @@ namespace toad {
     public:
       TCommandCollapseMenu(TMenuButton *m):mb(m) {}
       void execute() {
-        if (!stop_collapse) {
-          mb->deactivate();
-          mb->master->state = MHS_WAIT;  // right position?
-          mb->collapse();
-          
-          if (mb->master->close_on_close)
-            mb->master->destroyWindow(); 
-        }
+        DBM(cerr << "DEACTIVATE MENUBUTTON" << endl;)
+        mb->deactivate();
+      }
+  };
+
+  class TCmdTriggerNode:
+    public TCommand
+  {
+      TMenuHelper::TNode *node;
+      unsigned idx;
+    public:
+      TCmdTriggerNode(TMenuHelper::TNode *n, unsigned i) {
+        node = n;
+        idx = i;
+      }
+      void execute() {
+        DBM(cerr << "TRIGGER NODE" << endl;)
+        node->trigger(idx);
       }
   };
 }
@@ -642,17 +681,31 @@ namespace toad {
 void
 TMenuButton::trigger()
 {
-  node->trigger(idx);
   deactivate();
+
+  /* We must collapse before triggering the node
+   * o Triggering the node creates a new TAction, ie. when a new
+   *   window with a TTextArea is opened.
+   * o The new action will cause TMenuLayout to rebuild its tree.
+   * o All menubuttons are closed when rebuiling the tree.
+   * o The delete message created by collapse would now contain an
+   *   invalid reference to a menubutton which was removed in the
+   *   previous step.
+   */
   collapse();
+  sendMessage(new TCmdTriggerNode(node, idx));
 }
 
 void TMenuButton::collapse()
 {
-  stop_collapse = false;
-  // is there an upper menubuton (types are: TMenuHelper->TMenuButton)
-  if (master->btnmaster)
-    sendMessage(new TCommandCollapseMenu(master->btnmaster));
+  if (master->btnmaster && this!=stopat) {
+    DBM(cerr << "collapse: " << this << " -> " << master->btnmaster << endl;)
+    master->btnmaster->collapse();
+  } else {
+if (this==stopat) { cerr << "HIT STOPAT" << endl; }
+    DBM(cerr << "collapse: " << this << " -> " << "deactivate()" << endl;)
+    sendMessage(new TCommandCollapseMenu(this));
+  }
 }
 
 unsigned
