@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -191,8 +191,9 @@ TFont::getAscent() const
 #endif
 #ifdef HAVE_LIBXFT
   if (xftfont)
-    return xftfont->ascent;
+    return x11scale * xftfont->ascent;
 #endif
+cerr << __PRETTY_FUNCTION__ << ": empty font" << endl;
   return 0;
 }
 
@@ -211,8 +212,9 @@ TFont::getDescent() const
 #endif
 #ifdef HAVE_LIBXFT
   if (xftfont)
-    return xftfont->descent;
+    return x11scale * xftfont->descent;
 #endif
+cerr << __PRETTY_FUNCTION__ << ": empty font" << endl;
   return 0;
 }
 
@@ -231,6 +233,8 @@ TFont::getTextWidth(const char *str) const
 int
 TFont::getTextWidth(const char *str, int len) const
 {
+  if (len==0)
+    return 0;
 #ifdef TOAD_OLD_FONTCODE
   if (x11fs) {
     return x11scale * XTextWidth(x11fs,str,len);
@@ -245,6 +249,11 @@ TFont::getTextWidth(const char *str, int len) const
   if (xftfont) {
     XGlyphInfo gi;
     XftTextExtentsUtf8(x11display, xftfont, (XftChar8*)str, len, &gi);
+    if (str[len-1]==' ') {
+      XGlyphInfo gi2;
+      XftTextExtentsUtf8(x11display, xftfont, "  ", 2, &gi2);
+      return gi.width+gi2.width;
+    }
     return gi.width;
   }
 #endif
@@ -425,8 +434,8 @@ TFont::createX11Font(TMatrix2D *mat)
       cerr << "error while loading font '" << fontname << "':\n"
            << "  failed to load Utf8 font structure '" << xfn.getXLFD() << "'\n";
     }
-#endif
   }
+#endif
   
   // In case a matrix is available, we need to load a 2nd font,
   // which will be used for output. The untransformed font will
@@ -515,6 +524,14 @@ TFont::createXftFont(TMatrix2D *mat)
   }
 
   if (mat && !mat->isIdentity()) {
+    double x1, y1, x2, y2;
+    TMatrix2D m(*mat);
+    m.invert();
+    m.map(0.0, 0.0, &x1, &y1);
+    m.map(0.0, 1.0, &x2, &y2);
+    x1-=x2;
+    y1-=y2;
+    x11scale = sqrt(x1*x1+y1*y1);
     XftMatrix xftmat;
     XftMatrixInit(&xftmat);
     xftmat.xx = mat->a11;
