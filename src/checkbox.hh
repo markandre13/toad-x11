@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,40 +18,13 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TCheckBox
-#define TCheckBox TCheckBox
+#ifndef _TOAD_CHECKBOX_HH
+#define _TOAD_CHECKBOX_HH
 
 #include <toad/labelowner.hh>
-#include <toad/model.hh>
+#include <toad/boolmodel.hh>
 
 namespace toad {
-
-class TBoolModel:
-  public TModel
-{
-    bool value;
-  public:
-    TBoolModel() {
-      value = false;
-    }
-    void setValue(bool b) {
-      if (b==value)
-        return;
-      value = b;
-      sigChanged();
-    }
-    void toggleValue() {
-      value = !value;
-      sigChanged();
-    }
-    bool getValue() const {
-      return value;
-    }
-    const bool operator=(bool b) { setValue(b); return b; }
-    operator bool() const { return value; }
-};
-
-typedef GSmartPointer<TBoolModel> PBoolModel;
 
 class TCheckBox: 
   public TLabelOwner
