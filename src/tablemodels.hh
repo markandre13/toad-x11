@@ -480,6 +480,80 @@ class GTableCellRenderer_Text:
 
 /**
  * \ingroup table
+ * Render items by printing the result of their 'toText(int)' method.
+ *
+ * \note
+ *   This generic uses a pointer to access 'toText' a better solution
+ *   might be to move the pointer unreferencing into the container (wrapper)
+ *   class.
+ */
+template <class T, unsigned COLS>
+class GTableCellRenderer_PText:
+  public TAbstractTableCellRenderer
+{
+  private:
+    GSmartPointer<T> model;
+    typedef GTableCellRenderer_String<T> This;
+    
+  public:
+    GTableCellRenderer_PText(T *m)
+    {
+      setModel(m);
+    }
+    ~GTableCellRenderer_PText() {
+    }
+    // implements 'virtual TAbstractTableModel * getModel() = 0;'
+    T * getModel() {
+      return model;
+    }
+    void setModel(T *m) {
+      if (model)
+        disconnect(model->sigChanged, this);
+      model = m;
+      if (model)
+        connect(model->sigChanged, this, &This::modelChanged);
+    }
+    int getRows() {
+      return model->getRows();
+    }
+    int getCols() {
+      return COLS;
+    }
+    int getRowHeight(int) {
+      return TOADBase::getDefaultFont().getHeight()+2;
+    }
+    int getColWidth(int) {
+      int n = model->getRows();
+      int max = 0;
+      for(int i=0; i<n; i++) {
+        int w = TOADBase::getDefaultFont().getTextWidth(
+          model->getElementAt(0, i)->toText(i)
+        );
+        if (w>max)
+          max = w;
+      }
+      return max+2;
+    }
+    void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
+      if (selected) {
+        pen.setColor(TColor::SELECTED);
+        pen.fillRectangle(0,0,w, h);
+        pen.setColor(TColor::SELECTED_TEXT);
+      }
+      pen.drawString(
+        1, 1, model->getElementAt(0, y)->toText(x)
+      );
+      if (selected) {
+        pen.setColor(TColor::BLACK);
+      }
+      if (focus) {
+        pen.drawRectangle(0,0,w, h);
+      }
+    }
+};
+
+/**
+ * \ingroup table
  *
  */
 template <class T, int WIDTH>

@@ -128,9 +128,11 @@ TDirectoryEntry::renderItem(TPen &pen, int col, int w, int h) const {
   }
 }
 
-TFileDialog::TFileDialog(TWindow *parent, const string &title):
+TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   TDialog(parent, title)
 {
+  this->mode = mode;
+
   // create data structures
   if (cwd.empty()) {
     char buffer[4096];
@@ -150,30 +152,48 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title):
   tfiles = new TTable(this, "fileview");
   tfiles->setRenderer(new TTableCellRenderer_DirectoryEntrySet(&entries));
   connect(tfiles->sigSelection, this, &This::fileSelected);
+  connect(tfiles->sigDoubleClick, this, &This::doubleClick);
 
   new TCheckBox(this, "show hidden", &show_hidden);
   connect(show_hidden.sigChanged, this, &This::hidden);
   new TTextField(this, "filename", &filename);
+  connect(filename.sigChanged, this, &This::filenameEdited);
 
-  // TComboBox *cb;
   cb = new TComboBox(this, "previous");
   cb->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
   cb->getSelectionModel()->setSelection(0,0);
   connect(cb->sigSelection, this, &This::jumpDirectory);
 
-  new TComboBox(this, "filetype");
+  filter = 0;
+  addFileFilter("All Files (*)");
+  cb_filter = new TComboBox(this, "filetype");
+  cb_filter->setRenderer(
+    new GTableCellRenderer_PText<TFilterList, 1>(&filterlist)
+  );
+  connect(cb_filter->sigSelection, this, &This::filterSelected);
+  cb_filter->getSelectionModel()->setSelection(0,0);
 
   result = TMessageBox::ABORT;
-  connect((new TPushButton(this, "ok"))->sigActivate, 
+  
+  btn_ok = new TPushButton(this, "ok");
+  
+  connect(btn_ok->sigActivate, 
           this, &This::button, TMessageBox::OK);
   connect((new TPushButton(this, "cancel"))->sigActivate, 
           this, &This::button, TMessageBox::ABORT);
   
-  loadDirectory();
+//  loadDirectory();
   
   loadLayout(RESOURCE("TFileDialog.atv"));
+  
+  adjustOkButton();
 }
 
+/**
+ * \param s The new filename. In case the filename contains an '/',
+ *          the part before the last '/' will be used to specify a
+ *          new working directory for the filedialog.
+ */
 void
 TFileDialog::setFilename(const string &s)
 {
@@ -188,6 +208,9 @@ TFileDialog::setFilename(const string &s)
   }
 }
 
+/**
+ * Returns the full pathname of the selected file.
+ */
 string
 TFileDialog::getFilename() const
 {
@@ -195,12 +218,141 @@ TFileDialog::getFilename() const
 }
 
 void
+TFileDialog::addFileFilter(TFileFilter *ff)
+{
+  filterlist.push_back(ff);
+//  cb_filter->getSelectionModel()->setSelection(0,0);
+}
+
+/**
+ * This method provides a simple way to add a file filter.
+ *
+ * \param name  A filtername, ie. "JPEG Image (*.jpg, *.jpeg)" or
+ *              "All Files (*)"
+ */
+void
+TFileDialog::addFileFilter(const string &name)
+{
+  addFileFilter(new TSimpleFileFilter(name));
+}
+
+TSimpleFileFilter::TSimpleFileFilter(const string &name)
+{
+  this->name = name;
+  
+  unsigned state = 0;
+  unsigned b;
+  for(unsigned i=0; i<name.size(); ++i) {
+    char c = name[i];
+    switch(state) {
+      case 0:
+        if (c=='(')
+          state = 1;
+        break;
+      case 1:
+        if (c==')') {
+          state = 3;
+        } else
+        if (!isblank(c)) {
+          b = i;
+          state = 2;
+        }
+        break;
+      case 2:
+        if (isblank(c) || c==',' || c==')') {
+          extension.push_back(name.substr(b, i-b));
+          if (c!=')')
+            state = 1;
+          else
+            state = 3;
+        }
+        break;
+    }
+  }
+}
+
+bool
+TFileFilter::wildcard(const string &str, const string &filter)
+{
+  const char *flt = filter.c_str();
+  bool wild = false;
+  int fp=0,sp=0, f,s;
+
+  moonchild:
+  while(flt[fp]=='*') {
+    fp++;
+    wild = true;
+  }
+  if (flt[fp]==0)
+    return true;
+
+  while(true) {
+    f=fp; s=sp;
+    while(flt[f]==str[s] || flt[f]=='?') {
+      if (flt[f]==0 || str[s]==0)
+        return (flt[f]==str[s]);
+      s++;
+      f++;
+    }
+    if (flt[f]=='*') {
+      fp=f;
+      sp=s;
+      goto moonchild;
+    }
+    if (!wild)
+      return false;
+    sp++;
+    if (str[sp]==0)
+      return false;
+  }
+  return false;
+}
+
+bool
+TSimpleFileFilter::doesMatch(const string &filename)
+{
+  vector<string>::const_iterator p, e;
+  p = extension.begin();
+  e = extension.end();
+  while(p!=e) {
+//    cout << "compare " << filename << " with " << *p << endl;
+    if (wildcard(filename, *p)) {
+//      cout << "match" << endl;
+      return true;
+    }
+    ++p;
+  }
+  return false;
+}
+
+const char * 
+TSimpleFileFilter::toText() const
+{
+  return name.c_str();
+}
+
+/**
+ * Reconfigure the view in case the 'hidden' checkbox was modified.
+ */
+void
 TFileDialog::hidden()
 {
   tfiles->getSelectionModel()->clearSelection();
   loadDirectory();
 }
 
+/**
+ * The filename was edited.
+ */
+void
+TFileDialog::filenameEdited()
+{
+  adjustOkButton();
+}
+
+/**
+ * One of the pushbuttons was pressed.
+ */
 void
 TFileDialog::button(unsigned result)
 {
@@ -210,65 +362,77 @@ TFileDialog::button(unsigned result)
   destroyWindow();
 }
 
-void
-TFileDialog::loadDirectory()
-{
-  dirent *de;
-  DIR *dd;
-
-//cerr << "load directory " << cwd << endl;
-  
-  dd = opendir(cwd.c_str());
-  if (!dd) {
-    perror("opendir");
-    return;
-  }
-
-  entries.sigChanged.lock();
-  entries.clear();
-  
-  while( (de=readdir(dd))!=NULL ) {
-
-    if (de->d_name[0]=='.' && de->d_name[1]==0)
-      continue;
-
-    // check if hidden file
-    bool show = true;
-    if (!show_hidden && de->d_name[0]=='.') {
-      show = false;
-      if (de->d_name[1]=='.' && de->d_name[2]==0)
-        show = true;
-    }
-    
-    if (!show)
-      continue;
-    
-    struct stat st;
-    string fullpath=cwd+"/"+de->d_name;
-    stat(fullpath.c_str(), &st);
-    
-    TDirectoryEntry e;
-    e.name = de->d_name;
-    e.mode = st.st_mode;
-    e.size = st.st_size;
-    entries.insert(e);
-  }
-  
-  entries.unlock();
-  
-  closedir(dd);
-}
-
-void
-TFileDialog::jumpDirectory()
-{
-//  cerr << "selected directory " << cb->getSelectionModel()->begin().getY() << endl;
-  cwd = previous_cwds[cb->getSelectionModel()->begin().getY()];
-  loadDirectory();
-}
-
+/**
+ * A file was selected with a single click
+ */
 void
 TFileDialog::fileSelected()
+{
+  static bool lock = false;
+  if (lock) return;
+//toad::printStackTrace();
+  if (tfiles->getSelectionModel()->isEmpty())
+    return;
+
+  const TDirectoryEntry &file(
+    entries.getElementAt(0, tfiles->getSelectionModel()->begin().getY())
+  );
+  cerr << "selected " << file.name << endl;
+  filename = file.name;
+  adjustOkButton();
+}
+
+enum EFileType { TYPE_NEW, TYPE_DIRECTORY, TYPE_FILE };
+
+void
+TFileDialog::adjustOkButton()
+{  
+  EFileType type;
+  struct stat st;
+  if (stat(getFilename().c_str(), &st)!=0) {
+    type = TYPE_NEW;
+  } else {
+    if (S_ISDIR(st.st_mode))
+      type = TYPE_DIRECTORY;
+    else
+      type = TYPE_FILE;
+  }
+  
+  switch(mode) {
+    case MODE_OPEN:
+      switch(type) {
+        case TYPE_FILE:
+          btn_ok->setLabel("Open");
+          break;
+        case TYPE_DIRECTORY:
+          btn_ok->setLabel("Enter");
+          break;
+        case TYPE_NEW:
+          btn_ok->setLabel("Open New");
+          break;
+      }
+      break;
+    case MODE_SAVE:
+      switch(type) {
+        case TYPE_FILE:
+          btn_ok->setLabel("Save");
+          break;
+        case TYPE_DIRECTORY:
+          btn_ok->setLabel("Enter");
+          break;
+        case TYPE_NEW:
+          btn_ok->setLabel("Save New");
+          break;
+      }
+      break;
+  }
+}
+
+/**
+ * A file was selected with a double click
+ */
+void
+TFileDialog::doubleClick()
 {
   static bool lock = false;
   if (lock) return;
@@ -312,5 +476,81 @@ lock=false;
   } else {
 //    cerr << "  is a file" << endl;
     filename = file.name;
+    button(TMessageBox::OK);
   }
+}
+
+/**
+ * The directory was changed.
+ */
+void
+TFileDialog::jumpDirectory()
+{
+//  cerr << "selected directory " << cb->getSelectionModel()->begin().getY() << endl;
+  cwd = previous_cwds[cb->getSelectionModel()->begin().getY()];
+  loadDirectory();
+}
+
+void
+TFileDialog::filterSelected()
+{
+  filter = filterlist[cb_filter->getSelectionModel()->begin().getY()];
+  loadDirectory();
+}
+
+
+/**
+ * Load the currenty directory.
+ */
+void
+TFileDialog::loadDirectory()
+{
+  dirent *de;
+  DIR *dd;
+
+//cerr << "load directory " << cwd << endl;
+  
+  dd = opendir(cwd.c_str());
+  if (!dd) {
+    perror("opendir");
+    return;
+  }
+
+  entries.sigChanged.lock();
+  entries.clear();
+  
+  while( (de=readdir(dd))!=NULL ) {
+
+    if (de->d_name[0]=='.' && de->d_name[1]==0)
+      continue;
+
+    // check if hidden file
+    bool show = true;
+    if (!show_hidden && de->d_name[0]=='.') {
+      show = false;
+      if (de->d_name[1]=='.' && de->d_name[2]==0)
+        show = true;
+    }
+    if (!show)
+      continue;
+      
+    struct stat st;
+    string fullpath=cwd+"/"+de->d_name;
+    stat(fullpath.c_str(), &st);
+
+    if (filter && 
+        !S_ISDIR(st.st_mode) &&
+        !filter->doesMatch(de->d_name))
+      continue;
+    
+    TDirectoryEntry e;
+    e.name = de->d_name;
+    e.mode = st.st_mode;
+    e.size = st.st_size;
+    entries.insert(e);
+  }
+  
+  entries.unlock();
+  
+  closedir(dd);
 }

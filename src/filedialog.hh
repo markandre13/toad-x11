@@ -59,20 +59,60 @@ struct TDirectoryEntry:
 
 typedef GSTLSet<set<TDirectoryEntry>, TDirectoryEntry> TDirectoryEntrySet;
 
+class TFileFilter
+{
+  public:
+    virtual bool doesMatch(const string &filename) = 0;
+    virtual const char * toText() const = 0;
+    
+    static bool wildcard(const string &str, const string &filter);
+    
+    const char * toText(unsigned) const { return toText(); }
+};
+
+class TSimpleFileFilter:
+  public TFileFilter
+{
+  public:
+    TSimpleFileFilter(const string &name);
+    bool doesMatch(const string &filename);
+    const char * toText() const;
+
+  protected:
+    string name;
+    vector<string> extension;
+};
+
 class TFileDialog:
   public TDialog
 {
     typedef TFileDialog This;
   public:
-    TFileDialog(TWindow *parent, const string &title);
+    enum EMode {
+      MODE_OPEN,
+      MODE_SAVE
+    };
+  
+    TFileDialog(TWindow *parent, const string &title, EMode mode = MODE_OPEN);
 
     void setFilename(const string &s);
     string getFilename() const;
+    
+    
+    void addFileFilter(TFileFilter *);
+    void addFileFilter(const string &name);
 
     unsigned getResult() const {
       return result;
     }
   protected:
+    typedef GSTLRandomAccess<vector<TFileFilter*>, TFileFilter*> TFilterList;
+    TFilterList filterlist;
+    TFileFilter *filter;
+  
+    EMode mode;
+    TPushButton *btn_ok;
+  
     TTextModel filename;
     unsigned result;
     bool first_chdir;
@@ -81,14 +121,18 @@ class TFileDialog:
     TBoolModel show_hidden;
     
     void hidden();
+    void filenameEdited();
+    void filterSelected();
+    void adjustOkButton();
     void button(unsigned);
     void loadDirectory();
     void jumpDirectory();
     
     TTable *tfiles;
-    TComboBox *cb;
+    TComboBox *cb, *cb_filter;
 
     void fileSelected();
+    void doubleClick();
 };
 
 } // namespace toad
