@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -79,7 +79,9 @@ typedef unsigned long TKey;
 #define TK_RIGHT    0xFF53
 #define TK_DOWN     0xFF54
 #define TK_PAGEUP   0xFF55
+#define TK_PAGE_UP  0xFF55
 #define TK_PAGEDOWN 0xFF56
+#define TK_PAGE_DOWN 0xFF56
 #define TK_END      0xFF57
 #define TK_BEGIN    0xFF58
 
