@@ -125,6 +125,7 @@ class TFigureModel:
     void insert(TFigureAtDepthList &store);
 
     void translate(const TFigureSet&, int dx, int dy);
+    void translateHandle(TFigure *figure, unsigned handle, int dx, int dy);
     
     TFigure* group(TFigureSet &);
     void _undoGroup(TFGroup*, TFigureAtDepthList &figures);

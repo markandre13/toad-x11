@@ -41,19 +41,13 @@ using namespace toad;
 // #define VERBOSE 1
 
 /**
+ * \ingroup figure
  * \class toad::TFigureEditor
- * TFigureEditor is a graphical editor for TFigure objects.
+ * TFigureEditor is a graphical editor for TFigureModels.
  * 
- * It's still experimental so expect major changes in the future before
- * using it. One major goal is to make it possible to edit scaleable and
- * rotateable 2D figures and to create 3D objects.
- * <P>
- * Originally written for the dialog editor, it can be used for lots of
- * other jobs, e.g. a MacOS(tm) alike file folder.
- * <P>
  * TFigureEditor can be used as a window of its own or just as an object 
- * to delegate events from other windows to. The later was needed for the
- * dialog editor.
+ * to delegate events from other windows to. The later was needed for
+ * some of TOAD's dialog editors.
  *
  * Selection Mode
  *
@@ -1365,7 +1359,7 @@ redo:
               // loop over all handles
               unsigned h = 0;
               while(true) {
-                if (!(*p)->getHandle(h,memo_pt))
+                if (!(*p)->getHandle(h,&memo_pt))
                   break;
                 if (memo_pt.x-fuzziness<=x && x<=memo_pt.x+fuzziness && 
                     memo_pt.y-fuzziness<=y && y<=memo_pt.y+fuzziness) {
@@ -1649,8 +1643,10 @@ redo:
       #endif
       
       if (!mouseMoved) {
-        if (down_x!=x || down_y != y)
+        if (down_x!=x || down_y != y) {
           mouseMoved = true;
+          TUndoManager::beginUndoGrouping();
+        }
       }
 
       if (mouseMoved) {
@@ -1665,9 +1661,7 @@ redo:
           y2 = y;
         }
 
-        invalidateFigure(gadget);
-        gadget->translateHandle(handle, x2, y2);
-        invalidateFigure(gadget);
+        model->translateHandle(gadget, handle, x2, y2);
       }
     } break;
 
@@ -1785,8 +1779,8 @@ redo:
           y2 = y;
         }
 
-        invalidateFigure(gadget);
-        gadget->translateHandle(handle, x2, y2);
+        model->translateHandle(gadget, handle, x2, y2);
+        TUndoManager::endUndoGrouping();
       }
       invalidateFigure(gadget);
 
@@ -1794,13 +1788,6 @@ redo:
       gadget = 0;
       handle = -1;
       updateScrollbars();
-      
-#if 1
-//      cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
-#else
-      TPoint pt(x,y);
-      history.add(new TUndoableHandleMove(*selection.begin(), handle, memo_pt, pt));
-#endif
     } break;
 
     case STATE_SELECT_RECT: {

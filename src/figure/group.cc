@@ -148,7 +148,7 @@ TFGroup::paint(TPenBase &pen, EPaintType)
 }
 
 bool 
-TFGroup::getHandle(unsigned n, TPoint &p)
+TFGroup::getHandle(unsigned n, TPoint *p)
 {
 #if 1
   return super::getHandle(n, p);

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,22 +81,22 @@ TFRectangle::translate(int dx, int dy)
 }
 
 bool 
-TFRectangle::getHandle(unsigned handle, TPoint &p)
+TFRectangle::getHandle(unsigned handle, TPoint *p)
 {
   switch(handle) {
     case 0:
-      p = p1;
+      *p = p1;
       return true;
     case 1:
-      p.x = p2.x;
-      p.y = p1.y;
+      p->x = p2.x;
+      p->y = p1.y;
       return true;
     case 2:
-      p = p2;
+      *p = p2;
       return true;
     case 3:
-      p.x = p1.x;
-      p.y = p2.y;
+      p->x = p1.x;
+      p->y = p2.y;
       return true;
   }
   return false;

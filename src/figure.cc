@@ -191,7 +191,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
   unsigned h=0;
   TPoint pt;
   while(true) {
-    if ( !getHandle(h, pt) )
+    if ( !getHandle(h, &pt) )
       break;
     int x, y;
     if (pen.mat) {
@@ -245,7 +245,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
  * The first handle is 0.
  */
 bool
-TFigure::getHandle(unsigned n, TPoint &p)
+TFigure::getHandle(unsigned n, TPoint *p)
 {
   return false;
 }

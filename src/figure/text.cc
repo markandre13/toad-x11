@@ -97,7 +97,7 @@ TRectangle r(p1, p2);
 }
 
 bool
-TFText::getHandle(unsigned,TPoint&)
+TFText::getHandle(unsigned, TPoint*)
 {
   return false;
 }

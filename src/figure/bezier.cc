@@ -67,7 +67,7 @@ TFBezierline::paintSelection(TPenBase &pen, int handle)
   unsigned h=0;
   TPoint pt;   
   while(true) {
-    if ( !getHandle(h, pt) )
+    if ( !getHandle(h, &pt) )
       break;
     int x, y;
     if (pen.mat) {

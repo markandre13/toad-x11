@@ -24,6 +24,15 @@
 #include <toad/undomanager.hh>
 #include <toad/io/binstream.hh>
 
+/**
+ * \ingroup figure
+ * \class toad::TFigureModel
+ *
+ * TFigureModel holds a list of TFigure objects, notifies observers
+ * about changes and registers undo objects for figures modified with
+ * the models methods.
+ */
+
 using namespace toad;
 
 TFigureModel::TFigureModel()
@@ -177,6 +186,12 @@ TFigureAtDepthList::~TFigureAtDepthList()
   }
 }
 
+/**
+ * Append a figure to the model
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
+ */
 void 
 TFigureModel::add(TFigure *figure) {
   TUndoInsert *undo = new TUndoInsert(this);
@@ -189,6 +204,12 @@ TFigureModel::add(TFigure *figure) {
   sigChanged();
 }
 
+/**
+ * Append figures to the model.
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
+ */
 void 
 TFigureModel::add(TFigureVector &newfigures) {
   figures.clear();
@@ -229,6 +250,14 @@ TFigureModel::insert(TFigureAtDepthList &store)
   sigChanged();
 }
 
+/**
+ * Erase a figure from the model.
+ *
+ * After the call the figure is owned by the undo manager.
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
+ */
 void
 TFigureModel::erase(TFigure *figure)
 {
@@ -237,6 +266,14 @@ TFigureModel::erase(TFigure *figure)
   erase(set);
 }
 
+/**
+ * Erase a set of figures from the model.
+ *
+ * After the call the figures are owned by the undo manager.
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
+ */
 void
 TFigureModel::erase(TFigureSet &set)
 {
@@ -296,9 +333,54 @@ class TUndoTranslate:
     }
 };
 
+class TUndoTranslateHandle:
+  public TUndo
+{
+    TFigureModel *model;
+    TFigure* figure;
+    unsigned handle;
+    int dx, dy;
+  public:
+    TUndoTranslateHandle(TFigureModel *model, TFigure *figure, unsigned handle, int dx, int dy) {
+      this->model = model;
+      this->figure = figure;
+      this->handle = handle;
+      this->dx = dx;
+      this->dy = dy;
+    }
+  protected:
+    void undo() {
+//cout << "undo translate " << dx << ", " << dy << endl;
+      model->translateHandle(figure, handle, dx, dy);
+    }
+    bool getUndoName(string *name) const {
+      *name = "Undo: Move Handle";
+      return true;
+    }
+    bool getRedoName(string *name) const {
+      *name = "Redo: Move Handle";
+      return true;
+    }
+};
+
+/**
+ * Translate a set of figures by (dx, dy).
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
+ *
+ * \param set
+ *   The figures to be translated
+ * \param dx
+ *   horizontal translation to be added to the figures position
+ * \param dy
+ *   vertical translation to be added to the figures position
+ */
 void
 TFigureModel::translate(const TFigureSet &set, int dx, int dy)
 {
+  if (set.empty())
+    return;
   if (dx==0 && dy==0)
     return;
 
@@ -330,7 +412,51 @@ TFigureModel::translate(const TFigureSet &set, int dx, int dy)
 }
 
 /**
+ * Translate a figures handle.
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
+ *
+ * \param figure
+ *   The figure to be notified.
+ * \param handle
+ *   The figures handle to be modified.
+ * \param x
+ *   horizontal position of the figures handle
+ * \param y
+ *   vertical position of the figures handle
+ */
+void
+TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y)
+{
+  if (x==0 && y==0)
+    return;
+  
+  figures.clear();
+  figures.insert(figure);
+  
+  type = MODIFY;
+  sigChanged();
+
+  TPoint p;
+  figure->getHandle(handle, &p);
+  
+  figure->translateHandle(handle, x, y);
+  
+  type = MODIFIED;
+  sigChanged();
+  
+  TUndoTranslateHandle *undo = new TUndoTranslateHandle(this, figure, handle, p.x, p.y);
+  TUndoManager::registerUndo(this, undo);
+
+  _modified = true;
+}
+
+/**
  * Group a given set of figures.
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
  *
  * \param set
  *   A list of figures to group
@@ -386,6 +512,9 @@ TFigureModel::group(TFigureSet &set)
 
 /**
  * Ungroup a given set of figures.
+ *
+ * This function notifies all its views about the modification and
+ * registers an undo object.
  *
  * \param grouped
  *    A set of figures from which all groups will be ungrouped.
@@ -512,7 +641,9 @@ TFigureModel::insert(const iterator &at, const iterator &from, const iterator &t
 }
 
 /**
- * remove all gadgets
+ * Remove all figures from the model.
+ *
+ * This method doesn't create an undo object yet...
  */
 void
 TFigureModel::clear()

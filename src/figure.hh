@@ -98,7 +98,7 @@ class TFigure:
     
     // stage 3: manipulate
     static const int NO_HANDLE = -1;
-    virtual bool getHandle(unsigned n, TPoint &p);
+    virtual bool getHandle(unsigned n, TPoint *p);
     virtual void translateHandle(unsigned handle, int x, int y);
 
     // stage 4: in place editing
@@ -191,7 +191,7 @@ class TFRectangle:
 
     double distance(int x, int y);
     void translate(int dx, int dy);
-    bool getHandle(unsigned n, TPoint &p);
+    bool getHandle(unsigned n, TPoint *p);
     void translateHandle(unsigned handle, int mx, int my);
 
     SERIALIZABLE_INTERFACE(toad::, TFRectangle);    
@@ -216,7 +216,7 @@ class TFPolygon:
     double distance(int x, int y);
     void getShape(TRectangle*);
     void translate(int dx, int dy);
-    bool getHandle(unsigned n, TPoint &p);
+    bool getHandle(unsigned n, TPoint *p);
     void translateHandle(unsigned handle, int mx, int my);
     
     SERIALIZABLE_INTERFACE(toad::, TFPolygon);
@@ -363,7 +363,7 @@ class TFText:
     void paint(TPenBase &, EPaintType);
 
     double distance(int x, int y);
-    bool getHandle(unsigned n, TPoint &p);
+    bool getHandle(unsigned n, TPoint *p);
 
     bool startInPlace();
     void startCreate();
@@ -407,7 +407,7 @@ class TFFrame:
     double distance(int x, int y);
     unsigned stop(TFigureEditor*);
     unsigned keyDown(TFigureEditor*, TKey, char*, unsigned);
-    bool getHandle(unsigned n, TPoint &p);
+    bool getHandle(unsigned n, TPoint *p);
     unsigned mouseLDown(TFigureEditor *e, int x, int y, unsigned m);
     unsigned mouseMove(TFigureEditor *e, int x, int y, unsigned m);
     unsigned mouseLUp(TFigureEditor *e, int x, int y, unsigned m);
@@ -458,7 +458,7 @@ class TFGroup:
     void paint(TPenBase&, EPaintType);
     double distance(int x, int y);
     void translate(int dx, int dy);
-    bool getHandle(unsigned n, TPoint &p);
+    bool getHandle(unsigned n, TPoint *p);
     void translateHandle(unsigned handle, int dx, int dy);
     
     void drop() {
