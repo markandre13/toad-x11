@@ -403,26 +403,12 @@ TFigureEditor::paint()
     pen.fillCirclePC(rotx-r1, roty-r1, r1*2, r1*2);
   }
 
-#if 0
-  // draw the litle gray box between the two scrollbars (when we have
-  // two of 'em)
-  if (vscroll && vscroll->isMapped() &&
-      hscroll && hscroll->isMapped() )
-  {
-    TRectangle r(window->getWidth() - TScrollBar::getFixedSize(),
-                 window->getHeight()- TScrollBar::getFixedSize(),
-                 TScrollBar::getFixedSize(), TScrollBar::getFixedSize());
-    pen.setColor(TColor::LIGHTGRAY);
-    pen.identity();
-    pen|=r;
-    pen.fillRectanglePC(r);
-  }
-#endif  
-  
   // put the result onto the screen
   TPen scr(window);
   scr.identity();
   scr.drawBitmap(0,0, &bmp);
+  
+  paintCorner(scr);
 }
 
 void
@@ -1513,7 +1499,7 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
   //-----------------------------------------------------------------
   int x1, y1; // upper, left corner
   int x2, y2; // lower, right corner
-
+/*
   x1=-window->getOriginX();
   if (x1>0)
     x1=0;
@@ -1523,7 +1509,7 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
 
   x2=x1+1;
   y2=y1+1;
-
+*/
 //DBM(cout << "x-org     : " << window->getOriginX() << endl;)
 //DBM(cout << "x-axis (1): " << x1 << " - " << x2 << endl;)
 //DBM(cout << "y-axis (1): " << y1 << " - " << y2 << endl;)
@@ -1532,21 +1518,36 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
   p = model->begin();
   e = model->end();
   TRectangle r;
+  
+  if (p==e) {
+    x1 = x2 = y1 = y2 = 0;
+  } else {
+    (*p)->getShape(r);
+    x1=r.x;
+    y1=r.y;
+    x2=r.x+r.w-1;
+    y2=r.y+r.h-1;
+    ++p;
+  }
+  
   while(p!=e) {
     int a;
     (*p)->getShape(r);
     if (r.x<x1)
       x1=r.x;
-    a = r.x+r.w;
+    a = r.x+r.w-1;
     if (a>x2)
       x2=a;
     if (r.y<y1)
       y1=r.y;
-    a = r.y+r.h;
+    a = r.y+r.h-1;
     if (a>y2)
       y2=a;
     p++;
   }
+  
+  if (x1>0) x1=0;
+  if (y1>0) y1=0;
 
 //DBM(cout << "x-axis (2): " << x1 << " - " << x2 << endl;)
 //DBM(cout << "y-axis (2): " << y1 << " - " << y2 << endl;)
@@ -1557,10 +1558,6 @@ DBM(cout << "area size: (" << x1 << ", " << y1 << ") - ("
 
   pane.x = x1;
   pane.y = y1;
-  if (x2<getWidth()-1)
-    x2=getWidth()-1;
-  if (y2<getHeight()-1)
-    y2=getHeight()-1;
   pane.w = x2-x1+1;
   pane.h = y2-y1+1;
   doLayout();

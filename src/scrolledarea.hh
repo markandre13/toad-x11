@@ -50,6 +50,8 @@ class TScrollPane:
 
     // pane location and size in pixels
     TRectangle pane;
+    
+    void paintCorner(TPen&);
 
   private:
     //! unit increment as set by setUnitIncrement

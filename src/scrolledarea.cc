@@ -108,13 +108,12 @@ TScrollPane::doLayout()
     need_hscroll = true;
     visible.h -= TScrollBar::getFixedSize();
   }
-
+  
   DBM(cout
       << "doLayout:" << endl
-      << "visible.w, visible.h = "<<visible.w<<", "<<visible.h<<endl
-      << "rows, cols           = "<<rows<<", "<<cols<<endl
-      << "pane                 = "<<pane<<endl
-      << "need h,v             = "<<need_hscroll<<", "<<need_vscroll<<endl;)
+      << "visible  = "<<visible<<endl
+      << "pane     = "<<pane<<endl
+      << "need h,v = "<<need_hscroll<<", "<<need_vscroll<<endl;)
 
   if (need_vscroll) {
     if (!vscroll) {  
@@ -130,7 +129,10 @@ TScrollPane::doLayout()
       visible.h);
     vscroll->setExtent(visible.h);
     vscroll->setMinimum(pane.y);
-    vscroll->setMaximum(pane.y+pane.h-1);
+    if (pane.y+pane.h < visible.y+visible.h)
+      vscroll->setMaximum(visible.y+visible.h-1);
+    else    
+      vscroll->setMaximum(pane.y+pane.h-1);
     vscroll->setMapped(true);  
     vscroll->setUnitIncrement(uiy);
   } else {
@@ -154,7 +156,10 @@ TScrollPane::doLayout()
       TScrollBar::getFixedSize());
     hscroll->setExtent(visible.w);
     hscroll->setMinimum(pane.x);
-    hscroll->setMaximum(pane.x+pane.w-1);
+    if (pane.x+pane.w < visible.x+visible.w)
+      hscroll->setMaximum(visible.x+visible.w-1);
+    else    
+      hscroll->setMaximum(pane.x+pane.w-1);
     hscroll->setMapped(true);  
     hscroll->setUnitIncrement(uix);
   } else {
@@ -163,6 +168,27 @@ TScrollPane::doLayout()
       hscroll->setValue(0);
     }
   }  
+}
+
+/**
+ * draw the litle gray box between the two scrollbars (when we have
+ * two of 'em)
+ */
+void
+TScrollPane::paintCorner(TPen &pen)
+{
+  if (hscroll && vscroll &&
+      hscroll->isMapped() &&
+      vscroll->isMapped())
+  {
+    TRectangle r(getWidth() - TScrollBar::getFixedSize(),
+                 getHeight()- TScrollBar::getFixedSize(),
+                 TScrollBar::getFixedSize(), TScrollBar::getFixedSize());
+    pen.setColor(TColor::LIGHTGRAY);
+    pen.identity();
+    pen|=r;
+    pen.fillRectanglePC(r);
+  }
 }
 
 void
