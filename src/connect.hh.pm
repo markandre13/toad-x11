@@ -490,9 +490,6 @@ TSignalLink* connect_value(TSignal &sig, D *d, R(D::*dm)(V), S *s)
 	return sig.add(new unnamed(d, dm, s));
 }
 
-struct TNone {
-};
-
 /**
  * \\ingroup callback
  *
@@ -507,9 +504,9 @@ void foo(int a) {
 int main() {
   TSignal sig;
 
-  CLOSURE(sig, {
+  CLOSURE(sig,
     foo(8);
-  })
+  )
 
   sig();
 }
@@ -521,7 +518,7 @@ int main() {
  */
 #define CLOSURE(SIG, DEF) \\
 { struct closure { \\
-  static void __f() DEF \\
+  static void __f() { DEF } \\
 }; \\
 connect(SIG, closure::__f); }
 
@@ -540,23 +537,24 @@ foo(int a) {
 int main() {
   TSignal sig;
 
-  CLOSURE1(sig, 17, (int a) {
+  CLOSURE1(sig, int a, 17,
     foo(a);
-  });
+  );
 
   sig();
 }\\endcode
  *
  * \\param SIG TSignal which will invoke the closure.
- * \\param P1 A value used when the closure is invoked.
+ * \\param P  Type and name of variable inside closure.
+ * \\param V  Value for P
  * \\param DEF An argument list with one argument and code block.
  * \\sa TCLOSURE1
  */
-#define CLOSURE1(SIG, P1, DEF) \\
+#define CLOSURE1(SIG, P, V, DEF) \\
 { struct closure { \\
-  static void __f DEF \\
+  static void __f(P) { DEF } \\
 }; \\
-connect(SIG, closure::__f, P1); }
+connect(SIG, closure::__f, V); }
 
 /**
  * \\ingroup callback
@@ -572,24 +570,26 @@ int bar(int a, int b) {
 int main() {
   TSignal sig;
 
-  CLOSURE2(sig, 20, 25, (int a, int b) {
+  CLOSURE2(sig, int a, 20, int b, 25,
     bar(a, b);
-  })
+  )
 
   sig();
 }\\endcode
  *
  * \\param SIG TSignal which will invoke the closure.
- * \\param P1 A 1st value used when the closure is invoked.
- * \\param P2 A 2nd value used when the closure is invoked.
+ * \\param P1  Type and name of variable inside closure.
+ * \\param V1  Value for P1
+ * \\param P2  Type and name of variable inside closure.
+ * \\param V2  Value for P2
  * \\param DEF An argument list with two arguments and code block.
  * \\sa TCLOSURE2
  */
-#define CLOSURE2(SIG, P1, P2, DEF) \\
+#define CLOSURE2(SIG, P1, V1, P2, V2, DEF) \\
 { struct closure { \\
-  static void __f DEF \\
+  static void __f(P1, P2) { DEF } \\
 }; \\
-connect(SIG, closure::__f, P1, P2); }
+connect(SIG, closure::__f, V1, V2); }
 
 /**
  * \\ingroup callback
@@ -597,17 +597,20 @@ connect(SIG, closure::__f, P1, P2); }
  * This macro provides a substitute for 'closures' known from Smalltalk.
  *
  * \\param SIG TSignal which will invoke the closure.
- * \\param P1 A 1st value used when the closure is invoked.
- * \\param P2 A 2nd value used when the closure is invoked.
- * \\param P3 A 3rd value used when the closure is invoked.
+ * \\param P1  Type and name of variable inside closure.
+ * \\param V1  Value for P1
+ * \\param P2  Type and name of variable inside closure.
+ * \\param V2  Value for P2
+ * \\param P3  Type and name of variable inside closure.
+ * \\param V3  Value for P3
  * \\param DEF An argument list with two arguments and code block.
  * \\sa CLOSURE2
  */
-#define CLOSURE3(SIG, P1, P2, P3, DEF) \\
+#define CLOSURE3(SIG, P1, V1, P2, V2, P3, V3, DEF) \\
 { struct closure { \\
-  static void __f DEF \\
+  static void __f(P1, P2, P3) DEF \\
 }; \\
-connect(SIG, closure::__f, P1, P2, P3); }
+connect(SIG, closure::__f, V1, V2, V3); }
 
 /**
  * \\ingroup callback
@@ -667,17 +670,17 @@ int main() {
  *
  * Code Connection
  * \\param SIG TSignal which will invokes the closure.
- * \\param P1  Name of variable inside closure.
- * \\param V1  Value for the variable.
+ * \\param P  Name of variable inside closure.
+ * \\param V  Value for P.
  * \\param DEF A code block which defines the closure.
  * \\sa CLOSURE1
  */
-#define TCLOSURE1(SIG, P1, V1, DEF) \\
+#define TCLOSURE1(SIG, P, V, DEF) \\
 { struct closure { \\
   typedef typeof(V1) __t1; \\
-  static void __f(__t1 P1) { DEF } \\
+  static void __f(__t1 P) { DEF } \\
 }; \\
-connect(SIG, closure::__f, V1); }
+connect(SIG, closure::__f, V); }
 
 /**
  * \\ingroup callback
@@ -706,9 +709,9 @@ int main() {
  * Code Connection
  * \\param SIG TSignal which will invokes the closure.
  * \\param P1  Name of variable inside closure.
- * \\param V1  Value for the variable.
+ * \\param V1  Value for P1.
  * \\param P2  Name of variable inside closure.
- * \\param V2  Value for the variable.
+ * \\param V2  Value for P2.
  * \\param DEF A code block which defines the closure.
  * \\sa CLOSURE2
  */
@@ -728,11 +731,11 @@ connect(SIG, closure::__f, V1, V2); }
  *
  * \\param SIG TSignal which will invokes the closure.
  * \\param P1  Name of variable inside closure.
- * \\param V1  Value for the variable.
+ * \\param V1  Value for P1.
  * \\param P2  Name of variable inside closure.
- * \\param V2  Value for the variable.
+ * \\param V2  Value for P2.
  * \\param P3  Name of variable inside closure.
- * \\param V3  Value for the variable.
+ * \\param V3  Value for P3.
  * \\param DEF A code block which defines the closure.
  * \\sa TCLOSURE2
  */
