@@ -1104,6 +1104,19 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 
 #ifdef HAVE_LIBXFT
     case TFont::RENDER_FREETYPE: {
+      if (!transparent) {
+        bool b = two_colors; 
+        GC gc;
+        if (b) {
+          two_colors = false;
+          gc = o_gc; o_gc = f_gc;
+        }
+        fillRectanglePC(x,y,getTextWidth(str,strlen),getHeight());
+        if (b) {
+          two_colors = true;
+          o_gc = gc;
+        }
+      }
       y+=font->getAscent();
       if (mat)
         mat->map(x, y, &x, &y);
