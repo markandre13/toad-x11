@@ -61,6 +61,9 @@ using namespace toad;
  *
  * \todo
  *   \li
+ *      undo, redo & model-view for selection2Top, selection2Bottom, 
+ *      selectionUp, selectionDown and rotate
+ *   \li
  *      group followed by undo causes a segfault or inifinite recursion
  *      or something like that
  *   \li
@@ -142,13 +145,9 @@ TFigureEditor::~TFigureEditor()
 void
 TFigureEditor::setWindow(TWindow *w)
 {
-  // [store figures to `window']
-  if (window)
-    window->invalidateWindow();
+  invalidateWindow();
   window = w;
-  // [get figures from `window']
-  if (window)
-    window->invalidateWindow();
+  invalidateWindow();
 }
 
 static void
@@ -338,8 +337,7 @@ void TFigureEditor::scale(double sx, double sy)
   fuzziness = static_cast<int>(2.0 / sx);
   
   updateScrollbars();
-  if (window)
-    window->invalidateWindow();
+  invalidateWindow();
 }
 
 /**
@@ -376,8 +374,7 @@ TFigureEditor::enableGrid(bool b)
   if (b==preferences->drawgrid)
     return;
   preferences->drawgrid = b;
-  if (window)
-    window->invalidateWindow(visible);
+  invalidateWindow(visible);
 }
 
 /**
@@ -388,8 +385,7 @@ TFigureEditor::setGrid(int gridsize) {
   if (gridsize<0)
     gridsize=0;
   preferences->gridsize = gridsize;
-  if (window)
-    window->invalidateWindow(visible);
+  invalidateWindow(visible);
 }
 
 void
@@ -536,6 +532,7 @@ TFigureEditor::paintSelection(TPenBase &pen)
   if (state==STATE_SELECT_RECT) {
     pen.setColor(0,0,0);
     pen.setLineStyle(TPen::DOT);
+    pen.setLineWidth(0);
     pen.drawRectanglePC(down_x, down_y, select_x-down_x, select_y-down_y);
   }
 
@@ -721,8 +718,7 @@ TFigureEditor::preferencesChanged()
     gtemplate->setAttributes(preferences);
     
   model->setAttributes(selection, preferences);
-  if (window)
-    window->invalidateWindow(visible);
+//  invalidateWindow(visible); 
 }
 
 void
@@ -793,7 +789,7 @@ TFigureEditor::modelChanged()
       break;
     case TFigureModel::UNGROUP:
       #warning "not removing figure (group) from selection"
-      window->invalidateWindow();
+      invalidateWindow(visible); // OPTIMIZE ME
       break;
   }
 }
@@ -832,8 +828,13 @@ TFigureEditor::clearSelection()
 {
   if (selection.empty())
     return false;
+  for(TFigureSet::iterator p = selection.begin();
+      p != selection.end();
+      ++p)
+  {
+    invalidateFigure(*p);
+  }
   selection.erase(selection.begin(), selection.end());
-  window->invalidateWindow();
   return true;
 }
 
@@ -849,23 +850,18 @@ TFigureEditor::deleteSelection()
     gadget = 0;
   }
   model->erase(selection);
-/*
-  clearSelection();
-  update_scrollbars = true;
-  window->invalidateWindow();
-*/
 }
 
 void
 TFigureEditor::selectAll()
 {
-  TFigureModel::iterator p,e;
-  p = model->begin();
-  e = model->end();
-  while(p!=e) {
+  for(TFigureModel::iterator p = model->begin();
+      p != model->end();
+      ++p)
+  {
     selection.insert(*p);
-    ++p;
-  } 
+  }
+  invalidateWindow(visible);
 }
 
 void
@@ -1025,8 +1021,7 @@ TFigureEditor::setModel(TFigureModel *m)
     TUndoManager::registerModel(this, model);
   }
   if (isRealized()) {
-    if (window)
-      window->invalidateWindow();
+    invalidateWindow();
     updateScrollbars();
   }
 }
@@ -1307,6 +1302,7 @@ TFigureEditor::mouseLDown(int mx,int my, unsigned m)
 
   if (!window)
     return;
+  setFocus();
 
   if (preferences)
     preferences->setCurrent(this);
@@ -1320,9 +1316,6 @@ TFigureEditor::mouseLDown(int mx,int my, unsigned m)
 
   down_x = x;
   down_y = y;
-
-  if (window)
-    window->setFocus();
 
   // handle special operation modes
   //--------------------------------
@@ -1425,17 +1418,18 @@ redo:
                 #if VERBOSE
                   cout << "  adding object to selection" << endl;
                 #endif
-                if (gi==selection.end())
+                if (gi==selection.end()) {
                   selection.insert(g);
-                else
+                } else {
                   selection.erase(gi);
+                }
+                invalidateFigure(g);
+                sigSelectionChanged();
               } else {
                 state =  STATE_SELECT_RECT;
                 select_x = x;
                 select_y = y;
               }
-              sigSelectionChanged();
-              window->invalidateWindow();
             } else {
               #if VERBOSE
                 cout << " => ";
@@ -1443,6 +1437,7 @@ redo:
               if (gi==selection.end()) {
                 clearSelection();
                 selection.insert(g);
+                invalidateFigure(g);
                 sigSelectionChanged();
                 if (m&MK_SHIFT) {
                   state =  STATE_SELECT_RECT;
@@ -1453,16 +1448,15 @@ redo:
                   state = STATE_MOVE;
                   TUndoManager::beginUndoGrouping();
                 }
-                window->invalidateWindow();
               } else {
                 if (m&MK_SHIFT) {
                   clearSelection();
                   selection.insert(g);
+                  invalidateFigure(g);
                   sigSelectionChanged();
                   state =  STATE_SELECT_RECT;
                   select_x = x;
                   select_y = y;
-                  window->invalidateWindow();
                 } else {
                   state = STATE_MOVE;
                   memo_x = memo_y = 0;
@@ -1516,7 +1510,7 @@ redo:
             rotd0=atan2(static_cast<double>(my - roty), 
                         static_cast<double>(mx - rotx)) * 360.0 / (2.0 * M_PI);
             rotd = 0.0;
-            invalidateWindow();
+            invalidateWindow(visible);
 //            cerr << "state = STATE_ROTATE" << endl;
           }
           return; 
@@ -1529,7 +1523,7 @@ redo:
           clearSelection();
           gadget = static_cast<TFigure*>(gtemplate->clone());
           model->add(gadget);
-          window->invalidateWindow();
+          invalidateFigure(gadget);
           state = STATE_START_CREATE;
           setMouseMoveMessages(TWindow::TMMM_ALL);
           gadget->startCreate();
@@ -1691,6 +1685,7 @@ redo:
       #endif
       if (select_x != x || select_y != y) {
         TRectangle r;
+        
         r.set(down_x, down_y, x-down_x, y-down_y);
         if (mat) {
           mat->map(r.x, r.y, &r.x, &r.y);
@@ -1700,7 +1695,8 @@ redo:
         r.y+=window->getOriginY()+visible.y;
         r.w++;
         r.h++;
-        window->invalidateWindow(r);
+        invalidateWindow(r);
+        
         r.set(down_x, down_y, select_x-down_x, select_y-down_y);
         if (mat) {
           mat->map(r.x, r.y, &r.x, &r.y);
@@ -1710,16 +1706,11 @@ redo:
         r.y+=window->getOriginY()+visible.y;
         r.w++;
         r.h++;
-        window->invalidateWindow(r);
+        invalidateWindow(r);
+        
         select_x = x;
         select_y = y;
       }
-/*
-      window->paintNow();
-      TPen pen(window);
-      pen.setLineStyle(TPen::DOT);
-      pen.drawRectanglePC(down_x, down_y, x-down_x, y-down_y);
-*/
     } break;
     
     case STATE_ROTATE: {
@@ -1727,13 +1718,13 @@ redo:
                  static_cast<double>(mx - rotx)) * 360.0 / (2.0 * M_PI);
 //      cerr << "rotd="<<rotd<<", rotd0="<<rotd0<<" -> " << (rotd-rotd0) << "\n";
       rotd-=rotd0;
-      invalidateWindow();
+      invalidateWindow(visible);
     } break;
     
     case STATE_MOVE_ROTATE: {
       rotx = mx;
       roty = my;
-      invalidateWindow();
+      invalidateWindow(visible);
     } break;
   }
 }
@@ -1821,6 +1812,30 @@ redo:
       #if VERBOSE
         cout << "  STATE_SELECT_RECT => ";
       #endif
+      TRectangle r;
+      
+      r.set(down_x, down_y, x-down_x, y-down_y);
+      if (mat) {
+        mat->map(r.x, r.y, &r.x, &r.y);
+        mat->map(r.w, r.h, &r.w, &r.h);
+      }
+      r.x+=window->getOriginX()+visible.x;
+      r.y+=window->getOriginY()+visible.y;
+      r.w++;
+      r.h++;
+      invalidateWindow(r);
+        
+      r.set(down_x, down_y, select_x-down_x, select_y-down_y);
+      if (mat) {
+        mat->map(r.x, r.y, &r.x, &r.y);
+        mat->map(r.w, r.h, &r.w, &r.h);
+      }
+      r.x+=window->getOriginX()+visible.x;
+      r.y+=window->getOriginY()+visible.y;
+      r.w++;
+      r.h++;
+      invalidateWindow(r);
+
       bool selecting = true;
       if (selection.begin() != selection.end()) {
         int dx = down_x - x;
@@ -1849,21 +1864,6 @@ redo:
           cout << selection.size() << " objects selected, STATE_NONE" << endl;
         #endif
       }
-#if 1
-      window->invalidateWindow();
-#else
-      TRectangle r;
-      r.set(down_x, down_y, select_x-down_x, select_y-down_y);
-      if (mat) {
-        mat->map(r.x, r.y, &r.x, &r.y);
-        mat->map(r.w, r.h, &r.w, &r.h);
-      }
-      r.x+=visible.x;
-      r.y+=visible.y;
-      r.w++;
-      r.h++;
-      window->invalidateWindow(r);
-#endif
       state = STATE_NONE;
     } break;
     
@@ -1928,7 +1928,7 @@ TFigureEditor::invalidateFigure(TFigure* figure)
   r.x+=window->getOriginX() + visible.x;
   r.y+=window->getOriginY() + visible.y;
 //cout << figure->getClassName() << ": invalidate window " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h)<<endl;
-  window->invalidateWindow(r);
+  invalidateWindow(r);
 }
 
 void
