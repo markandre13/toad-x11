@@ -42,7 +42,7 @@ class TScrollBar:
   public:
     TScrollBar(TWindow*, const string&, TIntegerModel *model=0);
     
-    PBoundedRangeModel model;
+    PIntegerModel model;
     
     static int getFixedSize();
 

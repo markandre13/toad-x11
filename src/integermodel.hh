@@ -78,7 +78,7 @@ inline ostream& operator<<(ostream &s, const TIntegerModel &m) {
   return s<<m.getValue();
 }
 
-typedef GSmartPointer<TIntegerModel> PBoundedRangeModel;
+typedef GSmartPointer<TIntegerModel> PIntegerModel;
 
 TTextModel * createTextModel(TIntegerModel *);
 
