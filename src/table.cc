@@ -123,7 +123,28 @@ TAbstractTableCellRenderer::renderCell(TPen &pen, const TTableEvent &te)
     pen.setColor(TColor::BLACK);
     pen.setLineStyle(TPen::SOLID);
     pen.setLineWidth(1);
-    pen.drawRectanglePC(0,0,te.w, te.h);
+    if (te.per_row) {
+      pen.drawLine(0,0,te.w-1,0);
+      pen.drawLine(0,te.h-1,te.w,te.h-1);
+      if (te.col==0) {
+        pen.drawLine(0,0,0,te.h-1);
+      }
+      if (te.col==te.cols) {
+        pen.drawLine(0,te.w-1,te.w-1,te.h-1);
+      }
+    } else
+    if (te.per_col) {
+      pen.drawLine(0,0,0,te.h-1);
+      pen.drawLine(0,te.w-1,te.w-1,te.h-1);
+      if (te.row==0) {
+        pen.drawLine(0,0,te.w-1,0);
+      }
+      if (te.row==te.rows) {
+        pen.drawLine(0,te.h-1,te.w-1,te.h-1);
+      }
+    } else {
+      pen.drawRectanglePC(0,0,te.w, te.h);
+    }
   }
 }
 
@@ -845,6 +866,18 @@ DBSCROLL({
   if (!renderer)
     return;
 
+  TTableEvent te;
+  te.cols = cols;
+  te.rows = rows;
+  te.focus = isFocus();
+  if (selection) {
+    te.per_row = selection->perRow();
+    te.per_col = selection->perCol();
+  } else {
+    te.per_row = false;
+    te.per_col = false;
+  }
+
   // draw the fields with the table renderer
   yp = fpy + visible.y;
   for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
@@ -852,6 +885,7 @@ DBSCROLL({
       continue;
     }
     xp = fpx + visible.x;
+    te.row = y;
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
 
       TRectangle check(xp,yp,col_info[x].size, row_info[y].size);
@@ -905,14 +939,12 @@ DBSCROLL(
                   (selection && selection->perRow() && cy==y) ||
                   (selection && selection->perCol() && cx==x);
         }
-        TTableEvent te;
         te.col = x;
         te.row = y;
         te.w = check.w;
         te.h = check.h;
         te.cursor = cursor && !noCursor;
         te.selected = selected;
-        te.focus = isFocus();
         renderer->renderCell(pen, te);
       }
       xp += col_info[x].size + border;

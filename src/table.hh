@@ -241,6 +241,7 @@ struct TTableEvent
   int col, row;   // current field
   int w, h;       // field size in pixels
   int cols, rows; // table size in fields
+  bool per_row, per_col;
   bool cursor;    // show cursor
   bool selected;  // field is selected
   bool focus;     // table has keyboard focus
