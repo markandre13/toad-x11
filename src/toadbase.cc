@@ -576,6 +576,7 @@ TOADBase::handleMessage()
   ENTRYEXIT("TOADBase::handleMessage()");
 
   bool dispatch_paint_event = false;
+  static bool last_button_down_was_double = false;
   static TMouseEvent me;
   
 #ifdef PERIODIC_PAINT
@@ -936,6 +937,9 @@ handle_event:
             last_click_window == x11event.xbutton.window )
         {
           me.modifier |= MK_DOUBLE;
+          last_button_down_was_double = true;
+        } else {
+          last_button_down_was_double = false;
         }
         last_click_time = x11event.xbutton.time;
         last_click_window = x11event.xbutton.window;
@@ -983,6 +987,10 @@ handle_event:
         case Button5:
           me.type = TMouseEvent::ROLL_DOWN_END;
           break;
+      }
+      if (last_button_down_was_double) {
+        me.modifier |= MK_DOUBLE;
+        last_button_down_was_double = false;
       }
       TEventFilter *flt = toad::global_evt_filter;
       while(flt) {

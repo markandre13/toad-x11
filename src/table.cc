@@ -27,7 +27,7 @@
 using namespace toad;
 
 #define DBM(M)
-#define DBM2(M) M
+#define DBM2(M)
 #define DBSCROLL(M)
 
 /**
@@ -883,12 +883,23 @@ DBSCROLL(
     }
     xp += col_info[x].size + border;
   }
-  if (!stretchLastColumn) {
+  // clear unused window region (we must do it on our own because
+  // background is disabled to reduce flicker)
+  if (!stretchLastColumn && xp<=visible.x+visible.w) {
     pen|=dummy;
     pen.identity();
-    pen.setColor(128,64,64);
+    // pen.setColor(128,64,64);
+    pen.setColor(getBackground());
     xp--;
     pen.fillRectanglePC(xp,0,visible.x+visible.w-xp,getHeight());
+  }
+  if (yp<=visible.y+visible.h) {
+    pen|=dummy;
+    pen.identity();
+    // pen.setColor(64,64,128);
+    pen.setColor(getBackground());
+    yp--;
+    pen.fillRectanglePC(0,yp,getWidth(),visible.y+visible.h-yp);
   }
   DBM2(cerr << "leave paint" << endl << endl;)
 }
@@ -1019,7 +1030,7 @@ DBM2(cerr << "enter mouseLDown" << endl;)
     return;
   }
 
-  DBM(cout << "click on item " << x << ", " << y << endl;)
+  DBM(cout << "click on item " << x << ", " << y << endl;);
 
   sigPressed();
 
@@ -1031,11 +1042,13 @@ DBM2(cerr << "enter mouseLDown" << endl;)
     selection->clearSelection();
   }
 
+#if 0
   if ((selectionFollowsMouse || !selection) && cx==x && cy==y) {
     DBM2(cerr << "  assume that nothing has changed" << endl;
     cerr << "leave mouseLDown" << endl << endl;)
     return;
   }  
+#endif
 
   selecting = false;
   if (selection) {
@@ -1053,11 +1066,7 @@ DBM2(cerr << "enter mouseLDown" << endl;)
   invalidateCursor();
   cx = x; cy = y;
   invalidateCursor();
-
-  if (modifier & MK_DOUBLE)
-    sigDoubleClicked();
-  else  
-    sigCursor();
+  sigCursor();
     
   DBM2(cerr << "leave mouseLDown" << endl << endl;)
 }
@@ -1100,7 +1109,7 @@ DBM2(cerr << "enter mouseMove" << endl;)
 }
 
 void
-TTable::mouseLUp(int mx, int my, unsigned)
+TTable::mouseLUp(int mx, int my, unsigned modifier)
 {
 DBM2(cerr << "enter mouseLUp" << endl;)
 //cerr << __PRETTY_FUNCTION__ << endl;
@@ -1131,7 +1140,10 @@ DBM2(cerr << "enter mouseLUp" << endl;)
     )
   }
   selecting = false;
-  sigClicked();
+  if (modifier & MK_DOUBLE)
+    sigDoubleClicked();
+  else  
+    sigClicked();
 /*
   if (cx!=x && cy!=y)
     return;

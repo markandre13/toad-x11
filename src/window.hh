@@ -226,6 +226,7 @@ class TWindow:
     // void SetToolTip(TToolTip*);              // implemented in tooltip.cc
     void setToolTip(const string&);             // implemented in tooltip.cc
     
+    const TColor& getBackground() const { return background; }
     void setBackground(const TColor&);
     void setBackground(byte r,byte g,byte b) {
        setBackground(TColor(r,g,b));

@@ -54,6 +54,7 @@ TComboBox::TComboBox(TWindow * parent, const string &title):
   connect(btn->sigDisarm, this, &TComboBox::button);
   
   table = new TTable(this, "table");
+  table->selectionFollowsMouse = true;
   connect(table->sigClicked, this, &TComboBox::selected);
   connect(table->sigDoubleClicked, this, &TComboBox::selected);
 
@@ -180,6 +181,7 @@ TComboBox::closeRequest()
 void
 TComboBox::selected()
 {
+  table->selectAtCursor();
   btn->setDown(false);
   invalidateWindow();
   sigSelection();

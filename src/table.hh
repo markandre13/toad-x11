@@ -308,7 +308,7 @@ class TTable:
     //! true: don't paint a cursor
     bool noCursor;
     
-    //! true: the current mouse position will always be selected
+    //! true: the current mouse position with button pressed will always be selected
     bool selectionFollowsMouse;
     
   protected:
