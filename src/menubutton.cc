@@ -158,7 +158,7 @@ TMenuButton::paint()
   // debug code: check `isAvailable()'
   if (!node->isAvailable()) {
     pen.setColor(0,128,0);
-    pen.fillRectangle(0,0, getWidth(), getHeight());
+    pen.fillRectanglePC(0,0, getWidth(), getHeight());
     return;
   }
 #endif
@@ -168,7 +168,7 @@ TMenuButton::paint()
 
   if (node->type==TMenuHelper::TNode::SEPARATOR) {
     pen.setColor(TColor::MENU);
-    pen.fillRectangle(0,0,getWidth(), getHeight());
+    pen.fillRectanglePC(0,0,getWidth(), getHeight());
     int y = getHeight()/2;
     pen.setColor(TColor::BTNSHADOW);
     pen.drawLine(0, y, getWidth(), y);
@@ -184,7 +184,7 @@ TMenuButton::paint()
   
   if (node->isEnabled()) {
     pen.setColor(mark ? TColor::MENUTEXT : TColor::MENU);
-    pen.fillRectangle(0,0, getWidth(),getHeight());
+    pen.fillRectanglePC(0,0, getWidth(),getHeight());
     pen.setColor(mark ? TColor::MENU : TColor::MENUTEXT);
     drawIcon(&pen, x_icon, y);
     pen.drawString(x_text, y, label);
@@ -192,7 +192,7 @@ TMenuButton::paint()
       pen.drawString(x_short, y, shortcut);
   } else {
     pen.setColor(TColor::MENU);
-    pen.fillRectangle(0,0,getWidth(), getHeight());
+    pen.fillRectanglePC(0,0,getWidth(), getHeight());
 
     pen.setColor(TColor::BTNLIGHT);
     pen.drawString(x_text+1, y+1, label);

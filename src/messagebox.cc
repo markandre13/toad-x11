@@ -195,9 +195,9 @@ void TMessageBox::paint()
       TPOINT(9,11,12);
       #undef TPOINT
       pen.fillPolygon(p,10);
-      pen.fillRectangle(x+14,y+2,4,7);
-      pen.fillRectangle(x+13,y+3,6,5);
-      pen.fillRectangle(x+12,y+4,8,3);
+      pen.fillRectanglePC(x+14,y+2,4,7);
+      pen.fillRectanglePC(x+13,y+3,6,5);
+      pen.fillRectanglePC(x+12,y+4,8,3);
       } break;
 
     case ICON_EXCLAMATION:
@@ -205,10 +205,10 @@ void TMessageBox::paint()
       pen.fillCircle(x,y,32,32);
       pen.setColor(0,0,0);
       pen.drawCircle(x,y,32,32);
-      pen.fillRectangle(x+12,y+3,8,18);
-      pen.fillRectangle(x+15,y+22,2,8);
-      pen.fillRectangle(x+13,y+23,6,6);
-      pen.fillRectangle(x+12,y+25,8,2);
+      pen.fillRectanglePC(x+12,y+3,8,18);
+      pen.fillRectanglePC(x+15,y+22,2,8);
+      pen.fillRectanglePC(x+13,y+23,6,6);
+      pen.fillRectanglePC(x+12,y+25,8,2);
       break;
 
     case ICON_STOP:
@@ -217,7 +217,7 @@ void TMessageBox::paint()
       pen.setColor(0,0,0);
       pen.drawCircle(x,y,32,32);
       pen.setColor(255,255,255);
-      pen.fillRectangle(x+3,y+13,26,6);
+      pen.fillRectanglePC(x+3,y+13,26,6);
       break;
 
     case ICON_QUESTION:
@@ -245,7 +245,7 @@ void TMessageBox::paint()
       {13,24,6,5},
       {14,23,4,7}};
       for(int i=0; i<17; i++)
-        pen.fillRectangle(r[i].x+x,r[i].y+y,r[i].w,r[i].h);
+        pen.fillRectanglePC(r[i].x+x,r[i].y+y,r[i].w,r[i].h);
       break;
   }
 }

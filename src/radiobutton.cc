@@ -50,19 +50,19 @@ TRadioButton::paint()
   int y = ( (getHeight()-pen.getHeight()) >> 1 );
 
   pen.setColor(255,255,255);
-  pen.fillCircle(1,1,11,11);
+  pen.fillCirclePC(1,1,11,11);
   pen.setColor(128,128,128);
-  pen.drawCircle(0,0,11,11);
-  pen.drawCircle(1,1,10,10);
+  pen.drawCirclePC(0,0,11,11);
+  pen.drawCirclePC(1,1,10,10);
   pen.setColor(  0,  0,  0);
-  pen.drawArc(1,1,11,11, 90, 180);
+  pen.drawArcPC(1,1,11,11, 90, 180);
   if (isDown())
-    pen.fillCircle(3,3, 6,6);
+    pen.fillCirclePC(3,3, 6,6);
     
   pen.drawString(20,y, getLabel());
   
   if (isFocus()) {
     pen.setLineStyle(TPen::DOT);
-    pen.drawRectangle(18,0,getWidth()-18,getHeight());
+    pen.drawRectanglePC(18,0,getWidth()-18,getHeight());
   }
 }

@@ -98,7 +98,7 @@ TButtonBase::drawLabel(TPen &pen,const string &text, bool bDown, bool bEnabled)
       pen.drawString(x+n, y+n, text);
       if (isFocus()) {
         pen.setLineStyle(TPen::DOT);
-        pen.drawRectangle(x+n-3,y+n-1,pen.getTextWidth(text)+6,pen.getHeight()+1);
+        pen.drawRectanglePC(x+n-3,y+n-1,pen.getTextWidth(text)+6,pen.getHeight()+1);
       }
     } else {
       pen.setColor(TColor::BTNLIGHT);
@@ -154,7 +154,7 @@ TButtonBase::drawShadow(TPen &pen, bool bDown)
 
   if (isFocus()) {
     pen.setColor(0,0,0);
-    pen.drawRectangle(0,0, getWidth(), getHeight());
+    pen.drawRectanglePC(0,0, getWidth(), getHeight());
   }
 }
 

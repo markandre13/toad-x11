@@ -131,7 +131,7 @@ TComboBox::TComboButton::paint()
 
   g.setColor(TColor::BTNTEXT);
   g.fillPolygon(p,3);
-  g.fillRectangle(n+d-2, n+_h-d+1, _w-d-d+4,2);
+  g.fillRectanglePC(n+d-2, n+_h-d+1, _w-d-d+4,2);
 }
 
 void

@@ -123,12 +123,12 @@ TScrollBar::_drawSlider(TPen &pen, TRectangle &r)
   // draw slider face
   //------------------
   pen.setColor(TColor::SLIDER_FACE);
-  pen.fillRectangle(r.x+3, r.y+3, r.w-6, r.h-6);
+  pen.fillRectanglePC(r.x+3, r.y+3, r.w-6, r.h-6);
 
   // draw border
   //-------------
   pen.setColor(0,0,0);
-  pen.drawRectangle(r.x, r.y, r.w, r.h);
+  pen.drawRectanglePC(r.x, r.y, r.w, r.h);
   
   // draw shadow(s)
   //----------------
@@ -137,10 +137,10 @@ TScrollBar::_drawSlider(TPen &pen, TRectangle &r)
   if (bVertical)
   {
     c = r.y+(r.h>>1)-2;
-    pen.fillRectangle(r.x+5, c+1, r.w-8, 5);
+    pen.fillRectanglePC(r.x+5, c+1, r.w-8, 5);
   } else {
     c = r.x+(r.w>>1)-2;
-    pen.fillRectangle(c+1, r.y+5, 5, r.h-8);
+    pen.fillRectanglePC(c+1, r.y+5, 5, r.h-8);
   }
 
   p[0].set(r.x+1    , r.y+r.h-2);
@@ -198,7 +198,7 @@ TScrollBar::_drawArea(TPen &pen)
 
   if (isFocus()) {
     pen.setColor(0,0,0);
-    pen.drawRectangle(0,0, _w, _h);
+    pen.drawRectanglePC(0,0, _w, _h);
     v=1;
   } else {
     v=0;
@@ -210,11 +210,11 @@ TScrollBar::_drawArea(TPen &pen)
     pen.setColor(TColor::BTNFACE);
     n = rectSlider.y-_w-2;
     if (n>0)
-      pen.fillRectangle(v+1,_w+2, _w-2-(v<<1), n);
+      pen.fillRectanglePC(v+1,_w+2, _w-2-(v<<1), n);
     n += rectSlider.h + _w + 3;
     m = _h-_w-n-2;
     if (m>0)
-      pen.fillRectangle(v+1, n, _w-2-(v<<1), m);
+      pen.fillRectanglePC(v+1, n, _w-2-(v<<1), m);
   
     // shadow
     //------------
@@ -242,10 +242,10 @@ TScrollBar::_drawArea(TPen &pen)
     pen.setColor(TColor::BTNFACE);
     n = rectSlider.x-_h-2;
     if (n>0)
-      pen.fillRectangle(_h+2, v+1, n, _h-(v<<1)-2);
+      pen.fillRectanglePC(_h+2, v+1, n, _h-(v<<1)-2);
     n = rectSlider.x+rectSlider.w+1;
     m = _w - n - _h - 2;
-    pen.fillRectangle(n, v+1, m, _h-(v<<1)-2);
+    pen.fillRectanglePC(n, v+1, m, _h-(v<<1)-2);
   
     // shadow
     //------------

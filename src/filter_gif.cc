@@ -627,7 +627,7 @@ void TConfig::paint()
   filter->getIndexColor(index, &c);
   pen.setColor(c);
   pen.setColorMode(TColor::DITHER);
-  pen.fillRectangle(10,105,180,20);
+  pen.fillRectanglePC(10,105,180,20);
 
   TFont font(TFont::SANS, TFont::ITALIC, 12);
   pen.setFont(&font);
@@ -646,7 +646,7 @@ void TConfig::indexChanged(TScrollBar *sb)
   TRGB c;
   filter->getIndexColor(index, &c);
   pen.setColor(c);
-  pen.fillRectangle(10,105,180,20);
+  pen.fillRectanglePC(10,105,180,20);
 }
 #endif
 

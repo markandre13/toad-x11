@@ -127,8 +127,8 @@ TDialog::paint()
       TPen pen(this);
       TRectangle r;
       wnd->getShape(&r);
-      pen.drawRectangle(r.x-3,r.y-2,r.w+6,r.h+4);
-      pen.drawRectangle(r.x-2,r.y-3,r.w+4,r.h+6);
+      pen.drawRectanglePC(r.x-3,r.y-2,r.w+6,r.h+4);
+      pen.drawRectanglePC(r.x-2,r.y-3,r.w+4,r.h+6);
     }
   }
 }

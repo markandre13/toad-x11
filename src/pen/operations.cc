@@ -41,14 +41,14 @@ using namespace toad;
   const TPoint *se = SRC+SIZE; \
   XPoint *dp = DST; \
   while(sp!=se) { \
-    dp->x = sp->x + _dx; \
-    dp->y = sp->y + _dy; \
+    dp->x = sp->x; \
+    dp->y = sp->y; \
     dp++; \
     sp++; \
   }
 
-// Adjust (width, height) to raster coordinates for XDraw... operations.
-#define XDRAW_RASTER_COORD(w,h) \
+// Adjust (width, height) to pixel coordinates for XDraw... operations.
+#define XDRAW_PIXEL_COORD(w,h) \
   if (!w || !h) \
     return; \
   if (w<0) { \
@@ -62,8 +62,8 @@ using namespace toad;
   w--; \
   h--;
 
-// Adjust (width, height) to pixel coordinates for XDraw... operations.
-#define XDRAW_PIXEL_COORD(w,h) \
+// Adjust (width, height) to raster coordinates for XDraw... operations.
+#define XDRAW_RASTER_COORD(w,h) \
   if (w<0) { \
     w=-w; \
     x-=w; \
@@ -73,27 +73,279 @@ using namespace toad;
     y-=h; \
   }
 
+
+class toad::TMatrix2D
+{
+  public:
+    TMatrix2D();
+  
+    double a11, a12;
+    double a21, a22;
+    double tx, ty;
+
+    void identity();
+    void rotate(double);
+    void translate(double, double);
+    void scale(double, double);
+    void shear(double, double);
+    void set(double a11, double a12, double a21, double a22, double tx, double ty) {
+      this->a11 = a11;
+      this->a12 = a12;
+      this->a21 = a21;
+      this->a22 = a22;
+      this->tx  = tx;
+      this->ty  = ty;
+    }
+    
+    void map(int inX, int inY, short int *outX, short int *outY);
+ 
+    TMatrix2D *next;
+};
+
+TMatrix2D::TMatrix2D()
+{
+  identity();
+  next = 0;  
+}
+
+void
+TMatrix2D::identity()
+{
+  a11 = a22 = 1.0;
+  a21 = a12 = tx = ty = 0.0;
+}
+ 
+/**
+ * \pre
+   / a11 a12  tx \       / a11 a12  tx \     / r11 r12 0.0 \
+  |  a21 a22  ty  | :=  |  a21 a22  ty  | * |  r21 r22 0.0  |
+   \ 0.0 0.0 1.0 /       \ 0.0 0.0 1.0 /     \ 0.0 0.0 1.0 / 
+   \endpre
+ */
+void
+TMatrix2D::rotate(double degree)
+{
+  double a = degree / 360.0 * 2.0 * M_PI;
+  double r11, r12, r21, r22;
+  r11 = r22 = cos(a);
+  r21 = sin(a);
+  r12 = -r21;  
+
+  double n11 = a11 * r11 + a12 * r21;
+  double n21 = a21 * r11 + a22 * r21;
+
+  double n12 = a11 * r12 + a12 * r22;
+  double n22 = a21 * r12 + a22 * r22;
+
+  double ntx = tx;
+  double nty = ty;
+  
+  a11 = n11;
+  a21 = n21;
+  a12 = n12;
+  a22 = n22;
+  tx = ntx; 
+  ty = nty; 
+}
+
+/**
+ * \pre
+   / a11 a12  tx \      / a11 a12  tx \     / 1.0 0.0   x \
+  |  a21 a22  ty  | := |  a21 a22  ty  | * |  0.0 1.0   y  |
+   \ 0.0 0.0 1.0 /      \ 0.0 0.0 1.0 /     \ 0.0 0.0 1.0 / 
+   \endpre
+ */
+void
+TMatrix2D::translate(double x, double y)
+{
+  tx += a11 * x + a12 * y;
+  ty += a21 * x + a22 * y;
+}
+ 
+void
+TMatrix2D::scale(double xfactor, double yfactor)
+{
+  a11 *= xfactor;
+  a12 *= xfactor;
+  a21 *= yfactor;
+  a22 *= yfactor;
+}
+
+void
+TMatrix2D::shear(double, double)
+{
+}
+ 
+/**
+ * \pre
+   / outY \      / a11 a12  tx \     / inX \
+  |  outX  | := |  a21 a22  ty  | * |  inY  |
+   \ 1.0  /      \ 0.0 0.0 1.0 /     \ 1.0 / 
+   \endpre
+ */
+void
+TMatrix2D::map(int inX, int inY, short int *outX, short int *outY)
+{
+  double x, y;
+  x = inX; y=inY;
+  *outX = a11 * x + a12 * y + tx;
+  *outY = a21 * x + a22 * y + ty;
+}
+
+#if 0
+void
+TPen::setOrigin(int x, int y) 
+{
+  if (!mat) {
+    if (x==0 && y==0)
+      return;
+    mat = new TMatrix2D();
+  }
+  mat->tx = x;
+  mat->ty = y;
+}
+
+void
+TPen::translate(int x, int y)
+{
+  if (!mat) {
+    if (x==0 && y==0)
+      return;
+    mat = new TMatrix2D();
+  }
+  mat->tx += x;
+  mat->ty += y;
+}
+
+int
+TPen::originX() const
+{
+  if (!mat)
+    return 0;
+  return mat->tx;
+}
+
+int
+TPen::originY() const
+{
+  if (!mat)
+    return 0;
+  return mat->ty;
+}
+#endif
+
+void
+TPen::identity()
+{
+  if (mat)
+    mat->identity();
+}
+
+void
+TPen::translate(double dx, double dy)
+{
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->translate(dx, dy);
+}
+
+void
+TPen::rotate(double degree)
+{
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->rotate(degree);
+}
+
+void
+TPen::scale(double xfactor, double yfactor)
+{
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->scale(xfactor, yfactor);
+}
+
+void
+TPen::shear(double, double)
+{
+}
+
+void
+TPen::setMatrix(double a11, double a12, double a21, double a22, double tx, double ty)
+{
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->set(a11, a12, a21, a22, tx, ty);
+}
+
+void
+TPen::push()
+{
+  if (mat) {
+    TMatrix2D *mnew = new TMatrix2D(*mat);
+    mnew->next = mat;
+    mat = mnew;
+  }
+}
+
+void
+TPen::pop()
+{
+  if (mat) {
+    TMatrix2D *mold = mat;
+    mat = mat->next;
+    delete mold;
+  }
+}
+
+void
+TPen::popAll()
+{
+  while(mat) {
+    TMatrix2D *mold = mat;
+    mat = mat->next;
+    delete mold;
+  }
+}
+
 // point
 //----------------------------------------------------------------------------
-void TPen::drawPoint(int x, int y) const
+void
+TPen::drawPoint(int x, int y) const
 {
-  XDrawPoint(x11display, x11drawable, o_gc, x+_dx, y+_dy);
+  if (!mat) {
+    XDrawPoint(x11display, x11drawable, o_gc, x, y);
+  } else {
+    short sx, sy;
+    mat->map(x, y, &sx, &sy);
+    XDrawPoint(x11display, x11drawable, o_gc, x, y);
+  }
 }
 
 // line
 //----------------------------------------------------------------------------
-void TPen::drawLine(int x1, int y1, int x2, int y2) const
+void
+TPen::vdrawLine(int x1, int y1, int x2, int y2) const
 {
-  XDrawLine(x11display, x11drawable, o_gc, x1+_dx,y1+_dy, x2+_dx,y2+_dy);
+  if (!mat) {
+    XDrawLine(x11display, x11drawable, o_gc, x1,y1, x2, y2);
+  } else {
+    short sx1, sy1, sx2, sy2;
+    mat->map(x1, y1, &sx1, &sy1);
+    mat->map(x2, y2, &sx2, &sy2);
+    XDrawLine(x11display, x11drawable, o_gc, sx1,sy1, sx2, sy2);
+  }
 }
 
-void TPen::drawLines(const TPoint *s, int n) const
+void
+TPen::drawLines(const TPoint *s, int n) const
 {
   TPOINT_2_XPOINT(s,d,n)
   XDrawLines(x11display, x11drawable, o_gc, d, n, CoordModeOrigin);
 }
 
-void TPen::drawLines(const TPolygon &polygon) const
+void
+TPen::drawLines(const TPolygon &polygon) const
 {
   unsigned n = polygon.size();
   XPoint DST[n];
@@ -102,8 +354,8 @@ void TPen::drawLines(const TPolygon &polygon) const
   se = polygon.end();
   XPoint *dp = DST;
   while(sp!=se) {
-   dp->x = sp->x + _dx;
-   dp->y = sp->y + _dy;
+   dp->x = sp->x;
+   dp->y = sp->y;
    dp++;
    ++sp;
   }
@@ -114,112 +366,141 @@ void TPen::drawLines(const TPolygon &polygon) const
 
 // rectangle
 //----------------------------------------------------------------------------
-void TPen::drawRectangle(int x, int y, int w, int h) const
+void
+TPen::vdrawRectangle(int x, int y, int w, int h) const
 {
   XDRAW_RASTER_COORD(w,h)
-  if (w==0 || h==0) {
-    XDrawLine(x11display, x11drawable, o_gc, x+_dx, y+_dy, x+_dx+w,y+_dy+h);
-    return;
+  if (!mat) {
+    if (w==0 || h==0) {
+      XDrawLine(x11display, x11drawable, o_gc, x, y, x+w,y+h);
+      return;
+    }
+    XDrawRectangle(x11display, x11drawable, o_gc, x, y, w, h);
+  } else {
+    XPoint pts[5];
+    XPoint *p = pts;
+    mat->map(x, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y+h, &p->x, &p->y); ++p;
+    mat->map(x, y+h, &p->x, &p->y); ++p;
+    p->x = pts->x;
+    p->y = pts->y;
+    XDrawLines(x11display, x11drawable, o_gc, pts, 5, CoordModeOrigin);
   }
-  XDrawRectangle(x11display, x11drawable, o_gc, x+_dx,y+_dy,w,h);
 }
 
-void TPen::drawRectanglePC(int x, int y, int w, int h) const
-{
-  XDRAW_PIXEL_COORD(w,h)
-  XDrawRectangle(x11display, x11drawable, o_gc, x+_dx,y+_dy,w,h);
-}
-
-void TPen::fillRectangle(int x, int y, int w, int h) const
+void
+TPen::vfillRectangle(int x, int y, int w, int h) const
 {
   XDRAW_RASTER_COORD(w,h)
-  if (two_colors) {
-    XFillRectangle(x11display, x11drawable, f_gc, x+_dx, y+_dy,w,h);
-    XDrawRectangle(x11display, x11drawable, o_gc, x+_dx, y+_dy,w,h);
+  if (!mat) {
+    if (two_colors) {
+      XFillRectangle(x11display, x11drawable, f_gc, x, y,w,h);
+      XDrawRectangle(x11display, x11drawable, o_gc, x, y,w,h);
+    } else {
+      XFillRectangle(x11display, x11drawable, o_gc, x,y,w+1,h+1);
+    }
   } else {
-    XFillRectangle(x11display, x11drawable, o_gc, x+_dx,y+_dy,w+1,h+1);
+    XPoint pts[5];
+    XPoint *p = pts;
+    mat->map(x, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y, &p->x, &p->y); ++p;
+    mat->map(x+w, y+h, &p->x, &p->y); ++p;
+    mat->map(x, y+h, &p->x, &p->y); ++p;
+    p->x = pts->x;
+    p->y = pts->y;
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
+                 pts, 4, Nonconvex, CoordModeOrigin);
+    XDrawLines(x11display, x11drawable, o_gc, pts, 5, CoordModeOrigin);
   }
 }
 
-void TPen::fillRectanglePC(int x, int y, int w, int h) const
+void
+TPenBase::drawRectanglePC(int x, int y, int w, int h) const
+{
+  XDRAW_PIXEL_COORD(w,h);
+  drawRectangle(x,y,w,h);
+}
+
+void
+TPenBase::fillRectanglePC(int x, int y, int w, int h) const
 {
   XDRAW_PIXEL_COORD(w,h)
-  if (two_colors) {
-    XFillRectangle(x11display, x11drawable, f_gc, x+_dx, y+_dy,w,h);
-    XDrawRectangle(x11display, x11drawable, o_gc, x+_dx, y+_dy,w,h);
-  } else {
-    XFillRectangle(x11display, x11drawable, o_gc, x+_dx,y+_dy,w+1,h+1);
-  }
+  fillRectangle(x, y, w, h);
 }
 
 // circle
 //----------------------------------------------------------------------------
-void TPen::drawCircle(int x, int y, int w, int h) const
+void
+TPen::vdrawCircle(int x, int y, int w, int h) const
 {
   XDRAW_RASTER_COORD(w,h)
   if (w==0 || h==0) {
-    XDrawLine(x11display, x11drawable, o_gc, x+_dx, y+_dy, x+_dx+w,y+_dy+h);
+    XDrawLine(x11display, x11drawable, o_gc, x, y, x+w,y+h);
     return;
   }
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx,y+_dy,w,h, 0,360*64);
+  XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, 0,360*64);
 }
 
-void TPen::drawCirclePC(int x, int y, int w, int h) const
-{
-  XDRAW_PIXEL_COORD(w,h)
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx,y+_dy,w,h, 0,360*64);
-}
-
-void TPen::fillCircle(int x, int y, int w, int h) const
+void
+TPen::vfillCircle(int x, int y, int w, int h) const
 {
   XDRAW_RASTER_COORD(w,h)
   XDRAW_PIXEL_COORD(w,h)
-  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x+_dx, y+_dy,w,h, 0,360*64);
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx, y+_dy,w,h, 0,360*64);
+  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
+  XDrawArc(x11display, x11drawable, o_gc, x, y,w,h, 0,360*64);
 }
 
-void TPen::fillCirclePC(int x, int y, int w, int h) const
+void
+TPenBase::drawCirclePC(int x, int y, int w, int h) const
 {
   XDRAW_PIXEL_COORD(w,h)
-  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x+_dx, y+_dy,w,h, 0,360*64);
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx, y+_dy,w,h, 0,360*64);
+  drawCircle(x, y, w, h);
+}
+
+void
+TPenBase::fillCirclePC(int x, int y, int w, int h) const
+{
+  XDRAW_PIXEL_COORD(w,h)
+  drawCircle(x, y, w, h);
 }
 
 // arc
 //----------------------------------------------------------------------------
-void TPen::drawArc(int x, int y, int w, int h, double r1, double r2) const
+void
+TPen::vdrawArc(int x, int y, int w, int h, double r1, double r2) const
 {
   XDRAW_RASTER_COORD(w,h)
   if (w==0 || h==0) {
-    XDrawLine(x11display, x11drawable, o_gc, x+_dx, y+_dy, x+_dx+w,y+_dy+h);
+    XDrawLine(x11display, x11drawable, o_gc, x, y, x+w,y+h);
     return;
   }
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx,y+_dy,w,h, (int)(r1*64.0),(int)(r2*64.0));
+  XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, (int)(r1*64.0),(int)(r2*64.0));
 }
 
-void TPen::drawArcPC(int x, int y, int w, int h, double r1, double r2) const
-{
-  XDRAW_PIXEL_COORD(w,h)
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx,y+_dy,w,h, (int)(r1*64.0),(int)(r2*64.0));
-}
-
-void TPen::fillArc(int x, int y, int w, int h, double r1, double r2) const
+void
+TPen::vfillArc(int x, int y, int w, int h, double r1, double r2) const
 {
   XDRAW_RASTER_COORD(w,h)
   XDRAW_PIXEL_COORD(w,h)
   int i1=(int)(r1*64.0);
   int i2=(int)(r2*64.0);
-  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x+_dx, y+_dy,w,h, i1,i2);
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx, y+_dy,w,h, i1,i2);
+  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, i1,i2);
+  XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, i1,i2);
 }
 
-void TPen::fillArcPC(int x, int y, int w, int h, double r1, double r2) const
+void
+TPenBase::drawArcPC(int x, int y, int w, int h, double r1, double r2) const
 {
   XDRAW_PIXEL_COORD(w,h)
-  int i1=(int)(r1*64.0);
-  int i2=(int)(r2*64.0);
-  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x+_dx, y+_dy,w,h, i1,i2);
-  XDrawArc(x11display, x11drawable, o_gc, x+_dx, y+_dy,w,h, i1,i2);
+  drawArc(x, y, w, h, r1, r2);
+}
+
+void
+TPenBase::fillArcPC(int x, int y, int w, int h, double r1, double r2) const
+{
+  XDRAW_PIXEL_COORD(w,h)
+  fillArc(x, y, w, h, r1, r2);
 }
 
 // polygon
@@ -254,8 +535,8 @@ TPen::drawPolygon(const TPolygon &polygon) const
   se = polygon.end();
   XPoint *dp = DST;
   while(sp!=se) {
-   dp->x = sp->x + _dx;
-   dp->y = sp->y + _dy;
+   dp->x = sp->x;
+   dp->y = sp->y;
    dp++;
    ++sp;
   }
@@ -277,8 +558,8 @@ TPen::fillPolygon(const TPolygon &polygon) const
   se = polygon.end();
   XPoint *dp = DST;
   while(sp!=se) {
-   dp->x = sp->x + _dx;
-   dp->y = sp->y + _dy;
+   dp->x = sp->x;
+   dp->y = sp->y;
    dp++;
    ++sp;
   }
@@ -294,24 +575,48 @@ TPen::fillPolygon(const TPolygon &polygon) const
 
 // bitmap
 //----------------------------------------------------------------------------
-void TPen::drawBitmap(int x, int y, const TBitmap* bmp) const
+void
+TPen::drawBitmap(int x, int y, const TBitmap* bmp) const
 {
-  bmp->drawBitmap(this, x+_dx, y+_dy);
+  if (mat) {
+    x+=mat->tx;
+    y+=mat->ty;
+  }
+  bmp->drawBitmap(this, x, y);
 }
 
-void TPen::drawBitmap(int x, int y, const TBitmap& bmp) const
+void
+TPen::drawBitmap(int x, int y, const TBitmap& bmp) const
 {
-  bmp.drawBitmap(this, x+_dx, y+_dy);
+  if (mat) {
+    x+=mat->tx;
+    y+=mat->ty;
+  }
+  bmp.drawBitmap(this, x, y);
 }
 
-void TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int ah) const
+void
+TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int ah) const
 {
-  bmp->drawBitmap(this, x+_dx, y+_dy, ax,ay,aw,ah);
+  if (mat) {
+    x+=mat->tx;
+    y+=mat->ty;
+    ax+=mat->tx;
+    ay+=mat->ty;
+  }
+  bmp->drawBitmap(this, x, y, ax,ay,aw,ah);
 }
 
-void TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int ah) const
+void
+TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int ah) const
 {
-  bmp.drawBitmap(this, x+_dx, y+_dy, ax,ay,aw,ah);
+  if (mat) {
+    x+=mat->tx;
+    y+=mat->ty;
+    ax+=mat->tx;
+    ay+=mat->ty;
+  }
+  bmp.drawBitmap(this, x, y, ax,ay,aw,ah);
 }
 
 // 3D rectangle
@@ -319,9 +624,13 @@ void TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, 
 /**
  * This is a special function for widgets.
  */
-void TPen::draw3DRectangle(int x, int y, int w, int h, bool inset) const
+void
+TPen::vdraw3DRectangle(int x, int y, int w, int h, bool inset) const
 {
   TColor saved_color = o_color;
+  
+  ++w;
+  ++h;
   
   TPen *t = const_cast<TPen*>(this);
   
@@ -365,14 +674,23 @@ void TPen::draw3DRectangle(int x, int y, int w, int h, bool inset) const
   t->setColor(saved_color);
 }
 
+void
+TPenBase::draw3DRectanglePC(int x, int y, int w, int h, bool inset) const
+{
+  XDRAW_PIXEL_COORD(w,h)
+  vdraw3DRectangle(x, y, w, h, inset);
+}
+
 // text string
 //----------------------------------------------------------------------------
-int TPen::getTextWidth(const string &str) const
+int
+TPen::getTextWidth(const string &str) const
 {
   return font->getTextWidth(str.c_str());
 }
 
-int TPen::getTextWidth(const char *str) const
+int
+TPen::getTextWidth(const char *str) const
 {
   return font->getTextWidth(str);
 }
@@ -380,7 +698,8 @@ int TPen::getTextWidth(const char *str) const
 /**
  * Width of 'str' when printed with the current font.
  */
-int TPen::getTextWidth(const char *str, int len) const
+int
+TPen::getTextWidth(const char *str, int len) const
 {
   return font->getTextWidth(str,len);
 }
@@ -388,7 +707,8 @@ int TPen::getTextWidth(const char *str, int len) const
 /**
  * Ascent of the current font.
  */
-int TPen::getAscent() const
+int
+TPen::getAscent() const
 {
   return font->getAscent();
 }
@@ -396,7 +716,8 @@ int TPen::getAscent() const
 /**
  * Descent of the current font.
  */
-int TPen::getDescent() const
+int
+TPen::getDescent() const
 {
   return font->getDescent();
 }
@@ -404,7 +725,8 @@ int TPen::getDescent() const
 /**
  * Height of the current font.
  */
-int TPen::getHeight() const
+int
+TPen::getHeight() const
 {
   return font->getHeight();
 }
@@ -414,16 +736,22 @@ int TPen::getHeight() const
  * coordinate of the string.<BR>
  * DrawString is a little bit slower than FillString.
  */
-void TPen::drawString(int x,int y, const string &str) const
+void
+TPen::drawString(int x,int y, const string &str) const
 {
   TPen::drawString(x,y,str.c_str(),(int)str.size());
 }
 
-void TPen::drawString(int x,int y, const char *str, int strlen) const
+void
+TPen::drawString(int x,int y, const char *str, int strlen) const
 {
   if (!str)
     return;
-  XDrawString(x11display, x11drawable, o_gc, x+_dx,y+_dy+getAscent(), str, strlen);
+  if (mat) {
+    x+=mat->tx;
+    y+=mat->ty;
+  }
+  XDrawString(x11display, x11drawable, o_gc, x,y+getAscent(), str, strlen);
 }
 
 /**
@@ -435,29 +763,39 @@ void TPen::drawString(int x,int y, const char *str, int strlen) const
  * Maybe i'm going to rename this method into `PrintString' since
  * `FillString' is really a very idiotic name.
  */
-void TPen::fillString(int x,int y, const string &str) const
+void
+TPen::fillString(int x,int y, const string &str) const
 {
   TPen::fillString(x,y,str.c_str(),(int)str.size());
 }
 
-void TPen::fillString(int x,int y, const char *str, int strlen) const
+void
+TPen::fillString(int x,int y, const char *str, int strlen) const
 {
   if (!str)
     return;
-  XDrawImageString(x11display, x11drawable, o_gc, x+_dx,y+_dy+getAscent(), str, strlen);
+  if (mat) {
+    x+=mat->tx;
+    y+=mat->ty;
+  }
+  XDrawImageString(x11display, x11drawable, o_gc, x,y+getAscent(), str, strlen);
 }
 
-// DrawTextWidth
-//-------------------------------------------------------------------------
-//. Draw string 'str' in multiple lines, reduce spaces between words to one 
-//. an break lines to fit width. 'str' can contain '\n'.
-int TPen::drawTextWidth(int x,int y,const string &str, unsigned width) const
+/**
+ * Draw string 'str' in multiple lines, reduce spaces between words to one 
+ * an break lines to fit width. 'str' can contain '\n'.
+ */
+int
+TPen::drawTextWidth(int x,int y,const string &str, unsigned width) const
 {
-  x+=_dx;
-  y+=_dy;
   const char* text=str.c_str();
   
   unsigned i;
+
+  if (mat) {
+    x+=mat->tx;
+    y+=mat->ty;
+  }
   
   // 1st step: count words and lines
   unsigned word_count, min_lines;

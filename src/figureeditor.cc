@@ -230,7 +230,7 @@ TFigureEditor::paint()
     TBitmap bitmap(gridx,gridy, TBITMAP_SERVER);
     TPen bpen(&bitmap);
     bpen.setColor(background_color);
-    bpen.fillRectangle(0,0,gridx,gridy);
+    bpen.fillRectanglePC(0,0,gridx,gridy);
     bpen.setColor(
       background_color.r > 128 ? background_color.r-128 : background_color.r+128,
       background_color.g > 128 ? background_color.g-128 : background_color.g+128,
@@ -248,14 +248,15 @@ TFigureEditor::paint()
   } else {
     pen.setColor(background_color);
   }
-  pen.fillRectangle(0,0,window->getWidth(),window->getHeight());
-
-  pen.setOrigin(window->getOriginX(), window->getOriginY());
-  pen.setColor(TColor::BLACK);
+  pen.identity();
+  pen.fillRectanglePC(0,0,window->getWidth(),window->getHeight());
+  pen.translate(window->getOriginX(), window->getOriginY());
   
+  pen.setColor(TColor::BLACK);
+
   TFigureModel::iterator p, e;
   
-  // draw the gadgets
+  // draw the figures
   p = gadgets->begin();
   e = gadgets->end();
   while(p!=e) {
@@ -288,14 +289,14 @@ TFigureEditor::paint()
                  window->getHeight()- TScrollBar::getFixedSize(),
                  TScrollBar::getFixedSize(), TScrollBar::getFixedSize());
     pen.setColor(TColor::LIGHTGRAY);
-    pen.setOrigin(0,0);
+    pen.identity();
     pen|=r;
-    pen.fillRectangle(r);
+    pen.fillRectanglePC(r);
   }
-
   // put the result onto the screen
   TPen scr(window);
-  scr.drawBitmap(-window->getOriginX(),-window->getOriginY(), &bmp);
+  scr.identity();
+  scr.drawBitmap(0,0, &bmp);
 }
 
 void
@@ -1034,8 +1035,7 @@ redo:
       window->paintNow();
       TPen pen(window);
       pen.setLineStyle(TPen::DOT);
-      TRectangle r(TPoint(down_x,down_y), TPoint(x,y));
-      pen.drawRectangle(r);
+      pen.drawRectanglePC(down_x, down_y, x, y);
     } break;
   }
 }
@@ -1421,14 +1421,14 @@ TFigureEditor::TColorSelector::paint()
   border = getWidth() / 6;
   
   pen.setColor(linecolor);
-  pen.fillRectangle(0, 0, getWidth(), getHeight());
+  pen.fillRectanglePC(0, 0, getWidth(), getHeight());
   
   if (filled) {
     pen.setColor(fillcolor);
-    pen.fillRectangle(border, border, getWidth()-border*2, getHeight()-border*2);
+    pen.fillRectanglePC(border, border, getWidth()-border*2, getHeight()-border*2);
   } else {
     pen.setColor(255,255,255);
-    pen.fillRectangle(border, border, getWidth()-border*2, getHeight()-border*2);
+    pen.fillRectanglePC(border, border, getWidth()-border*2, getHeight()-border*2);
     pen.setColor(0,0,0);
     pen.drawLine(getWidth()-border-1, border, border-1, getHeight()-border);
     pen.drawLine(border, border, getWidth()-border, getHeight()-border);

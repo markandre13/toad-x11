@@ -234,9 +234,9 @@ TMDIShell::TTitleBar::mouseMove(int mx,int my,unsigned)
     bMoving = true;
     lockPaintQueue();
   } else {
-    pen.drawRectangle(ox,oy,shape.w,shape.h);
+    pen.drawRectanglePC(ox,oy,shape.w,shape.h);
   }
-  pen.drawRectangle(x,y,shape.w,shape.h);
+  pen.drawRectanglePC(x,y,shape.w,shape.h);
   ox=x; oy=y;
 }
 
@@ -253,7 +253,7 @@ TMDIShell::TTitleBar::mouseLUp(int,int,unsigned)
     pen.setLineWidth(3);
     TRectangle shape;
     getParent()->getShape(&shape);
-    pen.drawRectangle(ox,oy,shape.w,shape.h);
+    pen.drawRectanglePC(ox,oy,shape.w,shape.h);
     bMoving = false;
 
     getParent()->setPosition(ox,oy);

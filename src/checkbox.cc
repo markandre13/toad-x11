@@ -78,9 +78,9 @@ TCheckBox::paint()
 
   pen.setColor(255,255,255);
   if (isEnabled()) {
-    pen.fillRectangle(2,2,9,9);
+    pen.fillRectanglePC(2,2,9,9);
   }
-  pen.draw3DRectangle(0,0,13,13);
+  pen.draw3DRectanglePC(0,0,13,13);
 
   if (isEnabled()) {
     pen.setColor(0,0,0);
@@ -103,10 +103,10 @@ TCheckBox::paint()
     
   if (isFocus()) {
     pen.setLineStyle(TPen::DOT);
-    pen.drawRectangle(18,0,_w-18,height);
+    pen.drawRectanglePC(18,0,_w-18,height);
   } else {
     pen.setColor(TColor::DIALOG);
-    pen.drawRectangle(18,0,_w-18,height);
+    pen.drawRectanglePC(18,0,_w-18,height);
   }
 }
 

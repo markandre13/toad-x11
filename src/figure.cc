@@ -123,16 +123,16 @@ TFigure::paintSelection(TPenBase &pen)
   while(true) {
     if ( !getHandle(h, pt) )
       break;
-    pen.fillRectangle(pt.x-2,pt.y-2,5,5);
+    pen.fillRectanglePC(pt.x-2,pt.y-2,5,5);
     h++;
   }
   if (h==0) {
     TRectangle r;
     getShape(r);
-    pen.fillRectangle(r.x-2       ,r.y-2,5,5);
-    pen.fillRectangle(r.x+r.w-1-2 ,r.y-2,5,5);
-    pen.fillRectangle(r.x+r.w-1-2 ,r.y+r.h-1-2,5,5);
-    pen.fillRectangle(r.x-2       ,r.y+r.h-1-2,5,5);
+    pen.fillRectanglePC(r.x-2       ,r.y-2,5,5);
+    pen.fillRectanglePC(r.x+r.w-1-2 ,r.y-2,5,5);
+    pen.fillRectanglePC(r.x+r.w-1-2 ,r.y+r.h-1-2,5,5);
+    pen.fillRectanglePC(r.x-2       ,r.y+r.h-1-2,5,5);
   }
 }
 

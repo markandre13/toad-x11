@@ -39,13 +39,13 @@ TFFrame::paint(TPenBase &pen, EPaintType type)
   p[2].set(r.x+r.w-2, r.y+1);
   pen.drawLines(p,3);
   pen.setColor(TColor::GRAY);
-  pen.drawRectangle(r.x,r.y,r.w-1,r.h-1);
+  pen.drawRectanglePC(r.x,r.y,r.w-1,r.h-1);
 
   if (!text.empty()) {
     int fh = TOADBase::getDefaultFont().getHeight();
     int tw = TOADBase::getDefaultFont().getTextWidth(text);
     pen.setColor(TColor::LIGHTGRAY);
-    pen.fillRectangle(r.x+5-1, r.y-fh/2, tw+2, fh);
+    pen.fillRectanglePC(r.x+5-1, r.y-fh/2, tw+2, fh);
     pen.setColor(line_color);
     pen.drawString(r.x+5, r.y-fh/2, text);
   }

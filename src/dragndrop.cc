@@ -30,10 +30,9 @@
  * @li i'm not catching all protocol error, etc.
  * @li no timeouts
  * @li no time stamps
- * @li no different cursor shapes
  * @li no checks for corrupted input
  * @li drop site structure is removed with its parent window
- * @li the drop site parent is responsible to rearrange it drop sites...
+ * @li the drop site parent is responsible to rearrange its drop sites...
  *   could I implement the drop sites as figures?
  * @li no support for ACTION_ASK (XdndActionList and XdndActionDescription
  *   are missing)
@@ -866,21 +865,21 @@ void SetDropSite(TDropSite *ds)
   dropsite = ds;
   if (dropsite) {
     TPen pen(dropsite->getParent());
-    pen.setOrigin(0,0);
+    pen.identity();
     TBitmap bitmap(2,2, TBITMAP_SERVER);
     TPen bpen(&bitmap);
     bpen.setColor(255,255,255);
-    bpen.fillRectangle(0,0,2,2);
+    bpen.fillRectanglePC(0,0,2,2);
     bpen.setColor(0,0,0);
     bpen.drawLine(0,0,1,1);
     pen.setBitmap(&bitmap);
     TRectangle r(dropsite->getShape());
-    pen.drawRectangle(r);
+    pen.drawRectanglePC(r);
     r.x++;
     r.y++;
     r.w-=2;
     r.h-=2;
-    pen.drawRectangle(r);
+    pen.drawRectanglePC(r);
   }
 }
 

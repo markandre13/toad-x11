@@ -357,10 +357,10 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, int idx, int w, int h)
   int y = (h - pen.getHeight())>>1;
       
   pen.setColor(TColor::BTNFACE);
-  pen.fillRectangle(r);
+  pen.fillRectanglePC(r);
   pen.setColor(TColor::BTNTEXT);
   pen.drawString(x,y, txt);
-  pen.draw3DRectangle(r,false);
+  pen.draw3DRectanglePC(r,false);
 }
 
 /**
@@ -542,7 +542,7 @@ DBSCROLL({
   long n = rgn->getNumRects();
   for(long i=0; i<n; i++) {
     rgn->getRect(i, &r);
-    pen.fillRectangle(r);
+    pen.fillRectanglePC(r);
   }
   flush();
   sleep(1);
@@ -557,12 +557,13 @@ DBSCROLL({
     xp = fpx + visible.x;
     int h = col_header_renderer->getHeight();
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
-      pen.setOrigin(xp+1,0);
+      pen.identity();
+      pen.translate(xp+1,0);
       col_header_renderer->renderItem(pen, x, col_info[x].size-2, h);
       xp+=col_info[x].size;
       if (border) {
         pen.setColor(0,0,0);
-        pen.fillRectangle(col_info[x].size, 0, border, h);
+        pen.fillRectanglePC(col_info[x].size, 0, border, h);
         xp+=border;
       }
     }
@@ -574,12 +575,13 @@ DBSCROLL({
     yp = fpy + visible.y;
     int w = col_header_renderer->getWidth();
     for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
-      pen.setOrigin(0,yp);
+      pen.identity();
+      pen.translate(0,yp);
       row_header_renderer->renderItem(pen, y, w, row_info[y].size);
       yp+=row_info[y].size;
       if (border) {
         pen.setColor(0,0,0);
-        pen.fillRectangle(0, row_info[y].size, w, border);
+        pen.fillRectanglePC(0, row_info[y].size, w, border);
         yp+=border;
       }
     }
@@ -600,7 +602,7 @@ DBSCROLL({
   pen.setClipRect(visible);
 
   if (border) {
-    pen.setOrigin(0,0);
+    pen.identity();
     pen.setColor(0,0,0);
     pen.setLineStyle(TPen::DOT);
     
@@ -625,7 +627,8 @@ DBSCROLL({
   for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
     yp = fpy + visible.y;
     for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
-      pen.setOrigin(xp, yp);
+      pen.identity();
+      pen.translate(xp, yp);
       bool selected = selection->isSelected(perRow?0:x,perCol?0:y);
       if (selecting) {
         if (x>=x1 && x<=x2 && y>=y1 && y<=y2)
@@ -634,7 +637,7 @@ DBSCROLL({
 
 DBSCROLL(
   pen.setColor(255,255,255);
-  pen.fillRectangle(0,0,col_info[x].size, row_info[y].size);
+  pen.fillRectanglePC(0,0,col_info[x].size, row_info[y].size);
   pen.setColor(0,0,0);
 )
       renderer->renderItem(
@@ -1060,7 +1063,7 @@ class TTableCellRenderer_CString:
     virtual void renderItem(TPen &pen, int, int index, int w, int h, bool selected, bool focus) {
       if (selected) {
         pen.setColor(TColor::SELECTED);
-        pen.fillRectangle(0,0,w, h);
+        pen.fillRectanglePC(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
       pen.drawString(
@@ -1070,7 +1073,7 @@ class TTableCellRenderer_CString:
         pen.setColor(TColor::BLACK);
       }
       if (focus) {
-        pen.drawRectangle(0,0,w, h);
+        pen.drawRectanglePC(0,0,w, h);
       }
     }
 };
@@ -1215,7 +1218,7 @@ class TTableCellRenderer_TNetObject:
     virtual void renderItem(TPen &pen, int x, int y, int w, int h, bool selected, bool focus) {
       if (selected) {
         pen.setColor(TColor::SELECTED);
-        pen.fillRectangle(0,0,w, h);
+        pen.fillRectanglePC(0,0,w, h);
         pen.setColor(TColor::SELECTED_TEXT);
       }
       pen.drawString(
@@ -1225,7 +1228,7 @@ class TTableCellRenderer_TNetObject:
         pen.setColor(TColor::BLACK);
       }
       if (focus) {
-        pen.drawRectangle(0,0,w, h);
+        pen.drawRectanglePC(0,0,w, h);
       }
     }
 };

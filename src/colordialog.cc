@@ -241,15 +241,15 @@ TColorDialog::paint()
   int z = 8+255-value*255/100;
 
   pen.setColor(0,0,0);
-  pen.fillRectangle(x-2, y-2, 5,5);
-  pen.fillRectangle(8+256+8,z-2,16,5);
+  pen.fillRectanglePC(x-2, y-2, 5,5);
+  pen.fillRectanglePC(8+256+8,z-2,16,5);
 
   pen.setColor(255,255,255);
-  pen.fillRectangle(x-1, y-1, 3,3);
-  pen.fillRectangle(8+256+8+1,z-1,14,3);
+  pen.fillRectanglePC(x-1, y-1, 3,3);
+  pen.fillRectanglePC(8+256+8+1,z-1,14,3);
   
-  pen.draw3DRectangle(8-2      ,8-2,256+4,256+4);
-  pen.draw3DRectangle(8-2+256+8,8-2,16+4,256+4);
+  pen.draw3DRectanglePC(8-2      ,8-2,256+4,256+4);
+  pen.draw3DRectanglePC(8-2+256+8,8-2,16+4,256+4);
 
   // draw HSVRGB
   x=8+256+8+16+8; y=8+32+8;
@@ -265,12 +265,12 @@ TColorDialog::paint()
   
   // draw color field
   pen.setColor(origcolor);
-  pen.fillRectangle(8+256+8+16+8+12, 8, 64, 32);
+  pen.fillRectanglePC(8+256+8+16+8+12, 8, 64, 32);
   
   pen.setColor(rgb.r.getValue(), rgb.g.getValue(), rgb.b.getValue());
-  pen.fillRectangle(8+256+8+16+8+12 + 64 , 8, 64, 32);
+  pen.fillRectanglePC(8+256+8+16+8+12 + 64 , 8, 64, 32);
 
-  pen.draw3DRectangle(8+256+8+16+8+12, 8, 64+64, 32);
+  pen.draw3DRectanglePC(8+256+8+16+8+12, 8, 64+64, 32);
 }
 
 void

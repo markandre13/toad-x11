@@ -70,7 +70,6 @@ TPen::TPen(TBitmap *bmp)
   this->bmp = bmp;
   wnd = 0;
   x11drawable = bmp->pixmap;
-  _dx = _dy = 0;
   _init();
 //  XCopyGC(x11display, TOADBase::x11gc, GCFont, o_gc);
   setFont(&getDefaultFont());
@@ -95,8 +94,8 @@ TPen::TPen(TWindow *wnd)
     bmp = 0;
     x11drawable = wnd->x11window;
   }
-  _dx = wnd->_dx; _dy = wnd->_dy;
   _init();  
+  translate(wnd->_dx, wnd->_dy);
 
   if (wnd->bDoubleBuffer) {
     setColor(wnd->background);
@@ -131,21 +130,23 @@ void TPen::_init()
   
   cmode = TColor::NEAREST;
   // cmode = TColor::DITHER28;
-  region = NULL;
+  region = 0;
+  mat = 0;
   
   // make black the default color (needed by X11R5 on Sun)
   o_color.set(0,0,1);   // cheat SetColor to do it!
   setColor(0,0,0);
   setBackColor(255,255,255);
   
-  width=1;
-  style=TPen::SOLID;
-  bDeleteRegion=false;
+  width = 1;
+  style = TPen::SOLID;
+  bDeleteRegion = false;
   using_bitmap = false;
 }
 
 TPen::~TPen()
 {
+  popAll();
   if (wnd && bmp) { // double buffer mode...
     x11drawable = wnd->x11window;
     if (wnd->paint_rgn)

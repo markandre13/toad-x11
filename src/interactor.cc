@@ -46,7 +46,6 @@ using namespace toad;
  *         (There is a PhD thesis from 1990 by Dean Rubine on gesture 
  *          recognition, which was used for Amulet. His code is under GNU GPL.)
  *   </ul>
- *  <b>Note: This class is very very experimental.</b>
  */
 
 
@@ -98,6 +97,13 @@ TInteractor::~TInteractor()
 
   // remove myself from the parent
   if (parent) {
+
+if (!parent->child) {
+  cerr << "child '" << getTitle() << "' was already removed from its parent '"
+       << parent->getTitle() << "'\n";
+  exit(0);
+}
+  
     if (parent->child == this) {
       parent->child = next;
       next = NULL;

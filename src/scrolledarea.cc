@@ -243,10 +243,10 @@ void TScrolledArea::clipPen(TPen &pen)
     if (bNoBackground) {
       TPen pen2(this);
       pen.setColor(TColor::DIALOG);
-      pen.fillRectangle(getWidth()-TScrollBar::getFixedSize(),
-                        getHeight()-TScrollBar::getFixedSize(),
-                        TScrollBar::getFixedSize(),
-                        TScrollBar::getFixedSize() );
+      pen.fillRectanglePC(getWidth()-TScrollBar::getFixedSize(),
+                          getHeight()-TScrollBar::getFixedSize(),
+                          TScrollBar::getFixedSize(),
+                          TScrollBar::getFixedSize() );
     } 
     pen&=r;
   }
