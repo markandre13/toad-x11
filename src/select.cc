@@ -272,6 +272,7 @@ TOADBase::select()
 
 TIOObserver::TIOObserver()
 {
+  _fd = -1;
   if (!_vmas_table[0]) {
     SET_VMAS(VMAS_READ, canRead);
     SET_VMAS(VMAS_WRITE, canWrite);
