@@ -32,6 +32,10 @@ using namespace toad;
 
 unsigned TUndo::counter = 0;
 
+TUndo::~TUndo()
+{
+}
+
 bool
 TUndo::getUndoName(string *name) const
 {

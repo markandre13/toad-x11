@@ -31,6 +31,7 @@ class TUndo
     TUndo() {
       serial = counter++;
     };
+    virtual ~TUndo();
     virtual void undo() = 0;
     virtual bool getUndoName(std::string *name) const;
     virtual bool getRedoName(std::string *name) const;
