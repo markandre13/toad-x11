@@ -41,8 +41,6 @@
 
 using namespace toad;
 
-double TFigure::INSIDE = 4.0;
-
 #define DBM(CMD)
 // #define VERBOSE 1
 
@@ -1895,9 +1893,10 @@ TFigureEditor::findFigureAt(int mx, int my)
   b = model->begin();
   TMatrix2D stack;
 
-  TFigure::INSIDE = 0.4 * fuzziness * TFigure::RANGE;
+  double inside = 0.4 * fuzziness * TFigure::RANGE;
 
-  while(p!=b) {
+  bool stop = false;
+  while(p!=b && !stop) {
     --p;
     if (*p!=gadget) {
       int x, y;
@@ -1911,8 +1910,12 @@ TFigureEditor::findFigureAt(int mx, int my)
       }
 //cerr << "  after rotation ("<<x<<", "<<y<<")\n";
       double d = (*p)->distance(x, y);
+      if (d==TFigure::INSIDE) {
+        d = inside;
+        stop = true;
+      }
 //cerr << "  distance = " << d << endl;
-      stack.identity();
+      stack.identity(); // why is this instruction here?
       if (d<distance) {
         distance = d;
         found = p;

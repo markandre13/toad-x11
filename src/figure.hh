@@ -135,7 +135,7 @@ class TFigure:
 
     static const double OUT_OF_RANGE = HUGE_VAL;
     static const double RANGE = 5.0;
-    static double INSIDE;
+    static const double INSIDE = -1.0;
 
     // storage stuff for all gadgets
     //-------------------------------------- 
