@@ -555,8 +555,24 @@ TTable::setSelectionModel(TAbstractTableSelectionModel *m)
   if (selection)
     disconnect(selection->sigChanged, this);
   selection = m;
-  if (selection)
+
+  if (selection) {
+    // stupid hack just in case someone is using sx and sy...
+    // i'm going to remove this along with the getLast...
+    // methods
+    sx = sy = 0;
+    for(int y=0; y<rows; ++y) {
+      for(int x=0; x<cols; ++x) {
+        if (selection->isSelected(x, y)) {
+          sy=y;
+          sx=x;
+          break;
+        }
+      }
+    }
     connect(selection->sigChanged, this, &TTable::selectionChanged);
+  }
+  selectionChanged();
 }
 
 void
