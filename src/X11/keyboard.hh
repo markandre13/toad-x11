@@ -58,6 +58,7 @@ typedef unsigned long TKey;
 #define TK_LINEFEED   0xFF0A
 #define TK_CLEAR      0xFF0B
 #define TK_RETURN     0xFF0D
+#define TK_KP_RETURN  0xFF8D
 #define TK_PAUSE      0xFF13
 #define TK_SCROLL_LOCK  0xFF14
 #define TK_SYS_REQ    0xFF15

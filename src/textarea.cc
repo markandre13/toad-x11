@@ -365,6 +365,7 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
       _cursor_end();
       break;
     case TK_RETURN:
+    case TK_KP_RETURN:
       if (!preferences->singleline) {
         if (preferences->mode==TPreferences::NORMAL)
           _selection_clear();
@@ -1251,6 +1252,7 @@ void
 TTextArea::_selection_clear()
 {
   _bos = _eos = 0;
+  invalidateWindow();
 }
 void
 TTextArea::_delete_current_line()
