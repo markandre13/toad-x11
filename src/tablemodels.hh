@@ -134,7 +134,7 @@ typedef GSelectionModel<TTableModel_CString> TCStringSelectionModel;
  * This class may be obsoleted by TTableModel_String
  */
 class TTableCellRenderer_CString:
-  public TAbstractTableCellRenderer
+  public TTableAdapter
 {
   private:
     PTableModel_CString model;
@@ -156,8 +156,7 @@ class TTableCellRenderer_CString:
         disconnect(model->sigChanged, this);
       model = m;
       if (model)
-        connect(model->sigChanged, 
-                this, &TTableCellRenderer_CString::modelChanged);
+        connect(model->sigChanged, this, &TTableCellRenderer_CString::modelChanged);
     }
     // implements 'virtual TAbstractTableModel * getModel() = 0;'
     TTableModel_CString * getModel() {
@@ -233,7 +232,7 @@ typedef GSelectionModel<TStringVector> TStringVectorSelectionModel;
    TZoom zoom[13] = { ... };
  
    TComboBox *cb = new TComboBox(this, "zoom");
-   cb->setRenderer(
+   cb->setAdapter(
      new GTableCellRenderer_Text<GArrayWrap<TZoom>, 1>(
        new GArrayWrap<TZoom>(zoom, 13)
      );
@@ -379,7 +378,7 @@ typedef GSTLSet<set<string>, string> TStringSet;
  */
 template <class T>
 class GTableCellRenderer_String:
-  public TAbstractTableCellRenderer
+  public TTableAdapter
 {
   private:
     GSmartPointer<T> model;
@@ -444,7 +443,7 @@ typedef GTableCellRenderer_String<TStringSet> TTableCellRenderer_StringSet;
  */
 template <class T, unsigned COLS>
 class GTableCellRenderer_Text:
-  public TAbstractTableCellRenderer
+  public TTableAdapter
 {
   private:
     GSmartPointer<T> model;
@@ -505,7 +504,7 @@ class GTableCellRenderer_Text:
  */
 template <class T, unsigned COLS>
 class GTableCellRenderer_PText:
-  public TAbstractTableCellRenderer
+  public TTableAdapter
 {
   private:
     GSmartPointer<T> model;
@@ -561,7 +560,7 @@ class GTableCellRenderer_PText:
  */
 template <class T, int WIDTH>
 class GTableRowRenderer:
-  public TAbstractTableCellRenderer
+  public TTableAdapter
 {
   private:
     GSmartPointer<T> model;
@@ -619,7 +618,7 @@ typedef GSTLRandomAccess<deque<string>, string> TStrings;
 TStrings strings;
 strings.push_back("Hello");
 strings.push_back("You");
-table->setRenderer(new GTableCellRenderer_String<TStrings>(&strings));
+table->setAdapter(new GTableCellRenderer_String<TStrings>(&strings));
    \endcode
  */
 template <class CONTAINER, class TYPE>

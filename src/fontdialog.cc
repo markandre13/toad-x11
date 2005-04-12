@@ -469,11 +469,11 @@ TFontDialog::TFontDialog(TWindow *parent, const string &title):
   TTextField *tf;
   
   tfont = new TTable(this, "font family");
-  tfont->setRenderer(new TTableCellRenderer_FontFamilyMap(&ff));
+  tfont->setAdapter(new TTableCellRenderer_FontFamilyMap(&ff));
   connect(tfont->sigSelection, this, &This::familySelected); 
 
   tstyle = new TTable(this, "font style");
-  tstyle->setRenderer(new TTableCellRenderer_FontStyleMap(&fs));
+  tstyle->setAdapter(new TTableCellRenderer_FontStyleMap(&fs));
   connect(tstyle->sigSelection, this, &This::updateFont);
 
   tf = new TTextField(this, "font size", &size);
@@ -515,7 +515,7 @@ TFontDialog::familySelected()
   
   TFontFamily &f2(const_cast<TFontFamily&>(f));
 
-//  tsize->setRenderer(new TTableCellRenderer_StringSet(&f2.size_pt));
+//  tsize->setAdapter(new TTableCellRenderer_StringSet(&f2.size_pt));
   
   updateRendertype();
   updateStyle();

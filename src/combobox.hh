@@ -32,21 +32,21 @@ class TComboBox:
   public:
     TComboBox(TWindow * parent, const string &title);
     ~TComboBox() {
-      if (table->getRenderer())
-        disconnect(table->getRenderer()->sigChanged, this);
+      if (table->getAdapter())
+        disconnect(table->getAdapter()->sigChanged, this);
       if (table->getSelectionModel())
         disconnect(table->getSelectionModel()->sigChanged, this);
     }
     
-    void setRenderer(TAbstractTableCellRenderer *r) {
-      if (table->getRenderer())
-        disconnect(table->getRenderer()->sigChanged, this);
-      table->setRenderer(r);
+    void setAdapter(TTableAdapter *r) {
+      if (table->getAdapter())
+        disconnect(table->getAdapter()->sigChanged, this);
+      table->setAdapter(r);
       if (r)
         connect(r->sigChanged, this, &TComboBox::_rendererChanged);
     }
-    TAbstractTableCellRenderer* getRenderer() const { 
-      return table->getRenderer(); 
+    TTableAdapter* getAdapter() const { 
+      return table->getAdapter(); 
     }
 
     void setSelectionModel(TAbstractSelectionModel *m) {

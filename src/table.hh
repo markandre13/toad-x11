@@ -247,11 +247,30 @@ struct TTableEvent
   bool focus;     // table has keyboard focus
 };
 
-class TAbstractTableCellRenderer:
+class TTableModel:
   public TModel
 {
   public:
-    TAbstractTableCellRenderer();
+    TTableModel() {
+      reason = CHANGED;
+    }
+    // sigChanged protocol:
+    enum EReason {
+      CHANGED,
+      INSERT_ROW, RESIZED_ROW, REMOVED_ROW,
+      INSERT_COL, RESIZED_COL, REMOVED_COL,
+    } reason;
+    size_t where;
+    size_t size;
+};
+
+typedef GSmartPointer<TTableModel> PTableModel;
+
+class TTableAdapter:
+  public TModel
+{
+  public:
+    TTableAdapter();
 
     virtual int getRows() { return 1; }
     virtual int getCols() { return 1; }
@@ -267,23 +286,9 @@ class TAbstractTableCellRenderer:
     // this method is to enable signals to trigger our signal:
     void modelChanged() { sigChanged(); }
     
-    // sigChanged protocol:
-    enum {
-      CHANGED,
-      INSERT_ROW,
-      RESIZED_ROW,
-      REMOVED_ROW,
-      INSERT_COL,
-      RESIZED_COL,
-      REMOVED_COL,
-    } type;
-    int where;
-    int size;
-
-//    bool per_row, per_col;
 };
 
-typedef GSmartPointer<TAbstractTableCellRenderer> PAbstractTableCellRenderer;
+typedef GSmartPointer<TTableAdapter> PTableAdapter;
 
 class TAbstractTableHeaderRenderer:
   public TModel
@@ -314,7 +319,8 @@ class TTable:
   public TScrollPane
 {
     typedef TScrollPane super;
-    PAbstractTableCellRenderer renderer;
+    PTableModel model;
+    PTableAdapter adapter;
     PAbstractSelectionModel selection;
     PAbstractTableHeaderRenderer row_header_renderer;
     PAbstractTableHeaderRenderer col_header_renderer;
@@ -347,9 +353,12 @@ class TTable:
     unsigned getTableBorder() const { return border; }
   
     TTable(TWindow *p, const string &t);
+
+    void setModel(TTableModel *model);
+    TTableModel *getModel() const { return model; }
     
-    void setRenderer(TAbstractTableCellRenderer *r);
-    TAbstractTableCellRenderer* getRenderer() const { return renderer; }
+    void setAdapter(TTableAdapter *r);
+    TTableAdapter* getAdapter() const { return adapter; }
     
     void setSelectionModel(TAbstractSelectionModel *m);
     TAbstractSelectionModel* getSelectionModel() const { return selection; }
@@ -421,10 +430,12 @@ class TTable:
     void scrolled(int dx, int dy);
     bool mouse2field(int mx, int my, int *fx, int *fy, int *rfx=0, int *rfy=0);
     
-    void rendererChanged();
+    void modelChanged();
     void _handleInsertRow();
     void _handleResizedRow();
     void _handleRemovedRow();
+
+    void adapterChanged();
 
     // precalculated values for optimization
     void handleNewModel();

@@ -35,12 +35,29 @@ using namespace toad;
  *
  * This group contains a set of classes to display data in a table.
  *
+ * TTable: This widget controls the following objects:
+ *   TTableModel (optional)
+ *     The table model keeps track of changes made to the table. This
+ *     model is optional. Please refer to TAbstractSelectionModel for
+ *     a full explanation.
+ *   TSelectionModel (optional)
+ *     The selection model tracks the selected elements in the table.
+ *     There a three pre-defined selection models
+ *       TSingleSelectionModel
+ *       TRectangleSelectionModel
+ *       TSelectionModel
+ *     Sometimes the selection model itself is the data to be controlled
+ *     by the table. Eg. the selected enumeration within a combobox.
+ *   THeaderRenderer (optional for columns and rows)
+ *   TTableRenderer (required)
+ *     
+ *
  * @verbatim
  
 The base classes are defined in table.hh:
  
 TModel
-+- TAbstractTableCellRenderer             
++- TTableAdapter             
 +- TAbstractSelectionModel           
 |  +- TSingleSelectionModel
 |  +- TRectangleSelectionModel
@@ -85,14 +102,14 @@ TModel
  *   \li sorting: 
  *       the model must provide a comparasion method for this
  *   \li reorder columns and rows:
- *       a model to store the order has to be used by table or renderer
+ *       a model to store the order has to be used by table or adapter
  *   \li edit table:
  *       edit cell, row, column; delete row, column
  */
 
-TAbstractTableCellRenderer::TAbstractTableCellRenderer()
+TTableAdapter::TTableAdapter()
 {
-   type = CHANGED;
+//   type = CHANGED;
 //   per_row = per_col = false;
 }
 
@@ -100,7 +117,7 @@ TAbstractTableCellRenderer::TAbstractTableCellRenderer()
  * Draws selection indicators, calls renderItem and draws the cursor.
  */
 void 
-TAbstractTableCellRenderer::renderCell(TPen &pen, const TTableEvent &te)
+TTableAdapter::renderCell(TPen &pen, const TTableEvent &te)
 {
   pen.setLineStyle(TPen::SOLID);
   pen.setLineWidth(1);
@@ -149,7 +166,7 @@ TAbstractTableCellRenderer::renderCell(TPen &pen, const TTableEvent &te)
 }
 
 void 
-TAbstractTableCellRenderer::mouseEvent(TMouseEvent&, int col, int row, int w, int h)
+TTableAdapter::mouseEvent(TMouseEvent&, int col, int row, int w, int h)
 {
 }
 
@@ -538,14 +555,14 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, int idx, int w, int h)
  * This class is a widget to display tables and is also used for listboxes
  * and comboboxes.
  *
- * It uses TAbstractTableCellRenderer to render the table items and 
+ * It uses TTableAdapter to render the table items and 
  * TSelectionModel to manage the selections.
  */
 
 TTable::TTable(TWindow *p, const string &t): 
   super(p, t) 
 {
-  renderer = NULL;
+  adapter = NULL;
   selection = 0;
   border = 0;
   cx = cy = 0;
@@ -564,15 +581,28 @@ TTable::TTable(TWindow *p, const string &t):
 }
 
 void
-TTable::setRenderer(TAbstractTableCellRenderer *r) 
+TTable::setModel(TTableModel *m) 
 {
-  if (r==renderer)
+  if (m==model)
     return;
-  if (renderer)
-    disconnect(renderer->sigChanged, this, &TTable::rendererChanged);
-  renderer = r;
-  if (renderer)
-    connect(renderer->sigChanged, this, &TTable::rendererChanged);
+  if (model)
+    disconnect(model->sigChanged, this, &TTable::modelChanged);
+  model = m;
+  if (model)
+    connect(adapter->sigChanged, this, &TTable::modelChanged);
+  handleNewModel();
+}
+
+void
+TTable::setAdapter(TTableAdapter *r) 
+{
+  if (r==adapter)
+    return;
+  if (adapter)
+    disconnect(adapter->sigChanged, this, &TTable::adapterChanged);
+  adapter = r;
+  if (adapter)
+    connect(adapter->sigChanged, this, &TTable::adapterChanged);
   handleNewModel();
 }
 
@@ -891,8 +921,10 @@ DBSCROLL({
     pen.setLineStyle(TPen::SOLID);
   }
 
-  if (!renderer)
+  if (!adapter) {
+    cout << getTitle() << ": no adapter" << endl;
     return;
+  }
 
   TTableEvent te;
   te.cols = cols;
@@ -906,7 +938,7 @@ DBSCROLL({
     te.per_col = false;
   }
 
-  // draw the fields with the table renderer
+  // draw the fields with the table adapter
   yp = fpy + visible.y;
   for(int y=ffy; y<rows && yp<visible.y+visible.h; y++) {
     if (row_info[y].size==0) {
@@ -973,7 +1005,7 @@ DBSCROLL(
         te.h = check.h;
         te.cursor = cursor && !noCursor;
         te.selected = selected;
-        renderer->renderCell(pen, te);
+        adapter->renderCell(pen, te);
       }
       xp += col_info[x].size + border;
     }
@@ -1201,6 +1233,8 @@ TTable::mouseEvent(TMouseEvent &me)
   TWindow::mouseEvent(me);
 }
 
+//#warning "mouseLDown must not change the selection, only mouseLUp should"
+//#warning "do this!"
 void
 TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
@@ -1212,19 +1246,22 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
     return;
   }
 
-  // invoke renderer mouseEvent (ie. for tree widgets, check boxes, etc.)
-  if (renderer) {
+  // invoke adapter mouseEvent (ie. for tree widgets, check boxes, etc.)
+  if (adapter) {
     TMouseEvent me;
     me.window = this;
     me.x = fx;
     me.y = fy;
     me.modifier = modifier;
-    // this should also contain a pointer to this renderer, in case
+    // this should also contain a pointer to this adapter, in case
     // mouseEvent makes modifications?
-    renderer->mouseEvent(me, x, y, col_info[x].size, row_info[y].size);
+    adapter->mouseEvent(me, x, y, col_info[x].size, row_info[y].size);
   }
 
   sigPressed();
+
+  if (selection)
+    selection->sigChanged.lock();
 
   TAbstractSelectionModel::ESelectionMode mode;
   mode = selection ? selection->getSelectionMode() : TAbstractSelectionModel::SINGLE;
@@ -1384,6 +1421,9 @@ DBM2(cerr << "enter mouseLUp" << endl;)
     sigDoubleClicked();
   else  
     sigClicked();
+
+  if (selection)
+    selection->sigChanged.unlock();
 
   DBM2(cerr << "leave mouseLUp" << endl << endl;)
 }
@@ -1588,6 +1628,8 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       } break;
     case TK_SHIFT_L:
     case TK_SHIFT_R:
+      if (selection)
+        selection->sigChanged.lock();
       break;
   }
 //cout << "keyDown: leave: sx="<<sx<<", sy="<<sy<<endl;
@@ -1627,24 +1669,32 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
         selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
         sx=osx; sy=osy;
       }
+      if (selection)
+        selection->sigChanged.unlock();
       break;
   }
 }
 
 void
-TTable::rendererChanged()
+TTable::modelChanged()
 {
-  switch(renderer->type) {
-    case TAbstractTableCellRenderer::INSERT_ROW:
-//      cout << "table: insert row " << renderer->where << ", " << renderer->size << endl;
+  if (!model) {
+    cerr << "TTable::modelChanged: modelChanged for table '" 
+         << getTitle()
+         << "' but no model\n";
+    return;
+  }
+  switch(model->reason) {
+    case TTableModel::INSERT_ROW:
+//      cout << "table: insert row " << adapter->where << ", " << adapter->size << endl;
       _handleInsertRow();
       break;
-    case TAbstractTableCellRenderer::RESIZED_ROW:
-//      cout << "table: resized row " << renderer->where << ", " << renderer->size << endl;
+    case TTableModel::RESIZED_ROW:
+//      cout << "table: resized row " << adapter->where << ", " << adapter->size << endl;
       _handleResizedRow();
       break;
-    case TAbstractTableCellRenderer::REMOVED_ROW:
-//      cout << "table: removed row " << renderer->where << ", " << renderer->size << endl;
+    case TTableModel::REMOVED_ROW:
+//      cout << "table: removed row " << adapter->where << ", " << adapter->size << endl;
       _handleRemovedRow();
       break;
     default:
@@ -1655,34 +1705,40 @@ TTable::rendererChanged()
 }
 
 void
+TTable::adapterChanged()
+{
+  handleNewModel();
+}
+
+void
 TTable::_handleInsertRow()
 {
-//cout << "_handleInsertRow: where="<<renderer->where<<", size="<<renderer->size<<endl;
-  int new_rows = rows + renderer->size;
+//cout << "_handleInsertRow: where="<<adapter->where<<", size="<<adapter->size<<endl;
+  int new_rows = rows + model->size;
   row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
 
-//cerr << "move from " << renderer->where << " to " << (renderer->where + renderer->size) << " an amount of " << (rows - renderer->where) << " entries" << endl;
+//cerr << "move from " << adapter->where << " to " << (adapter->where + adapter->size) << " an amount of " << (rows - adapter->where) << " entries" << endl;
   memmove(
-    row_info + renderer->where + renderer->size,
-    row_info + renderer->where,
-    (rows - renderer->where) * sizeof(TRCInfo)
+    row_info + model->where + model->size,
+    row_info + model->where,
+    (rows - model->where) * sizeof(TRCInfo)
   );
 
-  TRCInfo *info = row_info + renderer->where;
-  for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
+  TRCInfo *info = row_info + model->where;
+  for(int i=model->where; i<model->where+model->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
-    int n = renderer->getRowHeight(i);
+    int n = adapter->getRowHeight(i);
     info->size = n;
     pane.h += n + border;
     ++info;
   }
     
-  if (renderer->where<cy)
-    cy+=renderer->size;
-  if (renderer->where<sy)
-    sy+=renderer->size;
-  if (renderer->where<ffy)
-    ffy+=renderer->size;
+  if (model->where<cy)
+    cy+=model->size;
+  if (model->where<sy)
+    sy+=model->size;
+  if (model->where<ffy)
+    ffy+=model->size;
   // fpy ...
     
   // scrolling, screen update
@@ -1690,7 +1746,7 @@ TTable::_handleInsertRow()
   // selection model ??? ouch ....
 
   rows = new_rows;
-cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
+//cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
   invalidateWindow();
 
   doLayout();
@@ -1699,36 +1755,36 @@ cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
 void
 TTable::_handleRemovedRow()
 {
-//cout << "_handleRemovedRow: where="<<renderer->where<<", size="<<renderer->size<<endl;
-  if (renderer->where + renderer->size - 1> rows) {
-    cout << "_handleRemovedRow: where=" << renderer->where
-         << " and size="<<renderer->size
+//cout << "_handleRemovedRow: where="<<adapter->where<<", size="<<adapter->size<<endl;
+  if (model->where + model->size - 1> rows) {
+    cout << "_handleRemovedRow: where=" << model->where
+         << " and size="<<model->size
          << " but only " << rows << " rows." << endl;
     return;
   }
-  int new_rows = rows - renderer->size;
+  int new_rows = rows - model->size;
   // row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
 
-//cout << "move from " << (renderer->where+renderer->size) << " to " << (renderer->where) << " an amount of " << (rows - renderer->where - renderer->size) << " entries" << endl;
-  TRCInfo *info = row_info + renderer->where;
-  for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
+//cout << "move from " << (adapter->where+adapter->size) << " to " << (adapter->where) << " an amount of " << (rows - adapter->where - adapter->size) << " entries" << endl;
+  TRCInfo *info = row_info + model->where;
+  for(int i=model->where; i<model->where+model->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     pane.h -= info->size + border;
     ++info;
   }
 
   memmove(
-    row_info + renderer->where,
-    row_info + renderer->where + renderer->size,
-    (rows - renderer->where - renderer->size) * sizeof(TRCInfo)
+    row_info + model->where,
+    row_info + model->where + model->size,
+    (rows - model->where - model->size) * sizeof(TRCInfo)
   );
 
-  if (renderer->where<cy)
-    cy+=renderer->size;
-  if (renderer->where<sy)
-    sy+=renderer->size;
-  if (renderer->where<ffy)
-    ffy+=renderer->size;
+  if (model->where<cy)
+    cy+=model->size;
+  if (model->where<sy)
+    sy+=model->size;
+  if (model->where<ffy)
+    ffy+=model->size;
 
   // fpy ...
     
@@ -1748,21 +1804,21 @@ TTable::_handleRemovedRow()
 void
 TTable::_handleResizedRow()
 {
-  TRCInfo *info = row_info + renderer->where;
-  for(int i=renderer->where; i<renderer->where+renderer->size; ++i) {
+  TRCInfo *info = row_info + model->where;
+  for(int i=model->where; i<model->where+model->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     pane.h -= info->size;
-    info->size = renderer->getRowHeight(i);
+    info->size = adapter->getRowHeight(i);
     pane.h += info->size;
     ++info;
   }
 #if 0    
-  if (renderer->where<cy)
-    cy+=renderer->size;
-  if (renderer->where<sy)
-    sy+=renderer->size;
-  if (renderer->where<ffy)
-    ffy+=renderer->size;
+  if (adapter->where<cy)
+    cy+=adapter->size;
+  if (adapter->where<sy)
+    sy+=adapter->size;
+  if (adapter->where<ffy)
+    ffy+=adapter->size;
 #endif
   // fpy ...
     
@@ -1777,7 +1833,7 @@ TTable::_handleResizedRow()
 
 
 /**
- * reset the TTable widget to adjust to a new renderer
+ * reset the TTable widget to adjust to a new adapter
  */
 void
 TTable::handleNewModel()
@@ -1792,10 +1848,10 @@ TTable::handleNewModel()
   fpx = fpy = 0;
   selecting = false;
 
-  assert(renderer!=NULL);
+  assert(adapter!=NULL);
 
-  rows = renderer->getRows();
-  cols = renderer->getCols();
+  rows = adapter->getRows();
+  cols = adapter->getCols();
   
   row_info = rows ? static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*rows)) : 0;
   col_info = cols ? static_cast<TRCInfo*>(realloc(col_info, sizeof(TRCInfo)*cols)) : 0;
@@ -1807,7 +1863,7 @@ TTable::handleNewModel()
   info = col_info;
   for(int i=0; i<cols; ++i) {
     DBM(cout << "pane.w: " << pane.w << endl;)
-    int n = renderer->getColWidth(i);
+    int n = adapter->getColWidth(i);
     info->size = n;
     pane.w += n + border;
     ++info;
@@ -1819,13 +1875,13 @@ TTable::handleNewModel()
   info = row_info;
   for(int i=0; i<rows; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
-    int n = renderer->getRowHeight(i);
+    int n = adapter->getRowHeight(i);
     info->size = n;
     pane.h += n + border;
     ++info;
   }
   DBM(cout << "pane.h: " << pane.h << endl;)
-cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
+//cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
 
   doLayout();
 }

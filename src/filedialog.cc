@@ -43,7 +43,7 @@
 
 using namespace toad;
 
-typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableRowRenderer_DirectoryEntrySet;
+typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableAdapter_DirectoryEntrySet;
 typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
 
 namespace toad {
@@ -189,7 +189,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   tfiles = new TTable(this, "fileview");
   tfiles->noCursor = true;
   tfiles->selectionFollowsMouse = true;
-  tfiles->setRenderer(new TTableRowRenderer_DirectoryEntrySet(&entries));
+  tfiles->setAdapter(new TTableAdapter_DirectoryEntrySet(&entries));
   entrychoice.setRowColMode(TRectangleSelectionModel::WHOLE_ROW);
   tfiles->setSelectionModel(&entrychoice);
   connect(tfiles->sigSelection, this, &This::fileSelected);
@@ -201,7 +201,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   filter = 0;
   addFileFilter("All Files (*)");
   cb_filter = new TComboBox(this, "filetype");
-  cb_filter->setRenderer(
+  cb_filter->setAdapter(
     new GTableCellRenderer_PText<TFilterList, 1>(&filterlist)
   );
   cb_filter->clickAtCursor();
@@ -219,7 +219,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
           this, &This::button, TMessageBox::ABORT);
 
   cb_prev = new TComboBox(this, "previous");
-  cb_prev->setRenderer(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
+  cb_prev->setAdapter(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
   cb_prev->clickAtCursor();
 
   // don't connect earlier to avoid loadDirectory being called unneccessary
@@ -558,8 +558,6 @@ TFileDialog::loadDirectory()
   dirent *de;
   DIR *dd;
 
-//cerr << "load directory " << cwd << endl;
-  
   dd = opendir(cwd.c_str());
   if (!dd) {
     perror("opendir");

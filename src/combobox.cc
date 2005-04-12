@@ -70,7 +70,7 @@ TComboBox::paint()
   TPen pen(this);
 
   pen.draw3DRectanglePC(0,0, getWidth(), getHeight());
-  if (!table->getRenderer()) {
+  if (!table->getAdapter()) {
     pen.setColor(TColor::DIALOG);
     pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
     return;
@@ -92,7 +92,7 @@ TComboBox::paint()
     row = table->getLastSelectionRow();
   }
 
-  if (table->getRenderer()->getRows() <= row) {
+  if (table->getAdapter()->getRows() <= row) {
     cerr << "TComboBox '"<<getTitle()<<"': tables selection model was out of renderer range" << endl;
     pen.setColor(128,64,64);
     pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
@@ -108,7 +108,7 @@ TComboBox::paint()
   te.cursor = false;
   te.selected = false;
   te.focus = true;
-  table->getRenderer()->renderItem(pen, te);
+  table->getAdapter()->renderItem(pen, te);
 
   if (isFocus()) {
     pen.setColor(0,0,0);
