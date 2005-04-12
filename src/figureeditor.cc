@@ -480,7 +480,7 @@ TFigureEditor::paintGrid(TPenBase &pen)
 //cout << "gx,gy=" << gx << "," << gy << endl;
       m.invert();
       if (gx<=2 || gy<=2) {
-        cerr << "don't draw grid, it's too small" << endl;
+        // don't draw grid, it's too small
         return;
       } else {
         TMatrix2D m(*mat);
