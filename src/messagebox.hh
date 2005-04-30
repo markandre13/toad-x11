@@ -46,9 +46,9 @@ class TMessageBox:
 
     static const unsigned ICON_EXCLAMATION = 0x1000;
     static const unsigned ICON_HAND        = 0x2000;
-    static const unsigned ICON_STOP        = 0x2000;
-    static const unsigned ICON_INFORMATION = 0x3000;
-    static const unsigned ICON_QUESTION    = 0x4000;
+    static const unsigned ICON_STOP        = 0x3000;
+    static const unsigned ICON_INFORMATION = 0x4000;
+    static const unsigned ICON_QUESTION    = 0x5000;
 
     static const unsigned ACCEPT  = 1;
     static const unsigned ABORT   = 2;
