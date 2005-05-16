@@ -26,7 +26,8 @@
 
 namespace toad {
 
-class TScrollBar;
+class TTable;
+class TTableAdapter;
 
 class TAbstractSelectionModel:
   public TModel
@@ -247,6 +248,7 @@ struct TTableEvent
   bool focus;     // table has keyboard focus
 };
 
+
 class TTableModel:
   public TModel
 {
@@ -262,6 +264,7 @@ class TTableModel:
     } reason;
     size_t where;
     size_t size;
+    virtual TTableAdapter* getDefaultAdapter();
 };
 
 typedef GSmartPointer<TTableModel> PTableModel;
@@ -269,13 +272,22 @@ typedef GSmartPointer<TTableModel> PTableModel;
 class TTableAdapter:
   public TModel
 {
+  protected:
+    TTable *table;
+    TTableModel *model;
   public:
     TTableAdapter();
+
+    void setTable(TTable *t) { table = t; }
+    TTable* getTable() const { return table; }
+    void setModel(TTableModel *model);
+    TTableModel *getModel() const { return model; }
 
     virtual int getRows() { return 1; }
     virtual int getCols() { return 1; }
     virtual int getRowHeight(int row) = 0;
     virtual int getColWidth(int col) = 0;
+
     /**
      * Render cell background, cursor and invoke renderItem.
      */
@@ -284,8 +296,11 @@ class TTableAdapter:
     virtual void mouseEvent(TMouseEvent &, int xindex, int yindex, int w, int h);
 
     // this method is to enable signals to trigger our signal:
-    void modelChanged() { sigChanged(); }
+    void _modelChanged();
+    void modelChanged();
     
+    TTableModel::EReason reason;
+    size_t where, size;
 };
 
 typedef GSmartPointer<TTableAdapter> PTableAdapter;
@@ -397,6 +412,26 @@ class TTable:
     int getLastSelectionCol() const { return sx; }
     int getLastSelectionRow() const { return sy; }
 
+    int getRows() const { return rows; }
+    int getCols() const { return cols; }
+    int getRowHeight(int row) const { return (row<0||row>=rows) ? 0 : row_info[row].size; }
+    int getColWidth(int col) const { return (col<0||col>=cols) ? 0 : col_info[col].size; }
+    void setRowHeight(int row, int height);
+    void setColWidth(int row, int width);
+
+    bool isRowOpen(int row) const { return (row<0||row>=rows) ? 0 : row_info[row].open; }
+    bool isColOpen(int col) const { return (col<0||col>=cols) ? 0 : col_info[col].open; }
+    void setRowOpen(int row, bool open) {
+      if (row<0||row>=rows)
+        return;
+      row_info[row].open = open;
+    }
+    void setColOpen(int col, bool open) {
+      if (col<0||col>=cols)
+        return;
+      col_info[col].open = open;
+    }
+
     //! the cursor was moved
     TSignal sigCursor;
     
@@ -430,7 +465,7 @@ class TTable:
     void scrolled(int dx, int dy);
     bool mouse2field(int mx, int my, int *fx, int *fy, int *rfx=0, int *rfy=0);
     
-    void modelChanged();
+    // void modelChanged();
     void _handleInsertRow();
     void _handleResizedRow();
     void _handleRemovedRow();
@@ -446,6 +481,7 @@ class TTable:
     // once and store their values in row_info and col_info
     struct TRCInfo {    // row/column info
       int size;
+      bool open;
     };
     TRCInfo *row_info, *col_info;
     

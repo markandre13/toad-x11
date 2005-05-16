@@ -107,8 +107,16 @@ TModel
  *       edit cell, row, column; delete row, column
  */
 
+TTableAdapter*
+TTableModel::getDefaultAdapter()
+{
+  return 0;
+}
+
 TTableAdapter::TTableAdapter()
 {
+  table = 0;
+  model = 0;
 //   type = CHANGED;
 //   per_row = per_col = false;
 }
@@ -585,24 +593,73 @@ TTable::setModel(TTableModel *m)
 {
   if (m==model)
     return;
-  if (model)
-    disconnect(model->sigChanged, this, &TTable::modelChanged);
   model = m;
-  if (model)
-    connect(adapter->sigChanged, this, &TTable::modelChanged);
+  if (adapter)
+    adapter->setModel(m);
   handleNewModel();
 }
+
+void
+TTableAdapter::setModel(TTableModel *m)
+{
+  if (m==model)
+    return;
+  if (model)
+    disconnect(model->sigChanged, this, &TTableAdapter::_modelChanged);
+  model = m;
+  if (model)
+    connect(model->sigChanged, this, &TTableAdapter::_modelChanged);
+}
+
+void
+TTableAdapter::modelChanged()
+{
+  cerr << "obsolete method TTableAdapter::modelChanged was called\n";
+  reason = TTableModel::CHANGED;
+  sigChanged();
+}
+
+void
+TTableAdapter::_modelChanged()
+{
+  if (!model) {
+    cerr << "TTableAdapter::modelChanged: received modelChanged but no model is set" << endl;
+    return;
+  }
+  
+  reason = model->reason;
+  where  = model->where;
+  size   = model->size;
+/*
+cout << "TTableAdapter::_modelChanged propagates ";
+switch(reason) { 
+  case TTableModel::CHANGED: cout << "CHANGED" << endl; break;
+  case TTableModel::INSERT_ROW: cout << "INSERT_ROW" << endl; break;
+  case TTableModel::RESIZED_ROW: cout << "RESIZED_ROW" << endl; break;
+  case TTableModel::REMOVED_ROW: cout << "REMOVED_ROW" << endl; break;
+  default: cout << "DEFAULT..." << endl;
+}
+*/
+  sigChanged();
+};
 
 void
 TTable::setAdapter(TTableAdapter *r) 
 {
   if (r==adapter)
     return;
-  if (adapter)
+  if (adapter) {
     disconnect(adapter->sigChanged, this, &TTable::adapterChanged);
+    adapter->setTable(0);
+    // adapter->setModel(0);
+  }
   adapter = r;
-  if (adapter)
+  if (adapter) {
     connect(adapter->sigChanged, this, &TTable::adapterChanged);
+    adapter->setTable(this);
+    if (model)
+      adapter->setModel(model);
+  }
   handleNewModel();
 }
 
@@ -1079,6 +1136,19 @@ TTable::doubleClickAtCursor()
   selectAtCursor();
   sigClicked();
 }
+
+void
+TTable::setRowHeight(int row, int height)
+{
+  cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
+}
+
+void
+TTable::setColWidth(int col, int width)
+{
+  cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
+}
+
 
 /**
  * Convert mouse position into a field position and return 'true' 
@@ -1676,17 +1746,17 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
 }
 
 void
-TTable::modelChanged()
+TTable::adapterChanged()
 {
-  if (!model) {
-    cerr << "TTable::modelChanged: modelChanged for table '" 
+  if (!adapter) {
+    cerr << "TTable::adapterChanged: adapterChanged for table '" 
          << getTitle()
-         << "' but no model\n";
+         << "' but no adapter\n";
     return;
   }
-  switch(model->reason) {
+  switch(adapter->reason) {
     case TTableModel::INSERT_ROW:
-//      cout << "table: insert row " << adapter->where << ", " << adapter->size << endl;
+      cout << "table: insert row " << adapter->where << ", " << adapter->size << endl;
       _handleInsertRow();
       break;
     case TTableModel::RESIZED_ROW:
@@ -1705,40 +1775,38 @@ TTable::modelChanged()
 }
 
 void
-TTable::adapterChanged()
-{
-  handleNewModel();
-}
-
-void
 TTable::_handleInsertRow()
 {
 //cout << "_handleInsertRow: where="<<adapter->where<<", size="<<adapter->size<<endl;
-  int new_rows = rows + model->size;
+  int new_rows = rows + adapter->size;
   row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
 
 //cerr << "move from " << adapter->where << " to " << (adapter->where + adapter->size) << " an amount of " << (rows - adapter->where) << " entries" << endl;
   memmove(
-    row_info + model->where + model->size,
-    row_info + model->where,
-    (rows - model->where) * sizeof(TRCInfo)
+    row_info + adapter->where + adapter->size,
+    row_info + adapter->where,
+    (rows - adapter->where) * sizeof(TRCInfo)
   );
 
-  TRCInfo *info = row_info + model->where;
-  for(int i=model->where; i<model->where+model->size; ++i) {
+  TRCInfo *info = row_info + adapter->where;
+  for(size_t i=adapter->where; i<adapter->where+adapter->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
+    info->open = true; // getRowHeight may query this values
+    info->size = 0;    // just in case...
+cout << "going to get height of row " << i << endl;
+cout << "  open == " << (isRowOpen(i)?"open":"closed") << endl;
     int n = adapter->getRowHeight(i);
     info->size = n;
     pane.h += n + border;
     ++info;
   }
     
-  if (model->where<cy)
-    cy+=model->size;
-  if (model->where<sy)
-    sy+=model->size;
-  if (model->where<ffy)
-    ffy+=model->size;
+  if (adapter->where<cy)
+    cy+=adapter->size;
+  if (adapter->where<sy)
+    sy+=adapter->size;
+  if (adapter->where<ffy)
+    ffy+=adapter->size;
   // fpy ...
     
   // scrolling, screen update
@@ -1756,35 +1824,35 @@ void
 TTable::_handleRemovedRow()
 {
 //cout << "_handleRemovedRow: where="<<adapter->where<<", size="<<adapter->size<<endl;
-  if (model->where + model->size - 1> rows) {
-    cout << "_handleRemovedRow: where=" << model->where
-         << " and size="<<model->size
+  if (adapter->where + adapter->size - 1> rows) {
+    cout << "_handleRemovedRow: where=" << adapter->where
+         << " and size="<<adapter->size
          << " but only " << rows << " rows." << endl;
     return;
   }
-  int new_rows = rows - model->size;
+  int new_rows = rows - adapter->size;
   // row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
 
 //cout << "move from " << (adapter->where+adapter->size) << " to " << (adapter->where) << " an amount of " << (rows - adapter->where - adapter->size) << " entries" << endl;
-  TRCInfo *info = row_info + model->where;
-  for(int i=model->where; i<model->where+model->size; ++i) {
+  TRCInfo *info = row_info + adapter->where;
+  for(int i=adapter->where; i<adapter->where+adapter->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     pane.h -= info->size + border;
     ++info;
   }
 
   memmove(
-    row_info + model->where,
-    row_info + model->where + model->size,
-    (rows - model->where - model->size) * sizeof(TRCInfo)
+    row_info + adapter->where,
+    row_info + adapter->where + adapter->size,
+    (rows - adapter->where - adapter->size) * sizeof(TRCInfo)
   );
 
-  if (model->where<cy)
-    cy+=model->size;
-  if (model->where<sy)
-    sy+=model->size;
-  if (model->where<ffy)
-    ffy+=model->size;
+  if (adapter->where<cy)
+    cy+=adapter->size;
+  if (adapter->where<sy)
+    sy+=adapter->size;
+  if (adapter->where<ffy)
+    ffy+=adapter->size;
 
   // fpy ...
     
@@ -1804,8 +1872,8 @@ TTable::_handleRemovedRow()
 void
 TTable::_handleResizedRow()
 {
-  TRCInfo *info = row_info + model->where;
-  for(int i=model->where; i<model->where+model->size; ++i) {
+  TRCInfo *info = row_info + adapter->where;
+  for(int i=adapter->where; i<adapter->where+adapter->size; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     pane.h -= info->size;
     info->size = adapter->getRowHeight(i);
@@ -1848,7 +1916,10 @@ TTable::handleNewModel()
   fpx = fpy = 0;
   selecting = false;
 
-  assert(adapter!=NULL);
+  if (!adapter && model)
+    adapter = model->getDefaultAdapter();
+  if (!adapter)
+    return;
 
   rows = adapter->getRows();
   cols = adapter->getCols();
@@ -1875,6 +1946,8 @@ TTable::handleNewModel()
   info = row_info;
   for(int i=0; i<rows; ++i) {
     DBM(cout << "pane.h: " << pane.h << endl;)
+    info->open = true;
+    info->size = 0;
     int n = adapter->getRowHeight(i);
     info->size = n;
     pane.h += n + border;
