@@ -32,8 +32,8 @@ TFLine::TFLine()
 {
   arrowmode = NONE;
   arrowtype = SIMPLE;
-  arrowheight = 8 * 96;
-  arrowwidth = 4 * 96;
+  arrowheight = 8;
+  arrowwidth = 4;
   fill_color.set(255,0,0);
 }
 
@@ -153,10 +153,13 @@ TFLine::paint(TPenBase &pen, EPaintType)
   pen.setLineStyle(TPen::SOLID);
   pen.setLineWidth(1);
 
+  int aw = arrowwidth * line_width;
+  int ah = arrowheight * line_width;
+
   if (arrowmode == HEAD || arrowmode == BOTH)
-    drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
+    drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, line_color, aw, ah, arrowtype);
   if (arrowmode == TAIL || arrowmode == BOTH)
-    drawArrow(pen, polygon[0], polygon[1], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
+    drawArrow(pen, polygon[0], polygon[1], line_color, line_color, aw, ah, arrowtype);
 }
 
 double 
