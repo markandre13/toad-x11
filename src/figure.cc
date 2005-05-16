@@ -62,10 +62,10 @@ using namespace toad;
  *   or DELETE.
  */
 
-#if 0
-const double toad::TFigure::OUT_OF_RANGE = HUGE_VAL;
-const double toad::TFigure::RANGE = 5.0;
-static const double toad::TFigure::INSIDE = -1.0;
+#if 1
+double toad::TFigure::OUT_OF_RANGE = HUGE_VAL;
+double toad::TFigure::RANGE = 5.0;
+double toad::TFigure::INSIDE = -1.0;
 #endif
 
 // this class is for backward compability
@@ -439,7 +439,8 @@ TColoredFigure::restore(TInObjectStream &in)
 /**
  * Returns the distance of point (x,y) to the line (x1,y1)-(x2,y2).
  */
-double TFigure::distance2Line(int x, int y, int x1, int y1, int x2, int y2)
+double 
+TFigure::distance2Line(int x, int y, int x1, int y1, int x2, int y2)
 {
   double bx = x2 - x1;
   double by = y2 - y1;

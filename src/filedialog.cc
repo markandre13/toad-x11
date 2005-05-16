@@ -597,8 +597,12 @@ TFileDialog::loadDirectory()
     e.size = st.st_size;
     entries.push_back(e);
   }
-  
+
+#if __GLIBCXX__ != 20050421
   sort(entries.begin(), entries.end());
+#else
+  std::__insertion_sort(entries.begin(), entries.end());
+#endif
   
   entries.unlock();
   

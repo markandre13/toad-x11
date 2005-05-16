@@ -168,7 +168,7 @@ TDialog::adjust()
 namespace toad {
 
 bool
-toad::restore(TInObjectStream &p, const char *name, PFigureModel &value)
+restore(TInObjectStream &p, const char *name, PFigureModel &value)
 {
   if (p.what != ATV_GROUP)
     return false;

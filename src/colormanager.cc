@@ -73,7 +73,7 @@ bool TColor::_shouldNotDither()
   return !(color_mode & _DITHER);
 }
 
-Colormap toad::x11colormap;
+Colormap x11colormap;
 static unsigned long pixel[RGB_PALETTE_MAX];
 static int nPaletteSize;
 static Pixmap empty_pm = 0;

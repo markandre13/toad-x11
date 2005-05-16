@@ -31,7 +31,7 @@ namespace toad {
  * Return the number of characters in text from start to start+bytelen.
  */
 size_t
-toad::utf8charcount(const string &text, size_t start, size_t bytelen)
+utf8charcount(const string &text, size_t start, size_t bytelen)
 {
   size_t i = 0;
   for(size_t p=start; p<start+bytelen; utf8inc(text, &p)) {
@@ -45,7 +45,7 @@ toad::utf8charcount(const string &text, size_t start, size_t bytelen)
  * beginning at 'start' in 'text'.
  */
 size_t
-toad::utf8bytecount(const string &text, size_t start, size_t charlen)
+utf8bytecount(const string &text, size_t start, size_t charlen)
 {
   size_t result = 0;
   unsigned char *ptr = (unsigned char*)text.c_str() + start;
@@ -85,7 +85,7 @@ toad::utf8toiso88591(const string &text) {
  * This function encodes to utf8
  */
 string
-toad::utf8fromwchar(wchar_t c)
+utf8fromwchar(wchar_t c)
 {
   string result;
   if (c<=0x7f) {
