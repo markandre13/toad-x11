@@ -829,7 +829,7 @@ bool
 X11ConfigBuildFonts(FcConfig *config)
 {
   bool result = false;
-cerr << "build x11 fontconfig" << endl;
+//cerr << "build x11 fontconfig" << endl;
   FcFontSet *fs = FcConfigGetFonts(config, FcSetSystem);
   if (!fs)
     fs = FcFontSetCreate();
