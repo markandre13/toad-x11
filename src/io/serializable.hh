@@ -132,7 +132,8 @@ class TCloneable
 class TSerializable:
   public TCloneable, public TATVInterpreter
 {
-  private:
+//  private:
+  public:
     bool interpret(TATVParser &p) { return restore(static_cast<TInObjectStream&>(p)); }
   public:
     virtual const char * getClassName() const = 0;

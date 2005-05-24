@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,31 +26,16 @@
 #include <toad/dialog.hh>
 #include <toad/textmodel.hh>
 #include <toad/boolmodel.hh>
-#include <toad/tablemodels.hh>
+#include <toad/table.hh>
 
 namespace toad {
 
-class TTable;
 class TComboBox;
-
-struct TDirectoryEntry
-{
-  string name;
-  mode_t mode;
-  off_t size;
-
-  bool operator<(const TDirectoryEntry &f) const;
-  int getColWidth(int col) const;
-  void renderItem(TPen &pen, int col, int w, int h) const;
-};
-
-// typedef GSTLSet<set<TDirectoryEntry>, TDirectoryEntry> TDirectoryEntrySet;
-typedef GSTLRandomAccess<vector<TDirectoryEntry>, TDirectoryEntry> TDirectoryEntrySet;
 
 class TFileFilter
 {
   public:
-    virtual bool doesMatch(const string &filename) = 0;
+    virtual bool doesMatch(const string &filename) const = 0;
     virtual const char * toText() const = 0;
     
     static bool wildcard(const string &str, const string &filter);
@@ -63,12 +48,89 @@ class TSimpleFileFilter:
 {
   public:
     TSimpleFileFilter(const string &name);
-    bool doesMatch(const string &filename);
+    bool doesMatch(const string &filename) const;
     const char * toText() const;
 
   protected:
     string name;
     vector<string> extension;
+};
+
+class TDirectoryAdapter;
+
+template <class T>
+class GVector:
+  public TTableModel
+{
+  private:
+    vector<T> data;
+
+  public:
+    typedef typename vector<T>::const_iterator const_iterator;
+    typedef typename vector<T>::iterator iterator;
+    typedef typename vector<T>::size_type size_type;
+    
+    const T& operator[](size_type n) const { return data[n]; }
+    const T& at(size_type n) const { return data.at(n); }
+    T& front() { return data.front(); }
+    T& back() { return data.back(); }
+    const T& front() const { return data.front(); }
+    const T& back() const { return data.back(); }
+    void push_back(const T &x) {
+      data.push_back(x);
+      reason = INSERT_ROW;
+      where = data.size() - 1;
+      TTableModel::size  = 1;
+      sigChanged();
+    }
+    iterator insert(iterator p, const T &x) {
+      reason = INSERT_ROW;
+      TTableModel::size  = 1;
+      where = p - begin();
+      iterator i = data.insert(p, x);
+//      cerr << "GVector<T>::insert: where = " << where << ", size = 1" << endl;
+      sigChanged();
+      return i;
+    }
+    // pop_back
+    // insert
+    // erase
+    // swap
+    // clear
+    // resize
+    // operator=, copy constructor, ...
+    const_iterator begin() const { return data.begin(); }
+    const_iterator end() const { return data.end(); }
+    iterator begin() { return data.begin(); }
+    iterator end() { return data.end(); }
+    size_type size() const { return data.size(); }
+    size_type maxsize() const { return data.max_size(); }
+    size_type capacity() const { return data.capacity(); }
+    bool empty() const { return data.empty(); }
+    void reserve(size_type n) { data.reserve(n); }
+};
+
+typedef GVector<TFileFilter*> TFilterList;
+
+class TDirectory:
+  public TTableModel
+{
+    friend class TDirectoryAdapter;
+  public:
+    void load(const string &directory, const TFileFilter *filter=0, bool hidden=false);
+  
+    struct TDirectoryEntry {
+      string name;
+      mode_t mode;
+      off_t size;
+
+//      bool operator<(const TDirectoryEntry &f) const;
+//      int getColWidth(int col) const;
+//      void renderItem(TPen &pen, int col, int w, int h) const;
+    };
+    const TDirectoryEntry& operator[](size_t pos) { return entries[pos]; }
+  protected:
+    vector<TDirectoryEntry> entries;
 };
 
 class TFileDialog:
@@ -88,10 +150,7 @@ class TFileDialog:
     
     void addFileFilter(TFileFilter *);
     void addFileFilter(const string &name);
-    const TFileFilter* getFileFilter() const {
-      return filter;
-    }
-
+    const TFileFilter* getFileFilter() const;
     unsigned getResult() const {
       return result;
     }
@@ -102,11 +161,10 @@ class TFileDialog:
         typedef TSerializable super;
         SERIALIZABLE_INTERFACE(toad::TFileDialog::, TResource)
     };
-    
+
   protected:
-    typedef GSTLRandomAccess<vector<TFileFilter*>, TFileFilter*> TFilterList;
     TFilterList filterlist;
-    TFileFilter *filter;
+    TSingleSelectionModel filter;
   
     EMode mode;
     TPushButton *btn_ok;
@@ -116,7 +174,8 @@ class TFileDialog:
     bool first_chdir;
 
     TSingleSelectionModel entrychoice;
-    TDirectoryEntrySet entries;
+
+    TDirectory entries;
 
     TBoolModel show_hidden;
     
@@ -131,7 +190,7 @@ class TFileDialog:
     void jumpDirectory();
     
     TTable *tfiles;
-    TComboBox *cb_filter, *cb_prev;
+    TComboBox *cb_prev;
 
     void fileSelected();
     void doubleClick();

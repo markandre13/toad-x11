@@ -18,6 +18,8 @@
  * MA  02111-1307,  USA
  */
 
+#if 0
+
 #include <toad/tablemodels.hh>
 
 using namespace toad;
@@ -69,3 +71,4 @@ TAbstractTableModel::getCols()
  * @endcode
  */
 
+#endif

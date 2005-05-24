@@ -107,6 +107,12 @@ TModel
  *       edit cell, row, column; delete row, column
  */
 
+TTableModel*
+TSimpleTableAdapter::getModel() const
+{
+  return 0;
+}
+
 TTableAdapter*
 TTableModel::getDefaultAdapter()
 {
@@ -116,9 +122,7 @@ TTableModel::getDefaultAdapter()
 TTableAdapter::TTableAdapter()
 {
   table = 0;
-  model = 0;
-//   type = CHANGED;
-//   per_row = per_col = false;
+  reason = TTableModel::CHANGED;
 }
 
 /**
@@ -588,6 +592,7 @@ TTable::TTable(TWindow *p, const string &t):
   bNoBackground = true;
 }
 
+#if 0
 void
 TTable::setModel(TTableModel *m) 
 {
@@ -598,10 +603,13 @@ TTable::setModel(TTableModel *m)
     adapter->setModel(m);
   handleNewModel();
 }
+#endif
 
+#if 0
 void
 TTableAdapter::setModel(TTableModel *m)
 {
+  cout << "TTableAdapter::setModel("<<m<<")"<<endl;
   if (m==model)
     return;
   if (model)
@@ -609,19 +617,15 @@ TTableAdapter::setModel(TTableModel *m)
   model = m;
   if (model)
     connect(model->sigChanged, this, &TTableAdapter::_modelChanged);
+  reason = TTableModel::CHANGED;
+  sigChanged();
 }
+#endif
 
 void
 TTableAdapter::modelChanged()
 {
-  cerr << "obsolete method TTableAdapter::modelChanged was called\n";
-  reason = TTableModel::CHANGED;
-  sigChanged();
-}
-
-void
-TTableAdapter::_modelChanged()
-{
+  TTableModel *model = getModel();
   if (!model) {
     cerr << "TTableAdapter::modelChanged: received modelChanged but no model is set" << endl;
     return;
@@ -657,8 +661,8 @@ TTable::setAdapter(TTableAdapter *r)
   if (adapter) {
     connect(adapter->sigChanged, this, &TTable::adapterChanged);
     adapter->setTable(this);
-    if (model)
-      adapter->setModel(model);
+//    if (model)
+//      adapter->setModel(model);
   }
   handleNewModel();
 }
@@ -1756,7 +1760,7 @@ TTable::adapterChanged()
   }
   switch(adapter->reason) {
     case TTableModel::INSERT_ROW:
-      cout << "table: insert row " << adapter->where << ", " << adapter->size << endl;
+//      cout << "table: insert row " << adapter->where << ", " << adapter->size << endl;
       _handleInsertRow();
       break;
     case TTableModel::RESIZED_ROW:
@@ -1793,8 +1797,8 @@ TTable::_handleInsertRow()
     DBM(cout << "pane.h: " << pane.h << endl;)
     info->open = true; // getRowHeight may query this values
     info->size = 0;    // just in case...
-cout << "going to get height of row " << i << endl;
-cout << "  open == " << (isRowOpen(i)?"open":"closed") << endl;
+//cout << "going to get height of row " << i << endl;
+//cout << "  open == " << (isRowOpen(i)?"open":"closed") << endl;
     int n = adapter->getRowHeight(i);
     info->size = n;
     pane.h += n + border;
@@ -1867,6 +1871,9 @@ TTable::_handleRemovedRow()
   invalidateWindow();
 
   doLayout();
+  
+  if (rows==0 && selection)
+    selection->clearSelection();
 }
 
 void
@@ -1906,9 +1913,10 @@ TTable::_handleResizedRow()
 void
 TTable::handleNewModel()
 {
+// cout << "TTable::handleNewModel()" << endl;
   invalidateWindow();
-  if (selection)
-    selection->clearSelection();
+//  if (selection)
+//    selection->clearSelection();
   cx = cy = 0;
   sy = sy = 0;
   resetScrollPane();
@@ -1916,8 +1924,8 @@ TTable::handleNewModel()
   fpx = fpy = 0;
   selecting = false;
 
-  if (!adapter && model)
-    adapter = model->getDefaultAdapter();
+//  if (!adapter && model)
+//    adapter = model->getDefaultAdapter();
   if (!adapter)
     return;
 

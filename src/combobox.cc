@@ -67,12 +67,14 @@ TComboBox::TComboBox(TWindow * parent, const string &title):
 void
 TComboBox::paint()
 {
+//cout << "TComboBox '"<<getTitle()<<"': render" << endl;
   TPen pen(this);
 
   pen.draw3DRectanglePC(0,0, getWidth(), getHeight());
   if (!table->getAdapter()) {
     pen.setColor(TColor::DIALOG);
     pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);
+//cout << "  no table adapter" << endl;
     return;
   }
 #if 1
@@ -108,7 +110,9 @@ TComboBox::paint()
   te.cursor = false;
   te.selected = false;
   te.focus = true;
-  table->getAdapter()->renderItem(pen, te);
+  if (!sm || !sm->isEmpty()) {
+    table->getAdapter()->renderItem(pen, te);
+  }
 
   if (isFocus()) {
     pen.setColor(0,0,0);

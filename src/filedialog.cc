@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@
 #include <toad/combobox.hh>
 #include <toad/checkbox.hh>
 #include <toad/table.hh>
-#include <toad/tablemodels.hh>
+//#include <toad/tablemodels.hh>
 #include <toad/pushbutton.hh>
 
 // #include <toad/stacktrace.hh>
@@ -43,16 +43,15 @@
 
 using namespace toad;
 
-typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableAdapter_DirectoryEntrySet;
-typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
-
-namespace toad {
-TPreviousDirs previous_cwds;
-}
+//typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableAdapter_DirectoryEntrySet;
+//typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
+typedef deque<string> TPreviousDirs;
 
 namespace {
+
 TBitmap bmp;
 string cwd;
+TPreviousDirs previous_cwds;
 
 void  
 removeDuplicates()
@@ -76,6 +75,137 @@ removeDuplicates()
 }
 
 }; // namespace
+
+
+namespace toad {
+class TDirectoryAdapter:
+  public TTableAdapter, public GModelOwner<TDirectory>
+{
+    int w, h;
+  public:
+    TDirectoryAdapter(TDirectory *directory) {
+      setModel(directory);
+    }
+    ~TDirectoryAdapter() { setModel(0); }
+    int getRows() { return model ? model->entries.size() : 0; }
+    int getCols() { return 3; }
+    TDirectory* getModel() const { return GModelOwner<TDirectory>::getModel(); }
+
+    void modelChanged(bool newmodel) {
+      if (model) {
+        TFont &font(TOADBase::getDefaultFont());
+        h = font.getHeight();
+        w = 0;
+        for(vector<TDirectory::TDirectoryEntry>::iterator p = model->entries.begin();
+            p != model->entries.end();
+            ++p)
+        {
+          w = max(w, font.getTextWidth(p->name));
+        }
+      }
+      if (newmodel) {
+        reason = TTableModel::CHANGED;
+        sigChanged();
+      } else {
+        TTableAdapter::modelChanged();
+      }
+    }
+    int getRowHeight(int) { return h+2; }
+    int getColWidth(int);
+    void renderItem(TPen &pen, const TTableEvent &te);
+};
+
+}
+
+class TFilterListAdapter:
+  public TTableAdapter, GModelOwner<TFilterList>
+{
+    int w, h;
+  public:
+    TFilterListAdapter(TFilterList *m) { setModel(m); }
+    ~TFilterListAdapter() { setModel(0); }
+    TFilterList* getModel() const { return GModelOwner<TFilterList>::getModel(); }
+
+    void modelChanged(bool newmodel) {
+      if (model) {
+        TFont &font(TOADBase::getDefaultFont());
+        h = font.getHeight();
+        w = 0;
+        for(TFilterList::const_iterator p = model->begin();
+            p != model->end();
+            ++p)
+        {
+          w = max(w, font.getTextWidth((*p)->toText()));
+        }
+      }
+      if (newmodel) {
+        reason = TTableModel::CHANGED;
+        sigChanged();
+      } else {
+        TTableAdapter::modelChanged();
+      }
+    }
+    int getRowHeight(int) { return h+2; }
+    int getColWidth(int) { return w+2; }
+    int getRows() { return model ? model->size() : 0; }
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      pen.drawString(1,1, (*model)[te.row]->toText());
+    }
+};
+
+int
+TDirectoryAdapter::getColWidth(int col)
+{
+  switch(col) {
+    case 0:
+      return 16;
+    case 1:
+      return w+2;
+    case 2:
+      return 40;
+  }
+  return 0;
+}
+
+void
+TDirectoryAdapter::renderItem(TPen &pen, const TTableEvent &te)
+{
+  TDirectory::TDirectoryEntry &e = model->entries[te.row];
+  switch(te.col) {
+    case 0:
+      if (S_ISDIR(e.mode)) {
+        pen.drawBitmap(0, (h - bmp.getHeight())/2, bmp);
+      }
+      break;
+    case 1:
+      pen.drawString(1, 1, e.name);
+      break;
+    case 2: {
+      char buffer[256];
+      int s = e.size;
+      if (s < 1024) {
+        snprintf(buffer, sizeof(buffer), "%iB", s);
+      } else {
+        s/=1024;
+        if (s < 1024) {
+          snprintf(buffer, sizeof(buffer), "%iKB", s);
+        } else {
+          s/=1024;
+          if (s < 1024) {
+            snprintf(buffer, sizeof(buffer), "%iMB", s);
+          } else {
+            s/=1024;
+            snprintf(buffer, sizeof(buffer), "%iGB", s);
+          }
+        }
+      }
+      int x = te.w - pen.getTextWidth(buffer) - 1;
+      if (x<0)
+        x = 1;
+      pen.drawString( x, 1, buffer);
+      } break;
+  }
+}
 
 void
 TFileDialog::TResource::store(TOutObjectStream &out) const
@@ -107,58 +237,12 @@ TFileDialog::TResource::restore(TInObjectStream &in)
   return false;
 }
 
+#if 0
 bool
-TDirectoryEntry::operator<(const TDirectoryEntry &f) const {
+TFileDialog::TDirectoryEntry::operator<(const TDirectoryEntry &f) const {
   return (strcasecmp(name.c_str(), f.name.c_str()) < 0);
 }
-
-int
-TDirectoryEntry::getColWidth(int col) const {
-  switch(col) {
-    case 0:
-      return 16;
-    case 1:
-      return 320;
-    case 2:
-      return 40;
-  }
-  return 0;
-}
-
-void 
-TDirectoryEntry::renderItem(TPen &pen, int col, int w, int h) const {
-  switch(col) {
-    case 0:
-      if (S_ISDIR(mode)) {
-        pen.drawBitmap(0, (h - bmp.getHeight())/2, bmp);
-      }
-      break;
-    case 1:
-      pen.drawString(0,0,name);
-      break;
-    case 2: {
-      char buffer[256];
-      int s = size;
-      if (s < 1024) {
-        snprintf(buffer, sizeof(buffer), "%iB", s);
-      } else {
-        s/=1024;
-        if (s < 1024) {
-          snprintf(buffer, sizeof(buffer), "%iKB", s);
-        } else {
-          s/=1024;
-          if (s < 1024) {
-            snprintf(buffer, sizeof(buffer), "%iMB", s);
-          } else {
-            s/=1024;
-            snprintf(buffer, sizeof(buffer), "%iGB", s);
-          }
-        }
-      }
-      pen.drawString(0,0,buffer);
-      } break;
-  }
-}
+#endif
 
 TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   TDialog(parent, title)
@@ -189,7 +273,8 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   tfiles = new TTable(this, "fileview");
   tfiles->noCursor = true;
   tfiles->selectionFollowsMouse = true;
-  tfiles->setAdapter(new TTableAdapter_DirectoryEntrySet(&entries));
+  loadDirectory();
+  tfiles->setAdapter(new TDirectoryAdapter(&entries));
   entrychoice.setRowColMode(TRectangleSelectionModel::WHOLE_ROW);
   tfiles->setSelectionModel(&entrychoice);
   connect(tfiles->sigSelection, this, &This::fileSelected);
@@ -198,12 +283,10 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   new TTextField(this, "filename", &filename);
   connect(filename.sigChanged, this, &This::filenameEdited);
 
-  filter = 0;
   addFileFilter("All Files (*)");
-  cb_filter = new TComboBox(this, "filetype");
-  cb_filter->setAdapter(
-    new GTableCellRenderer_PText<TFilterList, 1>(&filterlist)
-  );
+  TComboBox *cb_filter = new TComboBox(this, "filetype");
+  cb_filter->setAdapter(new TFilterListAdapter(&filterlist));
+  cb_filter->setSelectionModel(&filter);
   cb_filter->clickAtCursor();
 
   new TCheckBox(this, "show hidden", &show_hidden);
@@ -219,11 +302,12 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
           this, &This::button, TMessageBox::ABORT);
 
   cb_prev = new TComboBox(this, "previous");
-  cb_prev->setAdapter(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
+//  cb_prev->setAdapter(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
   cb_prev->clickAtCursor();
 
   // don't connect earlier to avoid loadDirectory being called unneccessary
-  connect(cb_filter->sigSelection, this, &This::filterSelected);
+  filter.setSelection(0,1);
+  connect(filter.sigChanged, this, &This::filterSelected);
   connect(cb_prev->sigSelection, this, &This::jumpDirectory);
   
   loadLayout(RESOURCE("TFileDialog.atv"));
@@ -237,7 +321,8 @@ TFileDialog::create()
   // between the constructor and window creation new file filters may
   // have been added, so we invoke loadDirectory (by selecting the
   // first filter) here:
-  cb_filter->clickAtCursor();
+  // cb_filter->clickAtCursor();
+  filter.setSelection(0,0);
 }
 
 /**
@@ -362,7 +447,7 @@ TFileFilter::wildcard(const string &str, const string &filter)
 }
 
 bool
-TSimpleFileFilter::doesMatch(const string &filename)
+TSimpleFileFilter::doesMatch(const string &filename) const
 {
   vector<string>::const_iterator p, e;
   p = extension.begin();
@@ -421,15 +506,20 @@ TFileDialog::button(unsigned result)
 void
 TFileDialog::fileSelected()
 {
-  static bool lock = false;
-  if (lock) return;
+#if 1
   if (entrychoice.isEmpty())
     return;
+  filename = entries[entrychoice.getRow()].name;
+  adjustOkButton();
+#else
+  static bool lock = false;
+  if (lock) return;
 
   const TDirectoryEntry &file(entries.getElementAt(0, entrychoice.getRow()));
 //  cerr << "selected " << file.name << endl;
   filename = file.name;
   adjustOkButton();
+#endif
 }
 
 enum EFileType { TYPE_NEW, TYPE_DIRECTORY, TYPE_FILE };
@@ -490,9 +580,8 @@ TFileDialog::doubleClick()
 //  if (tfiles->getSelectionModel()->isEmpty())
 //    return;
 
-  const TDirectoryEntry &file(
-    entries.getElementAt(0, entrychoice.getRow())
-  );
+  const TDirectory::TDirectoryEntry &file = entries[entrychoice.getRow()];
+//  const TDirectoryEntry &file(entries.getElementAt(0, entrychoice.getRow()));
 //  cerr << "selected " << file.name << endl;
   if (S_ISDIR(file.mode)) {
     if (file.name=="..") {
@@ -518,7 +607,7 @@ TFileDialog::doubleClick()
 //cerr << "set previous_cwds[0] to current directory" << endl;
       previous_cwds[0]=cwd;
     }
-    previous_cwds.sigChanged();
+//    previous_cwds.sigChanged();
     cb_prev->setCursor(0,0);
     cb_prev->clickAtCursor();
 
@@ -544,9 +633,20 @@ TFileDialog::jumpDirectory()
 void
 TFileDialog::filterSelected()
 {
-  filter = filterlist[cb_filter->getCursorRow()];
+//  cout << "TFileDialog::filterSelected" << endl;
+//  filter = filterlist[cb_filter->getCursorRow()];
   loadDirectory();
 }
+
+const TFileFilter*
+TFileDialog::getFileFilter() const
+{
+//  cout << "TFileDialog::getFileFilter: row=" << filter.getRow() << endl;
+  if (filter.isEmpty())
+    return 0;
+  return filterlist[filter.getRow()];
+}
+
 
 
 /**
@@ -554,6 +654,13 @@ TFileDialog::filterSelected()
  */
 void
 TFileDialog::loadDirectory()
+{
+//  entries.load(cwd, 0, show_hidden);
+  entries.load(cwd, getFileFilter(), show_hidden);
+}
+
+void
+TDirectory::load(const string &cwd, const TFileFilter *filter, bool hidden)
 {
   dirent *de;
   DIR *dd;
@@ -564,7 +671,7 @@ TFileDialog::loadDirectory()
     return;
   }
 
-  entries.sigChanged.lock();
+//  entries.sigChanged.lock();
   entries.clear();
   
   while( (de=readdir(dd))!=NULL ) {
@@ -574,7 +681,7 @@ TFileDialog::loadDirectory()
 
     // check if hidden file
     bool show = true;
-    if (!show_hidden && de->d_name[0]=='.') {
+    if (!hidden && de->d_name[0]=='.') {
       show = false;
       if (de->d_name[1]=='.' && de->d_name[2]==0)
         show = true;
@@ -590,21 +697,20 @@ TFileDialog::loadDirectory()
         !S_ISDIR(st.st_mode) &&
         !filter->doesMatch(de->d_name))
       continue;
-    
     TDirectoryEntry e;
     e.name = de->d_name;
     e.mode = st.st_mode;
     e.size = st.st_size;
     entries.push_back(e);
   }
-
+#if 0
 #if __GLIBCXX__ != 20050421
   sort(entries.begin(), entries.end());
 #else
   std::__insertion_sort(entries.begin(), entries.end());
 #endif
-  
-  entries.unlock();
-  
+#endif  
+//  entries.unlock();
+  sigChanged();  
   closedir(dd);
 }

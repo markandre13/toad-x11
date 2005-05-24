@@ -18,6 +18,8 @@
  * MA  02111-1307,  USA
  */
 
+#if 0
+
 /**
  * \file tablemodels.hh
  *
@@ -654,5 +656,7 @@ class GSTLRandomAccess:
 
 
 } // namespace toad
+
+#endif
 
 #endif
