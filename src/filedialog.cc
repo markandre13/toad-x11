@@ -45,7 +45,97 @@ using namespace toad;
 
 //typedef GTableRowRenderer<TDirectoryEntrySet, 3> TTableAdapter_DirectoryEntrySet;
 //typedef GSTLRandomAccess<deque<string>, string> TPreviousDirs;
-typedef deque<string> TPreviousDirs;
+
+template <class T>
+class GDeque:
+  public TTableModel
+{
+  private:
+    deque<T> data;
+
+  public:
+    typedef typename deque<T>::const_iterator const_iterator;
+    typedef typename deque<T>::iterator iterator;
+    typedef typename deque<T>::size_type size_type;
+    
+    const T& operator[](size_type n) const { return data[n]; }
+    void set(size_type n, const T &x) {
+      data[n] = x;
+      reason = CONTENT;
+      where = n;
+      TTableModel::size  = 1;
+      sigChanged();
+    }
+    const T& at(size_type n) const { return data.at(n); }
+    T& front() { return data.front(); }
+    T& back() { return data.back(); }
+    const T& front() const { return data.front(); }
+    const T& back() const { return data.back(); }
+    void push_back(const T &x) {
+      data.push_back(x);
+      reason = INSERT_ROW;
+      where = data.size() - 1;
+      TTableModel::size  = 1;
+      sigChanged();
+    }
+    iterator insert(iterator p, const T &x) {
+      reason = INSERT_ROW;
+      TTableModel::size  = 1;
+      where = p - begin();
+      iterator i = data.insert(p, x);
+//      cerr << "GVector<T>::insert: where = " << where << ", size = 1" << endl;
+      sigChanged();
+      return i;
+    }
+    void push_front(const T &x) {
+      reason = INSERT_ROW;
+      TTableModel::size  = 1;
+      where = 0;
+      data.push_front(x);
+//      cerr << "GVector<T>::insert: where = " << where << ", size = 1" << endl;
+      sigChanged();
+    }
+    iterator erase(iterator p) {
+      reason = REMOVED_ROW;
+      TTableModel::size  = 1;
+      where = p - begin();
+      iterator i = data.erase(p);
+      sigChanged();
+      return i;
+    }
+    iterator erase(iterator p, iterator e) {
+      reason = REMOVED_ROW;
+      TTableModel::size  = e-p+1;
+      where = p - begin();
+      iterator i = data.erase(p, e);
+      sigChanged();
+      return i;
+    }
+    void pop_back() {
+      if (data.empty())
+        return;
+      reason = REMOVED_ROW;
+      TTableModel::size  = 1;
+      where = data.size()-1;
+      data.pop_back();
+      sigChanged();
+    }
+    // swap
+    // clear
+    // resize
+    // operator=, copy constructor, ...
+    const_iterator begin() const { return data.begin(); }
+    const_iterator end() const { return data.end(); }
+    iterator begin() { return data.begin(); }
+    iterator end() { return data.end(); }
+    size_type size() const { return data.size(); }
+    size_type maxsize() const { return data.max_size(); }
+    size_type capacity() const { return data.capacity(); }
+    bool empty() const { return data.empty(); }
+    void reserve(size_type n) { data.reserve(n); }
+};
+
+typedef GDeque<string> TPreviousDirs;
 
 namespace {
 
@@ -71,7 +161,6 @@ removeDuplicates()
   
   while(previous_cwds.size()>10)
     previous_cwds.pop_back();
-
 }
 
 }; // namespace
@@ -116,42 +205,6 @@ class TDirectoryAdapter:
 };
 
 }
-
-class TFilterListAdapter:
-  public TTableAdapter, GModelOwner<TFilterList>
-{
-    int w, h;
-  public:
-    TFilterListAdapter(TFilterList *m) { setModel(m); }
-    ~TFilterListAdapter() { setModel(0); }
-    TFilterList* getModel() const { return GModelOwner<TFilterList>::getModel(); }
-
-    void modelChanged(bool newmodel) {
-      if (model) {
-        TFont &font(TOADBase::getDefaultFont());
-        h = font.getHeight();
-        w = 0;
-        for(TFilterList::const_iterator p = model->begin();
-            p != model->end();
-            ++p)
-        {
-          w = max(w, font.getTextWidth((*p)->toText()));
-        }
-      }
-      if (newmodel) {
-        reason = TTableModel::CHANGED;
-        sigChanged();
-      } else {
-        TTableAdapter::modelChanged();
-      }
-    }
-    int getRowHeight(int) { return h+2; }
-    int getColWidth(int) { return w+2; }
-    int getRows() { return model ? model->size() : 0; }
-    void renderItem(TPen &pen, const TTableEvent &te) {
-      pen.drawString(1,1, (*model)[te.row]->toText());
-    }
-};
 
 int
 TDirectoryAdapter::getColWidth(int col)
@@ -206,6 +259,85 @@ TDirectoryAdapter::renderItem(TPen &pen, const TTableEvent &te)
       } break;
   }
 }
+
+class TFilterListAdapter:
+  public TTableAdapter, GModelOwner<TFilterList>
+{
+    int w, h;
+  public:
+    TFilterListAdapter(TFilterList *m) { setModel(m); }
+    ~TFilterListAdapter() { setModel(0); }
+    TFilterList* getModel() const { return GModelOwner<TFilterList>::getModel(); }
+
+    void modelChanged(bool newmodel) {
+      if (model) {
+        TFont &font(TOADBase::getDefaultFont());
+        h = font.getHeight();
+        w = 0;
+        for(TFilterList::const_iterator p = model->begin();
+            p != model->end();
+            ++p)
+        {
+          w = max(w, font.getTextWidth((*p)->toText()));
+        }
+      }
+      if (newmodel) {
+        reason = TTableModel::CHANGED;
+        sigChanged();
+      } else {
+        TTableAdapter::modelChanged();
+      }
+    }
+    int getRowHeight(int) { return h+2; }
+    int getColWidth(int) { return w+2; }
+    int getRows() { return model ? model->size() : 0; }
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      pen.drawString(1,1, (*model)[te.row]->toText());
+    }
+};
+
+class TDequeStringAdapter:
+  public TTableAdapter, GModelOwner< GDeque<string> >
+{
+    int w, h;
+  public:
+    TDequeStringAdapter(GDeque<string> *m) { setModel(m); }
+    ~TDequeStringAdapter() { setModel(0); }
+    GDeque<string>* getModel() const { return  GModelOwner< GDeque<string> >::getModel(); }
+
+    void modelChanged(bool newmodel) {
+      if (model) {
+        TFont &font(TOADBase::getDefaultFont());
+        h = font.getHeight();
+        w = 0;
+        for(GDeque<string>::const_iterator p = model->begin();
+            p != model->end();
+            ++p)
+        {
+          w = max(w, font.getTextWidth(*p));
+        }
+      }
+      if (newmodel) {
+        reason = TTableModel::CHANGED;
+        sigChanged();
+      } else {
+        TTableAdapter::modelChanged();
+      }
+    }
+    int getRowHeight(int) { return h+2; }
+    int getColWidth(int) { return w+2; }
+    int getRows() { return model ? model->size() : 0; }
+    void renderItem(TPen &pen, const TTableEvent &te) {
+      pen.drawString(1,1, (*model)[te.row]);
+    }
+};
+
+#if 0
+TTableAdapter*
+GDeque<string>::getDefaultAdapter() {
+  return new TDequeStringAdapter(this);
+}
+#endif
 
 void
 TFileDialog::TResource::store(TOutObjectStream &out) const
@@ -303,6 +435,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
 
   cb_prev = new TComboBox(this, "previous");
 //  cb_prev->setAdapter(new GTableCellRenderer_String<TPreviousDirs>(&previous_cwds));
+  cb_prev->setAdapter(new TDequeStringAdapter(&previous_cwds));
   cb_prev->clickAtCursor();
 
   // don't connect earlier to avoid loadDirectory being called unneccessary
@@ -605,7 +738,8 @@ TFileDialog::doubleClick()
       first_chdir = false;
     } else {
 //cerr << "set previous_cwds[0] to current directory" << endl;
-      previous_cwds[0]=cwd;
+//      previous_cwds[0]=cwd;
+      previous_cwds.set(0, cwd);
     }
 //    previous_cwds.sigChanged();
     cb_prev->setCursor(0,0);

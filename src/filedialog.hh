@@ -23,6 +23,8 @@
 
 //#include <set>
 #include <vector>
+#include <deque>
+
 #include <toad/dialog.hh>
 #include <toad/textmodel.hh>
 #include <toad/boolmodel.hh>
