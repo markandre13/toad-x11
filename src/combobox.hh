@@ -53,8 +53,11 @@ class TComboBox:
       if (table->getSelectionModel())
         disconnect(table->getSelectionModel()->sigChanged, this);
       table->setSelectionModel(m);
-      if (m)
+      if (m) {
         connect(m->sigChanged, this, &TComboBox::_selectionChanged);
+        if (m->isEmpty())
+          m->setSelection(0,0);
+      }
     }
     TAbstractSelectionModel* getSelectionModel() const {
       return table->getSelectionModel();
