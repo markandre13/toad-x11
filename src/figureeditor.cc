@@ -657,6 +657,9 @@ TFigureEditor::paintDecoration(TPenBase &scr)
 void
 TFigureEditor::print(TPenBase &pen, bool withSelection)
 {
+  if (!model)
+    return;
+    
   TRectangle cb, r;
   pen.getClipBox(&cb);
 
@@ -1167,7 +1170,7 @@ TFigureEditor::selectionPaste()
 void
 TFigureEditor::keyDown(TKey key, char *s, unsigned m)
 {
-  if (!window)
+  if (!window || !model)
     return;
     
   if (key == TK_ESCAPE) {
@@ -1338,7 +1341,7 @@ TFigureEditor::mouseLDown(int mx, int my, unsigned m)
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
 
-  if (!window)
+  if (!window || !model)
     return;
   setFocus();
 
@@ -1622,7 +1625,7 @@ TFigureEditor::mouseMove(int mx, int my, unsigned m)
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
 
-  if (!window)
+  if (!window || !model)
     return;
 
   mouse2sheet(mx, my, &mx, &my);
@@ -1774,7 +1777,7 @@ TFigureEditor::mouseLUp(int mx, int my, unsigned m)
   cout << __PRETTY_FUNCTION__ << endl;
 #endif
 
-  if (!window)
+  if (!window || !model)
     return;
 
   mouse2sheet(mx, my, &mx, &my);
@@ -1942,7 +1945,7 @@ redo:
 void
 TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
 {
-  if (!window)
+  if (!window || !model)
     return;
 
 //  stopOperation();
