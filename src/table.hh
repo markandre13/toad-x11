@@ -60,6 +60,9 @@ class TAbstractSelectionModel:
     virtual void setSelection(int col, int row) = 0;
     virtual bool isSelected(int col, int row) const = 0;
 
+    virtual bool getFirst(int *x, int *y) const = 0;
+    virtual bool getNext(int *x, int *y) const = 0;
+
     virtual void setSelection(int col, int row, int w, int h);
     virtual void toggleSelection(int col, int row);
     virtual void clearSelection();
@@ -93,6 +96,9 @@ class TSingleSelectionModel:
     virtual void toggleSelection(int col, int row);
     virtual bool isSelected(int col, int row) const;
     virtual bool isEmpty() const;
+
+    bool getFirst(int *x, int *y) const;
+    bool getNext(int *x, int *y) const;
 };
 
 class TRectangleSelectionModel:
@@ -141,6 +147,8 @@ class TRectangleSelectionModel:
       y1=y2=row;
       sigChanged();
     }
+
+    
     void clearSelection() {
       if (empty)
         return;
@@ -153,6 +161,9 @@ class TRectangleSelectionModel:
     void getSelection(TRectangle *r) {
       r->set(x1, y1, x2-x1+1, y2-y1+1);
     }
+
+    bool getFirst(int *x, int *y) const;
+    bool getNext(int *x, int *y) const;
 };
 
 class TSelectionModel:
@@ -217,6 +228,9 @@ class TSelectionModel:
     bool isEmpty() const { return region.isEmpty(); }
     
     void setSelectionMode(ESelectionMode);
+
+    bool getFirst(int *x, int *y) const;
+    bool getNext(int *x, int *y) const;
     
   private:
     void prepare(int x, int y);
@@ -268,7 +282,9 @@ class TTableModel:
     } reason;
     size_t where;
     size_t size;
-    virtual TTableAdapter* getDefaultAdapter();
+    bool isEmpty() const { return getRows()==0 && getCols()==0;}
+    virtual size_t getRows() const;
+    virtual size_t getCols() const;
 };
 
 typedef GSmartPointer<TTableModel> PTableModel;
@@ -318,7 +334,7 @@ class GModelOwner
     GSmartPointer<T> model;
   public:
     GModelOwner() {}
-    ~GModelOwner() {
+    virtual ~GModelOwner() {
       if(model)
         disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
     }

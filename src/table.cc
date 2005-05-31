@@ -113,11 +113,18 @@ TSimpleTableAdapter::getModel() const
   return 0;
 }
 
-TTableAdapter*
-TTableModel::getDefaultAdapter()
+size_t
+TTableModel::getRows() const
 {
   return 0;
 }
+
+size_t
+TTableModel::getCols() const
+{
+  return 0;
+}
+
 
 TTableAdapter::TTableAdapter()
 {
@@ -259,6 +266,22 @@ TAbstractSelectionModel::isEmpty() const
 /**
  * A basic selection model for a single position.
  */
+
+bool
+TSingleSelectionModel::getFirst(int *x, int *y) const
+{
+  if (!selected)
+    return false;
+  *x = col;
+  *y = row;
+  return true;
+}
+
+bool
+TSingleSelectionModel::getNext(int *x, int *y) const
+{
+  return false;
+}
     
 TAbstractSelectionModel::ESelectionMode
 TSingleSelectionModel::getSelectionMode() const
@@ -314,6 +337,32 @@ TSingleSelectionModel::isEmpty() const
   return !selected;
 }
 
+
+bool 
+TRectangleSelectionModel::getFirst(int *x, int *y) const
+{
+  if (empty)
+    return false;
+  *x = x1;
+  *y = y1;
+  return true;
+}
+
+bool
+TRectangleSelectionModel::getNext(int *x, int *y) const
+{
+  ++(*x);
+  if (*x<=x2)
+    return true;
+  *x = x1;
+  ++(*y);
+  if (*y<=y2)
+    return true;
+  return false;
+}
+
+
+
 /**
  * @ingroup table
  * @class toad::TSelectionModel
@@ -323,6 +372,18 @@ TSingleSelectionModel::isEmpty() const
  * @note
  *   Somehow similar to TRegion...
  */
+bool
+TSelectionModel::getFirst(int *x, int *y) const
+{
+  return false;
+}
+
+bool
+TSelectionModel::getNext(int *x, int *y) const
+{
+  return false;
+}
+
 
 TSelectionModel::iterator::iterator()
 {
@@ -635,7 +696,7 @@ TTableAdapter::modelChanged()
   where  = model->where;
   size   = model->size;
 /*
-cout << "TTableAdapter::_modelChanged propagates ";
+cout << "TTableAdapter::modelChanged propagates ";
 switch(reason) { 
   case TTableModel::CHANGED: cout << "CHANGED" << endl; break;
   case TTableModel::INSERT_ROW: cout << "INSERT_ROW" << endl; break;
@@ -1871,9 +1932,34 @@ TTable::_handleRemovedRow()
   invalidateWindow();
 
   doLayout();
-  
-  if (rows==0 && selection)
-    selection->clearSelection();
+
+  if (selection) {  
+    if (rows==0) {
+      // the obvious check -> no rows, no selection
+      selection->clearSelection();
+    }
+    else if (adapter->where+adapter->size > rows) {
+      // the selection model doesn't provide enough information yet
+      // to deselect all field being out of range so the following
+      // assumption must be enough for now:
+      // usually the area removed was also the selected area thus...
+      // hey! we should also be able to MOVE the selection as we do
+      // with the row and col information... work is lurking out of
+      // every corner it seems ;)
+      cout << "design problem: emergency clear selection" << endl;
+      selection->clearSelection();
+    } else {
+      int x, y;
+      if (selection->getFirst(&x, &y)) {
+        do {
+          if (y>=adapter->where) {
+            selection->sigChanged();
+            break;
+          }
+        } while(selection->getNext(&x, &y));
+      }
+    }
+  }
 }
 
 void
