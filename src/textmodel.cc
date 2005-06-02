@@ -33,15 +33,15 @@ void
 TTextModel::setValue(const string &d)
 {
 //cerr << "TTextModel[" << this << "]::setValue(string)\n";
-  if (data==d) {
+  if (_data==d) {
 //    cerr << "-> not changed\n";
     return;
   }
 //  DBM(cout << __PRETTY_FUNCTION__ << endl;)
 
   offset = 0;
-  data = d;
-  length = data.size();
+  _data = d;
+  length = _data.size();
   lines = (size_t)-1;   // all lines have changed
 
   nlines = 0;
@@ -61,16 +61,35 @@ TTextModel::setValue(const string &d)
 }
 
 void
+TTextModel::clear()
+{
+  if (_data.empty())
+    return;
+
+  offset = 0;
+  _data.clear();
+  length = 0;
+  lines = (size_t)-1;   // all lines have changed
+
+  nlines = 0;
+  size_t pos = 0;
+  _modified = false;
+  type = CHANGE;
+  sigTextArea();
+  sigChanged();
+}
+
+void
 TTextModel::setValue(const char *d, size_t len)
 {
 //cerr << "TTextModel[" << this << "]::setValue(char*)\n";
 #ifndef OLDLIBSTD
-  if (data.compare(0, string::npos, d, len)==0) {
+  if (_data.compare(0, string::npos, d, len)==0) {
 //    cerr << "-> not changed\n";
     return;
   }
 #else
-  if (data.compare(d, len)==0) {
+  if (_data.compare(d, len)==0) {
 //    cerr << "-> not changed\n";
     return;
   }
@@ -78,13 +97,13 @@ TTextModel::setValue(const char *d, size_t len)
 
   offset = 0;
   length = len;
-  data.assign(d, len);
+  _data.assign(d, len);
   lines = (size_t)-1;   // all lines have changed
 
   nlines = 0;
   size_t pos = 0;
   while(true) {
-    pos = data.find('\n', pos);
+    pos = _data.find('\n', pos);
     if (pos==string::npos)
       break;
     pos++;
@@ -100,12 +119,12 @@ TTextModel::setValue(const char *d, size_t len)
 /**
  * insert a single char
  */
-void
-TTextModel::insert(size_t p, int c)
+TTextModel&
+TTextModel::insert(size_type p, int c)
 {
   c = filter(c);
   if (!c)
-    return;
+    return *this;
 
   // group undo events until...
   if (type==CHANGE ||       // ...the whole model was changed,
@@ -118,7 +137,7 @@ TTextModel::insert(size_t p, int c)
   }
   TUndoManager::beginUndoGrouping(this);
   TUndoManager::registerUndo(this, new TUndoInsert(this, p, 1));
-  data.insert(p, 1, c);
+  _data.insert(p, 1, c);
   
   type = INSERT;
   offset = p;
@@ -130,16 +149,17 @@ TTextModel::insert(size_t p, int c)
   
   sigTextArea();
   sigChanged();
+  return *this;
 }
 
 /**
  * insert multiple chars
  */
-void
-TTextModel::insert(size_t p, const string &aString)
+TTextModel&
+TTextModel::insert(size_type p, const string &aString)
 {
   if (aString.size()==0)
-    return;
+    return *this;
   string s(aString);
 
   string::iterator sp;
@@ -152,7 +172,7 @@ TTextModel::insert(size_t p, const string &aString)
   }
 
   if (s.empty())
-    return;
+    return *this;
 
   if (type==CHANGE || type==REMOVE || p!=offset+length || s=="\n" || s.size()>1) {
     //cout << "* new undo group for textarea" << endl;
@@ -161,7 +181,7 @@ TTextModel::insert(size_t p, const string &aString)
   TUndoManager::beginUndoGrouping(this);
   TUndoManager::registerUndo(this, new TUndoInsert(this, p, s.size()));
 
-  data.insert(p, s);
+  _data.insert(p, s);
   
   type = INSERT;
   offset = p;
@@ -177,6 +197,7 @@ TTextModel::insert(size_t p, const string &aString)
   
   sigTextArea();
   sigChanged();
+  return *this;
 }
 
 /**
@@ -186,11 +207,11 @@ TTextModel::insert(size_t p, const string &aString)
  * \param l    length
  * \param undo store in undo history if true
  */
-void
-TTextModel::remove(size_t p, size_t l)
+TTextModel&
+TTextModel::erase(size_t p, size_t l)
 {
   if (l==0)
-    return;
+    return *this;
     
   // cout << "remove at " << p << endl;
   if (type==CHANGE || type==INSERT || p!=offset-length) {
@@ -198,11 +219,11 @@ TTextModel::remove(size_t p, size_t l)
     TUndoManager::endUndoGrouping();
   }
   TUndoManager::beginUndoGrouping(this);
-  TUndoManager::registerUndo(this, new TUndoRemove(this, p, data.substr(p,l)));
+  TUndoManager::registerUndo(this, new TUndoRemove(this, p, _data.substr(p,l)));
 
   lines = 0;
   for(size_t i=p; i<p+l; ++i) {
-    if (data[i]=='\n')
+    if (_data[i]=='\n')
       ++lines;
   }
   nlines -= lines;
@@ -211,8 +232,9 @@ TTextModel::remove(size_t p, size_t l)
   length = l;
   _modified = true;
   sigTextArea();
-  data.erase(p, l);
+  _data.erase(p, l);
   sigChanged();
+  return *this;
 }
 
 int

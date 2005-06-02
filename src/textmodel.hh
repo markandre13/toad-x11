@@ -69,17 +69,88 @@ class TTextModel:
      */
     unsigned nlines;
     
+    typedef string::size_type size_type;
+    typedef string::const_reference const_reference;
+    static const size_type npos = string::npos;
+    
     void setValue(const string&);
     void setValue(const char *data, size_t len);
-    const string& getValue() const { return data; }
+    const string& getValue() const { return _data; }
     
     TTextModel(const TTextModel &model) {
-      setValue(model.getValue());
+      setValue(model._data);
     }
+    
+    size_type size() const { return _data.size(); }
+    void clear();
+    bool empty() const { return _data.empty(); }
+    
+    const_reference operator[] (size_type p) const { return _data[p]; }
+    const_reference at(size_type p) const { return _data.at(p); }
+    
+    TTextModel& operator+=(const TTextModel &m) { return this->append(m); }
+    TTextModel& operator+=(const string &m) { return this->append(m); }
+    TTextModel& operator+=(const char *m) { return this->append(m); }
+    TTextModel& operator+=(char m) { return this->append(m); }
+    
+    TTextModel& append(TTextModel &m) { return this->insert(_data.size(), m._data); }
+    TTextModel& append(const string &m) { return this->insert(_data.size(), m); }
+    TTextModel& append(const char *m) { return this->insert(_data.size(), m); }
+    TTextModel& append(char m) { return this->insert(_data.size(), m); }
+    
+    // assign
+    
+    // insert
+    TTextModel& insert(size_type offset, int c);
+    TTextModel& insert(size_type offset, const string&);
+
+    // erase
+    TTextModel& erase(size_t offset=0, size_t length=npos);
+    
+    // replace
+    
     string& operator=(string &s) { setValue(s); return s; }
     const string& operator=(const string &s) { setValue(s); return s; }
-    operator const string&() const { return getValue(); }
-    const char * c_str() const { return getValue().c_str(); }
+    operator const string&() const { return _data; }
+    const char * c_str() const { return _data.c_str(); }
+    const char * data() const { return _data.data(); }
+
+    size_type find(const char *s, size_type p, size_type n) const {
+      return _data.find(s, p, n);
+    }
+    size_type find(const string &s, size_type p=0) const {
+      return _data.find(s, p);
+    }
+    size_type find(const char *s, size_type p=0) const {
+      return _data.find(s, p);
+    }
+    size_type find(char c, size_type p=0) const {
+      return _data.find(c, p);
+    }
+    size_type rfind(const string &s, size_type p=npos) const {
+      return _data.rfind(s, p);
+    }
+    size_type rfind(const char *s, size_type p, size_type n) const {
+      return _data.rfind(s, p, n);
+    }
+    size_type rfind(const char *s, size_type p=npos) const {
+      return _data.rfind(s, p);
+    }
+    size_type rfind(char c, size_type p=npos) const {
+      return _data.rfind(c, p);
+    }
+    // find_first_of
+    // find_last_of
+    // find_first_not_of
+    // find_last_not_of
+    
+    string substr(size_type p=0, size_type n=npos) const {
+      return _data.substr(p, n);
+    }
+    int compare(const string &s) const {
+      return _data.compare(s);
+    }
+    // more compare...
     
     //! 'true' when model was modified an needs to be saved
     bool _modified;
@@ -97,10 +168,6 @@ class TTextModel:
       }
     }
     
-    void insert(size_t offset, int c);
-    void insert(size_t offset, const string&);
-    void remove(size_t offset, size_t length=1);
-
     static const int CHARACTER_NONE = 0;
     static const int CHARACTER_TABULATOR = 8;
     static const int CHARACTER_RETURN = 13;
@@ -129,7 +196,7 @@ class TTextModel:
         bool getRedoName(string *name) const;
         bool getUndoName(string *name) const;
         void undo() {
-          model->remove(offset, length);
+          model->erase(offset, length);
         }
     };
 
@@ -153,7 +220,7 @@ class TTextModel:
     };
     
   protected:
-    string data;
+    string _data;
 };
 
 inline ostream& operator<<(ostream &s, const TTextModel& m) {

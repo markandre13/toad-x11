@@ -1174,7 +1174,7 @@ TTextArea::_selection_erase()
     _bos = _eos;
     _eos = a;
   }
-  model->remove(_bos, _eos-_bos);
+  model->erase(_bos, _eos-_bos);
 }
 
 void
@@ -1182,7 +1182,7 @@ TTextArea::_selection_cut()
 {
   MARK
   _selection_copy();
-  model->remove(_bos, _eos-_bos);
+  model->erase(_bos, _eos-_bos);
 }
 
 void
@@ -1217,7 +1217,7 @@ void
 TTextArea::_delete_current_line()
 {
   MARK
-  model->remove(_bol, _eol-_bol+1);
+  model->erase(_bol, _eol-_bol+1);
 }
 
 void
@@ -1449,7 +1449,7 @@ TTextArea::_delete()
   MARK
   DBM(cout << "_delete: _bol=" << _bol << ", _pos=" << _pos << ", _eol=" << _eol << endl;)
   if (_pos<model->getValue().size()) {
-    model->remove(_pos, utf8charsize(model->getValue(), _pos));
+    model->erase(_pos, utf8charsize(model->getValue(), _pos));
   }
 }
 

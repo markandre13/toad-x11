@@ -198,7 +198,7 @@ DBM(cerr << "  locked => return\n";)
         return;
       }
 DBM(cerr << "  not locked => setValue\n";)
-      int a = atoi(data.c_str());
+      int a = atoi(_data.c_str());
       lock = true;
       model->setValue(a);
       lock = false;

@@ -84,7 +84,7 @@ class TRGBTextModel:
     void masterChanged()
     {
       int r, g, b;
-      sscanf(data.c_str(), "#%02x%02x%02x", &r, &g, &b);
+      sscanf(_data.c_str(), "#%02x%02x%02x", &r, &g, &b);
       model->set(r, g, b);
     }
     void slaveChanged()
