@@ -1275,11 +1275,12 @@ cerr << " y=" << y
   if (rfy)
     *rfy = my - pos1;
 
+/*
   if (selection&&selection->perRow())
     x=0;
   if (selection&&selection->perCol())
     y=0;
-
+*/
   *fx = x;
   *fy = y;
   
@@ -1390,7 +1391,17 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
     me.modifier = modifier;
     // this should also contain a pointer to this adapter, in case
     // mouseEvent makes modifications?
-    adapter->mouseEvent(me, x, y, col_info[x].size, row_info[y].size);
+    int size = col_info[cx].size;
+    if (stretchLastColumn && x==cols-1) {
+      int xp;
+      xp = fpx + visible.x;
+      for(int _x=ffx; _x<x; _x++) {
+        xp += col_info[_x].size;
+      }
+      if (xp+size<visible.x+visible.w)
+        size = visible.x+visible.w-xp;
+    }
+    adapter->mouseEvent(me, x, y, size, row_info[y].size);
   }
 
   sigPressed();
@@ -1831,6 +1842,9 @@ TTable::adapterChanged()
     case TTableModel::REMOVED_ROW:
 //      cout << "table: removed row " << adapter->where << ", " << adapter->size << endl;
       _handleRemovedRow();
+      break;
+    case TTableModel::CONTENT:
+      invalidateWindow();
       break;
     default:
 //      cout << "table: new model" << endl;
