@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,10 +58,12 @@ void TButtonBase::setDown(bool down)
   if (down==bDown) return;
   bDown=down;
   invalidateWindow();
-  if (down)
+  if (down) {
     sigArm();
-  else
+  } else {
     sigDisarm();
+    sigClicked();
+  }
 }
 
 /**
