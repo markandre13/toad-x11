@@ -61,8 +61,12 @@ TColor sysrgb[TColor::MAX]=
   TColor( 63, 63,127),  // SLIDER_SHADOW
   TColor(191,191,255),  // SLIDER_LIGHT
   TColor(127,127,191),  // SELECTED
+  TColor(127,127,215),  // SELECTED_2
   TColor(  0,  0,  0),  // SELECTED_TEXT
   TColor(215,215,215),  // SELECTED_GRAY
+  TColor(239,239,239),  // SELECTED_GRAY_2
+  TColor(255,255,255),  // TABLE_CELL
+  TColor(231,231,255),  // TABLE_CELL_2
   TColor( 79,128,255),  // FIGURE_SELECTION
 };
 

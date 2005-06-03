@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -144,8 +144,12 @@ class TColor
       SLIDER_SHADOW,
       SLIDER_LIGHT,
       SELECTED,             // background for selected text when focus
+      SELECTED_2,
       SELECTED_TEXT,        // color for selected text
       SELECTED_GRAY,        // background for selected text when no focus
+      SELECTED_GRAY_2,
+      TABLE_CELL,           // table cell color
+      TABLE_CELL_2,
       FIGURE_SELECTION,     // used by figureeditor to mark selections
       MAX
     };
