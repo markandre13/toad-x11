@@ -62,7 +62,7 @@ void TButtonBase::setDown(bool down)
     sigArm();
   } else {
     sigDisarm();
-    sigClicked();
+//    sigClicked();
   }
 }
 
