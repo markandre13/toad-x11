@@ -142,12 +142,12 @@ TTableAdapter::renderCell(TPen &pen, const TTableEvent &te)
   pen.setLineWidth(1);
   if (te.selected) {
     if (te.focus) {
-      pen.setColor(TColor::SELECTED);
+      pen.setColor((te.row&1) ? TColor::SELECTED_2 : TColor::SELECTED);
     } else {
-      pen.setColor(TColor::SELECTED_GRAY);
+      pen.setColor((te.row&1) ? TColor::SELECTED_GRAY_2 : TColor::SELECTED_GRAY);
     }
   } else {
-    pen.setColor(TColor::WHITE);
+    pen.setColor((te.row&1) ? TColor::TABLE_CELL_2 : TColor::TABLE_CELL);
   }
   pen.fillRectanglePC(0,0,te.w,te.h);
   if (te.selected)
