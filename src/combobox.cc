@@ -168,6 +168,7 @@ TComboBox::mouseEvent(TMouseEvent &me)
 {
   switch(me.type) {
     case TMouseEvent::LDOWN:
+      btn->setDown(!btn->isDown());
       setFocus();
       break;
     case TMouseEvent::ROLL_UP:
