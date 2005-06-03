@@ -111,7 +111,7 @@ default: connect.hh resource.cc include/toad $(LIBNAME) ../bin/toadbin2c
 ../bin/toadbin2c: bin2c.c
 	gcc bin2c.c -o ../bin/toadbin2c
 
-SUBDIRS=. io dnd pen util figure dialogeditor figureeditor X11
+SUBDIRS=. io dnd pen util stl figure dialogeditor figureeditor X11
 
 install:
 	for dir in $(SUBDIRS); do \
