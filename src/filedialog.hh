@@ -21,14 +21,11 @@
 #ifndef _TOAD_FILEDIALOG_HH
 #define _TOAD_FILEDIALOG_HH
 
-//#include <set>
-#include <vector>
-#include <deque>
-
 #include <toad/dialog.hh>
 #include <toad/textmodel.hh>
 #include <toad/boolmodel.hh>
 #include <toad/table.hh>
+#include <toad/stl/vector.hh>
 
 namespace toad {
 
@@ -60,57 +57,6 @@ class TSimpleFileFilter:
 
 class TDirectoryAdapter;
 
-template <class T>
-class GVector:
-  public TTableModel
-{
-  private:
-    vector<T> data;
-
-  public:
-    typedef typename vector<T>::const_iterator const_iterator;
-    typedef typename vector<T>::iterator iterator;
-    typedef typename vector<T>::size_type size_type;
-    
-    const T& operator[](size_type n) const { return data[n]; }
-    const T& at(size_type n) const { return data.at(n); }
-    T& front() { return data.front(); }
-    T& back() { return data.back(); }
-    const T& front() const { return data.front(); }
-    const T& back() const { return data.back(); }
-    void push_back(const T &x) {
-      data.push_back(x);
-      reason = INSERT_ROW;
-      where = data.size() - 1;
-      TTableModel::size  = 1;
-      sigChanged();
-    }
-    iterator insert(iterator p, const T &x) {
-      reason = INSERT_ROW;
-      TTableModel::size  = 1;
-      where = p - begin();
-      iterator i = data.insert(p, x);
-//      cerr << "GVector<T>::insert: where = " << where << ", size = 1" << endl;
-      sigChanged();
-      return i;
-    }
-    // pop_back
-    // insert
-    // erase
-    // swap
-    // clear
-    // resize
-    // operator=, copy constructor, ...
-    const_iterator begin() const { return data.begin(); }
-    const_iterator end() const { return data.end(); }
-    iterator begin() { return data.begin(); }
-    iterator end() { return data.end(); }
-    size_type size() const { return data.size(); }
-    size_type maxsize() const { return data.max_size(); }
-    size_type capacity() const { return data.capacity(); }
-    bool empty() const { return data.empty(); }
-    void reserve(size_type n) { data.reserve(n); }
-};
 
 typedef GVector<TFileFilter*> TFilterList;
 
