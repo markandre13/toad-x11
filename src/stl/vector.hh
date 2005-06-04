@@ -22,6 +22,7 @@
 #define _TOAD_STL_VECTOR_HH
 
 #include <vector>
+#include <toad/table.hh>
 
 namespace toad {
 

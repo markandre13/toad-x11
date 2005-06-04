@@ -22,6 +22,7 @@
 #define _TOAD_STL_DEQUE_HH
 
 #include <deque>
+#include <toad/table.hh>
 
 namespace toad {
 
