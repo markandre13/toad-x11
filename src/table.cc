@@ -113,19 +113,6 @@ TSimpleTableAdapter::getModel() const
   return 0;
 }
 
-size_t
-TTableModel::getRows() const
-{
-  return 0;
-}
-
-size_t
-TTableModel::getCols() const
-{
-  return 0;
-}
-
-
 TTableAdapter::TTableAdapter()
 {
   table = 0;
@@ -2074,7 +2061,7 @@ TTable::handleNewModel()
 
   cols = adapter->getCols();
   rows = adapter->getRows();
-  
+
   row_info = rows ? static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*rows)) : 0;
   col_info = cols ? static_cast<TRCInfo*>(realloc(col_info, sizeof(TRCInfo)*cols)) : 0;
   

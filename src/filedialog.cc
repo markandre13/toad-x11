@@ -203,7 +203,7 @@ class TFilterListAdapter:
     int getRowHeight(int) { return h+2; }
     int getColWidth(int) { return w+2; }
     size_t getCols() { return 1; }
-    size_t getRows() { return model ? model->size() : 0; }
+//    size_t getRows() { return model ? model->size() : 0; }
     void renderItem(TPen &pen, const TTableEvent &te) {
       pen.drawString(1,1, (*model)[te.row]->toText());
     }
@@ -240,7 +240,7 @@ class TDequeStringAdapter:
     int getRowHeight(int) { return h+2; }
     int getColWidth(int) { return w+2; }
     size_t getCols() { return 1; }
-    size_t getRows() { model ? model->size() : 0; }
+//    size_t getRows() { return model ? model->size() : 0; }
     void renderItem(TPen &pen, const TTableEvent &te) {
       pen.drawString(1,1, (*model)[te.row]);
     }

@@ -298,8 +298,8 @@ class TTableModel:
     size_t where;
     size_t size;
     bool isEmpty() const { return getRows()==0 && getCols()==0;}
-    virtual size_t getRows() const;
-    virtual size_t getCols() const;
+    virtual size_t getRows() const = 0;
+    virtual size_t getCols() const = 0;
 };
 
 typedef GSmartPointer<TTableModel> PTableModel;
@@ -316,8 +316,8 @@ class TTableAdapter:
     TTable* getTable() const { return table; }
     virtual TTableModel* getModel() const = 0; // const { return 0; }
 
-    virtual size_t getCols() { return 1; }
-    virtual size_t getRows() = 0;
+    virtual size_t getCols() { return getModel() ? getModel()->getCols() : 1; }
+    virtual size_t getRows() { return getModel() ? getModel()->getRows() : 1; }
 
     //! Most messages from TTable to TTableAdapter go through the
     //! tableEvent method to ease delegation to other objects which
