@@ -36,6 +36,9 @@ class GDeque:
     deque<T> data;
 
   public:
+    size_t getRows() const { return data.size(); }
+    size_t getCols() const { return 1; }
+
     typedef typename deque<T>::const_iterator const_iterator;
     typedef typename deque<T>::iterator iterator;
     typedef typename deque<T>::size_type size_type;

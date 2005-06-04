@@ -36,6 +36,9 @@ class GVector:
     vector<T> data;
 
   public:
+    size_t getRows() const { return data.size(); }
+    size_t getCols() const { return 1; }
+
     typedef typename vector<T>::const_iterator const_iterator;
     typedef typename vector<T>::iterator iterator;
     typedef typename vector<T>::size_type size_type;
