@@ -77,7 +77,7 @@ typedef GSmartPointer<TAbstractSelectionModel> PAbstractSelectionModel;
 class TSingleSelectionModel:
   public TAbstractSelectionModel
 {
-    int col, row;
+    size_t col, row;
     bool selected;
 
   public:
@@ -253,9 +253,24 @@ inline bool operator!=(const TSelectionModel::iterator &a,
 
 struct TTableEvent
 {
-  int col, row;   // current field
-  int w, h;       // field size in pixels
-  int cols, rows; // table size in fields
+  enum EType {
+    //! return size of column 'col' in 'w'
+    GET_COL_SIZE,
+    //! return size of row 'row' in 'h'
+    GET_ROW_SIZE,
+    //! paint field (col, row) of size (w, h) and the flags
+    //! cursor, selected, focus, per_row and per_col using pen
+    //! 'pen'
+    PAINT,
+    //! handle mouse event 'mouse' for field (col, row) of size (w, h)
+    MOUSE,
+    //! handle keyboard event...
+  } type;
+  TPen *pen;
+  TMouseEvent mouse;
+  size_t col, row;   // current field
+  int w, h;          // field size in pixels
+  size_t cols, rows; // table size in fields
   bool per_row, per_col;
   bool cursor;    // show cursor
   bool selected;  // field is selected
@@ -301,15 +316,23 @@ class TTableAdapter:
     TTable* getTable() const { return table; }
     virtual TTableModel* getModel() const = 0; // const { return 0; }
 
-    virtual int getRows() { return 1; }
-    virtual int getCols() { return 1; }
+    virtual size_t getCols() { return 1; }
+    virtual size_t getRows() = 0;
+
+    //! Most messages from TTable to TTableAdapter go through the
+    //! tableEvent method to ease delegation to other objects which
+    //! may handle text, checkboxes, etc...
+    virtual void tableEvent(TTableEvent &te);
+
     virtual int getRowHeight(int row) = 0;
     virtual int getColWidth(int col) = 0;
 
+    void renderBackground(TTableEvent &te);
+    void renderCursor(TTableEvent &te);
     /**
      * Render cell background, cursor and invoke renderItem.
      */
-    virtual void renderCell(TPen&, const TTableEvent&);
+    virtual void renderCell(TPen&, TTableEvent&);
     virtual void renderItem(TPen&, const TTableEvent&) = 0;
     virtual void mouseEvent(TMouseEvent &, int xindex, int yindex, int w, int h);
 
@@ -477,8 +500,8 @@ class TTable:
     int getLastSelectionCol() const { return sx; }
     int getLastSelectionRow() const { return sy; }
 
-    int getRows() const { return rows; }
-    int getCols() const { return cols; }
+    size_t getRows() const { return rows; }
+    size_t getCols() const { return cols; }
     int getRowHeight(int row) const { return (row<0||row>=rows) ? 0 : row_info[row].size; }
     int getColWidth(int col) const { return (col<0||col>=cols) ? 0 : col_info[col].size; }
     void setRowHeight(int row, int height);
@@ -539,7 +562,7 @@ class TTable:
 
     // precalculated values for optimization
     void handleNewModel();
-    int rows, cols;     // table size in rows & columns
+    size_t rows, cols;     // table size in rows & columns
 //    bool per_row, per_col;
     
     // getRowHeight & getColWidth are expensive operations so call 'em

@@ -93,8 +93,7 @@ TComboBox::paint()
     col = table->getLastSelectionCol();
     row = table->getLastSelectionRow();
   }
-
-  if (table->getAdapter()->getRows() <= row) {
+  if (row >= table->getAdapter()->getRows()) {
     cerr << "TComboBox '"<<getTitle()<<"': tables selection model was out of renderer range" << endl;
     pen.setColor(128,64,64);
     pen.fillRectanglePC(2,2, getWidth()-4, getHeight()-4);

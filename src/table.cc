@@ -132,54 +132,90 @@ TTableAdapter::TTableAdapter()
   reason = TTableModel::CHANGED;
 }
 
+void
+TTableAdapter::tableEvent(TTableEvent &te)
+{
+  switch(te.type) {
+    case TTableEvent::GET_COL_SIZE:
+      te.w = getColWidth(te.col);
+      break;
+    case TTableEvent::GET_ROW_SIZE:
+      te.h = getRowHeight(te.row);
+      break;
+    case TTableEvent::PAINT:
+      renderCell(*te.pen, te);
+      break;
+    case TTableEvent::MOUSE:
+      mouseEvent(te.mouse, te.col, te.row, te.w, te.h);
+      break;
+  }
+}
+
+
 /**
  * Draws selection indicators, calls renderItem and draws the cursor.
  */
 void 
-TTableAdapter::renderCell(TPen &pen, const TTableEvent &te)
+TTableAdapter::renderCell(TPen &pen, TTableEvent &te)
 {
-  pen.setLineStyle(TPen::SOLID);
-  pen.setLineWidth(1);
+  renderBackground(te);
+  renderItem(pen, te);
+  renderCursor(te);
+}
+  
+void
+TTableAdapter::renderBackground(TTableEvent &te)  
+{
+  if (te.type != TTableEvent::PAINT)
+    return;
+  te.pen->setLineStyle(TPen::SOLID);
+  te.pen->setLineWidth(1);
   if (te.selected) {
     if (te.focus) {
-      pen.setColor((te.row&1) ? TColor::SELECTED_2 : TColor::SELECTED);
+      te.pen->setColor((te.row&1) ? TColor::SELECTED_2 : TColor::SELECTED);
     } else {
-      pen.setColor((te.row&1) ? TColor::SELECTED_GRAY_2 : TColor::SELECTED_GRAY);
+      te.pen->setColor((te.row&1) ? TColor::SELECTED_GRAY_2 : TColor::SELECTED_GRAY);
     }
   } else {
-    pen.setColor((te.row&1) ? TColor::TABLE_CELL_2 : TColor::TABLE_CELL);
+    te.pen->setColor((te.row&1) ? TColor::TABLE_CELL_2 : TColor::TABLE_CELL);
   }
-  pen.fillRectanglePC(0,0,te.w,te.h);
+  te.pen->fillRectanglePC(0,0,te.w,te.h);
   if (te.selected)
-    pen.setColor(TColor::SELECTED_TEXT);
+    te.pen->setColor(TColor::SELECTED_TEXT);
   else 
-    pen.setColor(TColor::BLACK);
-  renderItem(pen, te);
+    te.pen->setColor(TColor::BLACK);
+}
+
+void
+TTableAdapter::renderCursor(TTableEvent &te)
+{
+  if (te.type != TTableEvent::PAINT)
+    return;
   if (te.cursor) {
-    pen.setColor(TColor::BLACK);
-    pen.setLineStyle(TPen::SOLID);
-    pen.setLineWidth(1);
+    te.pen->setColor(TColor::BLACK);
+    te.pen->setLineStyle(TPen::SOLID);
+    te.pen->setLineWidth(1);
     if (te.per_row) {
-      pen.drawLine(0,0,te.w-1,0);
-      pen.drawLine(0,te.h-1,te.w,te.h-1);
+      te.pen->drawLine(0,0,te.w-1,0);
+      te.pen->drawLine(0,te.h-1,te.w,te.h-1);
       if (te.col==0) {
-        pen.drawLine(0,0,0,te.h-1);
+        te.pen->drawLine(0,0,0,te.h-1);
       }
       if (te.col==te.cols) {
-        pen.drawLine(0,te.w-1,te.w-1,te.h-1);
+        te.pen->drawLine(0,te.w-1,te.w-1,te.h-1);
       }
     } else
     if (te.per_col) {
-      pen.drawLine(0,0,0,te.h-1);
-      pen.drawLine(0,te.w-1,te.w-1,te.h-1);
+      te.pen->drawLine(0,0,0,te.h-1);
+      te.pen->drawLine(0,te.w-1,te.w-1,te.h-1);
       if (te.row==0) {
-        pen.drawLine(0,0,te.w-1,0);
+        te.pen->drawLine(0,0,te.w-1,0);
       }
       if (te.row==te.rows) {
-        pen.drawLine(0,te.h-1,te.w-1,te.h-1);
+        te.pen->drawLine(0,te.h-1,te.w-1,te.h-1);
       }
     } else {
-      pen.drawRectanglePC(0,0,te.w, te.h);
+      te.pen->drawRectanglePC(0,0,te.w, te.h);
     }
   }
 }
@@ -1127,7 +1163,9 @@ DBSCROLL(
         te.h = check.h;
         te.cursor = cursor && !noCursor;
         te.selected = selected;
-        adapter->renderCell(pen, te);
+        te.pen = &pen;
+        te.type = TTableEvent::PAINT;
+        adapter->tableEvent(te);
       }
       xp += col_info[x].size + border;
     }
@@ -1384,11 +1422,11 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
 
   // invoke adapter mouseEvent (ie. for tree widgets, check boxes, etc.)
   if (adapter) {
-    TMouseEvent me;
-    me.window = this;
-    me.x = fx;
-    me.y = fy;
-    me.modifier = modifier;
+    TTableEvent te;
+    te.mouse.window = this;
+    te.mouse.x = fx;
+    te.mouse.y = fy;
+    te.mouse.modifier = modifier;
     // this should also contain a pointer to this adapter, in case
     // mouseEvent makes modifications?
     int size = col_info[cx].size;
@@ -1401,7 +1439,12 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
       if (xp+size<visible.x+visible.w)
         size = visible.x+visible.w-xp;
     }
-    adapter->mouseEvent(me, x, y, size, row_info[y].size);
+    te.col = x;
+    te.row = y;
+    te.w   = size;
+    te.h   = row_info[y].size;
+    te.type= TTableEvent::MOUSE;
+    adapter->tableEvent(te);
   }
 
   sigPressed();
@@ -2029,8 +2072,8 @@ TTable::handleNewModel()
   if (!adapter)
     return;
 
-  rows = adapter->getRows();
   cols = adapter->getCols();
+  rows = adapter->getRows();
   
   row_info = rows ? static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*rows)) : 0;
   col_info = cols ? static_cast<TRCInfo*>(realloc(col_info, sizeof(TRCInfo)*cols)) : 0;
@@ -2040,11 +2083,13 @@ TTable::handleNewModel()
   // calculate pane.w
   pane.w=0;
   info = col_info;
-  for(int i=0; i<cols; ++i) {
+  TTableEvent te;
+  te.type = TTableEvent::GET_COL_SIZE;
+  for(te.col=0; te.col<cols; ++te.col) {
     DBM(cout << "pane.w: " << pane.w << endl;)
-    int n = adapter->getColWidth(i);
-    info->size = n;
-    pane.w += n + border;
+    adapter->tableEvent(te);
+    info->size = te.w;
+    pane.w += te.w + border;
     ++info;
   }
   DBM(cout << "pane.w: " << pane.w << endl;)
@@ -2052,13 +2097,14 @@ TTable::handleNewModel()
   // calculate pane.h
   pane.h=0;
   info = row_info;
-  for(int i=0; i<rows; ++i) {
+  te.type = TTableEvent::GET_ROW_SIZE;
+  for(te.row=0; te.row<rows; ++te.row) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     info->open = true;
     info->size = 0;
-    int n = adapter->getRowHeight(i);
-    info->size = n;
-    pane.h += n + border;
+    adapter->tableEvent(te);
+    info->size = te.h;
+    pane.h += te.h + border;
     ++info;
   }
   DBM(cout << "pane.h: " << pane.h << endl;)
