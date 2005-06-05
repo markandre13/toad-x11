@@ -90,6 +90,7 @@ class TFigure:
     static const unsigned STOP     = 2; // stop editing
     static const unsigned REPEAT   = 4; // repeat the last event
     static const unsigned DELETE   = 8; // delete this object
+    static const unsigned NOGRAB   = 16; // don't grab
 
     // stage 1: select:
     virtual double _distance(TFigureEditor *fe, int x, int y);
@@ -291,6 +292,8 @@ class TFLine:
 class TFBezierline:
   public TFLine
 {
+  protected:
+    void paintSelectionLines(TPenBase &pen);
   public:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);

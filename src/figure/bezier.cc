@@ -27,29 +27,60 @@
 using namespace toad;
 
 void
+TFBezierline::paintSelectionLines(TPenBase &pen)
+{
+    pen.setColor(TColor::FIGURE_SELECTION);
+    pen.setLineStyle(TPen::SOLID);
+    TPolygon::const_iterator p(polygon.begin());
+    unsigned n = polygon.size();
+    if (pen.mat) {
+      TMatrix2D *mat = pen.mat;
+      pen.push();
+      pen.identity();
+      pen.setLineWidth(1);
+      while(true) {
+        if (n>=2) {
+          int x0, y0, x1, y1;
+          mat->map(p->x, p->y, &x0, &y0);
+          mat->map((p+1)->x, (p+1)->y, &x1, &y1);
+          pen.drawLine(x0, y0, x1, y1);
+        }
+        if (n>=4) {
+          int x0, y0, x1, y1;
+          mat->map((p+2)->x, (p+2)->y, &x0, &y0);
+          mat->map((p+3)->x, (p+3)->y, &x1, &y1);
+          pen.drawLine(x0, y0, x1, y1);
+        } else {
+          break;
+        }
+        p+=3;
+        n-=3;
+      }
+      pen.pop();
+    } else {
+      pen.setLineWidth(1);
+      while(true) {
+        if (n>=2) {
+          pen.drawLine(p->x, p->y,
+                       (p+1)->x, (p+1)->y);
+        }
+        if (n>=4) {
+          pen.drawLine((p+2)->x, (p+2)->y,
+                       (p+3)->x, (p+3)->y);
+        } else {
+          break;
+        }
+        p+=3;
+        n-=3;
+      }
+    }
+}
+
+void
 TFBezierline::paint(TPenBase &pen, EPaintType type)
 {
   if (type==EDIT || type==SELECT) {
-    pen.setColor(TColor::FIGURE_SELECTION);
-    pen.setLineStyle(TPen::SOLID);
-    pen.setLineWidth(0);
-    TPolygon::const_iterator p(polygon.begin());
-    unsigned n = polygon.size();
-    while(true) {
-      if (n>=2) {
-        pen.drawLine(p->x, p->y,
-                     (p+1)->x, (p+1)->y);
-      }
-      if (n>=4) {
-        pen.drawLine((p+2)->x, (p+2)->y,
-                     (p+3)->x, (p+3)->y);
-      } else {
-        break;
-      }
-      p+=3;
-      n-=3;
-    }
-    // pen.setLineStyle(TPen::SOLID);
+    paintSelectionLines(pen);
   }
 
   pen.setColor(line_color);
@@ -646,11 +677,14 @@ TFBezier::paint(TPenBase &pen, EPaintType type)
     pen.setFillColor(fill_color);
     pen.fillPolyBezier(polygon);
   }
+
   
-  pen.setLineStyle(TPen::SOLID);
-  pen.setLineWidth(0);
   
   if (type==EDIT || type==SELECT) {
+    paintSelectionLines(pen);
+    return;
+    pen.setLineStyle(TPen::SOLID);
+    pen.setLineWidth(0);
     pen.setColor(TColor::FIGURE_SELECTION);
 //    pen.setLineStyle(TPen::DOT);
     TPolygon::const_iterator p(polygon.begin());

@@ -48,7 +48,43 @@ class TFigureEditorHeaderRenderer
 class TFigureTool
 {
   public:
-    virtual void mouseEvent(TFigureEditor *fe, TMouseEvent &me) = 0;
+    virtual ~TFigureTool();
+    virtual void stop(TFigureEditor*);
+    virtual void mouseEvent(TFigureEditor *fe, TMouseEvent &me);
+    virtual void keyEvent(TFigureEditor *fe, TKeyEvent &ke);
+    virtual void setAttributes(TFigureAttributes *p);
+    virtual void paintSelection(TPenBase &pen);
+};
+
+/**
+ * Tool to create figures.
+ *
+ * Mose of the code to actually create figures is located in the figures
+ * themselves. This class just creates an interface between the figure
+ * editor and the figure.
+ */
+class TFCreateTool:
+  public TFigureTool
+{
+    TFigure *tmpl;
+    TFigure *figure;
+  public:
+    /**
+     * \param tmpl template for the figure to be created. This object will be
+     *        deleted along with the TFCreateTool.
+     */
+    TFCreateTool(TFigure *tmpl) {
+      this->tmpl = tmpl;
+      figure = 0;
+    }
+    ~TFCreateTool() {
+      delete tmpl;
+    }
+  protected:    
+    void stop(TFigureEditor*);
+    void mouseEvent(TFigureEditor *fe, TMouseEvent &me);
+    void keyEvent(TFigureEditor *fe, TKeyEvent &ke);
+    void setAttributes(TFigureAttributes *p);
 };
 
 class TFigureAttributes:
@@ -74,7 +110,9 @@ class TFigureAttributes:
     // These methods delegate to the current TFigureEditor.
     void setOperation(unsigned);
     // unsigned getOperation() const { return current->getOperation(); }
+#if 0
     void setCreate(TFigure*);
+#endif
     void setTool(TFigureTool*);
     
     void group();
@@ -176,8 +214,8 @@ class TFigureEditor:
     TFigureEditor(TWindow*, const string &title, TFigureModel *model=0);
     ~TFigureEditor();
     
-    void setPreferences(TFigureAttributes *p);
-    TFigureAttributes* getPreferences() const {
+    void setAttributes(TFigureAttributes *p);
+    TFigureAttributes* getAttributes() const {
       return preferences;
     }
     void preferencesChanged();
@@ -228,11 +266,11 @@ class TFigureEditor:
 
   public:
     static const unsigned OP_SELECT = 0;
-    static const unsigned OP_CREATE = 1;
+//    static const unsigned OP_CREATE = 1;
     static const unsigned OP_ROTATE = 2;
     void setOperation(unsigned);
     unsigned getOperation() const { return operation; }
-    void setCreate(TFigure*);
+//    void setCreate(TFigure*);
     void setTool(TFigureTool*);
     
     // not all these methods work now, but the first 4 should do
@@ -341,6 +379,8 @@ class TFigureEditor:
     
     void resize();
     void mouseEvent(TMouseEvent&);
+    void keyEvent(TKeyEvent&);
+    
     void mouseLDown(int,int,unsigned);
     void mouseMove(int,int,unsigned);
     void mouseLUp(int,int,unsigned);
@@ -353,13 +393,14 @@ class TFigureEditor:
     bool restore(TInObjectStream&);
     void store(TOutObjectStream&) const;
 
+    void setCurrent(TFigure *f) { gadget = f; }
+
   protected:
     void init(TFigureModel *m);
     
     unsigned operation;
     
     TFigure* gadget;        // the current gadget during create & edit
-    TFigure* gtemplate;     // the gadget template during create
     
     int handle;             // the current handle or -1 during select
     

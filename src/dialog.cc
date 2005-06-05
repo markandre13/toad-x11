@@ -378,11 +378,11 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
   
   x=5; y=5; w=64; h=25; hmax=0;
 
-  static TFFrame gframe;
-  static TFRectangle grect;
-  static TFCircle gcirc;
-  static TFText gtext;
-  static TFLine gline; 
+  static TFCreateTool gframe(new TFFrame);
+  static TFCreateTool grect(new TFRectangle);
+  static TFCreateTool gcirc(new TFCircle);
+  static TFCreateTool gtext(new TFText);
+  static TFCreateTool gline(new TFLine);
     
   for(unsigned i=0; i<=5; ++i) {
     rb = NULL;
@@ -394,23 +394,23 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
         break;
       case 1:
         rb = new TFatRadioButton(this, "Frame", state);
-        CONNECT(rb->sigClicked, &gedit, setCreate, &gframe);
+        CONNECT(rb->sigClicked, &gedit, setTool, &gframe);
         break;
       case 2:
         rb = new TFatRadioButton(this, "Line", state);
-        CONNECT(rb->sigClicked, &gedit, setCreate, &gline);
+        CONNECT(rb->sigClicked, &gedit, setTool, &gline);
         break;
       case 3:
         rb = new TFatRadioButton(this, "Rect", state);
-        CONNECT(rb->sigClicked, &gedit, setCreate, &grect);
+        CONNECT(rb->sigClicked, &gedit, setTool, &grect);
         break;
       case 4:
         rb = new TFatRadioButton(this, "Circle", state);
-        CONNECT(rb->sigClicked, &gedit, setCreate, &gcirc);
+        CONNECT(rb->sigClicked, &gedit, setTool, &gcirc);
         break;
       case 5:
         rb = new TFatRadioButton(this, "Text", state);
-        CONNECT(rb->sigClicked, &gedit, setCreate, &gtext);
+        CONNECT(rb->sigClicked, &gedit, setTool, &gtext);
         break;
     }
     if (rb) {
@@ -462,7 +462,7 @@ TLayoutEditDialog::TLayoutEditDialog(TWindow *parent,
   
   TColorSelector *cs = new TColorSelector(this, 
                                           "colorselector", 
-                                          gedit.getPreferences());
+                                          gedit.getAttributes());
   cs->dialogeditorhack = true;
   cs->setShape(x,y,64,32);
   

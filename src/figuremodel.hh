@@ -51,6 +51,13 @@ class TFigureModel:
   protected:
     typedef std::vector<TFigure*> TStorage;
   public:
+    typedef TStorage::iterator iterator;
+    typedef TStorage::const_iterator const_iterator;
+    iterator begin() { return storage.begin(); }
+    iterator end() { return storage.end(); }
+    const_iterator begin() const { return storage.begin(); }
+    const_iterator end() const { return storage.end(); }
+  
     /**
      * Kind of modification that took place.
      */
@@ -74,47 +81,7 @@ class TFigureModel:
     void setModified(bool m) {
       _modified = m;
     }
-    
-    class iterator
-    {
-      friend class TFigureModel;
-        TFigureModel *owner;
-        TStorage::iterator p;
-      public:
-        iterator(): owner(0) {}
-        iterator(const iterator &a): owner(a.owner), p(a.p) {}
-        iterator(TFigureModel *aOwner, TStorage::iterator aPointer):
-          owner(aOwner), p(aPointer) {}
-        friend bool operator==(const iterator&, const iterator&);
-        friend bool operator!=(const iterator&, const iterator&);
-        iterator& operator++() { ++p; return *this; }
-        iterator& operator--() { --p; return *this; }
-        iterator operator++(int) { iterator tmp=*this; ++(*this); return tmp; }
-        iterator operator--(int) { iterator tmp=*this; --(*this); return tmp; }
-        TFigure*& operator*() const { return *p; }
-    };
 
-#if 0
-    class const_iterator
-    {
-      friend class TFigureModel;
-        const TFigureModel *owner;
-        TStorage::const_iterator p;
-      public:
-        const_iterator(): owner(0) {}
-        const_iterator(const const_iterator &a): owner(a.owner), p(a.p) {}
-        const_iterator(const TFigureModel *aOwner, const TStorage::iterator aPointer):
-          owner(aOwner), p(aPointer) {}
-        friend bool operator==(const const_iterator&, const const_iterator&);
-        friend bool operator!=(const const_iterator&, const const_iterator&);
-        const_iterator& operator++() { ++p; return *this; }
-        const_iterator& operator--() { --p; return *this; }
-        const_iterator operator++(int) { const_iterator tmp=*this; ++(*this); return tmp; }
-        const_iterator operator--(int) { const_iterator tmp=*this; --(*this); return tmp; }
-        const TFigure* operator*() const { return *p; }
-    };
-#endif
-    
     TFigureModel();
     TFigureModel(const TFigureModel&);
     ~TFigureModel();
@@ -123,6 +90,9 @@ class TFigureModel:
     void erase(TFigure*);
     void add(TFigureVector&);
     virtual void erase(TFigureSet&);
+    size_t size() const { return storage.size(); }
+    bool empty() const { return storage.empty(); }
+    
     
     void insert(TFigureAtDepthList &store);
 
@@ -149,21 +119,7 @@ class TFigureModel:
     void drop() {
       storage.clear();
     }
-    
-    iterator begin() {
-      return iterator(this, storage.begin());
-    }
-    iterator end() {
-      return iterator(this, storage.end());
-    }
-/*
-    const_iterator begin() const {
-      return iterator(this, storage.begin());
-    }
-    const_iterator end() const {
-      return const_iterator(this, storage.end());
-    }
-*/
+
     SERIALIZABLE_INTERFACE_PUBLIC(toad::, TFigureModel)
   protected:
     TStorage storage;
@@ -204,18 +160,6 @@ class TFigureAtDepthList
       store.clear();
     }
 };
-
-inline bool operator==(const TFigureModel::iterator &a,
-                const TFigureModel::iterator &b)
-{
-  return a.p == b.p;
-}
-
-inline bool operator!=(const TFigureModel::iterator &a,
-                const TFigureModel::iterator &b)
-{
-  return a.p != b.p;
-}
 
 typedef GSmartPointer<TFigureModel> PFigureModel;
 

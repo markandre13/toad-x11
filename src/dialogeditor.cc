@@ -117,10 +117,12 @@ TDialogEditor::TFilter::mouseEvent(TMouseEvent &me)
       }
       if (me.window) {
         if (me.type == TMouseEvent::LDOWN) {
-          parent->editwindow->grabMouse(TWindow::TMMM_ALL);
+//cout << "TDialogEditor::mouseEvent: old grab mouse" << endl;
+//          parent->editwindow->grabMouse(TWindow::TMMM_ALL);
         } else
         if (me.type == TMouseEvent::LUP) {
-          parent->editwindow->ungrabMouse();
+//cout << "TDialogEditor::mouseEvent: old ungrab mouse" << endl;
+//          parent->editwindow->ungrabMouse();
         }
         mf->mouseEvent(me);
         caught = true;

@@ -213,7 +213,7 @@ TFText::mouseLDown(TFigureEditor *editor, int x, int y, unsigned)
       calcSize();
       editor->invalidateFigure(this);
       startInPlace();
-      break;
+      return CONTINUE|NOGRAB;
       
     case TFigureEditor::STATE_CREATE:
     case TFigureEditor::STATE_EDIT:

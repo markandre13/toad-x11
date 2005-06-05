@@ -708,7 +708,7 @@ TFigureModel::erase(const iterator &p)
 {
   type = MODIFIED;
   sigChanged();
-  storage.erase(p.p);
+  storage.erase(p);
 }
 
 void
@@ -716,7 +716,7 @@ TFigureModel::erase(const iterator &p, const iterator &e)
 {
   type = MODIFIED;
   sigChanged();
-  storage.erase(p.p, e.p);
+  storage.erase(p, e);
 }
 
 void
@@ -724,7 +724,7 @@ TFigureModel::insert(const iterator &p, TFigure *g)
 {
   type = MODIFIED;
   sigChanged();
-  storage.insert(p.p, g);
+  storage.insert(p, g);
 }
 
 void
@@ -732,7 +732,7 @@ TFigureModel::insert(const iterator &at, const iterator &from, const iterator &t
 {
   type = MODIFIED;
   sigChanged();
-  storage.insert(at.p, from.p, to.p);
+  storage.insert(at, from, to);
 }
 
 /**

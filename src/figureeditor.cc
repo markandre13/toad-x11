@@ -121,7 +121,6 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t, TFigureModel *m):
   super(p, t)
 {
   init(m);
-  setMouseMoveMessages(TMMM_LBUTTON);
   bNoBackground = true;
   window = this;
   row_header_renderer = col_header_renderer = 0;
@@ -130,7 +129,7 @@ TFigureEditor::TFigureEditor(TWindow *p, const string &t, TFigureModel *m):
 TFigureEditor::~TFigureEditor()
 {
   setModel(0);
-  setPreferences(0);
+  setAttributes(0);
   if (mat)
     delete mat;
 }
@@ -185,11 +184,13 @@ TFigureAttributes::setOperation(unsigned op)
   if (current) current->setOperation(op);
 }
 
+#if 0
 void
 TFigureAttributes::setCreate(TFigure *figure)
 {
   if (current) current->setCreate(figure);
 }
+#endif
 
 void
 TFigureAttributes::setTool(TFigureTool *tool)
@@ -244,11 +245,11 @@ TFigureEditor::init(TFigureModel *m)
 {
   preferences = 0;
   tool = 0;
-  setPreferences(new TFigureAttributes);
+  setAttributes(new TFigureAttributes);
   fuzziness = 2;
 
   handle = -1;
-  gadget = gtemplate = NULL;
+  gadget = NULL;
   operation = OP_SELECT;
   state = STATE_NONE;
   use_scrollbars = true;
@@ -538,10 +539,24 @@ TFigureEditor::paintSelection(TPenBase &pen)
   }
 
   if (state==STATE_SELECT_RECT) {
-    pen.setColor(0,0,0);
-    pen.setLineStyle(TPen::DOT);
-    pen.setLineWidth(0);
-    pen.drawRectanglePC(down_x, down_y, select_x-down_x, select_y-down_y);
+    if (pen.mat) {
+      TMatrix2D *mat = pen.mat;
+      pen.push();
+      pen.identity();
+      pen.setColor(0,0,0);
+      pen.setLineStyle(TPen::DOT);
+      pen.setLineWidth(1.0);
+      int x0, y0, x1, y1;
+      mat->map(down_x, down_y, &x0, &y0);
+      mat->map(select_x, select_y, &x1, &y1);
+      pen.drawRectanglePC(x0, y0, x1-x0, y1-y0);
+      pen.pop();
+    } else {
+      pen.setColor(0,0,0);
+      pen.setLineStyle(TPen::DOT);
+      pen.setLineWidth(0);
+      pen.drawRectanglePC(down_x, down_y, select_x-down_x, select_y-down_y);
+    }
   }
 
   // draw rotation center  
@@ -604,6 +619,10 @@ TFigureEditor::paintSelection(TPenBase &pen)
     }
     pen.pop();
   }
+
+  if (tool) {
+    tool->paintSelection(pen);
+  }
 }
 
 /**
@@ -662,7 +681,6 @@ TFigureEditor::print(TPenBase &pen, bool withSelection)
     
   TRectangle cb, r;
   pen.getClipBox(&cb);
-
   for(TFigureModel::iterator p = model->begin();
       p != model->end();
       ++p)
@@ -706,7 +724,7 @@ TFigureEditor::print(TPenBase &pen, bool withSelection)
 }
 
 void 
-TFigureEditor::setPreferences(TFigureAttributes *p) {
+TFigureEditor::setAttributes(TFigureAttributes *p) {
   if (preferences) {
     disconnect(preferences->sigChanged, this);
     if (preferences->getCurrent() == this)
@@ -725,8 +743,8 @@ TFigureEditor::preferencesChanged()
   if (!preferences)
     return;
 
-  if (gtemplate)
-    gtemplate->setAttributes(preferences);
+  if (tool)
+    tool->setAttributes(preferences);
     
   model->setAttributes(selection, preferences);
 //  invalidateWindow(visible); 
@@ -822,9 +840,6 @@ TFigureEditor::deleteFigure(TFigure *g)
 {
   if (g==gadget)
     gadget=NULL;
-  if (g==gtemplate)
-    gtemplate=NULL;
-  
 
   TFigureSet::iterator s;
   s = selection.find(g);
@@ -1054,37 +1069,11 @@ TFigureEditor::setOperation(unsigned op)
   tool = 0;
 }
 
-/**
- * Select 'create object' as the new operation mode.
- *
- * \param t
- *   A template for the object to be created.
- *
- * \todo
- *   t shall be be const
- */
-void
-TFigureEditor::setCreate(TFigure *t)
-{
-  if (gtemplate) {
-    delete gtemplate;
-  }
-  TCloneable *clone = t->clone();
-  gtemplate = dynamic_cast<TFigure*>(clone);
-  if (!gtemplate) {
-    cerr << "TFigure::clone() didn't delivered a TFigure" << endl;
-    delete clone;
-    return;
-  }
-  gtemplate->removeable = true;
-  preferences->reason = TFigureAttributes::ALLCHANGED;
-  gtemplate->setAttributes(preferences);
-  setOperation(OP_CREATE);
-}
-
 void
 TFigureEditor::setTool(TFigureTool *tool)
 {
+  if (tool)
+    tool->stop(this);
   this->tool = tool;
 }
 
@@ -1101,18 +1090,22 @@ TFigureEditor::applyAll()
 void
 TFigureEditor::stopOperation()
 {
-  switch(state) {
-    case STATE_CREATE:
-      clearSelection();
-      if (gadget) {
-        // selection.insert(gadget);
-        model->figures.clear();
-        model->figures.insert(gadget);
-        model->type = TFigureModel::MODIFIED;
-        model->sigChanged();
-      }
-      setMouseMoveMessages(TMMM_ANYBUTTON);
-      break;
+  if (tool) {
+    tool->stop(this);
+  } else {
+    switch(state) {
+      case STATE_CREATE:
+        clearSelection();
+        if (gadget) {
+          // selection.insert(gadget);
+          model->figures.clear();
+          model->figures.insert(gadget);
+          model->type = TFigureModel::MODIFIED;
+          model->sigChanged();
+        }
+        window->setMouseMoveMessages(TMMM_ANYBUTTON);
+        break;
+    }
   }
   gadget = NULL;
   state = STATE_NONE;
@@ -1168,19 +1161,33 @@ TFigureEditor::selectionPaste()
 }
 
 void
+TFigureEditor::keyEvent(TKeyEvent &ke)
+{
+  if (tool) {
+    tool->keyEvent(this, ke);
+  } else {
+    TWindow::keyEvent(ke);
+  }
+}
+
+void
 TFigureEditor::keyDown(TKey key, char *s, unsigned m)
 {
-  if (!window || !model)
+  if (!window || !model || tool)
     return;
-    
+
   if (key == TK_ESCAPE) {
+#if 0
     if (operation==OP_CREATE) {
       stopOperation();
       deleteSelection();
     } else {
+#endif
       stopOperation();
       clearSelection();
+#if 0
     }
+#endif
     return;
   }
 
@@ -1213,8 +1220,7 @@ redo:
         }
         break;
       }
-    }
-    case OP_CREATE: {
+
       if (state==STATE_NONE) {
         if (key==TK_DELETE || key==TK_BACKSPACE)
           deleteSelection();
@@ -1223,15 +1229,14 @@ redo:
       assert(gadget!=NULL);
       unsigned r = gadget->keyDown(this,key,s,m);
       if (r & TFigure::DELETE)
-        deleteFigure(gadget);
-      if (r & TFigure::STOP)
+        deleteFigure(gadget); 
+      if (r & TFigure::STOP)  
         stopOperation();
       if (r & TFigure::REPEAT)
         goto redo;
     } break;
   }
 }
-
 void
 TFigureEditor::mouse2sheet(int mx, int my, int *sx, int *sy)
 {
@@ -1556,29 +1561,6 @@ redo:
           }
           return; 
         } break; // end of OP_ROTATE
-
-        case OP_CREATE: {
-          #if VERBOSE
-            cout << "    OP_CREATE => STATE_CREATE" << endl;
-          #endif
-          clearSelection();
-          gadget = static_cast<TFigure*>(gtemplate->clone());
-          model->add(gadget);
-          invalidateFigure(gadget);
-          state = STATE_START_CREATE;
-          setMouseMoveMessages(TWindow::TMMM_ALL);
-          gadget->startCreate();
-          unsigned r = gadget->mouseLDown(this,x,y,m);
-          state = STATE_CREATE;
-          if (r & TFigure::DELETE)
-            deleteFigure(gadget);
-          if (r & TFigure::STOP)
-            stopOperation();
-          if (r & TFigure::REPEAT)
-            goto redo;
-          return;
-        } break;
-        
       }
     } break; // end of STATE_NONE
     
@@ -1621,6 +1603,7 @@ redo:
 void
 TFigureEditor::mouseMove(int mx, int my, unsigned m)
 {
+//cout << "mouseMove for window " << window->getTitle() << endl;
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
@@ -2229,4 +2212,212 @@ TFigureEditor::scrolled(int dx, int dy)
   getPanePos(&x, &y);
   // window->scrollTo(-x, -y);
   window->setOrigin(-x, -y);
+}
+
+TFigureTool::~TFigureTool()
+{
+}
+
+void
+TFigureTool::stop(TFigureEditor*)
+{
+}
+
+void
+TFigureTool::mouseEvent(TFigureEditor *fe, TMouseEvent &me)
+{
+}
+
+void
+TFigureTool::keyEvent(TFigureEditor *fe, TKeyEvent &ke)
+{
+}
+
+void
+TFigureTool::setAttributes(TFigureAttributes *p)
+{
+}
+
+void
+TFigureTool::paintSelection(TPenBase &)
+{
+}
+
+void
+TFCreateTool::stop(TFigureEditor *fe)
+{
+  if (figure) {
+    unsigned r = figure->stop(fe);
+    if ( r & TFigure::DELETE )
+      fe->deleteFigure(figure);
+    figure = 0;
+    fe->setCurrent(0);
+    fe->getWindow()->ungrabMouse();
+  }
+  fe->state = TFigureEditor::STATE_NONE;
+}
+
+void
+TFCreateTool::mouseEvent(TFigureEditor *fe, TMouseEvent &me)
+{
+//cout << "TFCreateTool::mouseEvent" << endl;
+  int x0, y0, x1, y1;
+  unsigned r;
+
+redo:
+
+  switch(fe->state) {
+    case TFigureEditor::STATE_NONE:
+      switch(me.type) {
+        case TMouseEvent::LDOWN:
+//          cout << "TFCreateTool: LDOWN" << endl;
+//          cout << "TFCreateTool: start create" << endl;
+          fe->mouse2sheet(me.x, me.y, &x0, &y0);
+          fe->sheet2grid(x0, y0, &x1, &y1);
+          fe->clearSelection();
+          figure = static_cast<TFigure*>(tmpl->clone());
+          fe->setCurrent(figure);
+//cout << "  new figure " << figure << endl;
+          figure->removeable = true;
+          fe->getAttributes()->reason = TFigureAttributes::ALLCHANGED;
+          figure->setAttributes(fe->getAttributes());
+          fe->addFigure(figure);
+          figure->startCreate();
+          fe->state = TFigureEditor::STATE_START_CREATE;
+          r = figure->mouseLDown(fe, x1, y1, me.modifier);
+          fe->state = TFigureEditor::STATE_CREATE;
+          if (r & TFigure::DELETE) {
+//            cout << "  delete" << endl;
+            fe->deleteFigure(figure);
+            figure = 0;
+          }
+          if (r & TFigure::STOP) {
+//cout << "  stop" << endl;
+            fe->state = TFigureEditor::STATE_NONE;
+            fe->getWindow()->ungrabMouse();
+            fe->setCurrent(0);
+            if (figure) {
+              TFigureModel *model = fe->getModel();
+              model->figures.clear();
+              model->figures.insert(figure);
+              model->type = TFigureModel::MODIFIED;
+              model->sigChanged();
+            }
+          }
+          if (fe->state != TFigureEditor::STATE_NONE &&
+              !(r & TFigure::NOGRAB) )
+          {
+            fe->getWindow()->grabMouse(TWindow::TMMM_ALL);
+          }
+          if (r & TFigure::REPEAT) {
+//            cout << "  repeat" << endl;
+            goto redo;
+          }
+          break;
+        default:
+//          cout << "TFCreateTool: unhandled mouse event in state 0" << endl;
+          break;
+      }
+      break;
+    
+    case TFigureEditor::STATE_CREATE:
+      fe->mouse2sheet(me.x, me.y, &x0, &y0);
+      fe->sheet2grid(x0, y0, &x1, &y1);
+
+      switch(me.type) {
+        case TMouseEvent::LDOWN:
+//          cout << "TFCreateTool: mouseLDown during create" << endl;
+          r = figure->mouseLDown(fe, x1, y1, me.modifier);
+          break;
+        case TMouseEvent::MOVE:
+//          cout << "TFCreateTool: mouseMove during create" << endl;
+          r = figure->mouseMove(fe, x1, y1, me.modifier);
+          break;
+        case TMouseEvent::LUP:
+//          cout << "TFCreateTool: mouseLUp during create" << endl;
+          r = figure->mouseLUp(fe, x1, y1, me.modifier);
+          break;
+        case TMouseEvent::RDOWN:
+//          cout << "TFCreateTool: mouseRDown during create" << endl;
+          r = figure->mouseRDown(fe, x1, y1, me.modifier);
+          break;
+        default:
+//          cout << "TFCreateTool: unhandled mouse event in state 1" << endl;
+          return;
+      }
+
+      if (r & TFigure::DELETE) {
+//        cout << "  delete figure" << endl;
+        fe->deleteFigure(figure);
+        figure = 0;
+      }
+      if (r & TFigure::STOP) {
+//        cout << "  stop" << endl;
+        // fe->stopOperation();
+        fe->getWindow()->ungrabMouse();
+        fe->state = TFigureEditor::STATE_NONE;
+        fe->setCurrent(0);
+        if (figure) {
+          TFigureModel *model = fe->getModel();
+          model->figures.clear();
+          model->figures.insert(figure);
+          model->type = TFigureModel::MODIFIED;
+          model->sigChanged();
+          figure = 0;
+        }
+      }
+      if (r & TFigure::REPEAT) {
+//        cout << "  repeat" << endl;
+        if (me.modifier & MK_DOUBLE) {
+//          cerr << "TFigureEditor: kludge: avoiding endless loop bug\n";
+          break;
+        }
+        goto redo;
+      }
+      break;
+  }
+  if (figure)
+    fe->invalidateFigure(figure);
+}
+
+void
+TFCreateTool::keyEvent(TFigureEditor *fe, TKeyEvent &ke)
+{
+  if (!figure || ke.type != TKeyEvent::DOWN)
+    return;
+  if (ke.getKey() == TK_ESCAPE) {
+    fe->deleteFigure(figure);
+    fe->state = TFigureEditor::STATE_NONE;
+    fe->getWindow()->ungrabMouse();
+    figure = 0;
+    return;
+  }
+
+  unsigned r = figure->keyDown(fe, ke.getKey(), const_cast<char*>(ke.getString()), ke.getModifier());
+  if (r & TFigure::DELETE) {
+//        cout << "  delete figure" << endl;
+    fe->deleteFigure(figure);
+    figure = 0;
+  }
+  if (r & TFigure::STOP) {
+    fe->getWindow()->ungrabMouse();
+    fe->state = TFigureEditor::STATE_NONE;
+    if (figure) {
+      TFigureModel *model = fe->getModel();
+      model->figures.clear();
+      model->figures.insert(figure);
+      model->type = TFigureModel::MODIFIED;
+      model->sigChanged();
+      figure = 0;
+    }
+  }
+  if (figure)
+    fe->invalidateFigure(figure);
+}
+
+void
+TFCreateTool::setAttributes(TFigureAttributes *a)
+{
+  if (figure)
+    figure->setAttributes(a);
 }
