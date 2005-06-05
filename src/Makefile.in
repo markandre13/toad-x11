@@ -157,6 +157,7 @@ depend:
 	@echo compiling $*.cc ...
 	@$(LIBTOOL) --tag CXX --mode=compile \
 	  $(CXX) $(CXXFLAGS) -c -o $*.o $*.cc
+	@touch $*.o
 
 #.cc.o:
 #	@echo compiling $*.cc ...
@@ -170,6 +171,7 @@ $(LIBNAME): $(OBJS)
 	@echo "linking..."
 	@$(LIBTOOL) --tag=CXX --mode=link $(CXX) -release $(LIBMAJOR).$(LIBMINOR) \
 		-rpath $(libdir) $(LIBS) -o libtoad.la $(LOBJS)
+	@touch $(LIBNAME)
 
 # $(LIBPL)
 
