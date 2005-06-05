@@ -107,111 +107,6 @@ TModel
  *       edit cell, row, column; delete row, column
  */
 
-TTableModel*
-TSimpleTableAdapter::getModel() const
-{
-  return 0;
-}
-
-TTableAdapter::TTableAdapter()
-{
-  table = 0;
-  reason = TTableModel::CHANGED;
-}
-
-void
-TTableAdapter::tableEvent(TTableEvent &te)
-{
-  switch(te.type) {
-    case TTableEvent::GET_COL_SIZE:
-      te.w = getColWidth(te.col);
-      break;
-    case TTableEvent::GET_ROW_SIZE:
-      te.h = getRowHeight(te.row);
-      break;
-    case TTableEvent::PAINT:
-      renderCell(*te.pen, te);
-      break;
-    case TTableEvent::MOUSE:
-      mouseEvent(te.mouse, te.col, te.row, te.w, te.h);
-      break;
-  }
-}
-
-
-/**
- * Draws selection indicators, calls renderItem and draws the cursor.
- */
-void 
-TTableAdapter::renderCell(TPen &pen, TTableEvent &te)
-{
-  renderBackground(te);
-  renderItem(pen, te);
-  renderCursor(te);
-}
-  
-void
-TTableAdapter::renderBackground(TTableEvent &te)  
-{
-  if (te.type != TTableEvent::PAINT)
-    return;
-  te.pen->setLineStyle(TPen::SOLID);
-  te.pen->setLineWidth(1);
-  if (te.selected) {
-    if (te.focus) {
-      te.pen->setColor((te.row&1) ? TColor::SELECTED_2 : TColor::SELECTED);
-    } else {
-      te.pen->setColor((te.row&1) ? TColor::SELECTED_GRAY_2 : TColor::SELECTED_GRAY);
-    }
-  } else {
-    te.pen->setColor((te.row&1) ? TColor::TABLE_CELL_2 : TColor::TABLE_CELL);
-  }
-  te.pen->fillRectanglePC(0,0,te.w,te.h);
-  if (te.selected)
-    te.pen->setColor(TColor::SELECTED_TEXT);
-  else 
-    te.pen->setColor(TColor::BLACK);
-}
-
-void
-TTableAdapter::renderCursor(TTableEvent &te)
-{
-  if (te.type != TTableEvent::PAINT)
-    return;
-  if (te.cursor) {
-    te.pen->setColor(TColor::BLACK);
-    te.pen->setLineStyle(TPen::SOLID);
-    te.pen->setLineWidth(1);
-    if (te.per_row) {
-      te.pen->drawLine(0,0,te.w-1,0);
-      te.pen->drawLine(0,te.h-1,te.w,te.h-1);
-      if (te.col==0) {
-        te.pen->drawLine(0,0,0,te.h-1);
-      }
-      if (te.col==te.cols) {
-        te.pen->drawLine(0,te.w-1,te.w-1,te.h-1);
-      }
-    } else
-    if (te.per_col) {
-      te.pen->drawLine(0,0,0,te.h-1);
-      te.pen->drawLine(0,te.w-1,te.w-1,te.h-1);
-      if (te.row==0) {
-        te.pen->drawLine(0,0,te.w-1,0);
-      }
-      if (te.row==te.rows) {
-        te.pen->drawLine(0,te.h-1,te.w-1,te.h-1);
-      }
-    } else {
-      te.pen->drawRectanglePC(0,0,te.w, te.h);
-    }
-  }
-}
-
-void 
-TTableAdapter::mouseEvent(TMouseEvent&, int col, int row, int w, int h)
-{
-}
-
 /**
  * Returns a hint for TTable about the selection models
  * capabilities.
@@ -688,48 +583,6 @@ TTable::setModel(TTableModel *m)
   handleNewModel();
 }
 #endif
-
-#if 0
-void
-TTableAdapter::setModel(TTableModel *m)
-{
-  cout << "TTableAdapter::setModel("<<m<<")"<<endl;
-  if (m==model)
-    return;
-  if (model)
-    disconnect(model->sigChanged, this, &TTableAdapter::_modelChanged);
-  model = m;
-  if (model)
-    connect(model->sigChanged, this, &TTableAdapter::_modelChanged);
-  reason = TTableModel::CHANGED;
-  sigChanged();
-}
-#endif
-
-void
-TTableAdapter::modelChanged()
-{
-  TTableModel *model = getModel();
-  if (!model) {
-    cerr << "TTableAdapter::modelChanged: received modelChanged but no model is set" << endl;
-    return;
-  }
-  
-  reason = model->reason;
-  where  = model->where;
-  size   = model->size;
-/*
-cout << "TTableAdapter::modelChanged propagates ";
-switch(reason) { 
-  case TTableModel::CHANGED: cout << "CHANGED" << endl; break;
-  case TTableModel::INSERT_ROW: cout << "INSERT_ROW" << endl; break;
-  case TTableModel::RESIZED_ROW: cout << "RESIZED_ROW" << endl; break;
-  case TTableModel::REMOVED_ROW: cout << "REMOVED_ROW" << endl; break;
-  default: cout << "DEFAULT..." << endl;
-}
-*/
-  sigChanged();
-};
 
 void
 TTable::setAdapter(TTableAdapter *r) 
@@ -1228,13 +1081,13 @@ TTable::doubleClickAtCursor()
 }
 
 void
-TTable::setRowHeight(int row, int height)
+TTable::setRowHeight(size_t row, int height)
 {
   cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
 }
 
 void
-TTable::setColWidth(int col, int width)
+TTable::setColWidth(size_t col, int width)
 {
   cerr << __PRETTY_FUNCTION__ << " isn't implemented yet" << endl;
 }
@@ -1315,6 +1168,8 @@ cerr << " y=" << y
 void
 TTable::mouseEvent(TMouseEvent &me)
 {
+  // handle resizing of columns
+  //----------------------------
   bool between_h = false;
   static unsigned state = 0;
   static int col;
@@ -1736,6 +1591,25 @@ invalidateWindow();
 }
 
 void
+TTable::keyEvent(TKeyEvent &ke)
+{
+  if (adapter) {
+    TTableEvent te;
+    te.type = TTableEvent::KEY;
+    te.key = &ke;
+    te.col = cx;
+    te.row = cy;
+    te.flag= false;
+    adapter->tableEvent(te);
+    if (te.flag) {
+      invalidateCursor();
+      return;
+    }
+  }
+  TWindow::keyEvent(ke);
+}
+
+void
 TTable::keyDown(TKey key, char *string, unsigned modifier)
 {
 //cout << "keyDown: enter: sx="<<sx<<", sy="<<sy<<endl;
@@ -2085,6 +1959,7 @@ TTable::handleNewModel()
   pane.h=0;
   info = row_info;
   te.type = TTableEvent::GET_ROW_SIZE;
+  te.col = 0;
   for(te.row=0; te.row<rows; ++te.row) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     info->open = true;

@@ -111,15 +111,15 @@ class TDirectoryAdapter:
         TTableAdapter::modelChanged();
       }
     }
-    int getRowHeight(int) { return h+2; }
-    int getColWidth(int);
+    int getRowHeight(size_t) { return h+2; }
+    int getColWidth(size_t);
     void renderItem(TPen &pen, const TTableEvent &te);
 };
 
 }
 
 int
-TDirectoryAdapter::getColWidth(int col)
+TDirectoryAdapter::getColWidth(size_t col)
 {
   switch(col) {
     case 0:
@@ -200,8 +200,8 @@ class TFilterListAdapter:
         TTableAdapter::modelChanged();
       }
     }
-    int getRowHeight(int) { return h+2; }
-    int getColWidth(int) { return w+2; }
+    int getRowHeight(size_t) { return h+2; }
+    int getColWidth(size_t) { return w+2; }
     size_t getCols() { return 1; }
 //    size_t getRows() { return model ? model->size() : 0; }
     void renderItem(TPen &pen, const TTableEvent &te) {
@@ -237,8 +237,8 @@ class TDequeStringAdapter:
         TTableAdapter::modelChanged();
       }
     }
-    int getRowHeight(int) { return h+2; }
-    int getColWidth(int) { return w+2; }
+    int getRowHeight(size_t) { return h+2; }
+    int getColWidth(size_t) { return w+2; }
     size_t getCols() { return 1; }
 //    size_t getRows() { return model ? model->size() : 0; }
     void renderItem(TPen &pen, const TTableEvent &te) {

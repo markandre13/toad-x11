@@ -96,7 +96,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		messagebox.cc tooltip.cc \
 		select.cc pointer.cc \
 		dialogeditor.cc colordialog.cc \
-		table.cc combobox.cc textarea.cc textfield.cc \
+		table.cc tableadapter.cc combobox.cc textarea.cc textfield.cc \
 		model.cc integermodel.cc rgbmodel.cc textmodel.cc \
 		resource.cc utf8.cc \
 		$(MDI) \

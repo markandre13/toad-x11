@@ -264,10 +264,14 @@ struct TTableEvent
     PAINT,
     //! handle mouse event 'mouse' for field (col, row) of size (w, h)
     MOUSE,
-    //! handle keyboard event...
+    //! handle keyboard event in 'key' with cursor on field (col, row)
+    //! and on return set 'flag' to 'true' when TTable shall not handle
+    //! the event on its own
+    KEY
   } type;
   TPen *pen;
   TMouseEvent mouse;
+  TKeyEvent *key;
   size_t col, row;   // current field
   int w, h;          // field size in pixels
   size_t cols, rows; // table size in fields
@@ -275,6 +279,7 @@ struct TTableEvent
   bool cursor;    // show cursor
   bool selected;  // field is selected
   bool focus;     // table has keyboard focus
+  bool flag;
 };
 
 
@@ -299,7 +304,7 @@ class TTableModel:
     size_t size;
     bool isEmpty() const { return getRows()==0 && getCols()==0;}
     virtual size_t getRows() const = 0;
-    virtual size_t getCols() const = 0;
+    virtual size_t getCols() const { return 1; }
 };
 
 typedef GSmartPointer<TTableModel> PTableModel;
@@ -309,6 +314,12 @@ class TTableAdapter:
 {
   protected:
     TTable *table;
+
+    // support attributes for handleString
+    static TTableAdapter *edit;
+    static int cx;
+    static size_t col, row;
+
   public:
     TTableAdapter();
 
@@ -324,16 +335,21 @@ class TTableAdapter:
     //! may handle text, checkboxes, etc...
     virtual void tableEvent(TTableEvent &te);
 
-    virtual int getRowHeight(int row) = 0;
-    virtual int getColWidth(int col) = 0;
+    virtual int getRowHeight(size_t row) { return 0; }
+    virtual int getColWidth(size_t col) { return 0; }
 
     void renderBackground(TTableEvent &te);
     void renderCursor(TTableEvent &te);
+
+    // utility methods
+    void handleString(TTableEvent &te, string *s);
+    void handleCheckBox(TTableEvent &te, bool *b);
+
     /**
      * Render cell background, cursor and invoke renderItem.
      */
     virtual void renderCell(TPen&, TTableEvent&);
-    virtual void renderItem(TPen&, const TTableEvent&) = 0;
+    virtual void renderItem(TPen&, const TTableEvent&) {}
     virtual void mouseEvent(TMouseEvent &, int xindex, int yindex, int w, int h);
 
     // this method is to enable signals to trigger our signal:
@@ -483,6 +499,8 @@ class TTable:
     void focus(bool);
 
     void mouseEvent(TMouseEvent &me);
+    void keyEvent(TKeyEvent &ke);
+    
     void mouseLDown(int x,int y, unsigned modifier);
     void mouseMove(int x,int y, unsigned modifier);
     void mouseLUp(int x,int y, unsigned modifier);
@@ -502,19 +520,19 @@ class TTable:
 
     size_t getRows() const { return rows; }
     size_t getCols() const { return cols; }
-    int getRowHeight(int row) const { return (row<0||row>=rows) ? 0 : row_info[row].size; }
-    int getColWidth(int col) const { return (col<0||col>=cols) ? 0 : col_info[col].size; }
-    void setRowHeight(int row, int height);
-    void setColWidth(int row, int width);
+    int getRowHeight(size_t row) const { return (row<0||row>=rows) ? 0 : row_info[row].size; }
+    int getColWidth(size_t col) const { return (col<0||col>=cols) ? 0 : col_info[col].size; }
+    void setRowHeight(size_t row, int height);
+    void setColWidth(size_t row, int width);
 
-    bool isRowOpen(int row) const { return (row<0||row>=rows) ? 0 : row_info[row].open; }
-    bool isColOpen(int col) const { return (col<0||col>=cols) ? 0 : col_info[col].open; }
-    void setRowOpen(int row, bool open) {
+    bool isRowOpen(size_t row) const { return (row<0||row>=rows) ? 0 : row_info[row].open; }
+    bool isColOpen(size_t col) const { return (col<0||col>=cols) ? 0 : col_info[col].open; }
+    void setRowOpen(size_t row, bool open) {
       if (row<0||row>=rows)
         return;
       row_info[row].open = open;
     }
-    void setColOpen(int col, bool open) {
+    void setColOpen(size_t col, bool open) {
       if (col<0||col>=cols)
         return;
       col_info[col].open = open;
