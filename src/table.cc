@@ -1772,15 +1772,18 @@ TTable::_handleInsertRow()
   );
 
   TRCInfo *info = row_info + adapter->where;
-  for(size_t i=adapter->where; i<adapter->where+adapter->size; ++i) {
+  TTableEvent te;
+  te.type = TTableEvent::GET_ROW_SIZE;
+  te.col  = 0;
+  for(te.row=adapter->where; te.row<adapter->where+adapter->size; ++te.row) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     info->open = true; // getRowHeight may query this values
     info->size = 0;    // just in case...
-//cout << "going to get height of row " << i << endl;
+//cout << "going to get height of row " << te.row << endl;
 //cout << "  open == " << (isRowOpen(i)?"open":"closed") << endl;
-    int n = adapter->getRowHeight(i);
-    info->size = n;
-    pane.h += n + border;
+    adapter->tableEvent(te);
+    info->size = te.h;
+    pane.h += te.h + border;
     ++info;
   }
     
@@ -1884,11 +1887,15 @@ void
 TTable::_handleResizedRow()
 {
   TRCInfo *info = row_info + adapter->where;
-  for(int i=adapter->where; i<adapter->where+adapter->size; ++i) {
+  TTableEvent te;
+  te.type = TTableEvent::GET_ROW_SIZE;
+  te.col = 0;
+  for(te.row=adapter->where; te.row<adapter->where+adapter->size; ++te.row) {
     DBM(cout << "pane.h: " << pane.h << endl;)
     pane.h -= info->size;
-    info->size = adapter->getRowHeight(i);
-    pane.h += info->size;
+    adapter->tableEvent(te);
+    info->size = te.h;
+    pane.h += te.h;
     ++info;
   }
 #if 0    
