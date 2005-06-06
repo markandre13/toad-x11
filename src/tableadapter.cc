@@ -30,7 +30,7 @@ TSimpleTableAdapter::getModel() const
 }
 
 TTableAdapter* TTableAdapter::edit = 0;
-int TTableAdapter::cx;
+size_t TTableAdapter::cx;
 size_t TTableAdapter::col;
 size_t TTableAdapter::row;
 
@@ -196,7 +196,7 @@ TTableAdapter::handleCheckBox(TTableEvent &te, bool *value)
 }
 
 void
-TTableAdapter::handleString(TTableEvent &te, string *s)
+TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
 {
   int x0;
   const char *str;
@@ -214,13 +214,13 @@ TTableAdapter::handleString(TTableEvent &te, string *s)
         te.pen->setColor(255,255,192);
         te.pen->fillRectanglePC(0,0,te.w,te.h);
         te.pen->setColor(0,0,0);
-        te.pen->drawString(2, 2, *s);
+        te.pen->drawString(offx+2, 2, *s);
         x0 = te.pen->getTextWidth(s->substr(0,cx));
-        te.pen->drawLine(2+x0, 2-1,
-                         2+x0, 2+te.pen->getHeight()+1);
+        te.pen->drawLine(2+offx+x0, 2-1,
+                         2+offx+x0, 2+te.pen->getHeight()+1);
       } else {
         renderBackground(te);
-        te.pen->drawString(2, 2, *s);
+        te.pen->drawString(2+offx, 2, *s);
       }
       renderCursor(te);
       break;
@@ -263,11 +263,11 @@ TTableAdapter::handleString(TTableEvent &te, string *s)
               return;
             case TK_LEFT:
               if (cx>0)
-                --cx;
+                utf8dec(*s, &cx);
               break;
             case TK_RIGHT:
               if (cx<s->size())
-                ++cx;
+                utf8inc(*s, &cx);
               break;
             case TK_HOME:
               cx=0;
@@ -277,14 +277,13 @@ TTableAdapter::handleString(TTableEvent &te, string *s)
               break;
             case TK_DELETE:
               if (cx<s->size()) {
-                s->erase(cx, 1);
+                s->erase(cx, utf8charsize(*s, cx));
               }
               break;
             case TK_BACKSPACE:
               if (cx>0) {
-                --cx;
                 utf8dec(*s, &cx);
-                s->erase(cx, 1);
+                s->erase(cx, utf8charsize(*s, cx));
               }
               break;
             default:
