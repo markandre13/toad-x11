@@ -302,7 +302,7 @@ class TTableModel:
     } reason;
     size_t where;
     size_t size;
-    bool isEmpty() const { return getRows()==0 && getCols()==0;}
+    bool isEmpty() const { return getRows()==0 || getCols()==0;}
     virtual size_t getRows() const = 0;
     virtual size_t getCols() const { return 1; }
 };
@@ -317,7 +317,7 @@ class TTableAdapter:
 
     // support attributes for handleString
     static TTableAdapter *edit;
-    static int cx;
+    static size_t cx;
     static size_t col, row;
 
   public:
@@ -335,14 +335,14 @@ class TTableAdapter:
     //! may handle text, checkboxes, etc...
     virtual void tableEvent(TTableEvent &te);
 
-    virtual int getRowHeight(size_t row) { return 0; }
-    virtual int getColWidth(size_t col) { return 0; }
+    virtual int getRowHeight(size_t row) { return 18; }
+    virtual int getColWidth(size_t col) { return 18; }
 
     void renderBackground(TTableEvent &te);
     void renderCursor(TTableEvent &te);
 
     // utility methods
-    void handleString(TTableEvent &te, string *s);
+    void handleString(TTableEvent &te, string *s, int offx=0);
     void handleCheckBox(TTableEvent &te, bool *b);
 
     /**
