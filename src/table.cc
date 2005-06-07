@@ -1736,22 +1736,28 @@ TTable::adapterChanged()
   }
   switch(adapter->reason) {
     case TTableModel::INSERT_ROW:
-//      cout << "table: insert row " << adapter->where << ", " << adapter->size << endl;
+      if (debug_table>0)
+        cout << "table: insert row " << adapter->where << ", " << adapter->size << endl;
       _handleInsertRow();
       break;
     case TTableModel::RESIZED_ROW:
-//      cout << "table: resized row " << adapter->where << ", " << adapter->size << endl;
+      if (debug_table>0)
+        cout << "table: resized row " << adapter->where << ", " << adapter->size << endl;
       _handleResizedRow();
       break;
     case TTableModel::REMOVED_ROW:
-//      cout << "table: removed row " << adapter->where << ", " << adapter->size << endl;
+      if (debug_table>0)
+        cout << "table: removed row " << adapter->where << ", " << adapter->size << endl;
       _handleRemovedRow();
       break;
     case TTableModel::CONTENT:
+      if (debug_table>0)
+        cout << "table: content" << endl;
       invalidateWindow();
       break;
     default:
-//      cout << "table: new model" << endl;
+      if (debug_table>0)
+        cout << "table: new model" << endl;
       handleNewModel();
       break;
   }
