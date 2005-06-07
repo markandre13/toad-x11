@@ -151,6 +151,7 @@ TFigureEditor::setWindow(TWindow *w)
 
 static void
 foobar(TFigureAttributes *p) {
+  p->reason = TFigureAttributes::GRID;
   p->sigChanged();
 }
 
@@ -195,7 +196,10 @@ TFigureAttributes::setCreate(TFigure *figure)
 void
 TFigureAttributes::setTool(TFigureTool *tool)
 {
-  if (current) current->setTool(tool);
+  this->tool = tool;
+//  if (current) current->setTool(tool);
+  reason = TOOL;
+  sigChanged();
 }
 
 void
@@ -743,6 +747,16 @@ TFigureEditor::preferencesChanged()
   if (!preferences)
     return;
 
+  if (preferences->reason == TFigureAttributes::TOOL) {
+    setTool(preferences->getTool());
+    return;
+  }
+
+  if (preferences->reason == TFigureAttributes::GRID) {
+    invalidateWindow(visible);
+    return;
+  }
+
   if (tool)
     tool->setAttributes(preferences);
     
@@ -934,7 +948,7 @@ TFigureEditor::selection2Top()
     --p;
   }
   
-  window->invalidateWindow();
+  window->invalidateWindow(visible);
 }
 
 void
@@ -965,7 +979,7 @@ TFigureEditor::selection2Bottom()
     }
     ++p;
   }
-  window->invalidateWindow();
+  window->invalidateWindow(visible);
 }
 
 void
@@ -991,7 +1005,7 @@ TFigureEditor::selectionUp()
       break;
     --p;
   }
-  window->invalidateWindow();
+  window->invalidateWindow(visible);
 }
 
 void
@@ -1013,7 +1027,7 @@ TFigureEditor::selectionDown()
     }
     ++p;
   }
-  window->invalidateWindow();
+  window->invalidateWindow(visible);
 }
 
 void
@@ -1047,7 +1061,7 @@ TFigureEditor::setModel(TFigureModel *m)
     TUndoManager::registerModel(this, model);
   }
   if (isRealized()) {
-    invalidateWindow();
+    invalidateWindow(visible);
     updateScrollbars();
   }
 }
@@ -1910,7 +1924,7 @@ redo:
       gadget->mat->translate(-rotx, -roty);
 #endif
       state = STATE_NONE;
-      invalidateWindow();
+      invalidateWindow(visible);
     } break;
     
     case STATE_MOVE_ROTATE: {
@@ -1964,6 +1978,16 @@ TFigureEditor::invalidateFigure(TFigure* figure)
   getFigureShape(figure, &r, mat);
   r.x+=window->getOriginX() + visible.x;
   r.y+=window->getOriginY() + visible.y;
+  if (r.x < visible.x ) {
+    int d = visible.x - r.x;
+    r.x += d;
+    r.w -= d;
+  }
+  if (r.y < visible.y ) {
+    int d = visible.y - r.y;
+    r.y += d;
+    r.h -= d;
+  }
 //cout << figure->getClassName() << ": invalidate window " <<r.x<<"-"<<(r.x+r.w)<<","<<r.y<<"-"<<(r.y+r.h)<<endl;
   invalidateWindow(r);
 }

@@ -91,6 +91,8 @@ class TFigureAttributes:
   public TModel
 {
     TFigureEditor *current;
+    TFigureTool *tool;
+    TFigureAttributes(const TFigureAttributes&) {};
   public:
     TFigureAttributes();
     virtual ~TFigureAttributes();
@@ -114,6 +116,7 @@ class TFigureAttributes:
     void setCreate(TFigure*);
 #endif
     void setTool(TFigureTool*);
+    TFigureTool* getTool() const { return tool; }
     
     void group();
     void ungroup();
@@ -136,6 +139,7 @@ class TFigureAttributes:
       /**
        * Drawing properties have changed.
        */
+      GRID,
       LINECOLOR,
       FILLCOLOR,
       UNSETFILLCOLOR,
@@ -144,11 +148,13 @@ class TFigureAttributes:
       ARROWMODE,
       ARROWSTYLE,
       FONTNAME,
+      
+      TOOL,
       /**
        * This TPreferences was subclassed. Try dynamic_cast to get
        * more information.
        */
-      EXTENDED
+      EXTENDED = 256
     } reason;
     
     void setLineColor(const TRGB &rgb) { 
