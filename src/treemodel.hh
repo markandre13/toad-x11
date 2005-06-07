@@ -61,7 +61,9 @@ class TTreeModel:
     void* at(size_t row) const { return (*rows)[row].node; }
     size_t whereIs(void*) const;
     size_t getRows() const { return rows->size(); }
-    unsigned getRowDepth(size_t row) const { return (*rows)[row].depth; }
+    unsigned getRowDepth(size_t row) const { 
+      return (row>=rows->size()) ? 0 : (*rows)[row].depth;
+    }
     size_t update(bool signal=true);
     void _update(void *ptr, unsigned depth);
 
