@@ -1,14 +1,14 @@
 Source: libtoad
 Priority: optional
-Maintainer: Mark-André Hopf <mhopf@mark13.org>
-Build-Depends: debhelper (>> 3.0.0), doxygen, g++-3.3, fakeroot, xlibs-dev, zlib1g-dev, libpng12-dev, libjpeg62-dev, libfontconfig-dev, libxft-dev, libxutf8-dev
+Maintainer: Mark-AndrÃ© Hopf <mhopf@mark13.org>
+Build-Depends: debhelper (>> 3.0.0), doxygen, g++-3.4, fakeroot, xlibs-dev, zlib1g-dev, libpng12-dev, libjpeg62-dev, libfontconfig-dev, libxft-dev, libxutf8-dev
 Standards-Version: 3.5.2
 
 Package: libtoad
 Section: libs
 Architecture: i386
-Maintainer: Mark-André Hopf <mhopf@mark13.org>
-Depends:  ${shlibs:Depends}, xlibs, libstdc++5, zlib1g, libpng12-0, libjpeg62, libxft2, libfontconfig1, libxutf8
+Maintainer: Mark-AndrÃ© Hopf <mhopf@mark13.org>
+Depends:  ${shlibs:Depends}, xlibs, libstdc++6, zlib1g, libpng12-0, libjpeg62, libxft2, libfontconfig1, libxutf8
 Suggests: perl
 Description: TOAD C++ GUI Library.
  This package contains the files necessary for running applications that use
@@ -17,8 +17,8 @@ Description: TOAD C++ GUI Library.
 Package: libtoad-dev
 Section: devel
 Architecture: any
-Maintainer: Mark-André Hopf <mhopf@mark13.org>
-Depends: libtoad (= ${Source-Version}), libc6-dev, libstdc++5-3.3-dev, libfontconfig1-dev
+Maintainer: Mark-AndrÃ© Hopf <mhopf@mark13.org>
+Depends: libtoad (= ${Source-Version}),  g++-3.4, libstdc++6-dev, libfontconfig1-dev
 Description: TOAD C++ GUI Library development headers.
  This package contains the files necessary for compiling applications that
  use the TOAD C++ GUI Library.
@@ -27,7 +27,7 @@ Package: libtoad-doc
 Section: doc
 Priority: optional
 Architecture: all
-Maintainer: Mark-André Hopf <mhopf@mark13.org>
+Maintainer: Mark-AndrÃ© Hopf <mhopf@mark13.org>
 Suggests: libtoad-dev (= ${Source-Version})
 Description: TOAD C++ GUI Library HTML documentation.
  This package contains a HTML reference for programmers that can be found
