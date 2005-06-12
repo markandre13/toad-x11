@@ -620,7 +620,7 @@ TOADBase::handleMessage()
       // wait for the events to come
       //--------------------------------------
       if (!bAppIsRunning) {
-        cerr << "unexpected end of message loop" << endl;
+        cerr << "unexpected end of message loop [1]" << endl;
         return false;
       }
       select(); // won't return for `TIOObserver' and `TSimpleTimer' events
