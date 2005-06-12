@@ -426,6 +426,12 @@ TFigureEditor::paint()
     updateScrollbars();
     update_scrollbars = false;
   }
+  if (!model) {
+    TPen pen(window);
+    pen.setColor(TColor::DIALOG);
+    pen.fillRectangle(0,0,window->getWidth(), window->getHeight());
+    return;
+  }
 
   TPen scr(window);
   scr.identity();
@@ -443,7 +449,7 @@ TFigureEditor::paint()
     pen.multiply(mat);
     
   paintGrid(pen);
-  print(pen, true);
+  print(pen, model, true);
   paintSelection(pen);
 
   // put the result onto the screen
@@ -678,7 +684,7 @@ TFigureEditor::paintDecoration(TPenBase &scr)
  *   method itself.
  */  
 void
-TFigureEditor::print(TPenBase &pen, bool withSelection)
+TFigureEditor::print(TPenBase &pen, TFigureModel *model, bool withSelection)
 {
   if (!model)
     return;
@@ -843,6 +849,7 @@ TFigureEditor::modelChanged()
 void
 TFigureEditor::addFigure(TFigure *figure)
 {
+  assert(model!=0);
   model->add(figure);
 }
 
@@ -1177,6 +1184,8 @@ TFigureEditor::selectionPaste()
 void
 TFigureEditor::keyEvent(TKeyEvent &ke)
 {
+  if (!model)
+    return;
   if (tool) {
     tool->keyEvent(this, ke);
   } else {
@@ -1268,6 +1277,9 @@ TFigureEditor::mouse2sheet(int mx, int my, int *sx, int *sy)
 void
 TFigureEditor::mouseEvent(TMouseEvent &me)
 {
+  if (!model)
+    return;
+
   int x = me.x + getOriginX();
   int y = me.y + getOriginY();
   

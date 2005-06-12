@@ -381,7 +381,7 @@ class TFigureEditor:
     void paintGrid(TPenBase &pen);
     void paintSelection(TPenBase &pen);
     void paintDecoration(TPenBase &pen);
-    virtual void print(TPenBase &pen, bool withSelection=false);
+    virtual void print(TPenBase &pen, TFigureModel *model, bool withSelection=false);
     
     void resize();
     void mouseEvent(TMouseEvent&);
