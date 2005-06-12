@@ -130,7 +130,7 @@ void
 TOutObjectStream::store(const TSerializable *s)
 {
   indent();
-  (*this) << s->getClassName();
+  (*this) << s->getClassName() << ' ';
   startGroup();
   s->store(*this);
   endGroup();
