@@ -122,10 +122,10 @@ TMainWindow::TMainWindow(TWindow *parent, const string &title):
   
   TAction *action;
   action = new TAction(this, "file|quit");
-  connect(action->sigActivate, &toad::postQuitMessage, 0);
+  connect(action->sigClicked, &toad::postQuitMessage, 0);
   
   action = new TAction(this, "help|about");
-  connect(action->sigActivate, this, &This::menuAbout);
+  connect(action->sigClicked, this, &This::menuAbout);
 }
 
 void
