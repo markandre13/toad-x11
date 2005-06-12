@@ -265,16 +265,16 @@ TTreeModel::_update(void *ptr, unsigned depth)
 {
 //cerr << "update: tree = " << root() << endl;
   if (!ptr) {
-    ptr = getRoot();
+    ptr = _getRoot();
   }
   
   while(ptr) {
     rows->push_back(TRow(ptr, depth));
-    void *d = getDown(ptr);
+    void *d = _getDown(ptr);
     if (d) {
       _update(d, depth+1);
     }
-    ptr = getNext(ptr);
+    ptr = _getNext(ptr);
   }
 }
 
@@ -298,7 +298,7 @@ TTreeModel::addBefore(size_t row)
 {
 // if (!getRoot()) return 0;
 
-  void *nn = createNode();
+  void *nn = _createNode();
   // nn->name = number();
 
   if (!rows->empty()) {
@@ -311,27 +311,27 @@ TTreeModel::addBefore(size_t row)
         ++p)
     {
       pn = p->node;
-      if (getNext(pn) == dn) {
+      if (_getNext(pn) == dn) {
         DBM(cout << "before next" << endl;)
-        setNext(pn, nn);
-        setNext(nn, dn);
+        _setNext(pn, nn);
+        _setNext(nn, dn);
         break;
       }
-      if (getDown(pn) == dn) {
+      if (_getDown(pn) == dn) {
         DBM(cout << "before down" << endl;)
-        setDown(pn, nn);
-        setNext(nn, dn);
+        _setDown(pn, nn);
+        _setNext(nn, dn);
         break;
       }
     }
 
     if (p==rows->end()) {
-      setNext(nn, getRoot());
-      setRoot(nn);
+      _setNext(nn, _getRoot());
+      _setRoot(nn);
       row = 0;
     }
   } else {
-    setRoot(nn);
+    _setRoot(nn);
     row = 0;
   }
 
@@ -353,14 +353,14 @@ TTreeModel::addBelow(size_t row)
 {
 //  if (!_root) return 0;
 //  cout << p->name << endl;
-  void *np = createNode();
+  void *np = _createNode();
 
   if (!rows->empty()) {
     void *p = (*rows)[row].node;
-    setNext(np, getNext(p));
-    setNext(p, np);
+    _setNext(np, _getNext(p));
+    _setNext(p, np);
   } else {
-    setRoot(np);
+    _setRoot(np);
   }
 
 DBM(cout << "model: insert 3: where=" << whereIs(np) << ", size=1" << endl;)
@@ -383,14 +383,14 @@ TTreeModel::addTreeBelow(size_t row)
 //  if (!_root) return 0;
 
 //  cout << p->name << endl;
-  void *np = createNode();
+  void *np = _createNode();
 
   if (!rows->empty()) {
     void *p = (*rows)[row].node;
-    setDown(np, getDown(p));
-    setDown(p, np);
+    _setDown(np, _getDown(p));
+    _setDown(p, np);
   } else {
-    setRoot(np);
+    _setRoot(np);
   }
   
 DBM(cout << "insert 1: where=" << (row+1) << ", size=1" << endl;)
@@ -412,7 +412,7 @@ TTreeModel::addTreeBefore(size_t row)
 //  if (!_root) return 0;
 
 cout << __PRETTY_FUNCTION__ << endl;
-  void *nn = createNode();
+  void *nn = _createNode();
 //  nn->name = number();
 
   if (!rows->empty()) {
@@ -448,28 +448,28 @@ cout << __PRETTY_FUNCTION__ << endl;
         ++p)
     {
       pn = p->node;
-      if (getNext(pn) == first) {
+      if (_getNext(pn) == first) {
         DBM(cout << "before next" << endl;)
-        setNext(pn, nn);
-        setNext(nn, getNext(last));
-        setDown(nn, first);
-        setNext(last, 0);
+        _setNext(pn, nn);
+        _setNext(nn, _getNext(last));
+        _setDown(nn, first);
+        _setNext(last, 0);
         break;
       } else
-      if (getDown(pn) == first) {
+      if (_getDown(pn) == first) {
         DBM(cout << "before down" << endl;)
-        setDown(pn, nn);
-        setDown(nn, first);
+        _setDown(pn, nn);
+        _setDown(nn, first);
         break;
       }
     }
     if (p==rows->end()) {
-      setDown(nn, getRoot());
-      setRoot(nn);
+      _setDown(nn, _getRoot());
+      _setRoot(nn);
       row = 0;
     }
   } else {
-    setRoot(nn);
+    _setRoot(nn);
     row = 0;
   }
 
@@ -507,51 +507,51 @@ TTreeModel::deleteRow(size_t row)
   {
     pn = p->node;
     // parent has us in 'next'
-    if (getNext(pn) == dn) {
+    if (_getNext(pn) == dn) {
       DBM(cout << "next" << endl;)
-      if (!getDown(dn)) {
-        setNext(pn, getNext(dn));
+      if (!_getDown(dn)) {
+        _setNext(pn, _getNext(dn));
       } else {
         // attention: when dn is closed, we need to resize the children!!
-        setNext(pn, getDown(dn));
-        pn = getDown(dn);
-        while(getNext(pn)) {
-          pn = getNext(pn);
+        _setNext(pn, _getDown(dn));
+        pn = _getDown(dn);
+        while(_getNext(pn)) {
+          pn = _getNext(pn);
         }
-        setNext(pn, getNext(dn));
+        _setNext(pn, _getNext(dn));
       }
       break;
     }
     // parent has us in 'down'
-    if (getDown(pn) == dn) {
+    if (_getDown(pn) == dn) {
       DBM(cout << "down" << endl;)
-      if (!getDown(dn)) {
-        setDown(pn, getNext(dn));
+      if (!_getDown(dn)) {
+        _setDown(pn, _getNext(dn));
       } else {
         // attention: when dn is closed, we need to resize the children!!
-        setDown(pn, getDown(dn));
-        pn = getDown(dn);
-        while(getNext(pn)) {
-          pn = getNext(pn);
+        _setDown(pn, _getDown(dn));
+        pn = _getDown(dn);
+        while(_getNext(pn)) {
+          pn = _getNext(pn);
         }
-        setNext(pn, getNext(dn));
+        _setNext(pn, _getNext(dn));
       }
       break;
     }
   }
   if (p==rows->end()) {
     DBM(cout << "delete without a parent" << endl;)
-    if (getRoot()) {
-      dn = getRoot();
-      if (getDown(dn)) {
+    if (_getRoot()) {
+      dn = _getRoot();
+      if (_getDown(dn)) {
         DBM(cout << "  found a down" << endl;)
-        pn = getDown(dn);
-        while(getNext(pn))
-          pn = getNext(pn);
-        setNext(pn, getNext(dn));
-        setRoot(getDown(dn));
+        pn = _getDown(dn);
+        while(_getNext(pn))
+          pn = _getNext(pn);
+        _setNext(pn, _getNext(dn));
+        _setRoot(_getDown(dn));
       } else {
-        setRoot(getNext(dn));
+        _setRoot(_getNext(dn));
       }
     } else {
       DBM(cout << "found no parent" << endl;)
@@ -560,7 +560,7 @@ TTreeModel::deleteRow(size_t row)
 //    exit(0);
   }
   
-  deleteNode(dn);
+  _deleteNode(dn);
 
   DBM(cout << "remove: where=" << row << ", size=1" << endl;)
 #ifdef AUTOMATIC_UPDATE

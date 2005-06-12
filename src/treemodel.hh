@@ -49,14 +49,14 @@ class TTreeModel:
     size_t addTreeBelow(size_t row);
     size_t deleteRow(size_t row);
     
-    virtual void* createNode() = 0;
-    virtual void deleteNode(void*) = 0;
-    virtual void* getRoot() const = 0;
-    virtual void setRoot(void*) = 0;
-    virtual void* getDown(void*) const = 0;
-    virtual void setDown(void*, void*) = 0;
-    virtual void* getNext(void*) const = 0;
-    virtual void setNext(void*, void*) = 0;
+    virtual void* _createNode() = 0;
+    virtual void _deleteNode(void*) = 0;
+    virtual void* _getRoot() const = 0;
+    virtual void _setRoot(void*) = 0;
+    virtual void* _getDown(void*) const = 0;
+    virtual void _setDown(void*, void*) = 0;
+    virtual void* _getNext(void*) const = 0;
+    virtual void _setNext(void*, void*) = 0;
 
     void* at(size_t row) const { return (*rows)[row].node; }
     size_t whereIs(void*) const;
@@ -81,6 +81,9 @@ class GTreeModel:
 {
     T *root;
   public:
+    GTreeModel() {
+      root = 0;
+    }
     T& operator[](size_t i) {
       if (i>=rows->size())
         return *static_cast<T*>(0);
@@ -91,14 +94,17 @@ class GTreeModel:
         return *static_cast<T*>(0);
       return *static_cast<T*>( rows->at(i).node );
     }
-    void* createNode() { return new T(); }
-    void deleteNode(void *n) { delete static_cast<T*>(n); }
-    void* getRoot() const { return root; }
+    void* _createNode() { return new T(); }
+    void _deleteNode(void *n) { delete static_cast<T*>(n); }
+    void* _getRoot() const { return root; }
+    void _setRoot(void *n) { root = static_cast<T*>(n); }
+    void* _getDown(void *n) const { return static_cast<T*>(n)->down; }
+    void _setDown(void *n0, void *n1) { static_cast<T*>(n0)->down = static_cast<T*>(n1); }
+    void* _getNext(void *n) const { return static_cast<T*>(n)->next; }
+    void _setNext(void *n0, void *n1) { static_cast<T*>(n0)->next = static_cast<T*>(n1); }
+
+    T* getRoot() const { return root; }
     void setRoot(void *n) { root = static_cast<T*>(n); }
-    void* getDown(void *n) const { return static_cast<T*>(n)->down; }
-    void setDown(void *n0, void *n1) { static_cast<T*>(n0)->down = static_cast<T*>(n1); }
-    void* getNext(void *n) const { return static_cast<T*>(n)->next; }
-    void setNext(void *n0, void *n1) { static_cast<T*>(n0)->next = static_cast<T*>(n1); }
 };
 
 } // namespace toad

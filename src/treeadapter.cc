@@ -123,7 +123,7 @@ TTreeAdapter::mouseEvent(TMouseEvent &me, int col, int row, int w, int h)
 //cout << "  TTreeAdapter::mouseEvent" << endl;
   TTreeModel *model = getModel();
 //cout << "    model="<<model<<endl;
-  if (model->getDown(model->at(row))) {
+  if (model->_getDown(model->at(row))) {
     TRectangle r(model->getRowDepth(row)*12+3-1, 0, 10, h);
     if (!r.isInside(me.x, me.y))
       return;
@@ -203,7 +203,7 @@ TTreeAdapter::drawTree(TPen &pen, int row)
   pen.setColor(0,0,0);
 
   // draw `+' or `-' when the node has children
-  if (model->getDown(model->at(row))) {
+  if (model->_getDown(model->at(row))) {
     pen.drawRectangle(d*sx+dx, dy, rs, rs);
     // minus
     pen.drawLine(d*sx+dx+(rs>>2), dy+(rs>>1), d*sx+dx+rs-(rs>>2), dy+(rs>>1)); 
@@ -239,7 +239,7 @@ TTreeAdapter::drawTree(TPen &pen, int row)
           pen.drawLine(i*sx+dx+(rs>>1),0,i*sx+dx+(rs>>1),item_h);
         } else {
           // small line below box
-          if (model->getDown(model->at(row))) {
+          if (model->_getDown(model->at(row))) {
             // has subtree => start below box
             pen.drawLine(i*sx+dx+(rs>>1),dy+rs,i*sx+dx+(rs>>1),item_h);
           } else {
