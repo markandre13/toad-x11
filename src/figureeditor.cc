@@ -150,8 +150,8 @@ TFigureEditor::setWindow(TWindow *w)
 }
 
 static void
-foobar(TFigureAttributes *p) {
-  p->reason = TFigureAttributes::GRID;
+foobar(TFigureAttributes *p, TFigureAttributes::EReason reason) {
+  p->reason = reason;
   p->sigChanged();
 }
 
@@ -159,13 +159,15 @@ TFigureAttributes::TFigureAttributes()
 {
   linecolor.set(0,0,0);
   fillcolor.set(255,255,255);
+  alpha.setRangeProperties(255,0,0,255);
+  connect(drawgrid.sigChanged, foobar, this, ALPHA);
   filled = false;
   fontname = "arial,helvetica,sans-serif:size=12";
 
   drawgrid = true;
-  connect(drawgrid.sigChanged, foobar, this);
+  connect(drawgrid.sigChanged, foobar, this, GRID);
   gridsize = 4;
-  connect(gridsize.sigChanged, foobar, this);
+  connect(gridsize.sigChanged, foobar, this, GRID);
   
   linewidth = 0;
   linestyle = TPen::SOLID;

@@ -150,6 +150,7 @@ class TFigureAttributes:
       FONTNAME,
       
       TOOL,
+      ALPHA,
       /**
        * This TPreferences was subclassed. Try dynamic_cast to get
        * more information.
@@ -185,6 +186,7 @@ class TFigureAttributes:
     TBoolModel filled;
     TRGB linecolor;
     TRGB fillcolor;
+    TIntegerModel alpha;
     TTextModel fontname;
     TRGB background_color;
     TBoolModel drawgrid;

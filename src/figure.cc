@@ -150,6 +150,7 @@ TColoredFigure::TColoredFigure()
   filled = false;
   line_color.set(0,0,0);
   fill_color.set(0,0,0);
+  alpha = 255;
   line_style = TPen::SOLID;
   line_width = 0;
 }
@@ -167,6 +168,7 @@ TFigure::getAttributes(TFigureAttributes *preferences) const
 void
 TColoredFigure::setAttributes(const TFigureAttributes *preferences)
 {
+int a;
   switch(preferences->reason) {
     case TFigureAttributes::ALLCHANGED:
       line_width = preferences->linewidth;
@@ -174,6 +176,7 @@ TColoredFigure::setAttributes(const TFigureAttributes *preferences)
       line_color = preferences->linecolor;
       fill_color = preferences->fillcolor;
       filled     = preferences->filled;
+      alpha = preferences->alpha;
       break;
     case TFigureAttributes::LINECOLOR:
       line_color = preferences->linecolor;
@@ -191,6 +194,9 @@ TColoredFigure::setAttributes(const TFigureAttributes *preferences)
     case TFigureAttributes::LINESTYLE:
       line_style = preferences->linestyle;
       break;
+    case TFigureAttributes::ALPHA:
+      alpha = preferences->alpha;
+      break;
   }
 }
 
@@ -202,6 +208,7 @@ TColoredFigure::getAttributes(TFigureAttributes *preferences) const
   preferences->linecolor = line_color;
   preferences->fillcolor = fill_color;
   preferences->filled = filled;
+  preferences->alpha  = alpha;
 }
 
 /**
@@ -389,6 +396,9 @@ TColoredFigure::store(TOutObjectStream &out) const
       }
     }
   }
+  if (alpha!=255) {
+    ::store(out, "alpha", alpha);
+  }
 }
 
 bool
@@ -426,10 +436,17 @@ TColoredFigure::restore(TInObjectStream &in)
     }
     return false;
   }
+
+  int a;
+  if (::restore(in, "alpha", &a)) {
+    alpha = a;
+    return true;
+  }
   
   if (
     ::restore(in, "linecolor", &line_color) ||
     ::restore(in, "linewidth", &line_width) ||
+    ::restore(in, "alpha", &alpha) ||
     super::restore(in)
   ) return true;
   ATV_FAILED(in)

@@ -152,6 +152,7 @@ class TColoredFigure:
     TColoredFigure();
     TSerializableRGB line_color;
     TSerializableRGB fill_color;
+    byte alpha;
     bool filled:1;        // true when filled
     TPen::ELineStyle line_style;
     unsigned line_width;
