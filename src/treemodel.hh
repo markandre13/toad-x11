@@ -41,6 +41,9 @@ class TTreeModel:
 
   public:
     TTreeModel() { rows = new vector<TRow>; }
+    TTreeModel(const TTreeModel &m) {
+       rows = new vector<TRow>;
+    }
     ~TTreeModel() { if (rows) delete rows; }
     
     size_t addBefore(size_t row);
