@@ -59,16 +59,19 @@ class TComboBox:
           m->setSelection(0,0);
       }
     }
-    TAbstractSelectionModel* getSelectionModel() const {
+    TAbstractSelectionModel* getSelectionModel() {
+      return table->getSelectionModel();
+    }
+    const TAbstractSelectionModel* getSelectionModel() const {
       return table->getSelectionModel();
     }
     TSignal sigSelection;
-    int getLastSelectionCol() const { return table->getLastSelectionCol(); }
-    int getLastSelectionRow() const { return table->getLastSelectionRow(); }
+//    int getLastSelectionCol() const { return table->getLastSelectionCol(); }
+//    int getLastSelectionRow() const { return table->getLastSelectionRow(); }
 
-    void setCursor(int col, int row) { table->setCursor(col, row); }
-    int getCursorCol() const { return table->getCursorCol(); }
-    int getCursorRow() const { return table->getCursorRow(); }
+    void setCursor(size_t col, size_t row) { table->setCursor(col, row); }
+    size_t getCursorCol() const { return table->getCursorCol(); }
+    size_t getCursorRow() const { return table->getCursorRow(); }
     void selectAtCursor() { table->selectAtCursor(); }
     void clickAtCursor() { table->clickAtCursor(); }
     void doubleClickAtCursor() { table->doubleClickAtCursor(); }

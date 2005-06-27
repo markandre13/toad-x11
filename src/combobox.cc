@@ -79,19 +79,10 @@ TComboBox::paint()
   }
 #if 1
   // checks which should already be handled in TTable...
-  int col, row;
-  TSingleSelectionModel *sm = 0;
-  if (table->getSelectionModel())
-    sm = dynamic_cast<TSingleSelectionModel*>(table->getSelectionModel());
+  int col=0, row=0;
+  TAbstractSelectionModel *sm = table->getSelectionModel();
   if (sm) {
-    col = sm->getCol();
-    row = sm->getRow();
-  } else {
-    // this is a hack, the right way would be to find the first selected
-    // entry but the current selection model API doesn't provide such an
-    // interface...
-    col = table->getLastSelectionCol();
-    row = table->getLastSelectionRow();
+    sm->getFirst(&col, &row);
   }
   if (row >= table->getAdapter()->getRows()) {
     cerr << "TComboBox '"<<getTitle()<<"': tables selection model was out of renderer range" << endl;
