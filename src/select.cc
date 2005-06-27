@@ -162,7 +162,7 @@ TOADBase::select()
         cerr << "select: waiting for fd to become ready (fd_max=" << fd_max << ")\n";
       if (!bAppIsRunning) {
         cerr << "unexpected end of message loop [2]" << endl;
-        return false;
+        return;
       }
       n = ::select(fd_max, &rd, &wr, &ex, NULL);
     } else {
@@ -228,7 +228,7 @@ TOADBase::select()
         cerr << "select: waiting for fd to become ready (fd_max=" << fd_max << ")\n";
       if (!bAppIsRunning) {
         cerr << "unexpected end of message loop [3]" << endl;
-        return false;
+        return;
       }
       n = ::select(fd_max, &rd, &wr, &ex, &wait_time);
     }
