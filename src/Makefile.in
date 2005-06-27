@@ -122,6 +122,7 @@ install:
 	install -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
 	find . -name "*.h" -exec \
 	install -m 0644 {} $(DESTDIR)$(includedir)/toad/{} \;
+	install -d $(DESTDIR)$(libdir)
 	@$(LIBTOOL) --tag=CXX --mode=install install libtoad.la $(DESTDIR)$(libdir)
 #	install -d $(DESTDIR)$(libdir)
 #	install $(LIBNAME).$(VERSION) $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION)
@@ -192,7 +193,7 @@ $(LIBNAME): $(OBJS)
 #---------------------------------------------------------------------------
 clean:
 	@echo removing generated files in `pwd`
-	@$(LIBTOOL) --tag=CXX --mode=clean rm -f libtoad.la $(LOBJS)
+	@$(LIBTOOL) --tag=CXX --mode=clean rm -f libtoad.la $(LOBJS) $(OBJS)
 	@rm -f $(CLEAN) *.bak *~ .depend core DEADJOE
 	@rm -f connect.hh resource.cc ../bin/toadbin2c
 	@rm -f include/toad
