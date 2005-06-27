@@ -30,6 +30,10 @@ using namespace toad;
 #define DBM2(M)
 #define DBSCROLL(M)
 
+TTableModel::~TTableModel()
+{
+}
+
 /**
  * @defgroup table Table
  *
@@ -569,6 +573,7 @@ TTable::TTable(TWindow *p, const string &t):
   noCursor = false;
   selectionFollowsMouse = false;
   bNoBackground = true;
+  setSelectionModel(new TSingleSelectionModel);
 }
 
 #if 0
@@ -638,6 +643,30 @@ TTable::selectionChanged()
     }
   }
 #endif
+  if (!adapter)
+    return;
+  if (selection && !selection->isEmpty() && selectionFollowsMouse) {
+    int x, y;
+    selection->getFirst(&x, &y);
+    cout << "adjust cursor to selection " << x << ", " << y << endl;
+
+#if 1    
+    // selection changed may be delivered before adapter changed...
+    // which is a bad thing but can we prevent it?
+    if (cols != adapter->getCols() ||
+        rows != adapter->getRows() )
+    {
+      cout << "warning: selection change signaled before adapter change" << endl;
+    }
+    size_t c = cols, r = rows;
+    cols = adapter->getCols(); rows = adapter->getRows();
+    setCursor(x, y);
+    cols = c; rows = r;
+#else    
+    setCursor(x, y);
+#endif
+    cout << "  new cursor pos is " << cx << ", " << cy << endl;
+  }
   invalidateWindow();
   sigSelection();
 }
@@ -1096,11 +1125,16 @@ TTable::setColWidth(size_t col, int width)
 /**
  * Convert mouse position into a field position and return 'true' 
  * or return 'false' in case it isn't possible.
+ *
+ * (mx, my) the position of the mouse
+ * (fx, fy) returns the field
+ * (rfx, rfy) when not NULL, the mouse position inside the field
  */
 bool
-TTable::mouse2field(int mx, int my, int *fx, int *fy, int *rfx, int *rfy)
+TTable::mouse2field(int mx, int my, size_t *fx, size_t *fy, int *rfx, int *rfy)
 {
-  int pos1, pos2, x, y;
+  int pos1, pos2;
+  size_t x, y;
 
   if (!visible.isInside(mx, my)) {
     // code to handle this event outside the visible area is missing
@@ -1256,7 +1290,7 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
 {
   setFocus();
 
-  int x, y;   // field
+  size_t x, y;   // field
   int fx, fy; // mouse within field
   if (!mouse2field(mx, my, &x, &y, &fx, &fy)) {
     return;
@@ -1361,7 +1395,7 @@ TTable::mouseMove(int mx, int my, unsigned modifier)
   if (!(modifier&MK_LBUTTON))
     return;
 
-  int x, y;
+  size_t x, y;
   if (!mouse2field(mx, my, &x, &y)) {
     DBM2(cerr << "  mouse2field failed" << endl;
     cout << "leave mouseMove" << endl << endl;)
@@ -1428,7 +1462,7 @@ void
 TTable::mouseLUp(int mx, int my, unsigned modifier)
 {
 DBM2(cerr << "enter mouseLUp" << endl;)
-  int x, y;
+  size_t x, y;
   if (!mouse2field(mx, my, &x, &y)) {
     x = cx;
     y = cy;
@@ -1437,7 +1471,7 @@ DBM2(cerr << "enter mouseLUp" << endl;)
 //cout << "MOUSE up" << endl;
 
   if (selection && selecting) {
-    int x1, y1, x2, y2;    
+    size_t x1, y1, x2, y2;    
     x1 = min(sx, cx);
     x2 = max(sx, cx);
     y1 = min(sy, cy);
@@ -1518,7 +1552,7 @@ TTable::center(int how)
 }
 
 void
-TTable::setCursor(int col, int row)
+TTable::setCursor(size_t col, size_t row)
 {
   if (col>=cols)
     col = cols ? cols-1 : 0;
@@ -1535,7 +1569,7 @@ TTable::setCursor(int col, int row)
 }
 
 void
-TTable::_moveCursor(int newcx, int newcy, unsigned modifier)
+TTable::_moveCursor(size_t newcx, size_t newcy, unsigned modifier)
 {
   int how = 0;
   if (cols==0 || rows==0)
@@ -1649,7 +1683,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
       sigDoubleClicked();
       break;
     case ' ': {
-      int osx=sx, osy=sy;
+      size_t osx=sx, osy=sy;
       _setSXSY(cx, cy);
       if (selection) {
 //        cout << "SPACE: toggle selection" << endl;
@@ -1660,7 +1694,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
             if (!flag)
               selection->setSelection(sx, sy);
           } else {
-            int x1, y1, x2, y2;    
+            size_t x1, y1, x2, y2;    
             x1 = min(osx, sx);
             x2 = max(osx, sx);
             y1 = min(osy, sy);
@@ -1686,7 +1720,7 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
 }
 
 void
-TTable::_setSXSY(int x, int y)
+TTable::_setSXSY(size_t x, size_t y)
 {
   sx = x;
   sy = y;
@@ -1708,10 +1742,10 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
 //      cout << "SHIFT up" << endl;
       if (selection && selecting) {
 //        cout << "  stop selecting and set selection" << endl;
-        int osx=sx, osy=sy;
+        size_t osx=sx, osy=sy;
         _setSXSY(cx, cy);
         selecting=false;
-        int x1, y1, x2, y2;    
+        size_t x1, y1, x2, y2;    
         x1 = min(osx, sx);
         x2 = max(osx, sx);
         y1 = min(osy, sy);
@@ -1873,8 +1907,9 @@ TTable::_handleRemovedRow()
       // hey! we should also be able to MOVE the selection as we do
       // with the row and col information... work is lurking out of
       // every corner it seems ;)
-      cout << "design problem: emergency clear selection" << endl;
-      selection->clearSelection();
+//      cout << "design problem: emergency clear selection" << endl;
+//      selection->clearSelection();
+cout << "no emergency clear selection..." << endl;
     } else {
       int x, y;
       if (selection->getFirst(&x, &y)) {

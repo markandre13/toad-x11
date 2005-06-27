@@ -41,6 +41,46 @@ class TModel:
     void unlock() { sigChanged.unlock(); }
 
     TSignal sigChanged;
+    TSignal sigDestruct;
+};
+
+template <class T>
+class GModelOwner
+{
+  protected:
+    GSmartPointer<T> model;
+  public:
+    GModelOwner() {}
+    virtual ~GModelOwner() {
+      if(model) {
+        disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
+        disconnect(model->sigDestruct, this, &GModelOwner<T>::modelDestruction);
+      }
+    }
+    void setModel(T *m) {
+//      cout << "GModelOwner::setModel("<<m<<")"<< endl;
+      if (m==model)
+        return;
+      if (model) {
+        disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
+        disconnect(model->sigDestruct, this, &GModelOwner<T>::modelDestruction);
+      }
+      model = m;
+      if (model) {
+        connect(model->sigChanged, this, &GModelOwner<T>::modelChanged, false);
+        connect(model->sigDestruct, this, &GModelOwner<T>::modelDestruction);
+      }
+      modelChanged(true);
+    }
+    T* getModel() const { return model; }
+    virtual void modelChanged(bool newmodel) = 0;
+    void modelDestruction() {
+      cout << "GModelOwner<T>: caught model destruction, set it to NULL" << endl;
+      model = 0;
+      cout << "GModelOwner<T>: call modelChanged" << endl;
+      modelChanged(true);
+      cout << "GModelOwner<T>: called modelChanged" << endl;
+    }
 };
 
 } // namespace toad model.hh

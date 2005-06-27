@@ -52,6 +52,18 @@ class TAbstractSelectionModel:
     virtual bool perCol() const { return rowcolmode == WHOLE_COL; }
     virtual ESelectionMode getSelectionMode() const;
     
+    virtual int getRow() const {
+      int x, y;
+      getFirst(&x, &y);
+      return y;
+    }
+
+    virtual int getCol() const {
+      int x, y;
+      getFirst(&x, &y);
+      return x;
+    }
+    
     /** 
      * Select an entry at the given column and row.
      *
@@ -290,6 +302,7 @@ class TTableModel:
     TTableModel() {
       reason = CHANGED;
     }
+    ~TTableModel();
     // sigChanged protocol:
     enum EReason {
       // TTableModel messages
@@ -367,32 +380,6 @@ class TSimpleTableAdapter:
 };
 
 template <class T>
-class GModelOwner
-{
-  protected:
-    GSmartPointer<T> model;
-  public:
-    GModelOwner() {}
-    virtual ~GModelOwner() {
-      if(model)
-        disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
-    }
-    void setModel(T *m) {
-//      cout << "GModelOwner::setModel("<<m<<")"<< endl;
-      if (m==model)
-        return;
-      if (model)
-        disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
-      model = m;
-      if (model)
-        connect(model->sigChanged, this, &GModelOwner<T>::modelChanged, false);
-      modelChanged(true);
-    }
-    T* getModel() const { return model; }
-    virtual void modelChanged(bool newmodel) = 0;
-};
-
-template <class T>
 class GTableAdapter:
   public TTableAdapter, public GModelOwner<T>
 {
@@ -447,21 +434,21 @@ class TTable:
     unsigned border;
     
     //! Cursor position.
-    int cx, cy;
+    size_t cx, cy;
     
     /**
      * Position of the last selected single field. Used for 
      * getLastSelectionRow() and -Col() and when selecting
      * areas.
      */
-    int sx, sy;
+    size_t sx, sy;
 
     //! 'true' means, user is defining a selection over multiple fields
     bool selecting;
     bool start_selecting;
     
     //! first (upper, left) field
-    int ffx, ffy;
+    size_t ffx, ffy;
     
     //! first (upper, left) pixel of first (upper, left) field
     int fpx, fpy;
@@ -508,15 +495,15 @@ class TTable:
     void keyDown(TKey key, char *string, unsigned modifier);
     void keyUp(TKey key, char *string, unsigned modifier);
     
-    void setCursor(int col, int row);
-    int getCursorCol() const { return cx; }
-    int getCursorRow() const { return cy; }
+    void setCursor(size_t col, size_t row);
+    size_t getCursorCol() const { return cx; }
+    size_t getCursorRow() const { return cy; }
     void selectAtCursor();
     void clickAtCursor();
     void doubleClickAtCursor();
 
-    int getLastSelectionCol() const { return sx; }
-    int getLastSelectionRow() const { return sy; }
+//    int getLastSelectionCol() const { return sx; }
+//    int getLastSelectionRow() const { return sy; }
 
     size_t getRows() const { return rows; }
     size_t getCols() const { return cols; }
@@ -560,8 +547,8 @@ class TTable:
     bool selectionFollowsMouse;
     
   protected:
-    void _moveCursor(int newcx, int newcy, unsigned modifier);
-    void _setSXSY(int x, int y);
+    void _moveCursor(size_t newcx, size_t newcy, unsigned modifier);
+    void _setSXSY(size_t x, size_t y);
     static const int CENTER_VERT=1;
     static const int CENTER_HORZ=2;
     static const int CENTER_BOTH=3;
@@ -569,7 +556,7 @@ class TTable:
 
     void adjustPane();
     void scrolled(int dx, int dy);
-    bool mouse2field(int mx, int my, int *fx, int *fy, int *rfx=0, int *rfy=0);
+    bool mouse2field(int mx, int my, size_t *fx, size_t *fy, int *rfx=0, int *rfy=0);
     
     // void modelChanged();
     void _handleInsertRow();
