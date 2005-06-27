@@ -386,6 +386,10 @@ TTreeModel::addTreeBelow(size_t row)
   void *np = _createNode();
 
   if (!rows->empty()) {
+    if (row>rows->size()) {
+      cout << "warning: TTreeModel::addTreeBelow("<<row<<") is out of range, using end" << endl;
+      row = rows->size()-1;
+    }
     void *p = (*rows)[row].node;
     _setDown(np, _getDown(p));
     _setDown(p, np);
