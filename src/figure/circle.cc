@@ -36,6 +36,7 @@ using namespace toad;
 void 
 TFCircle::paint(TPenBase &pen, EPaintType)
 {
+  pen.setAlpha(alpha);
   pen.setLineColor(line_color);
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
@@ -47,6 +48,7 @@ TFCircle::paint(TPenBase &pen, EPaintType)
   }
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
+  pen.setAlpha(255);
 }
 
 double 

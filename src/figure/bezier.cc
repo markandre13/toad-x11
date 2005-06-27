@@ -83,19 +83,23 @@ TFBezierline::paint(TPenBase &pen, EPaintType type)
     paintSelectionLines(pen);
   }
 
+  pen.setAlpha(alpha);
   pen.setColor(line_color);
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
   pen.drawPolyBezier(polygon);
 
-  if (arrowmode == NONE)
+  if (arrowmode == NONE) {
+    pen.setAlpha(255);
     return;
+  }
   pen.setLineStyle(TPen::SOLID);
   pen.setLineWidth(1);
   if (arrowmode == HEAD || arrowmode == BOTH)
     drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
   if (arrowmode == TAIL || arrowmode == BOTH)
     drawArrow(pen, polygon[0], polygon[1], line_color, fill_color, arrowwidth, arrowheight, arrowtype);
+  pen.setAlpha(255);
 }
 
 /**
@@ -667,6 +671,7 @@ TFBezier::setAttributes(const TFigureAttributes *attr)
 void
 TFBezier::paint(TPenBase &pen, EPaintType type)
 {
+  pen.setAlpha(alpha);
   pen.setLineColor(line_color);
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
@@ -678,7 +683,7 @@ TFBezier::paint(TPenBase &pen, EPaintType type)
     pen.fillPolyBezier(polygon);
   }
 
-  
+  pen.setAlpha(255);  
   
   if (type==EDIT || type==SELECT) {
     paintSelectionLines(pen);

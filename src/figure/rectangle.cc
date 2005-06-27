@@ -34,6 +34,7 @@ TFRectangle::paint(TPenBase &pen, EPaintType)
   pen.setLineColor(line_color);
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
+  pen.setAlpha(alpha);
   if (!filled) {
     pen.drawRectangle(p1,p2);
   } else {
@@ -42,6 +43,7 @@ TFRectangle::paint(TPenBase &pen, EPaintType)
   }
   pen.setLineStyle(TPen::SOLID);
   pen.setLineWidth(0);
+  pen.setAlpha(255);
 }
 
 double 

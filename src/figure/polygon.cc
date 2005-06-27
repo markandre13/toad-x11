@@ -58,6 +58,7 @@ TFPolygon::getShape(TRectangle *r)
 void 
 TFPolygon::paint(TPenBase &pen, EPaintType)
 {
+  pen.setAlpha(alpha);
   pen.setLineColor(line_color);
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
@@ -67,6 +68,7 @@ TFPolygon::paint(TPenBase &pen, EPaintType)
     pen.setFillColor(fill_color);
     pen.fillPolygon(polygon);
   }
+  pen.setAlpha(255);
 }
 
 double 
