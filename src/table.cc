@@ -652,7 +652,7 @@ TTable::selectionChanged()
 
 #if 1    
     // selection changed may be delivered before adapter changed...
-    // which is a bad thing but can we prevent it?
+    // which is a bad thing but can we prevent it? we must!
     if (cols != adapter->getCols() ||
         rows != adapter->getRows() )
     {
@@ -660,7 +660,17 @@ TTable::selectionChanged()
     }
     size_t c = cols, r = rows;
     cols = adapter->getCols(); rows = adapter->getRows();
-    setCursor(x, y);
+
+    // 'setCursor(x, y)' without invalidate
+    if (x>=cols)
+      x = x ? x-1 : 0;
+    if (y>=rows)
+      y = y ? y-1 : 0;
+    cx = x; cy = y;
+    if (selectionFollowsMouse) {
+      _setSXSY(cx, cy);
+    }
+
     cols = c; rows = r;
 #else    
     setCursor(x, y);
@@ -744,7 +754,7 @@ TTable::scrolled(int dx, int dy)
 void
 TTable::invalidateCursor()
 {
-  if (cols==0 || rows==0)
+  if (cx >= cols || cy >= rows)
     return;
 
   int xp, yp;
