@@ -112,9 +112,9 @@ class TFigureAttributes:
     // These methods delegate to the current TFigureEditor.
     void setOperation(unsigned);
     // unsigned getOperation() const { return current->getOperation(); }
-#if 0
-    void setCreate(TFigure*);
-#endif
+    void setCreate(TFigure *figure) {
+      setTool(new TFCreateTool(figure));
+    }
     void setTool(TFigureTool*);
     TFigureTool* getTool() const { return tool; }
     
@@ -278,7 +278,9 @@ class TFigureEditor:
     static const unsigned OP_ROTATE = 2;
     void setOperation(unsigned);
     unsigned getOperation() const { return operation; }
-//    void setCreate(TFigure*);
+    void setCreate(TFigure *figure) {
+      setTool(new TFCreateTool(figure));
+    }
     void setTool(TFigureTool*);
     
     // not all these methods work now, but the first 4 should do
