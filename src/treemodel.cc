@@ -356,7 +356,15 @@ TTreeModel::addBelow(size_t row)
   void *np = _createNode();
 
   if (!rows->empty()) {
+    if (row>rows->size()) {
+      cout << "TTreeModel::addBelow(" << row << ") is out of range" << endl;
+      return rows->size();
+    }
     void *p = (*rows)[row].node;
+    if (!p) {
+      cout << "TTreeModel::addBelow: row contains no node" << endl;
+      return row;
+    }
     _setNext(np, _getNext(p));
     _setNext(p, np);
   } else {
@@ -563,18 +571,18 @@ TTreeModel::deleteRow(size_t row)
     }
 //    exit(0);
   }
-  
-  _deleteNode(dn);
 
+  // inform listeners, that we're going to delete the entry, then delete it
   DBM(cout << "remove: where=" << row << ", size=1" << endl;)
 #ifdef AUTOMATIC_UPDATE
-  return update();
+  row = update();
 #else
   update(false);
   type = REMOVED_ROW;
   where = row;
   size = 1;
   sigChanged();
-  return row;
 #endif
+  _deleteNode(dn);
+  return row;
 }
