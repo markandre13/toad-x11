@@ -69,7 +69,13 @@ class GVector:
     // insert
     // erase
     // swap
-    // clear
+    void clear() {
+      reason = REMOVED_ROW;
+      TTableModel::size = data.size();
+      where = 0;
+      data.clear();
+      sigChanged();
+    }
     // resize
     // operator=, copy constructor, ...
     const_iterator begin() const { return data.begin(); }
