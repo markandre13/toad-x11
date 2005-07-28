@@ -86,6 +86,7 @@ class TFigureModel:
     TFigureModel(const TFigureModel&);
     ~TFigureModel();
     
+    void push_back(TFigure *f) { add(f); }
     void add(TFigure*);
     void erase(TFigure*);
     void add(TFigureVector&);
