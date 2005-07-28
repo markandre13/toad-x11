@@ -160,7 +160,7 @@ TFigureAttributes::TFigureAttributes()
   linecolor.set(0,0,0);
   fillcolor.set(255,255,255);
   alpha.setRangeProperties(255,0,0,255);
-  connect(drawgrid.sigChanged, foobar, this, ALPHA);
+  connect(alpha.sigChanged, foobar, this, ALPHA);
   filled = false;
   fontname = "arial,helvetica,sans-serif:size=12";
 
@@ -1095,9 +1095,11 @@ TFigureEditor::setOperation(unsigned op)
 void
 TFigureEditor::setTool(TFigureTool *tool)
 {
-  if (tool)
-    tool->stop(this);
+  stopOperation();
+  clearSelection();
   this->tool = tool;
+  if (window)
+    window->setFocus();
 }
 
 void
@@ -2401,6 +2403,7 @@ redo:
           model->figures.insert(figure);
           model->type = TFigureModel::MODIFIED;
           model->sigChanged();
+          fe->selection.insert(figure);
           figure = 0;
         }
       }
@@ -2421,6 +2424,9 @@ redo:
 void
 TFCreateTool::keyEvent(TFigureEditor *fe, TKeyEvent &ke)
 {
+  if (fe->state == TFigureEditor::STATE_NONE && ke.type == TKeyEvent::DOWN) {
+    fe->clearSelection();
+  }
   if (!figure || ke.type != TKeyEvent::DOWN)
     return;
   if (ke.getKey() == TK_ESCAPE) {
