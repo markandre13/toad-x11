@@ -69,6 +69,10 @@ class TAbstractSelectionModel:
      *
      * An implementation should also call sigChanged().
      */
+    void select(int x, int y) { setSelection(x, y); }
+    void select(int x, int y, int w, int h) { setSelection(x, y, w, h); }
+    void clear() { clearSelection(); }
+    
     virtual void setSelection(int col, int row) = 0;
     virtual bool isSelected(int col, int row) const = 0;
 
