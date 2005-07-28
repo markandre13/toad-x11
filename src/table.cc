@@ -648,7 +648,7 @@ TTable::selectionChanged()
   if (selection && !selection->isEmpty() && selectionFollowsMouse) {
     int x, y;
     selection->getFirst(&x, &y);
-    cout << "adjust cursor to selection " << x << ", " << y << endl;
+//    cout << "adjust cursor to selection " << x << ", " << y << endl;
 
 #if 1    
     // selection changed may be delivered before adapter changed...
@@ -675,7 +675,7 @@ TTable::selectionChanged()
 #else    
     setCursor(x, y);
 #endif
-    cout << "  new cursor pos is " << cx << ", " << cy << endl;
+//    cout << "  new cursor pos is " << cx << ", " << cy << endl;
   }
   invalidateWindow();
   sigSelection();
