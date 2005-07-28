@@ -146,10 +146,13 @@ TFLine::paint(TPenBase &pen, EPaintType)
   pen.setLineColor(line_color);
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
+  pen.setAlpha(alpha);
   pen.drawLines(polygon);
   
-  if (arrowmode == NONE)
+  if (arrowmode == NONE) {
+    pen.setAlpha(255);
     return;
+  }
   pen.setLineStyle(TPen::SOLID);
 
   int aw = arrowwidth * line_width;
@@ -159,6 +162,7 @@ TFLine::paint(TPenBase &pen, EPaintType)
     drawArrow(pen, polygon[polygon.size()-1], polygon[polygon.size()-2], line_color, fill_color, aw, ah, arrowtype);
   if (arrowmode == TAIL || arrowmode == BOTH)
     drawArrow(pen, polygon[0], polygon[1], line_color, fill_color, aw, ah, arrowtype);
+  pen.setAlpha(255);
 }
 
 double 
