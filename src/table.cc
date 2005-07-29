@@ -1315,7 +1315,7 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
     te.mouse.modifier = modifier;
     // this should also contain a pointer to this adapter, in case
     // mouseEvent makes modifications?
-    int size = col_info[cx].size;
+    int size = col_info[x].size;
     if (stretchLastColumn && x==cols-1) {
       int xp;
       xp = fpx + visible.x;
