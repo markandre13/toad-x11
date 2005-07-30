@@ -253,17 +253,15 @@ class TFigureEditor:
       return model;
     }
     
-    void setModified(bool m) {
-      assert(model!=0);
-      model->setModified(m);
+    void setModified(bool modified) {
+      this->modified = modified;
     }
     bool isModified() const {
-      if (!model)
-        return false;
-      return model->isModified();
+      return modified;
     }
 
   protected:
+    bool modified;
     PFigureAttributes preferences;
   
     TWindow *window;            // current window

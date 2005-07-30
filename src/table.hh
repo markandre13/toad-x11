@@ -50,16 +50,16 @@ class TAbstractSelectionModel:
     }
     virtual bool perRow() const { return rowcolmode == WHOLE_ROW; }
     virtual bool perCol() const { return rowcolmode == WHOLE_COL; }
-    virtual ESelectionMode getSelectionMode() const;
+    virtual ESelectionMode getMode() const;
     
-    virtual int getRow() const {
-      int x, y;
+    virtual size_t getRow() const {
+      size_t x, y;
       getFirst(&x, &y);
       return y;
     }
 
-    virtual int getCol() const {
-      int x, y;
+    virtual size_t getCol() const {
+      size_t x, y;
       getFirst(&x, &y);
       return x;
     }
@@ -69,20 +69,17 @@ class TAbstractSelectionModel:
      *
      * An implementation should also call sigChanged().
      */
-    void select(int x, int y) { setSelection(x, y); }
-    void select(int x, int y, int w, int h) { setSelection(x, y, w, h); }
-    void clear() { clearSelection(); }
+    virtual void select(size_t x, size_t y) = 0;
+    virtual void select(size_t x, size_t y, size_t w, size_t h) = 0;
+    virtual void toggle(size_t x, size_t y);
+    virtual void clear();
+    virtual bool empty() const;
     
-    virtual void setSelection(int col, int row) = 0;
-    virtual bool isSelected(int col, int row) const = 0;
+    virtual bool isSelected(size_t col, size_t row) const = 0;
 
-    virtual bool getFirst(int *x, int *y) const = 0;
-    virtual bool getNext(int *x, int *y) const = 0;
+    virtual bool getFirst(size_t *x, size_t *y) const = 0;
+    virtual bool getNext(size_t *x, size_t *y) const = 0;
 
-    virtual void setSelection(int col, int row, int w, int h);
-    virtual void toggleSelection(int col, int row);
-    virtual void clearSelection();
-    virtual bool isEmpty() const;
 };
 
 typedef GSmartPointer<TAbstractSelectionModel> PAbstractSelectionModel;
@@ -94,70 +91,68 @@ class TSingleSelectionModel:
   public TAbstractSelectionModel
 {
     size_t col, row;
-    bool selected;
+    bool emptyflag;
 
   public:
     TSingleSelectionModel() {
-      selected = false;
-      clearSelection();
+      emptyflag = false;
     }
     
-    int getCol() const { return col; }
-    int getRow() const { return row; }
+    size_t getCol() const { return col; }
+    size_t getRow() const { return row; }
     
-    virtual ESelectionMode getSelectionMode() const;
-    virtual void clearSelection();
-    virtual void setSelection(int col, int row);
-    virtual void setSelection(int col, int row, int w, int h);
-    virtual void toggleSelection(int col, int row);
-    virtual bool isSelected(int col, int row) const;
-    virtual bool isEmpty() const;
+    virtual ESelectionMode getMode() const;
+    virtual void clear();
+    virtual void select(size_t col, size_t row);
+    virtual void select(size_t col, size_t row, size_t w, size_t h);
+    virtual void toggle(size_t col, size_t row);
+    virtual bool isSelected(size_t col, size_t row) const;
+    virtual bool empty() const;
 
-    bool getFirst(int *x, int *y) const;
-    bool getNext(int *x, int *y) const;
+    bool getFirst(size_t *x, size_t *y) const;
+    bool getNext(size_t *x, size_t *y) const;
 };
 
 class TRectangleSelectionModel:
   public TAbstractSelectionModel
 {
-    int x1, x2, y1, y2;
-    bool empty;
+    size_t x1, x2, y1, y2;
+    bool emptyflag;
   public:
 
     TRectangleSelectionModel() {
-      empty = true;
+      emptyflag = true;
       rowcolmode = FIELD;
     }
-    ESelectionMode getSelectionMode() const {
+    ESelectionMode getMode() const {
       return SINGLE_INTERVAL;
     }
 
-
-    void setSelection(int col, int row) {
-      setSelection(col, row, 1, 1);
+    void select(size_t col, size_t row) {
+      select(col, row, 1, 1);
     }
-    bool isSelected(int col, int row) const {
-      if (empty)
+    bool isSelected(size_t col, size_t row) const {
+      if (emptyflag)
         return false;
       return (x1<=col && col<=x2 && y1<=row && row<=y2);
     }
-    void setSelection(int col, int row, int w, int h) {
-      if (!empty && x1==col && x2==col+w-1 && y1==row && y2==row+h-1)
+    void select(size_t col, size_t row, size_t w, size_t h) {
+      if (!emptyflag && x1==col && x2==col+w-1 && y1==row && y2==row+h-1)
         return;
-      empty = false;
+      emptyflag = false;
       x1 = col;
       x2 = col+w-1;
       y1 = row;
       y2 = row+h-1;
       sigChanged();
     }
-    void toggleSelection(int col, int row) {
+    void toggle(size_t col, size_t row) {
       if (x1<=col && col<=x2 &&
           y1<=row && row<=y1)
       {
-        empty = !empty;
+        emptyflag = !emptyflag;
       } else {
-        empty = false;
+        emptyflag = false;
       }
       x1=x2=col;
       y1=y2=row;
@@ -165,21 +160,22 @@ class TRectangleSelectionModel:
     }
 
     
-    void clearSelection() {
-      if (empty)
+    void clear() {
+      if (emptyflag)
         return;
-      empty = true;
+      emptyflag = true;
       sigChanged();
     }
     bool isEmpty() const {
-      return empty;
+      return emptyflag;
     }
+/*
     void getSelection(TRectangle *r) {
       r->set(x1, y1, x2-x1+1, y2-y1+1);
     }
-
-    bool getFirst(int *x, int *y) const;
-    bool getNext(int *x, int *y) const;
+*/
+    bool getFirst(size_t *x, size_t *y) const;
+    bool getNext(size_t *x, size_t *y) const;
 };
 
 class TSelectionModel:
@@ -232,24 +228,24 @@ class TSelectionModel:
     bool isSelectionEmpty() const;
 #endif
     
-    ESelectionMode getSelectionMode() const {
+    ESelectionMode getMode() const {
       return selection_mode;
     }
 
-    void clearSelection();
-    void setSelection(int x, int y);
-    void setSelection(int x, int y, int w, int h);
-    void toggleSelection(int x, int y);
-    bool isSelected(int x, int y) const;
-    bool isEmpty() const { return region.isEmpty(); }
+    void clear();
+    void select(size_t x, size_t y);
+    void select(size_t x, size_t y, size_t w, size_t h);
+    void toggle(size_t x, size_t y);
+    bool isSelected(size_t x, size_t y) const;
+    bool empty() const { return region.isEmpty(); }
     
-    void setSelectionMode(ESelectionMode);
+    void setMode(ESelectionMode);
 
-    bool getFirst(int *x, int *y) const;
-    bool getNext(int *x, int *y) const;
+    bool getFirst(size_t *x, size_t *y) const;
+    bool getNext(size_t *x, size_t *y) const;
     
   private:
-    void prepare(int x, int y);
+    void prepare(size_t x, size_t y);
     ESelectionMode selection_mode;
 };
 
@@ -292,9 +288,11 @@ struct TTableEvent
   int w, h;          // field size in pixels
   size_t cols, rows; // table size in fields
   bool per_row, per_col;
-  bool cursor;    // show cursor
-  bool selected;  // field is selected
-  bool focus;     // table has keyboard focus
+  bool cursor;      // show cursor
+  bool selected;    // field is selected
+  bool focus;       // table has keyboard focus
+  bool even;        // true for even rows, false for odd rows
+                    // don't use 'rows' as some may be skipped
   bool flag;
 };
 
@@ -332,11 +330,6 @@ class TTableAdapter:
   protected:
     TTable *table;
 
-    // support attributes for handleString
-    static TTableAdapter *edit;
-    static size_t cx;
-    static size_t col, row;
-
   public:
     TTableAdapter();
 
@@ -344,30 +337,19 @@ class TTableAdapter:
     TTable* getTable() const { return table; }
     virtual TTableModel* getModel() const = 0; // const { return 0; }
 
-    virtual size_t getCols() { return getModel() ? getModel()->getCols() : 1; }
-    virtual size_t getRows() { return getModel() ? getModel()->getRows() : 1; }
-
     //! Most messages from TTable to TTableAdapter go through the
     //! tableEvent method to ease delegation to other objects which
     //! may handle text, checkboxes, etc...
-    virtual void tableEvent(TTableEvent &te);
+    virtual void tableEvent(TTableEvent &te) = 0;
 
-    virtual int getRowHeight(size_t row) { return 18; }
-    virtual int getColWidth(size_t col) { return 18; }
-
-    void renderBackground(TTableEvent &te);
-    void renderCursor(TTableEvent &te);
+    virtual size_t getCols() { return getModel() ? getModel()->getCols() : 1; }
+    virtual size_t getRows() { return getModel() ? getModel()->getRows() : 1; }
 
     // utility methods
+    void renderBackground(TTableEvent &te);
+    void renderCursor(TTableEvent &te);
     void handleString(TTableEvent &te, string *s, int offx=0);
     void handleCheckBox(TTableEvent &te, bool *b);
-
-    /**
-     * Render cell background, cursor and invoke renderItem.
-     */
-    virtual void renderCell(TPen&, TTableEvent&);
-    virtual void renderItem(TPen&, const TTableEvent&) {}
-    virtual void mouseEvent(TMouseEvent &, int xindex, int yindex, int w, int h);
 
     // this method is to enable signals to trigger our signal:
     void modelChanged();
@@ -406,7 +388,7 @@ class TAbstractTableHeaderRenderer:
   public:
     virtual int getHeight() = 0;
     virtual int getWidth() = 0;
-    virtual void renderItem(TPen &pen, int idx, int w, int h) = 0;
+    virtual void renderItem(TPen &pen, size_t idx, int w, int h) = 0;
 };
 
 typedef GSmartPointer<TAbstractTableHeaderRenderer> PAbstractTableHeaderRenderer;
@@ -421,7 +403,7 @@ class TDefaultTableHeaderRenderer:
       numeric(numeric_mode) {}
     int getHeight();
     int getWidth();
-    void renderItem(TPen &pen, int idx, int w, int h);
+    void renderItem(TPen &pen, size_t idx, int w, int h);
     void setText(unsigned pos, const string &txt);
 };
 

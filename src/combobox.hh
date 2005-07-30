@@ -55,8 +55,8 @@ class TComboBox:
       table->setSelectionModel(m);
       if (m) {
         connect(m->sigChanged, this, &TComboBox::_selectionChanged);
-        if (m->isEmpty())
-          m->setSelection(0,0);
+        if (m->empty())
+          m->select(0,0);
       }
     }
     TAbstractSelectionModel* getSelectionModel() {

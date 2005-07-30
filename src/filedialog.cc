@@ -18,6 +18,14 @@
  * MA  02111-1307,  USA
  */
 
+//
+// MacOS X behaviour:
+// <name>.<ext>/Contents/PkgInfo (non-empty)
+//   will be displayed as a sheet of paper
+// <name>.app
+//   will be displayed as a sheet of paper with pen, rulees and brush
+
+
 #include <toad/filedialog.hh>
 
 #include <toad/toad.hh>
@@ -111,64 +119,66 @@ class TDirectoryAdapter:
         TTableAdapter::modelChanged();
       }
     }
-    int getRowHeight(size_t) { return h+2; }
-    int getColWidth(size_t);
-    void renderItem(TPen &pen, const TTableEvent &te);
+    
+    void tableEvent(TTableEvent &te);
 };
 
 }
 
-int
-TDirectoryAdapter::getColWidth(size_t col)
-{
-  switch(col) {
-    case 0:
-      return 16;
-    case 1:
-      return w+2;
-    case 2:
-      return 40;
-  }
-  return 0;
-}
-
 void
-TDirectoryAdapter::renderItem(TPen &pen, const TTableEvent &te)
+TDirectoryAdapter::tableEvent(TTableEvent &te)
 {
-  TDirectory::TDirectoryEntry &e = model->entries[te.row];
-  switch(te.col) {
-    case 0:
-      if (S_ISDIR(e.mode)) {
-        pen.drawBitmap(0, (h - bmp.getHeight())/2, bmp);
-      }
+  switch(te.type) {
+    case TTableEvent::GET_COL_SIZE:
+      switch(te.col) {
+        case 0: te.w = 16; break;
+        case 1: te.w = w+2; 
+        break;
+        case 2: te.w = 40; break;
+       }
+       break;
+    case TTableEvent::GET_ROW_SIZE:
+      te.h = h+2;
       break;
-    case 1:
-      pen.drawString(1, 1, e.name);
-      break;
-    case 2: {
-      char buffer[256];
-      int s = e.size;
-      if (s < 1024) {
-        snprintf(buffer, sizeof(buffer), "%iB", s);
-      } else {
-        s/=1024;
-        if (s < 1024) {
-          snprintf(buffer, sizeof(buffer), "%iKB", s);
-        } else {
-          s/=1024;
+    case TTableEvent::PAINT: {
+      renderBackground(te);
+      TDirectory::TDirectoryEntry &e = model->entries[te.row];
+      switch(te.col) {
+        case 0:
+          if (S_ISDIR(e.mode)) {
+            te.pen->drawBitmap(0, (h - bmp.getHeight())/2, bmp);
+          }
+          break;
+        case 1:
+          te.pen->drawString(1, 1, e.name);
+          break;
+        case 2: {
+          char buffer[256];
+          int s = e.size;
           if (s < 1024) {
-            snprintf(buffer, sizeof(buffer), "%iMB", s);
+            snprintf(buffer, sizeof(buffer), "%iB", s);
           } else {
             s/=1024;
-            snprintf(buffer, sizeof(buffer), "%iGB", s);
+            if (s < 1024) {
+              snprintf(buffer, sizeof(buffer), "%iKB", s);
+            } else {
+              s/=1024;
+              if (s < 1024) {
+                snprintf(buffer, sizeof(buffer), "%iMB", s);
+              } else {
+                s/=1024;
+                snprintf(buffer, sizeof(buffer), "%iGB", s);
+              }
+            }
           }
-        }
+          int x = te.w - te.pen->getTextWidth(buffer) - 1;
+          if (x<0)
+            x = 1;
+          te.pen->drawString( x, 1, buffer);
+        } break;
       }
-      int x = te.w - pen.getTextWidth(buffer) - 1;
-      if (x<0)
-        x = 1;
-      pen.drawString( x, 1, buffer);
-      } break;
+      renderCursor(te);
+    } break;
   }
 }
 
@@ -200,14 +210,28 @@ class TFilterListAdapter:
         TTableAdapter::modelChanged();
       }
     }
-    int getRowHeight(size_t) { return h+2; }
-    int getColWidth(size_t) { return w+2; }
     size_t getCols() { return 1; }
 //    size_t getRows() { return model ? model->size() : 0; }
-    void renderItem(TPen &pen, const TTableEvent &te) {
-      pen.drawString(1,1, (*model)[te.row]->toText());
-    }
+    void tableEvent(TTableEvent &te);
 };
+
+void
+TFilterListAdapter::tableEvent(TTableEvent &te)
+{
+  switch(te.type) {
+    case TTableEvent::GET_COL_SIZE:
+      te.w = w+2;
+       break;
+    case TTableEvent::GET_ROW_SIZE:
+      te.h = h+2;
+      break;
+    case TTableEvent::PAINT:
+      renderBackground(te);
+      te.pen->drawString(1,1, (*model)[te.row]->toText());
+      renderCursor(te);
+      break;
+  }
+}
 
 class TDequeStringAdapter:
   public TTableAdapter, GModelOwner< GDeque<string> >
@@ -237,14 +261,29 @@ class TDequeStringAdapter:
         TTableAdapter::modelChanged();
       }
     }
-    int getRowHeight(size_t) { return h+2; }
-    int getColWidth(size_t) { return w+2; }
     size_t getCols() { return 1; }
 //    size_t getRows() { return model ? model->size() : 0; }
-    void renderItem(TPen &pen, const TTableEvent &te) {
-      pen.drawString(1,1, (*model)[te.row]);
-    }
+    void tableEvent(TTableEvent &te);
 };
+
+void
+TDequeStringAdapter::tableEvent(TTableEvent &te)
+{
+  switch(te.type) {
+    case TTableEvent::GET_COL_SIZE:
+      te.w = w+2;
+       break;
+    case TTableEvent::GET_ROW_SIZE:
+      te.h = h+2;
+      break;
+    case TTableEvent::PAINT:
+      renderBackground(te);
+      te.pen->drawString(1,1, (*model)[te.row]);
+      renderCursor(te);
+      break;
+  }
+}
+
 
 #if 0
 TTableAdapter*
@@ -353,7 +392,7 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
   cb_prev->clickAtCursor();
 
   // don't connect earlier to avoid loadDirectory being called unneccessary
-  filter.setSelection(0,1);
+  filter.select(0,1);
   connect(filter.sigChanged, this, &This::filterSelected);
   connect(cb_prev->sigSelection, this, &This::jumpDirectory);
   
@@ -369,7 +408,7 @@ TFileDialog::create()
   // have been added, so we invoke loadDirectory (by selecting the
   // first filter) here:
   // cb_filter->clickAtCursor();
-  filter.setSelection(0,0);
+  filter.select(0,0);
 }
 
 /**
@@ -554,7 +593,7 @@ void
 TFileDialog::fileSelected()
 {
 #if 1
-  if (entrychoice.isEmpty())
+  if (entrychoice.empty())
     return;
   filename = entries[entrychoice.getRow()].name;
   adjustOkButton();
@@ -690,7 +729,7 @@ const TFileFilter*
 TFileDialog::getFileFilter() const
 {
 //  cout << "TFileDialog::getFileFilter: row=" << filter.getRow() << endl;
-  if (filter.isEmpty())
+  if (filter.empty())
     return 0;
   return filterlist[filter.getRow()];
 }

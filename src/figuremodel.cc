@@ -410,8 +410,6 @@ TFigureModel::translate(const TFigureSet &set, int dx, int dy)
 
   TUndoTranslate *undo = new TUndoTranslate(this, set, -dx, -dy);
   TUndoManager::registerUndo(this, undo);
-
-  _modified = true;
 }
 
 /**
@@ -451,8 +449,6 @@ TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y, un
   
   TUndoTranslateHandle *undo = new TUndoTranslateHandle(this, figure, handle, p.x, p.y, m);
   TUndoManager::registerUndo(this, undo);
-
-  _modified = true;
 }
 
 /**

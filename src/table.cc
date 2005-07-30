@@ -127,7 +127,7 @@ TModel
  * The default implementation returns 'SINGLE'.
  */
 TAbstractSelectionModel::ESelectionMode
-TAbstractSelectionModel::getSelectionMode() const
+TAbstractSelectionModel::getMode() const
 {
   return SINGLE;
 }
@@ -141,9 +141,9 @@ TAbstractSelectionModel::getSelectionMode() const
  * An new implementation should also call sigChanged().
  */
 void
-TAbstractSelectionModel::setSelection(int col, int row, int w, int h)
+TAbstractSelectionModel::select(size_t col, size_t row, size_t w, size_t h)
 {
-  setSelection(col, row);
+  select(col, row);
 }
 
 /**
@@ -154,9 +154,9 @@ TAbstractSelectionModel::setSelection(int col, int row, int w, int h)
  * An new implementation should also call sigChanged().
  */
 void
-TAbstractSelectionModel::toggleSelection(int col, int row)
+TAbstractSelectionModel::toggle(size_t col, size_t row)
 {
-  setSelection(col, row);
+  select(col, row);
 }
 
 /**
@@ -167,7 +167,7 @@ TAbstractSelectionModel::toggleSelection(int col, int row)
  * An new implementation should also call sigChanged().
  */
 void
-TAbstractSelectionModel::clearSelection()
+TAbstractSelectionModel::clear()
 {
 }
 
@@ -179,7 +179,7 @@ TAbstractSelectionModel::clearSelection()
  * \return 'true' in case there's no entry selected.
  */
 bool
-TAbstractSelectionModel::isEmpty() const
+TAbstractSelectionModel::empty() const
 {
   return false;
 }
@@ -190,9 +190,9 @@ TAbstractSelectionModel::isEmpty() const
  */
 
 bool
-TSingleSelectionModel::getFirst(int *x, int *y) const
+TSingleSelectionModel::getFirst(size_t *x, size_t *y) const
 {
-  if (!selected)
+  if (!emptyflag)
     return false;
   *x = col;
   *y = row;
@@ -200,70 +200,70 @@ TSingleSelectionModel::getFirst(int *x, int *y) const
 }
 
 bool
-TSingleSelectionModel::getNext(int *x, int *y) const
+TSingleSelectionModel::getNext(size_t *x, size_t *y) const
 {
   return false;
 }
     
 TAbstractSelectionModel::ESelectionMode
-TSingleSelectionModel::getSelectionMode() const
+TSingleSelectionModel::getMode() const
 { 
   return SINGLE;
 }
    
 void
-TSingleSelectionModel::clearSelection()
+TSingleSelectionModel::clear()
 { 
   col = row = 0;
-  if (!selected)
+  if (!emptyflag)
     return;
-  selected = false;
+  emptyflag = false;
   sigChanged();
 }
 
 void
-TSingleSelectionModel::setSelection(int col, int row)
+TSingleSelectionModel::select(size_t col, size_t row)
 {
-  if (selected && this->col == col && this->row == row)
+  if (emptyflag && this->col == col && this->row == row)
     return;
-  selected = true;
+  emptyflag = true;
   this->col = col;
   this->row = row;
   sigChanged();
 }
 
 void
-TSingleSelectionModel::setSelection(int col, int row, int w, int h)
+TSingleSelectionModel::select(size_t col, size_t row, size_t w, size_t h)
 {
-  setSelection(col, row);
+  select(col, row);
 }
 
 void
-TSingleSelectionModel::toggleSelection(int col, int row)
+TSingleSelectionModel::toggle(size_t col, size_t row)
 {
   if (isSelected(col, row))
-    clearSelection();
+    clear();
   else
-    setSelection(col, row);
+    select(col, row);
 }
 
 bool
-TSingleSelectionModel::isSelected(int col, int row) const
+TSingleSelectionModel::isSelected(size_t col, size_t row) const
 {
-  return selected && this->col == col && this->row == row;
+  return emptyflag && this->col == col && this->row == row;
 }
 
 bool
-TSingleSelectionModel::isEmpty() const
+TSingleSelectionModel::empty() const
 {
-  return !selected;
+  return !emptyflag;
 }
 
 
 bool 
-TRectangleSelectionModel::getFirst(int *x, int *y) const
+TRectangleSelectionModel::getFirst(size_t *x, size_t *y) const
 {
-  if (empty)
+  if (emptyflag)
     return false;
   *x = x1;
   *y = y1;
@@ -271,7 +271,7 @@ TRectangleSelectionModel::getFirst(int *x, int *y) const
 }
 
 bool
-TRectangleSelectionModel::getNext(int *x, int *y) const
+TRectangleSelectionModel::getNext(size_t *x, size_t *y) const
 {
   ++(*x);
   if (*x<=x2)
@@ -295,13 +295,13 @@ TRectangleSelectionModel::getNext(int *x, int *y) const
  *   Somehow similar to TRegion...
  */
 bool
-TSelectionModel::getFirst(int *x, int *y) const
+TSelectionModel::getFirst(size_t *x, size_t *y) const
 {
   return false;
 }
 
 bool
-TSelectionModel::getNext(int *x, int *y) const
+TSelectionModel::getNext(size_t *x, size_t *y) const
 {
   return false;
 }
@@ -418,14 +418,14 @@ TSelectionModel::iterator::operator--()
 }
 
 void
-TSelectionModel::setSelectionMode(ESelectionMode mode)
+TSelectionModel::setMode(ESelectionMode mode)
 {
   selection_mode = mode;
   sigChanged();
 }
 
 void
-TSelectionModel::clearSelection()
+TSelectionModel::clear()
 {
   if (region.isEmpty())
     return;
@@ -439,7 +439,7 @@ TSelectionModel::clearSelection()
  * Select a single entry.
  */
 void
-TSelectionModel::setSelection(int x, int y)
+TSelectionModel::select(size_t x, size_t y)
 {
   TRectangle r(x,y,1,1);
   region.addRect(r);
@@ -447,7 +447,7 @@ TSelectionModel::setSelection(int x, int y)
 }
 
 void
-TSelectionModel::setSelection(int x, int y, int w, int h)
+TSelectionModel::select(size_t x, size_t y, size_t w, size_t h)
 {
   if (selection_mode!=MULTIPLE_INTERVAL)
     region.clear();
@@ -456,7 +456,7 @@ TSelectionModel::setSelection(int x, int y, int w, int h)
 }
 
 void
-TSelectionModel::toggleSelection(int x, int y)
+TSelectionModel::toggle(size_t x, size_t y)
 {
 DBM2(cerr << "toggle " << x << ", " << y << endl;)
   if (selection_mode!=MULTIPLE_INTERVAL) {
@@ -471,7 +471,7 @@ DBM2(cerr << "  position after change " << isSelected(x,y) << endl;)
 }
 
 bool
-TSelectionModel::isSelected(int x, int y) const
+TSelectionModel::isSelected(size_t x, size_t y) const
 {
   return region.isInside(x, y);
 }
@@ -510,7 +510,7 @@ TDefaultTableHeaderRenderer::getWidth()
 }
 
 void
-TDefaultTableHeaderRenderer::renderItem(TPen &pen, int idx, int w, int h)
+TDefaultTableHeaderRenderer::renderItem(TPen &pen, size_t idx, int w, int h)
 {
   TRectangle r(0,0,w,h);
   char buffer[16];
@@ -645,8 +645,8 @@ TTable::selectionChanged()
 #endif
   if (!adapter)
     return;
-  if (selection && !selection->isEmpty() && selectionFollowsMouse) {
-    int x, y;
+  if (selection && !selection->empty() && selectionFollowsMouse) {
+    size_t x, y;
     selection->getFirst(&x, &y);
 //    cout << "adjust cursor to selection " << x << ", " << y << endl;
 
@@ -967,6 +967,7 @@ DBSCROLL({
   te.cols = cols;
   te.rows = rows;
   te.focus = isFocus();
+  te.even  = true;
   if (selection) {
     te.per_row = selection->perRow();
     te.per_col = selection->perCol();
@@ -981,6 +982,7 @@ DBSCROLL({
     if (row_info[y].size==0) {
       continue;
     }
+    te.even = !te.even;
     xp = fpx + visible.x;
     te.row = y;
     for(int x=ffx; x<cols && xp<visible.x+visible.w; x++) {
@@ -1095,10 +1097,10 @@ DBM2(cerr << "selectAtCursor" << endl;)
   if (selection) {
     if (selectionFollowsMouse) {
       DBM2(cerr << "set selection" << endl;)
-      selection->setSelection(sx, sy);
+      selection->select(sx, sy);
     } else {
       DBM2(cerr << "  toggle selection" << endl;)
-      selection->toggleSelection(sx, sy);
+      selection->toggle(sx, sy);
     }
   } else {
     selectionChanged();
@@ -1339,7 +1341,7 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
     selection->sigChanged.lock();
 
   TAbstractSelectionModel::ESelectionMode mode;
-  mode = selection ? selection->getSelectionMode() : TAbstractSelectionModel::SINGLE;
+  mode = selection ? selection->getMode() : TAbstractSelectionModel::SINGLE;
 
   selecting = start_selecting = false;
   bool justcursor = true;
@@ -1367,25 +1369,25 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
     if (mode == TAbstractSelectionModel::SINGLE) {
       if (!(modifier&MK_CONTROL)) {
         if (!selection->isSelected(x, y)) {
-          selection->clearSelection();
+          selection->clear();
           _setSXSY(x, y);
-          selection->setSelection(sx, sy);
+          selection->select(sx, sy);
         }
       } else {
 //        cout << "  toggle selection" << endl;
         _setSXSY(x, y);
-        selection->toggleSelection(sx, sy);
+        selection->toggle(sx, sy);
       }
     } else {
       if (!(modifier&MK_CONTROL)) {
-        selection->clearSelection();
+        selection->clear();
         if (mode != TAbstractSelectionModel::SINGLE) {
           selecting = true;
           start_selecting = false;
         }
       } else {
         _setSXSY(x, y);
-        selection->toggleSelection(sx, sy);
+        selection->toggle(sx, sy);
       }
     }
   }
@@ -1425,7 +1427,7 @@ TTable::mouseMove(int mx, int my, unsigned modifier)
   } else
   if (!selecting && (modifier&MK_SHIFT)) {
     TAbstractSelectionModel::ESelectionMode mode;
-    mode = selection ? selection->getSelectionMode() : TAbstractSelectionModel::SINGLE;
+    mode = selection ? selection->getMode() : TAbstractSelectionModel::SINGLE;
     if (mode != TAbstractSelectionModel::SINGLE) {
       // start selecting an area from the previous cursor position
 //      cout << "  start selecting area" << endl;
@@ -1433,7 +1435,7 @@ TTable::mouseMove(int mx, int my, unsigned modifier)
       selecting = true;
 
       if (!(modifier&MK_CONTROL)) {
-        selection->clearSelection();
+        selection->clear();
       }
 
     } else {
@@ -1446,7 +1448,7 @@ TTable::mouseMove(int mx, int my, unsigned modifier)
 //cout << "MOUSE move" << endl;
 
   TAbstractSelectionModel::ESelectionMode mode;
-  mode = selection ? selection->getSelectionMode() : TAbstractSelectionModel::SINGLE;
+  mode = selection ? selection->getMode() : TAbstractSelectionModel::SINGLE;
 
   if (selectionFollowsMouse || modifier & MK_SHIFT) {
     invalidateChangedArea(sx,sy,cx,cy,cx,cy);
@@ -1455,7 +1457,7 @@ TTable::mouseMove(int mx, int my, unsigned modifier)
       _setSXSY(x, y);
     }
     if (selection && mode==TAbstractSelectionModel::SINGLE) {
-      selection->setSelection(sx, sy);
+      selection->select(sx, sy);
     }
     invalidateChangedArea(sx,sy,cx,cy,cx,cy);
   } else {
@@ -1487,7 +1489,7 @@ DBM2(cerr << "enter mouseLUp" << endl;)
     y1 = min(sy, cy);
     y2 = max(sy, cy);
 //    cout << "  set selection" << endl;
-    selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+    selection->select(x1, y1, x2-x1+1, y2-y1+1);
     selecting = false;
     invalidateWindow();
   }
@@ -1598,7 +1600,7 @@ TTable::_moveCursor(size_t newcx, size_t newcy, unsigned modifier)
     return;
 
   TAbstractSelectionModel::ESelectionMode mode;
-  mode = selection ? selection->getSelectionMode() : TAbstractSelectionModel::SINGLE;
+  mode = selection ? selection->getMode() : TAbstractSelectionModel::SINGLE;
 
   if (selecting && !(modifier&MK_SHIFT)) {
 //    cout << "stop select area" << endl;
@@ -1611,7 +1613,7 @@ TTable::_moveCursor(size_t newcx, size_t newcy, unsigned modifier)
       if (selection && !(modifier & MK_CONTROL) ) {
 //        cout << "  clear selection" << endl;
 //        cout << "  cx="<<cx<<", cy="<<cy<<", sx="<<sx<<", sy="<<sy<<endl;
-        selection->clearSelection();
+        selection->clear();
       }
       _setSXSY(cx, cy);
 //      cout << "  create selection starting at" << endl;
@@ -1699,10 +1701,10 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
 //        cout << "SPACE: toggle selection" << endl;
         if (!(modifier&MK_CONTROL)) {
           bool flag = selection->isSelected(sx, sy);
-          selection->clearSelection();
+          selection->clear();
           if (!(modifier&MK_SHIFT) ) {
             if (!flag)
-              selection->setSelection(sx, sy);
+              selection->select(sx, sy);
           } else {
             size_t x1, y1, x2, y2;    
             x1 = min(osx, sx);
@@ -1710,11 +1712,11 @@ TTable::keyDown(TKey key, char *string, unsigned modifier)
             y1 = min(osy, sy);
             y2 = max(osy, sy);
 //            cout << "  set selection" << endl;
-            selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+            selection->select(x1, y1, x2-x1+1, y2-y1+1);
           }
         } else {
 //          cout << "  toggle selection" << endl;
-          selection->toggleSelection(sx, sy);
+          selection->toggle(sx, sy);
         }
       }
 //      invalidateCursor();
@@ -1760,7 +1762,7 @@ TTable::keyUp(TKey key, char *string, unsigned modifier)
         x2 = max(osx, sx);
         y1 = min(osy, sy);
         y2 = max(osy, sy);
-        selection->setSelection(x1, y1, x2-x1+1, y2-y1+1);
+        selection->select(x1, y1, x2-x1+1, y2-y1+1);
         sx=osx; sy=osy;
       }
       if (selection)
@@ -1907,7 +1909,7 @@ TTable::_handleRemovedRow()
   if (selection) {  
     if (rows==0) {
       // the obvious check -> no rows, no selection
-      selection->clearSelection();
+      selection->clear();
     }
     else if (adapter->where+adapter->size > rows) {
       // the selection model doesn't provide enough information yet
@@ -1921,7 +1923,7 @@ TTable::_handleRemovedRow()
 //      selection->clearSelection();
 cout << "no emergency clear selection..." << endl;
     } else {
-      int x, y;
+      size_t x, y;
       if (selection->getFirst(&x, &y)) {
         do {
           if (y>=adapter->where) {

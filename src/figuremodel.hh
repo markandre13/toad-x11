@@ -75,13 +75,13 @@ class TFigureModel:
     TFigureSet figures;
     //! additional information for type attribute
     TFigure *figure;
-    
+#if 0    
     bool _modified;
     bool isModified() const { return _modified; }
     void setModified(bool m) {
       _modified = m;
     }
-
+#endif
     TFigureModel();
     TFigureModel(const TFigureModel&);
     ~TFigureModel();

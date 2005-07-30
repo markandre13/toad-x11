@@ -23,16 +23,18 @@
 
 using namespace toad;
 
+// for some freaky unknown reason g++-3.x wants this virtual method
+// to be defined...
+void
+TTableAdapter::tableEvent(toad::TTableEvent&)
+{
+}
+
 TTableModel*
 TSimpleTableAdapter::getModel() const
 {
   return 0;
 }
-
-TTableAdapter* TTableAdapter::edit = 0;
-size_t TTableAdapter::cx;
-size_t TTableAdapter::col;
-size_t TTableAdapter::row;
 
 TTableAdapter::TTableAdapter()
 {
@@ -65,37 +67,6 @@ switch(reason) {
   sigChanged();
 };
 
-
-void
-TTableAdapter::tableEvent(TTableEvent &te)
-{
-  switch(te.type) {
-    case TTableEvent::GET_COL_SIZE:
-      te.w = getColWidth(te.col);
-      break;
-    case TTableEvent::GET_ROW_SIZE:
-      te.h = getRowHeight(te.row);
-      break;
-    case TTableEvent::PAINT:
-      renderCell(*te.pen, te);
-      break;
-    case TTableEvent::MOUSE:
-      mouseEvent(te.mouse, te.col, te.row, te.w, te.h);
-      break;
-  }
-}
-
-/**
- * Draws selection indicators, calls renderItem and draws the cursor.
- */
-void 
-TTableAdapter::renderCell(TPen &pen, TTableEvent &te)
-{
-  renderBackground(te);
-  renderItem(pen, te);
-  renderCursor(te);
-}
-  
 void
 TTableAdapter::renderBackground(TTableEvent &te)  
 {
@@ -105,12 +76,12 @@ TTableAdapter::renderBackground(TTableEvent &te)
   te.pen->setLineWidth(1);
   if (te.selected) {
     if (te.focus) {
-      te.pen->setColor((te.row&1) ? TColor::SELECTED_2 : TColor::SELECTED);
+      te.pen->setColor(te.even ? TColor::SELECTED_2 : TColor::SELECTED);
     } else {
-      te.pen->setColor((te.row&1) ? TColor::SELECTED_GRAY_2 : TColor::SELECTED_GRAY);
+      te.pen->setColor(te.even ? TColor::SELECTED_GRAY_2 : TColor::SELECTED_GRAY);
     }
   } else {
-    te.pen->setColor((te.row&1) ? TColor::TABLE_CELL_2 : TColor::TABLE_CELL);
+    te.pen->setColor(te.even ? TColor::TABLE_CELL_2 : TColor::TABLE_CELL);
   }
   te.pen->fillRectanglePC(0,0,te.w,te.h);
   if (te.selected)
@@ -153,11 +124,6 @@ TTableAdapter::renderCursor(TTableEvent &te)
   }
 }
 
-void 
-TTableAdapter::mouseEvent(TMouseEvent&, int col, int row, int w, int h)
-{
-}
-
 void
 TTableAdapter::handleCheckBox(TTableEvent &te, bool *value)
 {
@@ -198,6 +164,10 @@ TTableAdapter::handleCheckBox(TTableEvent &te, bool *value)
 void
 TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
 {
+  static TTableAdapter *edit = 0;
+  static size_t cx;
+  static size_t col, row;
+
   int x0;
   const char *str;
 

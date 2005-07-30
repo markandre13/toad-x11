@@ -100,55 +100,6 @@ using namespace toad;
  *
  */
 
-/**
- * This constructer is to be used when TFigureEditor isn't used as a
- * window itself but handles events delegated to it from another window.
- *
- * This feature 
- *
- * \sa setWindow
- */
-TFigureEditor::TFigureEditor():
-  super(NULL, "(TFigureEditor: no window)")
-{
-  init(NULL);
-  bExplicitCreate = true; // don't create, see TWindow::createParentless()
-  window = NULL;
-  row_header_renderer = col_header_renderer = 0;
-}
-
-TFigureEditor::TFigureEditor(TWindow *p, const string &t, TFigureModel *m):
-  super(p, t)
-{
-  init(m);
-  bNoBackground = true;
-  window = this;
-  row_header_renderer = col_header_renderer = 0;
-}
-
-TFigureEditor::~TFigureEditor()
-{
-  setModel(0);
-  setAttributes(0);
-  if (mat)
-    delete mat;
-}
-
-/**
- * Handle events for another window.
- *
- * This feature was added for the internal dialogeditor.
- *
- * \param w Then window to handle.
- */
-void
-TFigureEditor::setWindow(TWindow *w)
-{
-  invalidateWindow();
-  window = w;
-  invalidateWindow();
-}
-
 static void
 foobar(TFigureAttributes *p, TFigureAttributes::EReason reason) {
   p->reason = reason;
@@ -246,9 +197,59 @@ TFigureAttributes::applyAll()
   if (current) current->applyAll();
 }
 
+/**
+ * This constructer is to be used when TFigureEditor isn't used as a
+ * window itself but handles events delegated to it from another window.
+ *
+ * This feature 
+ *
+ * \sa setWindow
+ */
+TFigureEditor::TFigureEditor():
+  super(NULL, "(TFigureEditor: no window)")
+{
+  init(NULL);
+  bExplicitCreate = true; // don't create, see TWindow::createParentless()
+  window = NULL;
+  row_header_renderer = col_header_renderer = 0;
+}
+
+TFigureEditor::TFigureEditor(TWindow *p, const string &t, TFigureModel *m):
+  super(p, t)
+{
+  init(m);
+  bNoBackground = true;
+  window = this;
+  row_header_renderer = col_header_renderer = 0;
+}
+
+TFigureEditor::~TFigureEditor()
+{
+  setModel(0);
+  setAttributes(0);
+  if (mat)
+    delete mat;
+}
+
+/**
+ * Handle events for another window.
+ *
+ * This feature was added for the internal dialogeditor.
+ *
+ * \param w Then window to handle.
+ */
+void
+TFigureEditor::setWindow(TWindow *w)
+{
+  invalidateWindow();
+  window = w;
+  invalidateWindow();
+}
+
 void
 TFigureEditor::init(TFigureModel *m)
 {
+  modified = false;
   preferences = 0;
   tool = 0;
   setAttributes(new TFigureAttributes);
@@ -802,6 +803,7 @@ TFigureEditor::setFont(const string &fontname)
 void
 TFigureEditor::modelChanged()
 {
+  modified = true;
   switch(model->type) {
     case TFigureModel::MODIFY:
     case TFigureModel::MODIFIED:
@@ -1065,6 +1067,7 @@ TFigureEditor::setModel(TFigureModel *m)
     TUndoManager::unregisterModel(this, model);
   }
   model = m;
+  modified = false;
   if (model) {
     connect(model->sigChanged, this, &TFigureEditor::modelChanged);
     TUndoManager::registerModel(this, model);

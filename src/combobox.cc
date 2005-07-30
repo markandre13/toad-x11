@@ -79,7 +79,7 @@ TComboBox::paint()
   }
 #if 1
   // checks which should already be handled in TTable...
-  int col=0, row=0;
+  size_t col=0, row=0;
   TAbstractSelectionModel *sm = table->getSelectionModel();
   if (sm) {
     sm->getFirst(&col, &row);
@@ -92,16 +92,19 @@ TComboBox::paint()
   }
 #endif
   pen.translate(2, 2);
-  TTableEvent te;
-  te.col = col;
-  te.row = row;
-  te.w = btn->getXPos()-2;
-  te.h = getHeight()-4;
-  te.cursor = false;
-  te.selected = false;
-  te.focus = true;
-  if (!sm || !sm->isEmpty()) {
-    table->getAdapter()->renderItem(pen, te);
+  if (!sm || !sm->empty()) {
+    TTableEvent te;
+    te.type = TTableEvent::PAINT;
+    te.pen = &pen;
+    te.col = col;
+    te.row = row;
+    te.even= false;
+    te.w = btn->getXPos()-2;
+    te.h = getHeight()-4;
+    te.cursor = false;
+    te.selected = false;
+    te.focus = true;
+    table->getAdapter()->tableEvent(te);
   }
 
   if (isFocus()) {
