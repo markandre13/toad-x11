@@ -1135,7 +1135,10 @@ TFigureEditor::stopOperation()
         break;
     }
   }
-  gadget = NULL;
+  if (gadget) {
+    invalidateFigure(gadget);
+    gadget = NULL;
+  }
   state = STATE_NONE;
 }
 
@@ -1579,11 +1582,15 @@ redo:
           gadget = g2;
           if (g) {
             state = STATE_ROTATE;
-            TRectangle r;
-            g->getShape(&r);
             if (gadget!=g) {
+              // a new figure was selected, setup a new rotation center
+              TRectangle r;
+              g->getShape(&r);
               rotx = r.x + r.w/2;
               roty = r.y + r.h/2;
+              if (g->mat) {
+                g->mat->map(rotx, roty, &rotx, &roty);
+              }
               gadget = g;
             }
             rotd0=atan2(static_cast<double>(my - roty), 
