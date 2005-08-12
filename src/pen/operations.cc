@@ -961,35 +961,12 @@ TPenBase::draw3DRectanglePC(int x, int y, int w, int h, bool inset)
 
 // text string
 //----------------------------------------------------------------------------
-int
-TPen::getTextWidth(const string &str) const
-{
-#ifndef __WIN32__
-  return font->getTextWidth(str.c_str());
-#else
-  SIZE size;
-  ::GetTextExtentPoint(w32hdc, str.c_str(), str.size(), &size);
-  return size.cx;
-#endif
-}
-
-int
-TPen::getTextWidth(const char *str) const
-{
-#ifndef __WIN32__
-  return font->getTextWidth(str);
-#else
-  SIZE size;
-  ::GetTextExtentPoint(w32hdc, str, strlen(str), &size);
-  return size.cx;
-#endif
-}
 
 /**
  * Width of 'str' when printed with the current font.
  */
 int
-TPen::getTextWidth(const char *str, int len) const
+TPen::vgetTextWidth(const char *str, size_t len) const
 {
 #ifndef __WIN32__
   return font->getTextWidth(str,len);
@@ -1048,6 +1025,9 @@ TPen::getHeight() const
 void
 TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 {
+  if (font && font->fontmanager)
+    font->fontmanager->drawString(this, x, y, str, strlen, transparent);
+#if 0
   if (strlen==-1)
     strlen = ::strlen(str);
 
@@ -1211,6 +1191,7 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 //  r.right = 320;
 //  r.bottom = 200;
 //  ::DrawText(w32hdc, str, strlen, &r, 0);
+#endif
 #endif
 }
 

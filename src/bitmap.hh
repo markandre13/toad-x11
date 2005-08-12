@@ -27,6 +27,7 @@
 #ifndef TBitmap
 #define TBitmap TBitmap
 
+#include <toad/toadbase.hh>
 #include <toad/pointer.hh>
 
 namespace toad {

@@ -86,6 +86,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		$(GRAPHIC) undo.cc undomanager.cc htmlview.cc \
 		region.cc polygon.cc rectangle.cc \
 		color.cc colormanager.cc font.cc \
+                fontmanager_x11.cc fontmanager_ft.cc \
 		bitmap.cc bitmapfilter.cc \
 		control.cc form.cc rowcolumn.cc \
 		labelowner.cc buttonbase.cc pushbutton.cc \

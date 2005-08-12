@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <toad/os.hh>
+#include <toad/config.h>
 
 #ifdef __X11__
 #include <X11/Xlib.h>
@@ -41,6 +42,10 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
+#ifdef HAVE_LIBXUTF8
+#include <libXutf8/Xutf8.h>
+#endif
 
 #ifdef __X11__
 #include <sys/wait.h>

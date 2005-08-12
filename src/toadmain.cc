@@ -145,18 +145,13 @@ toad::initialize(int argc, char **&argv, char **envv)
       cerr << "unknown option " << argv[i] << endl;
     }
   }
-  
-  if (fontengine == "x11") {
-      TFont::default_rendertype = TFont::RENDER_X11;
-  } else
-  if (fontengine == "freetype") {
-    TFont::default_rendertype = TFont::RENDER_FREETYPE;
-  } else {
+
+  if (!TFontManager::setDefaultByName(fontengine)) {  
     cerr << "error: unknown font engine '" << fontengine << "', try x11 or freetype" << endl;
     exit(1);
   }
   
-  TFont::default_font = fontname;
+  TFont::default_font.setFont(fontname);
   
   toad::argv = argv;
   toad::argc = argc;

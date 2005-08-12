@@ -63,10 +63,12 @@ class TTextArea:
         } mode;
         
         void setFont(const string &aFontname) { 
+          font.setFont(aFontname);
           fontname = aFontname; 
           sigChanged();
         }
         const string& getFont() const { return fontname; }
+        TFont font;
       protected:
         string fontname;
     };

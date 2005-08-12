@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TPen
-#define TPen TPen
+#ifndef __TOAD_PEN_HH
+#define __TOAD_PEN_HH
 
 #include <toad/os.hh>
 #include <toad/config.h>
@@ -263,9 +263,17 @@ class TPenBase:
 
     // text string
     //-----------------------
-    virtual int getTextWidth(const char* string) const = 0;
-    virtual int getTextWidth(const char* string, int len) const = 0;
-    virtual int getTextWidth(const string&) const = 0;
+    int getTextWidth(const char* text, size_t len) const {
+      return vgetTextWidth(text, len);
+    }
+    int getTextWidth(const char* text) {
+      return vgetTextWidth(text, strlen(text));
+    }
+    int getTextWidth(const string &text) const {
+      return vgetTextWidth(text.c_str(), text.size());
+    }
+    virtual int vgetTextWidth(const char* text, size_t len) const = 0;
+
     virtual int getAscent() const = 0;
     virtual int getDescent() const = 0;
     virtual int getHeight() const = 0;
@@ -305,12 +313,17 @@ class TPenBase:
     virtual void curveTo(double x2, double y2, double x3, double y3, double x4, double y4) = 0;
 };
 
+class TFontManagerX11;
+class TFontMangerFT;
+
 class TPen:
   public TPenBase
 {
     friend class TWindow;
     friend class TBitmap;
     friend class TColor;
+    friend class TFontManagerX11;
+    friend class TFontManagerFT;
 
   public:
     TPen(TBitmap*);
@@ -435,9 +448,7 @@ public:
 
     // text string
     //-----------------------
-    int getTextWidth(const char* string) const;
-    int getTextWidth(const char* string, int len) const;
-    int getTextWidth(const string&) const;
+    int vgetTextWidth(const char* text, size_t len) const;
     int getAscent() const;
     int getDescent() const;
     int getHeight() const;

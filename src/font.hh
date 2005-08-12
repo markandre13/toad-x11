@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,111 +18,234 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TFont
-#define TFont TFont
+#ifndef __TOAD_FONT_HH
+#define __TOAD_FONT_HH
 
-#include <toad/os.hh>
-#include <toad/config.h>
-#include <toad/toadbase.hh>
-#include <toad/matrix2d.hh>
+#include <string>
+#include <cstring>
 #include <toad/pointer.hh>
 #include <fontconfig/fontconfig.h>
 
-#ifdef HAVE_LIBXFT    
-typedef struct _XftFont XftFont;
-#endif
-
-#ifdef HAVE_LIBXUTF8
-#include <libXutf8/Xutf8.h>
-#endif
-
 namespace toad {
 
-class TFont:
-  public TSmartObject, public TOADBase
+using namespace std;
+
+class TPenBase;
+class TFont;
+class TMatrix2D;
+
+class TFontManager
 {
-  friend class TPen;
-  
   public:
-    TFont();
-    TFont(const string &fontname);
-    void setFont(const string &fontname);
-    virtual ~TFont();
-    double getPoints() const;
+    virtual ~TFontManager();
+    virtual void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent) = 0;
+    virtual int getHeight(const TFont *font) = 0;
+    virtual int getAscent(const TFont *font) = 0;
+    virtual int getDescent(const TFont *font) = 0;
+    virtual int getTextWidth(const TFont *font, const char *text, size_t n) = 0;
 
-  public:
-    enum ERenderType {
-      RENDER_X11,
-      RENDER_FREETYPE
-    };
-    static ERenderType default_rendertype;
-    static FcConfig* getFcConfig();
-    static string default_font;
-//  private:
-    string id;
-#ifdef __X11__
-    double x11scale;          // only used for rotated fonts
-
-#ifdef TOAD_OLD_FONTCODE
-    _TOAD_FONTSTRUCT x11fs;
-    _TOAD_FONT       x11font; // only used for rotated fonts
-#endif
-
-#ifndef HAVE_LIBXUTF8
-    XFontSet x11fs;
-    XFontSet x11fs_r;
-#else
-    XUtf8FontStruct *xutf8font;   // horizontal
-    XUtf8FontStruct *xutf8font_r; // rotated
-#endif
-
-    void createX11Font(TMatrix2D*);
-
-#ifdef HAVE_LIBXFT    
-    XftFont *xftfont;             // horizontal
-    XftFont *xftfont_r;           // rotated
-    void createXftFont(TMatrix2D*);
-#endif
-#endif
-
-    void init();
-    void clear();
-
-    string fontname; // Fontconfig font name
-    ERenderType rendertype;
-
-  public:
-    void setRenderType(ERenderType rt) { rendertype=rt; clear(); }
-    ERenderType getRenderType() const { return rendertype; }
-    
-    void createFont(TMatrix2D*);
-
-#ifdef __X11__    
-#ifdef TOAD_OLD_FONTCODE
-    _TOAD_FONT getX11Font() const;
-#endif
-    
-#ifdef HAVE_LIBXFT
-    XftFont * getXftFont() const {
-      return xftfont;
+    int getTextWidth(const TFont *font, const char *text) {
+      return getTextWidth(font, text, strlen(text));
     }
-#endif    
-#endif
+    int getTextWidth(const TFont *font, const string &text) {
+      return getTextWidth(font, text.c_str(), text.size());
+    }
+    
+    virtual void freeCoreFont(TFont*) = 0;
+    
+    virtual string getName() const = 0;
+    virtual FcConfig* getFcConfig() = 0;    
+    static bool setDefaultByName(const string &engine);
+    static TFontManager* getDefault();
+};
 
-    int getTextWidth(const string&) const;
-    int getTextWidth(const char*) const;
-    int getTextWidth(const char*,int len) const;
-    int getTextWidth(const unsigned char *s) const { return getTextWidth((const char*)s); }
-    int getTextWidth(const unsigned char *s,int len) const { return getTextWidth((const char*)s,len); }
-    int getAscent() const;
-    int getDescent() const;
-    int getHeight() const {return getAscent()+getDescent();}
+class TFontManagerX11:
+  public TFontManager
+{
+  public:
+    void init();
+    void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent);
+    int getHeight(const TFont *font);
+    int getAscent(const TFont *font);
+    int getDescent(const TFont *font);
+    int getTextWidth(const TFont *font, const char *text, size_t n);
+
+    string getName() const { return "x11"; }
+    FcConfig* getFcConfig();
+    
+  protected:
+    bool allocate(TFont *font, TMatrix2D *mat);
+    void freeCoreFont(TFont *font);
+    static bool buildFontList(FcConfig *config);
+};
+
+class TFontManagerFT:
+  public TFontManager
+{
+  public:
+    void init();
+    void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent);
+    int getHeight(const TFont *font);
+    int getAscent(const TFont *font);
+    int getDescent(const TFont *font);
+    int getTextWidth(const TFont *font, const char *text, size_t n);
+
+    string getName() const { return "freetype"; }
+    FcConfig* getFcConfig();
+    
+  protected:
+    bool allocate(TFont *font, TMatrix2D *mat);
+    void freeCoreFont(TFont *font);
+    static bool buildFontList(FcConfig *config);
+};
+
+class TFont:
+  public TSmartObject
+{
+  public:
+    TFont() {
+      font = FcPatternDuplicate(default_font.font);
+      fontmanager = TFontManager::getDefault();
+      corefont = 0;
+    }
+    TFont(const TFont &f) {
+      font = FcPatternDuplicate(f.font);
+      fontmanager = f.fontmanager;
+      corefont = 0;
+    }
+    TFont(const string &fontname) {
+      font = 0;
+      fontmanager = TFontManager::getDefault();
+      setFont(fontname);
+      corefont = 0;
+    }
+    virtual ~TFont();
+    
+    void setFont(const string &fontname);
+    const char* getFont() const;
+
+    const char *getFamily() const;
+    void setFamily(const string &family);
+    double getSize() const;
+    void setSize(double);
+    void setWeight(int weight);
+    int getWeight() const;
+    void setSlant(int slant);
+    int getSlant() const;
+
+    FcPattern *font;
+    TFontManager *fontmanager;
+    void *corefont;
+
+    int getHeight() const { return fontmanager->getHeight(this); }
+    int getAscent() const { return fontmanager->getAscent(this); }
+    int getDescent() const { return fontmanager->getDescent(this); }
+    int getTextWidth(const char *text) const {
+      return fontmanager->getTextWidth(this, text, strlen(text));
+    }
+    int getTextWidth(const char *text, size_t n) const {
+      return fontmanager->getTextWidth(this, text, n);
+    }
+    int getTextWidth(const string &text) const {
+      return fontmanager->getTextWidth(this, text.c_str(), text.size());
+    }
+    
+    static TFont default_font;
 };
 
 typedef GSmartPointer<TFont> PFont;
 
 extern PFont default_font;
 extern PFont bold_font;
+
+
+#ifndef FC_WEIGHT_BOOK                       
+#define FC_WEIGHT_BOOK 75            
+#endif
+
+#ifndef FC_DUAL
+#define FC_DUAL 90
+#endif
+
+#ifndef FC_WEIGHT_THIN
+#define FC_WEIGHT_THIN 0
+#endif
+
+#ifndef FC_WEIGHT_EXTRALIGHT
+#define FC_WEIGHT_EXTRALIGHT 40
+#endif
+
+#ifndef FC_WEIGHT_ULTRALIGHT
+#define FC_WEIGHT_ULTRALIGHT FC_WEIGHT_EXTRALIGHT
+#endif
+
+#ifndef FC_WEIGHT_REGULAR
+#define FC_WEIGHT_REGULAR 80
+#endif
+
+#ifndef FC_WEIGHT_NORMAL
+#define FC_WEIGHT_NORMAL FC_WEIGHT_REGULAR
+#endif
+
+#ifndef FC_WEIGHT_SEMIBOLD
+#define FC_WEIGHT_SEMIBOLD FC_WEIGHT_DEMIBOLD
+#endif
+
+#ifndef FC_WEIGHT_EXTRABOLD
+#define FC_WEIGHT_EXTRABOLD 205
+#endif
+
+#ifndef FC_WEIGHT_ULTRABOLD
+#define FC_WEIGHT_ULTRABOLD FC_WEIGHT_EXTRABOLD
+#endif
+
+#ifndef FC_WEIGHT_HEAVY
+#define FC_WEIGHT_HEAVY FC_WEIGHT_BLACK
+#endif
+
+#ifndef FC_WIDTH_CONDENSED
+#define FC_WIDTH_CONDENSED 75
+#endif
+
+#ifndef FC_WIDTH_EXPANDED
+#define FC_WIDTH_EXPANDED 125
+#endif
+
+#ifndef FC_WIDTH_NORMAL
+#define FC_WIDTH_NORMAL 100
+#endif
+
+#ifndef FC_WIDTH_SEMICONDENSED
+#define FC_WIDTH_SEMICONDENSED 87
+#endif
+
+#ifndef FC_WIDTH_EXTRACONDENSED
+#define FC_WIDTH_EXTRACONDENSED 63
+#endif
+
+#ifndef FC_WIDTH_ULTRACONDENSED
+#define FC_WIDTH_ULTRACONDENSED 50
+#endif
+
+#ifndef FC_WIDTH_SEMICONDENSED
+#define FC_WIDTH_SEMICONDENSED 87
+#endif
+
+#ifndef FC_WIDTH_SEMIEXPANDED
+#define FC_WIDTH_SEMIEXPANDED 113
+#endif
+
+#ifndef FC_WIDTH_EXTRAEXPANDED
+#define FC_WIDTH_EXTRAEXPANDED 150
+#endif
+
+#ifndef FC_WIDTH_ULTRAEXPANDED
+#define FC_WIDTH_ULTRAEXPANDED 200
+#endif
+
+#ifndef FC_WIDTH
+#define FC_WIDTH "width"
+#endif
 
 } // namespace toad
 

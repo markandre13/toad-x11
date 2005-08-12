@@ -175,6 +175,7 @@ class TFigureAttributes:
       sigChanged();
     }
     void setFont(const string &font) {
+      this->font.setFont(font);
       fontname = font;
       reason = FONTNAME;
       sigChanged();
@@ -188,6 +189,7 @@ class TFigureAttributes:
     TRGB fillcolor;
     TIntegerModel alpha;
     TTextModel fontname;
+    TFont font;
     TRGB background_color;
     TBoolModel drawgrid;
     // TBoolModel use_grid;
