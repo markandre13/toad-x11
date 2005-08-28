@@ -439,6 +439,8 @@ class TTable:
     //! first (upper, left) pixel of first (upper, left) field
     int fpx, fpy;
     
+    int feven;
+    
   public:
   
     void setTableBorder(unsigned b) { border = b; }

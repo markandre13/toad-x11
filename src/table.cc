@@ -564,6 +564,7 @@ TTable::TTable(TWindow *p, const string &t):
   sx = sy = 0;
   ffx = ffy = 0;
   fpx = fpy = 0;
+  feven = true;
   row_info = col_info = NULL;
   rows = cols = 0;
   row_header_renderer = col_header_renderer = NULL;
@@ -740,12 +741,16 @@ TTable::scrolled(int dx, int dy)
   if (dy<0) { // down
     while( ffy < rows && fpy+row_info[ffy].size < 0 ) {
       fpy+=row_info[ffy].size + border;
+      if (row_info[ffy].size)
+        feven = !feven;
       ++ffy;
     }
   } else
   if (dy>0) { // up
     while( ffy > 0 && fpy > 0 ) {
       --ffy;
+      if (row_info[ffy].size)
+        feven = !feven;
       fpy-=row_info[ffy].size + border;
     }
   }
@@ -967,7 +972,7 @@ DBSCROLL({
   te.cols = cols;
   te.rows = rows;
   te.focus = isFocus();
-  te.even  = true;
+  te.even  = feven;
   if (selection) {
     te.per_row = selection->perRow();
     te.per_col = selection->perCol();
@@ -1843,8 +1848,14 @@ TTable::_handleInsertRow()
     cy+=adapter->size;
   if (adapter->where<sy)
     sy+=adapter->size;
-  if (adapter->where<ffy)
+  if (adapter->where<ffy) {
+    for(unsigned y=ffy; y<ffy+adapter->size; ++y) {
+      if (row_info[y].size)
+        feven = !feven;
+    }
     ffy+=adapter->size;
+  }
+  
   // fpy ...
     
   // scrolling, screen update
@@ -1889,8 +1900,13 @@ TTable::_handleRemovedRow()
     cy+=adapter->size;
   if (adapter->where<sy)
     sy+=adapter->size;
-  if (adapter->where<ffy)
+  if (adapter->where<ffy) {
+    for(unsigned y=ffy; y<ffy+adapter->size; ++y) {
+      if (row_info[y].size)
+        feven = !feven;
+    }
     ffy+=adapter->size;
+  }
 
   // fpy ...
     
@@ -1986,6 +2002,7 @@ TTable::handleNewModel()
   resetScrollPane();
   ffx = ffy = 0;
   fpx = fpy = 0;
+  feven = true;
   selecting = false;
 
 //  if (!adapter && model)
