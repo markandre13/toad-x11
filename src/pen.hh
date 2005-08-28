@@ -278,14 +278,20 @@ class TPenBase:
     virtual int getDescent() const = 0;
     virtual int getHeight() const = 0;
 
-    void drawString(int x, int y, const char *str, int len = -1) {
+    void drawString(int x, int y, const char *str, size_t len) {
       vdrawString(x, y, str, len, true);
+    }
+    void drawString(int x, int y, const char *str) {
+      vdrawString(x, y, str, strlen(str), true);
     }
     void drawString(int x, int y, const string &s) {
       vdrawString(x, y, s.c_str(), s.size(), true);
     }
-    void fillString(int x, int y, const char *str, int len = -1) {
+    void fillString(int x, int y, const char *str, size_t len) {
       vdrawString(x, y, str, len, false);
+    }
+    void fillString(int x, int y, const char *str) {
+      vdrawString(x, y, str, strlen(str), false);
     }
     void fillString(int x, int y, const string &s) {
       vdrawString(x, y, s.c_str(), s.size(), false);
