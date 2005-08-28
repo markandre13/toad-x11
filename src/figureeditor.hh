@@ -413,6 +413,7 @@ class TFigureEditor:
     TFigure* gadget;        // the current gadget during create & edit
     
     int handle;             // the current handle or -1 during select
+    bool tht; // translate handle transform?
     
     bool use_scrollbars;
     int x1,x2, y1,y2;

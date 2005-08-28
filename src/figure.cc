@@ -297,6 +297,17 @@ TFigure::getHandle(unsigned n, TPoint *p)
   return false;
 }
 
+bool
+TFigure::startTranslateHandle()
+{
+  return true;
+}
+
+void
+TFigure::endTranslateHandle()
+{
+}
+
 /**
  * Set handle <I>handle</I> to position (x,y).
  */

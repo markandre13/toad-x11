@@ -147,6 +147,7 @@ TFGroup::paint(TPenBase &pen, EPaintType)
   }
 }
 
+
 bool 
 TFGroup::getHandle(unsigned n, TPoint *p)
 {
@@ -164,12 +165,67 @@ if (super::getHandle(n, p)) {
 #endif
 }
 
+static TMatrix2D lastmatrix, lastimatrix;
+static TPoint lp1, lp2, lpi1, lpi2;
+
+/*
+  pen.multiply(obj->mat);
+  pen.draw(obj->x, ...)
+*/
+
+bool
+TFGroup::startTranslateHandle()
+{
+  // in case there's no matrix yet, add one and set upper left corner to
+  // (0, 0)
+  if (!mat) {
+    TMatrix2D *mat = new TMatrix2D;
+    mat->translate(p1.x, p1.y);
+    translate(-p1.x, -p1.y);
+    this->mat = mat;
+  } else {
+    // there is a matrix, move object to (0,0)
+    // ... no code yet ...
+  }
+  lp1 = p1;
+  lp2 = p2;
+  lastmatrix = *mat;
+  lastimatrix = lastmatrix;
+  lastimatrix.invert();
+  lastimatrix.map(p1.x, p1.y, &lpi1.x, &lpi1.y);
+  lastimatrix.map(p2.x, p2.y, &lpi2.x, &lpi2.y);
+  return false;
+}
+
+void
+TFGroup::endTranslateHandle()
+{
+}
+
 void
 TFGroup::translateHandle(unsigned handle, int x, int y, unsigned m)
 {
+  double w0, w1, h0, h1;
+#if 1
+//cout << "TFGroup::translateHandle("<<handle<<", "<<x<<", "<<y<<",m)"<<endl;
+  switch(handle) {
+    case 2:
+      lastimatrix.map(x, y, &x, &y);
+      w0 = lp2.x - lp1.x; // old width
+      w1 = x - lp1.x;     // new width
+      h0 = lp2.y - lp1.y;
+      h1 = y - lp1.y;
+      if (mat)
+        delete mat;
+      mat = new TMatrix2D(lastmatrix);
+//      cerr << "scale by " << (1.0 / w0 * w1) << endl;
+      mat->scale(w1/w0, h1/h0);
+      mat->translate(p1.x*w1/w0, p1.y*h1/h0);
+      break;
+  }
+#else
 cerr << "TFGroup::translateHandle isn't implemented yet" << endl;
 #if 0
-  double w0, w1, h0, h1;
 
   cerr << __FUNCTION__ << endl;
   switch(handle) {
@@ -185,8 +241,9 @@ cerr << "  p2.x = " << p2.x << ", x = " << x << endl;
       h1 = y - p1.y;
       if (!mat)
         mat = new TMatrix2D();
-      cerr << "scale by " << (1.0 / w0 * w1) << endl;
-      mat->scale( 1.0 / w0 * w1, 1.0 / h0 * h1);
+      cerr << "scale by " << (w1/w0) ", " << (h1/h0) << endl;
+      mat->scale(w1/w0, h1/h0);
+      
       // double h0 = p2.y - p1.y;
 #if 0
       calcSize();
@@ -200,6 +257,7 @@ cerr << "  p2.x = " << p2.x << ", x = " << x << endl;
     case 3:
       break;
   }
+#endif
 #endif
 }
 

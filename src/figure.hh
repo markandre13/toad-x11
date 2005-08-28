@@ -102,7 +102,9 @@ class TFigure:
     // stage 3: manipulate
     static const int NO_HANDLE = -1;
     virtual bool getHandle(unsigned n, TPoint *p);
+    virtual bool startTranslateHandle();
     virtual void translateHandle(unsigned handle, int x, int y, unsigned modifier);
+    virtual void endTranslateHandle();
 
     // stage 4: in place editing
     //! Return `true' when in-place editing is desired.
@@ -481,7 +483,9 @@ class TFGroup:
     double _distance(TFigureEditor *fe, int x, int y);
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint *p);
+    bool startTranslateHandle();
     void translateHandle(unsigned handle, int dx, int dy, unsigned);
+    void endTranslateHandle();
     
     void drop() {
       gadgets.drop();

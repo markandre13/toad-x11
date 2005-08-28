@@ -1449,6 +1449,7 @@ redo:
                   cout << "      handle " << h << " @ " << memo_pt.x << ", " << memo_pt.y << endl;
                   #endif
                   state = STATE_MOVE_HANDLE;
+                  tht = gadget->startTranslateHandle();
                   mouseMoved = false;
                   if (selection.size()>1) {
                     clearSelection();
@@ -1715,7 +1716,7 @@ redo:
       if (mouseMoved) {
         /* copied from findFigureAt */
         int x2, y2;
-        if (gadget->mat) {
+        if (tht && gadget->mat) {
           TMatrix2D m(*gadget->mat);
           m.invert();
           m.map(x, y, &x2, &y2);
@@ -1852,7 +1853,7 @@ redo:
       if (mouseMoved) {      
         /* copied from findFigureAt */            
         int x2, y2;
-        if (gadget->mat) {
+        if (tht && gadget->mat) {
           TMatrix2D m(*gadget->mat);
           m.invert();
           m.map(x, y, &x2, &y2);
@@ -1867,6 +1868,7 @@ redo:
       invalidateFigure(gadget);
 
       state = STATE_NONE;
+      gadget->endTranslateHandle();
       gadget = 0;
       handle = -1;
       updateScrollbars();
