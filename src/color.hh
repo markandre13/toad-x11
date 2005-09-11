@@ -32,6 +32,8 @@
 
 namespace toad {
 
+class TPen;
+
 struct TRGB
 {
     byte r,g,b;
