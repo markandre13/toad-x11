@@ -136,6 +136,19 @@ TFigure::~TFigure()
 }
 
 /**
+ * This method is experimental.
+ */
+bool
+TFigure::editEvent(TFigureEditEvent &ee)
+{
+  switch(ee.type) {
+    case TFigureEditEvent::TRANSLATE:
+      translate(ee.x, ee.y);
+      break;
+  }
+}
+
+/**
  * This one is a crude hack to speedup selection in drawings with
  * many beziers. I still need to work it out.
  */

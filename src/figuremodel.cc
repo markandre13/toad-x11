@@ -198,11 +198,18 @@ TFigureModel::add(TFigure *figure) {
   TUndoInsert *undo = new TUndoInsert(this);
   undo->insert(figure);
   TUndoManager::registerUndo(this, undo);
+
   storage.push_back(figure);
+
   type = ADD;
   figures.clear();
   figures.insert(figure);
   sigChanged();
+  
+  TFigureEditEvent ee;
+  ee.model = this;
+  ee.type = TFigureEditEvent::ADDED;
+  figure->editEvent(ee);
 }
 
 /**
@@ -213,6 +220,9 @@ TFigureModel::add(TFigure *figure) {
  */
 void 
 TFigureModel::add(TFigureVector &newfigures) {
+  TFigureEditEvent ee;
+  ee.model = this;
+  ee.type = TFigureEditEvent::ADDED;
   figures.clear();
   type = ADD;
   TUndoInsert *undo = new TUndoInsert(this);
@@ -223,6 +233,7 @@ TFigureModel::add(TFigureVector &newfigures) {
     storage.push_back(*p);
     figures.insert(*p);
     undo->insert(*p);
+    (*p)->editEvent(ee);
   }
   TUndoManager::registerUndo(this, undo);
   sigChanged();
@@ -265,6 +276,11 @@ TFigureModel::erase(TFigure *figure)
   TFigureSet set;
   set.insert(figure);
   erase(set);
+
+  TFigureEditEvent ee;
+  ee.model = this;
+  ee.type = TFigureEditEvent::REMOVED;
+  figure->editEvent(ee);
 }
 
 /**
@@ -280,6 +296,10 @@ TFigureModel::erase(TFigureSet &set)
 {
   if (set.empty())
     return;
+
+  TFigureEditEvent ee;
+  ee.model = this;
+  ee.type = TFigureEditEvent::REMOVED;
 
   type = REMOVE;
   figures.clear();
@@ -297,6 +317,7 @@ TFigureModel::erase(TFigureSet &set)
     if (q!=figures.end()) {
 //      cerr << "  erase found figure at depth " << depth << endl;
       undo->insert(*p, depth);
+      (*p)->editEvent(ee);
       TStorage::iterator tmp = p;
       --tmp;
       storage.erase(p);
@@ -397,7 +418,12 @@ TFigureModel::translate(const TFigureSet &set, int dx, int dy)
       ++p)
   {
     if ( !(*p)->mat) {
-      (*p)->translate(dx, dy);
+      TFigureEditEvent ee;
+      ee.model = this;
+      ee.type = TFigureEditEvent::TRANSLATE;
+      ee.x = dx;
+      ee.y = dy;
+      (*p)->editEvent(ee);
     } else {
       TMatrix2D m;
       m.translate(dx, dy);

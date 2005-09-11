@@ -32,10 +32,53 @@ class TFigureEditor;
 class TFigureAttributes;
 class TMatrix2D;
 
+class TFigureEditEvent
+{
+  public:
+    enum EType {
+      PAINT_NORMAL,
+      PAINT_SELECT,
+      PAINT_EDIT,
+      PAINT_SELECTION,
+    
+      //! figure was added to model
+      ADDED,
+      //! figure was removed from model
+      REMOVED,
+    
+      GET_DISTANCE,
+      GET_HANDLE,
+      GET_SHAPE,
+      BEGIN_TRANSLATE,
+      TRANSLATE,
+      END_TRANSLATE,
+      TRANSLATE_HANDLE,
+      START_IN_PLACE,
+      STOP_EDIT,
+      KEY_EVENT,
+      MOUSE_EVENT,
+      
+    } type;
+
+    TFigureModel *model; // in
+    
+    TPenBase *pen;    // in
+    
+    TRectangle shape; // out:GET_SHAPE
+
+    int x, y;         // in:GET_DISTANCE, in:GET_HANDLE, in:TRANSLATE, 
+                      // in:TRANSLATE_HANDLE
+    double distance;  // out:GET_DISTANCE
+
+    unsigned handle;  // out:GET_HANDLE, in:TRANSLATE_HANDLE, in:PAINT_SELECTION
+    
+    TKeyEvent key;
+    TMouseEvent mouse;
+};
+
 /**
  * \ingroup figure
  *
- * To be renamed into 'TPlainFigure' or 'TVerbatimFigure' or ...
  */
 class TFigure:
   public TSerializable
@@ -44,6 +87,9 @@ class TFigure:
     TFigure();
     TFigure(const TFigure &);
     virtual ~TFigure();
+
+    virtual bool editEvent(TFigureEditEvent &ee);
+    
     enum EPaintType {
       NORMAL,
       SELECT,
