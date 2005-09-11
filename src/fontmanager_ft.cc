@@ -67,7 +67,7 @@ TFontManagerFT::getFcConfig()
 static string d2s(double d);
 
 void
-TFontManagerFT::init()
+TFontManagerFT::init() const
 {
 }
 
@@ -87,6 +87,8 @@ dummyhandler(Display *, XErrorEvent *)
 struct TFTFont {
   XftFont *xftfont, *xftfont_r;
   double x11scale;
+  string id;
+
   TFTFont() {
     x11scale = 1.0;
     xftfont = 0;
@@ -122,8 +124,12 @@ TFontManagerFT::freeCoreFont(TFont *font)
 }
 
 bool
-TFontManagerFT::allocate(TFont *font, TMatrix2D *mat)
+TFontManagerFT::allocate(TFont *font, const TMatrix2D *mat)
 {
+#if 0
+  if (font->corefont)
+    return true;
+#endif
 //cout << __PRETTY_FUNCTION__ << endl;
   if (!font->font) {
     cout << "error: font has no pattern" << endl;
@@ -141,7 +147,6 @@ TFontManagerFT::allocate(TFont *font, TMatrix2D *mat)
 
   XftPattern *pattern;
   string newid;
-string id;
   if (mat && !mat->isIdentity()) {
     double d=12.0;
     pattern = FcPatternDuplicate(font->font);
@@ -152,12 +157,12 @@ string id;
     newid += d2s(mat->a21 * d);
     newid += d2s(mat->a22 * d);
     newid += "]";
-    if (newid != id) {
+    if (newid != ft->id) {
       if (ft->xftfont) {
         XftFontClose(toad::x11display, ft->xftfont);
         ft->xftfont = 0;
       }
-      id = newid;
+      ft->id = newid;
     } else {
       XftPatternDestroy(pattern);
       return true;
@@ -257,13 +262,14 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
     }
   }
 
-  y+=getAscent(pen->font);
+  y+=ft->xftfont->ascent;
 
   XftColor color;
   color.color.red   = (pen->o_color.r << 8) | pen->o_color.r;
   color.color.green = (pen->o_color.g << 8) | pen->o_color.g;
   color.color.blue  = (pen->o_color.b << 8) | pen->o_color.b;
   color.color.alpha = 0xffff;
+
   if (!pen->xftdraw) {
     pen->xftdraw = XftDrawCreate(toad::x11display, 
                                  pen->x11drawable, 
@@ -274,7 +280,6 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
     XftDrawSetClip(pen->xftdraw, pen->region->x11region);
   else if (pen->wnd && pen->wnd->getUpdateRegion())
     XftDrawSetClip(pen->xftdraw, pen->wnd->getUpdateRegion()->x11region);
-
 
  if (!pen->mat || pen->mat->isIdentity()) {
     if (pen->mat)
@@ -312,7 +317,7 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
 }
 
 int 
-TFontManagerFT::getHeight(const TFont *font)
+TFontManagerFT::getHeight(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
     return 0;
@@ -324,7 +329,7 @@ TFontManagerFT::getHeight(const TFont *font)
 }
 
 int 
-TFontManagerFT::getAscent(const TFont *font)
+TFontManagerFT::getAscent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
     return 0;
@@ -336,7 +341,7 @@ TFontManagerFT::getAscent(const TFont *font)
 }
 
 int 
-TFontManagerFT::getDescent(const TFont *font)
+TFontManagerFT::getDescent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
     return 0;
@@ -348,7 +353,7 @@ TFontManagerFT::getDescent(const TFont *font)
 }
 
 int
-TFontManagerFT::getTextWidth(const TFont *font, const char *str, size_t len)
+TFontManagerFT::getTextWidth(TFont *font, const char *str, size_t len)
 {
   if (len==0)
     return 0;

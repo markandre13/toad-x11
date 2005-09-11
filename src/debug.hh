@@ -76,6 +76,8 @@ namespace toad {
 // these flags toggle the output of debug messages for the various modules
 // of TOAD:
   extern bool debug_menubutton;
+  extern bool debug_fontmanager_x11;
+  extern bool debug_fontmanager_ft;
   extern unsigned debug_table;
 
 } // namespace toad

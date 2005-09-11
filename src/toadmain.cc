@@ -62,6 +62,16 @@ string fontengine("x11");
 #endif
 string fontname("arial,helvetica,sans-serif");
 
+static bool
+str2bool(const string &str) {
+  if (str=="true")
+    return true;
+  if (str=="false")
+    return false;
+  cout << "unexpected bool value " << str << endl;
+  return false;
+}
+
 void
 parseInitFile(const string &filename)
 {  
@@ -75,13 +85,23 @@ parseInitFile(const string &filename)
         if (in.attribute == "fontengine" && in.type.empty()) {
           fontengine = in.value;
           break;
-        } else
+        }
         if (in.attribute == "font" && in.type.empty()) {
           fontname = in.value;
           break;
         }
+        if (in.attribute == "debug-fontengine-x11" && in.type.empty()) {
+          debug_fontmanager_x11 = str2bool(in.value);
+          break;
+        }
+        if (in.attribute == "debug-fontengine-ft" && in.type.empty()) {
+          debug_fontmanager_ft = str2bool(in.value);
+          break;
+        }
+         cerr << "unexpected entry '" << in.attribute << "' in file " << filename << endl;
+        break;
       default:
-        cerr << "unexpected entry in " << filename << endl;
+        cerr << "unexpected entry in file " << filename << endl;
     }
   }
 }

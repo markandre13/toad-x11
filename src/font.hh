@@ -39,15 +39,15 @@ class TFontManager
   public:
     virtual ~TFontManager();
     virtual void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent) = 0;
-    virtual int getHeight(const TFont *font) = 0;
-    virtual int getAscent(const TFont *font) = 0;
-    virtual int getDescent(const TFont *font) = 0;
-    virtual int getTextWidth(const TFont *font, const char *text, size_t n) = 0;
+    virtual int getHeight(TFont *font) = 0;
+    virtual int getAscent(TFont *font) = 0;
+    virtual int getDescent(TFont *font) = 0;
+    virtual int getTextWidth(TFont *font, const char *text, size_t n) = 0;
 
-    int getTextWidth(const TFont *font, const char *text) {
+    int getTextWidth(TFont *font, const char *text) {
       return getTextWidth(font, text, strlen(text));
     }
-    int getTextWidth(const TFont *font, const string &text) {
+    int getTextWidth(TFont *font, const string &text) {
       return getTextWidth(font, text.c_str(), text.size());
     }
     
@@ -63,18 +63,18 @@ class TFontManagerX11:
   public TFontManager
 {
   public:
-    void init();
+    void init() const;
     void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent);
-    int getHeight(const TFont *font);
-    int getAscent(const TFont *font);
-    int getDescent(const TFont *font);
-    int getTextWidth(const TFont *font, const char *text, size_t n);
+    int getHeight(TFont *font);
+    int getAscent(TFont *font);
+    int getDescent(TFont *font);
+    int getTextWidth(TFont *font, const char *text, size_t n);
 
     string getName() const { return "x11"; }
     FcConfig* getFcConfig();
     
   protected:
-    bool allocate(TFont *font, TMatrix2D *mat);
+    bool allocate(TFont *font, const TMatrix2D *mat);
     void freeCoreFont(TFont *font);
     static bool buildFontList(FcConfig *config);
 };
@@ -83,18 +83,18 @@ class TFontManagerFT:
   public TFontManager
 {
   public:
-    void init();
+    void init() const;
     void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent);
-    int getHeight(const TFont *font);
-    int getAscent(const TFont *font);
-    int getDescent(const TFont *font);
-    int getTextWidth(const TFont *font, const char *text, size_t n);
+    int getHeight(TFont *font);
+    int getAscent(TFont *font);
+    int getDescent(TFont *font);
+    int getTextWidth(TFont *font, const char *text, size_t n);
 
     string getName() const { return "freetype"; }
     FcConfig* getFcConfig();
     
   protected:
-    bool allocate(TFont *font, TMatrix2D *mat);
+    bool allocate(TFont *font, const TMatrix2D *mat);
     void freeCoreFont(TFont *font);
     static bool buildFontList(FcConfig *config);
 };
@@ -137,16 +137,16 @@ class TFont:
     TFontManager *fontmanager;
     void *corefont;
 
-    int getHeight() const { return fontmanager->getHeight(this); }
-    int getAscent() const { return fontmanager->getAscent(this); }
-    int getDescent() const { return fontmanager->getDescent(this); }
-    int getTextWidth(const char *text) const {
+    int getHeight() { return fontmanager->getHeight(this); }
+    int getAscent() { return fontmanager->getAscent(this); }
+    int getDescent() { return fontmanager->getDescent(this); }
+    int getTextWidth(const char *text) {
       return fontmanager->getTextWidth(this, text, strlen(text));
     }
-    int getTextWidth(const char *text, size_t n) const {
+    int getTextWidth(const char *text, size_t n) {
       return fontmanager->getTextWidth(this, text, n);
     }
-    int getTextWidth(const string &text) const {
+    int getTextWidth(const string &text) {
       return fontmanager->getTextWidth(this, text.c_str(), text.size());
     }
     

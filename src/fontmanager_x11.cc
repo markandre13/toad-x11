@@ -19,6 +19,7 @@
  */
 
 #include <toad/os.hh>
+#include <toad/debug.hh>
 #include <toad/config.h>
 
 #ifdef __X11__
@@ -173,9 +174,10 @@ static spacing_t spacings[] = {
 };
 
 void
-TFontManagerX11::init()
+TFontManagerX11::init() const
 {
   if (!fc_x11fonts) {
+    toad::flush();
     fc_x11fonts = FcInitLoadConfig();
     if (fc_x11fonts) {
       if (!buildFontList(fc_x11fonts)) {
@@ -191,19 +193,18 @@ bool
 TFontManagerX11::buildFontList(FcConfig *config)
 {
   bool result = false;
-//cerr << "build x11 fontconfig" << endl;
+  time_t starttime;
+  if (debug_fontmanager_x11) {
+    cerr << "building X11 fontconfig list..." << endl;
+    starttime = time(NULL);
+  }
+
   FcFontSet *fs = FcConfigGetFonts(config, FcSetSystem);
   if (!fs)
     fs = FcFontSetCreate();
   
   FcPattern *font;
-/*
-  Display *x11display;
-  if ((x11display = XOpenDisplay(""))==NULL) {
-    cerr << "Couldn't open X11 display\n";
-    return result;
-  }
-*/
+
   int count;
   char **fl;
   TX11FontName xfn;
@@ -215,8 +216,12 @@ TFontManagerX11::buildFontList(FcConfig *config)
   if (count>0)
     result=true;
 
-  map<string, set<string> > mymap;
+  if (debug_fontmanager_x11) {
+    cout << "found " << count << " fonts with XLFD names" << endl;
+  }
 
+  // create a list which ignores the different encodings
+  map<string, set<string> > mymap;
   for(int i=0; i<count; ++i) {
     xfn.setXLFD(fl[i]);
 
@@ -236,7 +241,12 @@ TFontManagerX11::buildFontList(FcConfig *config)
     j = xlfd.rfind('-', j-1);
     mymap[xlfd.substr(0,j)].insert(xlfd.substr(j+1));
   }
+  
+  if (debug_fontmanager_x11) {
+    cout << "found " << mymap.size() << " unique fonts" << endl;
+  }  
 
+  // fill the freetype FontSet
   for(map<string, set<string> >::iterator p = mymap.begin();
       p != mymap.end();
       ++p)
@@ -269,17 +279,9 @@ TFontManagerX11::buildFontList(FcConfig *config)
 
     font = FcPatternCreate();
 
-
     FcPatternAddString(font, FC_RASTERIZER, (FcChar8*)"X11");
     FcPatternAddString(font, FC_FILE, (FcChar8*)xlfd.c_str());
-#if 0
-    FcPatternAddString(font, FC_LANG, (FcChar8*)
-      "aa|af|ar|ast|ava|ay|be|bg|bi|bin|br|bs|ca|ce|ch|co|cs|cy|da|de|el|"
-      "en|eo|es|et|eu|fi|fj|fo|fr|fur|fy|gd|gl|gn|gv|he|ho|hr|hu|ia|ibo|id|"
-      "ie|ik|io|is|it|ki|kl|kum|la|lb|lez|lt|lv|mg|mh|mt|nb|nl|nn|no|ny|oc|"
-      "om|os|pl|pt|rm|ru|se|sel|sh|sk|sl|sma|smj|smn|so|sq|sr|sv|sw|tn|tr|"
-      "ts|ug|uk|ur|vo|vot|wa|wen|wo|xh|yap|yi|zu");
-#endif
+
     FcPatternAddString(font, FC_FOUNDRY, (FcChar8*)xfn.vendor.c_str());
 
     if (!xfn.family.empty()) {
@@ -341,40 +343,6 @@ TFontManagerX11::buildFontList(FcConfig *config)
     FcPatternAddInteger(font, FC_INDEX, 0);
     FcPatternAddInteger(font, FC_FONTVERSION, 0);
 
-#if 0
-    FcPatternAddString(font, FC_STYLE, (FcChar8*)"Regular");
-#endif
-#if 0
-    // style overwrites weight and slant
-
-    string style = xfn.weight + ' ' + xfn.set_width + ' ' + slant;
-    FcPatternAddString(font, FC_STYLE, (FcChar8*)style.c_str());
-/*
-  weight  width     slant     
-  Regular
-  Regular           Italic
-  Regular           Oblique
-  Bold              Italic
-  Plain
-  Roman
-  Medium            Italic
-  Bold              Italic
-  Normal
-  Demi
-  Regular Condensed Italic
-  Bold    Condensed Italic
-  Bold              Oblique
-  Demi              Oblique
-  Demi Bold         Italic
-  Regular Condensed
-  Book              Oblique
-
-  no style or weight -> "Medium"
-  no style or slant  -> "Roman"
-  no pixel size      -> 12pt, 75dpi, scale=1
-*/
-#endif
-
     FcCharSet *charset = FcCharSetCreate();
     FcPatternAddCharset(font, FC_CHARSET, charset);
     FcFontSetAdd(fs, font);
@@ -393,6 +361,11 @@ TFontManagerX11::buildFontList(FcConfig *config)
   cout << "----------------------------------------------" << endl;
 #endif
 
+  if (debug_fontmanager_x11) {
+    cerr << "X11 fontlist created after " << (time(NULL) - starttime) << "s" << endl;
+  }
+
+
   return result;
 }
 
@@ -400,12 +373,17 @@ struct TX11Font
 {
   TX11Font() {
     x11scale = 1.0;
+    refcnt = 0;
+    normal = 0;
 #ifdef HAVE_LIBXUTF8
     xutf8font = NULL;
     xutf8font_r = NULL;
 #endif
   }
   ~TX11Font() {
+    if (normal) {
+      normal->refcnt--;
+    }
 #ifdef HAVE_LIBXUTF8
     if (xutf8font) {
       XFreeUtf8FontStruct(toad::x11display, xutf8font);
@@ -417,6 +395,8 @@ struct TX11Font
   }
 
   string id;
+  unsigned refcnt;
+  TX11Font *normal;
   double x11scale;          // only used for rotated fonts
 
 #ifndef HAVE_LIBXUTF8
@@ -427,6 +407,8 @@ struct TX11Font
   XUtf8FontStruct *xutf8font_r; // rotated
 #endif
 };
+
+static map<string, TX11Font> cache;
 
 static bool dummy;
 
@@ -447,9 +429,18 @@ TFontManagerX11::freeCoreFont(TFont *font)
 }
 
 bool
-TFontManagerX11::allocate(TFont *font, TMatrix2D *mat)
+TFontManagerX11::allocate(TFont *font, const TMatrix2D *mat)
 {
-cout << __PRETTY_FUNCTION__ << endl;
+#if 0
+  if (font->corefont)
+    return true;
+#endif
+
+  if (debug_fontmanager_x11) {
+    cout << "allocate font '" << font->getFont() << "'" << endl;
+  }
+
+//cout << __PRETTY_FUNCTION__ << endl;
   if (!font->font) {
     cout << "error: font has no pattern" << endl;
     return false;
@@ -467,7 +458,7 @@ cout << __PRETTY_FUNCTION__ << endl;
   // do we have an allocated font?
   string newid;
   if (mat && !mat->isIdentity()) {
-cout << "allocate rotated font **************************" << endl;
+//cout << "allocate rotated font **************************" << endl;
     double d = 12.0;
     FcPatternGetDouble(font->font, FC_SIZE, 0, &d);
     newid = "[";
@@ -505,6 +496,8 @@ cout << "allocate rotated font **************************" << endl;
     }
 #endif
   }
+
+cout << "allocate font of size " << x11->id << endl;
 
   // allocate the font
   FcPattern *pattern = FcPatternDuplicate(font->font);
@@ -615,10 +608,10 @@ cout << "allocate rotated font **************************" << endl;
   }
   if (xutf8font_r_new) {
     assert(x11->xutf8font_r==0);
-cout << "have rotated font" << endl;
+//cout << "have rotated font" << endl;
     x11->xutf8font_r = xutf8font_r_new;
   }
-else cout << "no rotated font" << endl;
+//else cout << "no rotated font" << endl;
 #endif
   return true;
 }
@@ -626,7 +619,7 @@ else cout << "no rotated font" << endl;
 void
 TFontManagerX11::drawString(TPenBase *penbase, int x, int y, const char *str, size_t strlen, bool transparent)
 {
-cout << __PRETTY_FUNCTION__ << endl;
+//cout << __PRETTY_FUNCTION__ << endl;
   TPen *pen = dynamic_cast<TPen*>(penbase);
   assert(pen);
   assert(pen->font);
@@ -701,7 +694,7 @@ cout << __PRETTY_FUNCTION__ << endl;
 }
 
 int 
-TFontManagerX11::getHeight(const TFont *font)
+TFontManagerX11::getHeight(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
     return 0;
@@ -715,7 +708,7 @@ TFontManagerX11::getHeight(const TFont *font)
 }
 
 int 
-TFontManagerX11::getAscent(const TFont *font)
+TFontManagerX11::getAscent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
     return 0;
@@ -729,7 +722,7 @@ TFontManagerX11::getAscent(const TFont *font)
 }
 
 int 
-TFontManagerX11::getDescent(const TFont *font)
+TFontManagerX11::getDescent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
     return 0;
@@ -743,7 +736,7 @@ TFontManagerX11::getDescent(const TFont *font)
 }
 
 int
-TFontManagerX11::getTextWidth(const TFont *font, const char *text, size_t n)
+TFontManagerX11::getTextWidth(TFont *font, const char *text, size_t n)
 {
   if (n==0)
     return 0;

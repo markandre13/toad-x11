@@ -22,5 +22,7 @@
 
 namespace toad {
   bool debug_menubutton = false;
+  bool debug_fontmanager_x11 = false;
+  bool debug_fontmanager_ft = false;
   unsigned debug_table = 0;
 };
