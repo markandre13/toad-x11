@@ -41,6 +41,7 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <cmath>
 
 typedef struct _XftFont XftFont;
 
