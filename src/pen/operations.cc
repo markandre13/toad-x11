@@ -1226,7 +1226,7 @@ count_words_and_lines(const char *text, unsigned* word_count, unsigned* min_line
 }
 
 TWord*
-make_wordlist(const TFont *font, const char *text, unsigned word_count)
+make_wordlist(TFont *font, const char *text, unsigned word_count)
 {
   TWord* word = new TWord[word_count];
 
