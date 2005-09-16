@@ -140,10 +140,10 @@ class TFigure:
 
     // stage 1: select:
     virtual double _distance(TFigureEditor *fe, int x, int y);
-    virtual double distance(int x, int y) = 0;
+    virtual double distance(int x, int y);
     
     // stage 2: move
-    virtual void translate(int dx, int dy) = 0 ;
+    virtual void translate(int dx, int dy);
     
     // stage 3: manipulate
     static const int NO_HANDLE = -1;
@@ -551,15 +551,22 @@ class TFGroup:
 };
 
 class TFImage:
-  public TFRectangle
+  public TFigure
 {
+    typedef TFigure super;
+  protected:
     string filename;
     PBitmap bitmap;
-    typedef TFRectangle super;
+    int x, y;
   public:
-    TFImage() {}
-    bool startInPlace();
+    TFImage();
+    TFImage(const string &filename);
+
     void paint(TPenBase &, EPaintType);
+    void getShape(TRectangle*);
+    
+    bool editEvent(TFigureEditEvent &ee);
+
     TCloneable* clone() const { return new TFImage(*this); }
     const char * getClassName() const { return "toad::TFImage"; } 
     void store(TOutObjectStream&) const;

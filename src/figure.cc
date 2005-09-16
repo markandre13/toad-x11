@@ -158,6 +158,20 @@ TFigure::_distance(TFigureEditor *fe, int x, int y)
   return distance(x, y);
 }
 
+double
+TFigure::distance(int x, int y)
+{
+  TRectangle r;
+  getShape(&r);
+  return r.isInside(x, y) ? INSIDE : OUT_OF_RANGE;
+}
+    
+void
+TFigure::translate(int dx, int dy)
+{
+}
+
+
 TColoredFigure::TColoredFigure()
 {
   filled = false;

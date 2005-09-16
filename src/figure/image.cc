@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,22 +24,31 @@
 
 using namespace toad;
 
+TFImage::TFImage()
+{
+  x = y = 0;
+}
+
+TFImage::TFImage(const string &filename)
+{
+  x = y = 0;
+  this->filename = filename;
+  bitmap = new TBitmap();
+  bitmap->load(filename);
+}
+
 void 
 TFImage::paint(TPenBase &pen, EPaintType)
 {
   if (bitmap) {
-    pen.drawBitmap(p1.x, p1.y, bitmap);
+    pen.drawBitmap(x, y, bitmap);
   } else {
-    pen.setLineColor(line_color);
-    if (!filled) {
-      pen.drawRectangle(p1,p2);
-    } else {
-      pen.setFillColor(fill_color);
-      pen.fillRectangle(p1,p2);
-    }
+    pen.setColor(191, 191, 191);
+    pen.fillRectangle(x, y, 32, 32);
   }
 }
 
+#if 0
 bool
 TFImage::startInPlace()
 {
@@ -51,18 +60,47 @@ TFImage::startInPlace()
   
   return false;
 }
+#endif
+
+void
+TFImage::getShape(TRectangle *r)
+{
+  r->x = x;
+  r->y = y;
+  if (bitmap) {
+    r->w = bitmap->getWidth();
+    r->h = bitmap->getHeight();
+  } else {
+    r->w = 32;
+    r->h = 32;
+  }
+}
+
+bool
+TFImage::editEvent(TFigureEditEvent &ee)
+{
+  switch(ee.type) {
+    case TFigureEditEvent::TRANSLATE:
+      x+=ee.x;
+      y+=ee.y;
+      break;
+    default:
+      ;
+  }
+}
 
 void
 TFImage::store(TOutObjectStream &out) const
 {
   super::store(out);
   ::store(out, "filename", filename);
+  ::store(out, "x", x);
+  ::store(out, "y", y);
 }
 
 bool
 TFImage::restore(TInObjectStream &in)
 {
-  filled = true;
   if (in.what == ATV_FINISHED) {
     bitmap = new TBitmap();
     if (!bitmap->load(filename)) {
@@ -71,6 +109,8 @@ TFImage::restore(TInObjectStream &in)
   }
   if (
     ::restore(in, "filename", &filename) ||
+    ::restore(in, "x", &x) ||
+    ::restore(in, "y", &y) ||
     super::restore(in)
   ) return true;
   ATV_FAILED(in)
