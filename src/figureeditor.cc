@@ -2333,15 +2333,16 @@ redo:
           figure->removeable = true;
           fe->getAttributes()->reason = TFigureAttributes::ALLCHANGED;
           figure->setAttributes(fe->getAttributes());
-          fe->addFigure(figure);
           figure->startCreate();
           fe->state = TFigureEditor::STATE_START_CREATE;
           r = figure->mouseLDown(fe, x1, y1, me.modifier);
           fe->state = TFigureEditor::STATE_CREATE;
           if (r & TFigure::DELETE) {
 //            cout << "  delete" << endl;
-            fe->deleteFigure(figure);
+            delete figure;
             figure = 0;
+          } else {
+            fe->addFigure(figure);
           }
           if (r & TFigure::STOP) {
 //cout << "  stop" << endl;
