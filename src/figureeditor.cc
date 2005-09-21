@@ -320,22 +320,37 @@ TFigureEditor::identity()
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::rotate(double)
+void TFigureEditor::rotate(double d)
 {
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->rotate(d);
+  updateScrollbars();
+  invalidateWindow();
 }
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::rotateAt(double x, double y, double degree)
+void TFigureEditor::rotateAt(double x, double y, double d)
 {
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->rotateAt(x, y, d);
+  updateScrollbars();
+  invalidateWindow();
 }
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::translate(double, double)
+void TFigureEditor::translate(double x, double y)
 {
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->translate(x, y);
+  updateScrollbars();
+  invalidateWindow();
 }
 
 /**
@@ -358,17 +373,26 @@ void TFigureEditor::scale(double sx, double sy)
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::shear(double, double) 
+void TFigureEditor::shear(double x, double y)
 {
+  if (!mat)
+    mat = new TMatrix2D();
+  mat->shear(x, y);
   updateScrollbars();
+  invalidateWindow();
 }
 
 /**
  * This method is doing nothing yet.
  */
-void TFigureEditor::multiply(const TMatrix2D*)
+void TFigureEditor::multiply(const TMatrix2D *m)
 {
+  if (!mat)
+    mat = new TMatrix2D(*m);
+  else
+    mat->multiply(m);
   updateScrollbars();
+  invalidateWindow();
 }
 
 /**
