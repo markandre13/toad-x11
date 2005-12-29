@@ -1501,7 +1501,7 @@ redo:
               #if VERBOSE
                 cout << ", double click => ";
               #endif
-              if (g->startInPlace()) {
+              if (model->startInPlace(g)) {
                 #if VERBOSE
                   cout << "STATE_EDIT" << endl;
                 #endif

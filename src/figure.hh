@@ -527,7 +527,6 @@ class TFGroup:
     ~TFGroup();
     void paint(TPenBase&, EPaintType);
     double _distance(TFigureEditor *fe, int x, int y);
-    void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint *p);
     bool startTranslateHandle();
     void translateHandle(unsigned handle, int dx, int dy, unsigned);
@@ -540,6 +539,9 @@ class TFGroup:
     void calcSize();
 
     TFigureModel gadgets;
+
+    void translate(int dx, int dy);
+    bool editEvent(TFigureEditEvent &ee);
 
     TCloneable* clone() const { return new TFGroup(*this); }
     const char * getClassName() const { return "toad::TFGroup"; }

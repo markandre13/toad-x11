@@ -145,7 +145,10 @@ TFigure::editEvent(TFigureEditEvent &ee)
     case TFigureEditEvent::TRANSLATE:
       translate(ee.x, ee.y);
       break;
+    case TFigureEditEvent::START_IN_PLACE:
+      return startInPlace();
   }
+  return true;
 }
 
 /**

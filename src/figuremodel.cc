@@ -438,6 +438,7 @@ TFigureModel::translate(const TFigureSet &set, int dx, int dy)
   TUndoManager::registerUndo(this, undo);
 }
 
+
 /**
  * Translate a figures handle.
  *
@@ -475,6 +476,14 @@ TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y, un
   
   TUndoTranslateHandle *undo = new TUndoTranslateHandle(this, figure, handle, p.x, p.y, m);
   TUndoManager::registerUndo(this, undo);
+}
+
+bool
+TFigureModel::startInPlace(TFigure *figure) {
+  TFigureEditEvent ee;
+  ee.model = this;
+  ee.type = TFigureEditEvent::START_IN_PLACE;
+  return figure->editEvent(ee);
 }
 
 /**

@@ -99,7 +99,7 @@ class TFigureModel:
 
     void translate(const TFigureSet&, int dx, int dy);
     void translateHandle(TFigure *figure, unsigned handle, int dx, int dy, unsigned);
-    
+    bool startInPlace(TFigure *figure);
     TFigure* group(TFigureSet &);
     void _undoGroup(TFGroup*, TFigureAtDepthList &figures);
 

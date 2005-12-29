@@ -25,6 +25,7 @@ using namespace toad;
 
 TFGroup::TFGroup()
 {
+  #warning "FUNCTIONAL OVERKILL, USE A MODIFIED FLAG INSTEAD AND NOT FIGUREMODEL"
   connect(gadgets.sigChanged, this, &TFGroup::modelChanged);
 }
 
@@ -285,9 +286,25 @@ TFGroup::_distance(TFigureEditor *fe, int mx, int my)
   return d;
 }
 
+bool
+TFGroup::editEvent(TFigureEditEvent &ee)
+{
+  switch(ee.type) {
+    case TFigureEditEvent::TRANSLATE:
+      translate(ee.x, ee.y);
+      break;
+    default:
+      ;
+  }
+}
+
 void
 TFGroup::translate(int dx, int dy)
 {
+  if (mat) {
+    mat->translate(dx, dy);
+    return;
+  }
   p1.x+=dx;
   p1.y+=dy;
   p2.x+=dx;
