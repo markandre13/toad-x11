@@ -19,6 +19,7 @@ AC_PROG_MAKE_SET
 # /usr/share/libtool/libltdl/install-sh
 # /usr/share/libtool/config.sub
 # /usr/share/libtool/config.guess
+AC_ENABLE_STATIC(no)
 AC_PROG_LIBTOOL
 
 AC_LANG(C)
