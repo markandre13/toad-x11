@@ -131,11 +131,14 @@ void TInteractor::beforeAdd(TInteractor**)
 
 /**
  * Called when the window (interactor) or one of its parents received the 
- * keyboard focus.<br>
- * <i>TWindow::isFocus()</i> will return `true' when the window really has 
+ * keyboard focus.
+ * TWindow::isFocus will return `true' when the window really has 
  * the focus.
+ *
+ * \param focus
+ *   obsolete? parent && my focus?
  */
-void TInteractor::focus(bool){}
+void TInteractor::focus(bool focus){}
 
 /**
  * Called when the keyboard focus has changed.

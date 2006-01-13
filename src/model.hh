@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,16 +32,35 @@ class TModel:
   public TSmartObject
 {
   public:
-    TModel() {}
-    TModel(const TModel &m) { }
+    TModel() {_enabled=true; meta=META_CUSTOM;}
+    TModel(const TModel &m) {_enabled=true; meta=META_CUSTOM;}
     ~TModel();
     TModel& operator=(const TModel&) { return *this; }
     
     void lock() { sigChanged.lock(); }
     void unlock() { sigChanged.unlock(); }
 
+    // another dirty hack...
+    bool isEnabled() const {return _enabled;}
+    void setEnabled(bool b) {
+      _enabled=b;
+      meta=META_ENABLED;
+      sigMeta();
+      meta=META_CUSTOM;
+    }
+
     TSignal sigChanged;
-    TSignal sigDestruct;
+    TSignal sigMeta;
+    
+    enum EMeta {
+      META_ENABLED,
+      META_DESTRUCTION,
+      META_CUSTOM
+    };
+    EMeta meta:7;
+    
+  private:
+    bool _enabled:1;
 };
 
 template <class T>
@@ -54,7 +73,7 @@ class GModelOwner
     virtual ~GModelOwner() {
       if(model) {
         disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
-        disconnect(model->sigDestruct, this, &GModelOwner<T>::modelDestruction);
+        disconnect(model->sigMeta,    this, &GModelOwner<T>::modelMeta);
       }
     }
     void setModel(T *m) {
@@ -63,18 +82,20 @@ class GModelOwner
         return;
       if (model) {
         disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
-        disconnect(model->sigDestruct, this, &GModelOwner<T>::modelDestruction);
+        disconnect(model->sigMeta   , this, &GModelOwner<T>::modelMeta);
       }
       model = m;
       if (model) {
         connect(model->sigChanged, this, &GModelOwner<T>::modelChanged, false);
-        connect(model->sigDestruct, this, &GModelOwner<T>::modelDestruction);
+        connect(model->sigMeta   , this, &GModelOwner<T>::modelMeta);
       }
       modelChanged(true);
     }
     T* getModel() const { return model; }
     virtual void modelChanged(bool newmodel) = 0;
-    void modelDestruction() {
+    void modelMeta() {
+      if (model->meta!=TModel::META_DESTRUCTION)
+        return;
       cout << "GModelOwner<T>: caught model destruction, set it to NULL" << endl;
       model = 0;
       cout << "GModelOwner<T>: call modelChanged" << endl;

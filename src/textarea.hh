@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -136,6 +136,8 @@ class TTextArea:
     
     //! Called by the model when it was changed.
     void modelChanged();
+
+    void modelMeta(); // model enabled/disabled hack
     
     bool undogroup_is_open:1;
     
@@ -242,6 +244,8 @@ class TTextArea:
     
     void setModified(bool);
     bool isModified() const;
+    
+    virtual bool isEnabled() const;
     
     void setValue(const string&);
     void setValue(const char *data, size_t len);

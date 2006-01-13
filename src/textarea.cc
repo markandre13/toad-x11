@@ -169,15 +169,17 @@ TTextArea::~TTextArea()
     blink.stopTimer();  
     blink.current=NULL;
   }
-  if (model)
+  if (model) {
     disconnect(model->sigTextArea, this);
+    disconnect(model->sigMeta, this);
+  }
   setPreferences(0);
 }
 
 void
 TTextArea::keyDown(TKey key, char* str, unsigned modifier)
 {
-  if (!model)
+  if (!isEnabled())
     return;
 
 DBM(cout << "ENTER keyDown '" << str << "'" << endl;
@@ -400,7 +402,7 @@ DBM(cout << "LEAVE keyDown" << endl;
 void
 TTextArea::mouseLDown(int x, int y, unsigned)
 {
-  if (!model)
+  if (!isEnabled())
     return;
   _goto_pixel(x, y);
   _bos = _eos = _pos;
@@ -411,7 +413,7 @@ TTextArea::mouseLDown(int x, int y, unsigned)
 void
 TTextArea::mouseMove(int x, int y, unsigned)
 {
-  if (!model)
+  if (!isEnabled())
     return;
   _goto_pixel(x, y);
   if (_eos != _pos) {
@@ -481,12 +483,11 @@ y-=2;
 void
 TTextArea::focus(bool b)
 {
-  if (!model)
-    return;
+  b = b && isEnabled();
   model->focus(b);
 //cout << getTitle() << ".focus "<<isFocus()<<endl;
   _invalidate_line(_cy);
-  if (isFocus()) {
+  if (b) {
     blink.current=this;
     blink.visible=true;
     blink.blink=true;
@@ -516,6 +517,7 @@ TTextArea::_set_model(TTextModel *m)
   _pos = 0;
   if (model) {
     connect(model->sigTextArea, this, &TTextArea::modelChanged);
+    connect(model->sigMeta    , this, &TTextArea::modelMeta);
     _eol_from_bol();
     TUndoManager::registerModel(this, model);
   }
@@ -524,6 +526,27 @@ TTextArea::_set_model(TTextModel *m)
     vscroll->setValue(_ty);
   adjustScrollbars();
   invalidateWindow(true);
+}
+
+void
+TTextArea::modelMeta()
+{
+  if (!model) {
+    cout << "toad: error text area '" << getTitle() << "' received "
+            "sigMeta but has no model" << endl;
+    return;
+  }
+  if (model->meta == TModel::META_ENABLED) {
+#if 1
+    if (blink.current==this) {
+      blink.stopTimer();
+      blink.current = NULL;
+    }
+    invalidateWindow();
+#else
+    setFocus(false);
+#endif
+  }
 }
 
 //#undef DBM
@@ -989,9 +1012,18 @@ void
 TTextArea::paint()
 {
   TPen pen(this);
+  TColor fillcolor;
+  if (isEnabled())
+    fillcolor.set(255,255,255);
+  else
+    fillcolor.set(TColor::DIALOG);
+  pen.setFillColor(fillcolor);
+  pen.fillRectangle(0,0,getWidth(),getHeight());
+  
   pen.draw3DRectangle(
     visible.x-2, visible.y-2,
     visible.w+4-1, visible.h+4-1);
+    
   if (!model) {
     pen.setColor(TColor::DIALOG);
     pen.fillRectanglePC(visible);
@@ -1057,17 +1089,17 @@ cerr << "  selection: " << bos << " - " << eos << endl;
       if (bos2 <= bol && eol <= eos2) {
 //cerr << "    line is inside selection\n";
         // inside selection
-        pen.setLineColor(255,255,255);
+        pen.setLineColor(fillcolor);
         pen.setFillColor(0,0,0);
       } else if (eol < bos2 || bol > eos2) {
 //cerr << "    line is outside selection\n";
         // outside selection
         pen.setLineColor(0,0,0);
-        pen.setFillColor(255,255,255);
+        pen.setFillColor(fillcolor);
       } else {
 //cerr << "    line and selection true intersection\n";
         pen.setLineColor(0,0,0);
-        pen.setFillColor(255,255,255);
+        pen.setFillColor(fillcolor);
         part = true;
       }
       
@@ -1105,7 +1137,7 @@ cerr << "  selection: " << bos << " - " << eos << endl;
 //cerr << "  \"" << line.substr(_tx,pos-_tx) << "\"" << endl;
 //cerr << "x   = " << x << endl << "len = " << len << endl;
         if (len>0 && pos<line.size()) {
-          pen.setLineColor(255,255,255);
+          pen.setLineColor(fillcolor);
           pen.setFillColor(0,0,0);
           pen.fillString(x-_tx, y, line.c_str()+pos, len);
         }
@@ -1223,7 +1255,7 @@ TTextArea::_delete_current_line()
 void
 TTextArea::mouseMDown(int,int,unsigned)
 {
-  if (!model)
+  if (!isEnabled())
     return;
   _insert(getSelection());
 }
@@ -1586,7 +1618,13 @@ TTextArea::isModified() const
     return false;
   return model->isModified();
 }
-   
+
+bool
+TTextArea::isEnabled() const {
+  return model && model->isEnabled() && super::isEnabled();
+}
+
+
 void
 TTextArea::setValue(const string &txt)
 {

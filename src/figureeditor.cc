@@ -318,7 +318,6 @@ TFigureEditor::identity()
 }
 
 /**
- * This method is doing nothing yet.
  */
 void TFigureEditor::rotate(double d)
 {
@@ -330,7 +329,6 @@ void TFigureEditor::rotate(double d)
 }
 
 /**
- * This method is doing nothing yet.
  */
 void TFigureEditor::rotateAt(double x, double y, double d)
 {
@@ -342,7 +340,6 @@ void TFigureEditor::rotateAt(double x, double y, double d)
 }
 
 /**
- * This method is doing nothing yet.
  */
 void TFigureEditor::translate(double x, double y)
 {

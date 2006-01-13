@@ -39,7 +39,7 @@ class TControl:
         _enabled=true;
     }
     //! Returns <I>true</I> when the object is enabled.
-    bool isEnabled() const {return _enabled;}
+    virtual bool isEnabled() const {return _enabled;}
     void setEnabled(bool b);
   protected:
     virtual void enabled();
