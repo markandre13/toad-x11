@@ -67,7 +67,14 @@ class GVector:
     }
     // pop_back
     // insert
-    // erase
+    iterator erase(iterator p) {
+      reason = REMOVED_ROW;
+      TTableModel::size = 1;
+      where = p - data.begin();
+      p = data.erase(p);
+      sigChanged();
+      return p;
+    }
     // swap
     void clear() {
       reason = REMOVED_ROW;
