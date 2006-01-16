@@ -296,6 +296,26 @@ struct TTableEvent
   bool flag;
 };
 
+inline ostream& operator<<(ostream &s, const TTableEvent& te) {
+  switch(te.type) {
+    case TTableEvent::GET_COL_SIZE:
+      return s<<"GET_COL_SIZE";
+      break;
+    case TTableEvent::GET_ROW_SIZE:
+      return s<<"GET_ROW_SIZE";
+      break;
+    case TTableEvent::PAINT:
+      return s<<"PAINT";
+      break;
+    case TTableEvent::MOUSE:
+      return s<<"MOUSE";
+      break;
+    case TTableEvent::KEY:
+      return s<<"KEY";
+      break;
+  }
+  return s<<"(unknown)"<<endl;
+}
 
 class TTableModel:
   public TModel
