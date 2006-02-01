@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -40,6 +40,17 @@ TTableAdapter::TTableAdapter()
 {
   table = 0;
   reason = TTableModel::CHANGED;
+}
+
+void
+TTableAdapter::modelChanged(bool newmodel)
+{
+  if (newmodel) {
+    reason = TTableModel::CHANGED;
+    sigChanged();
+    return;
+  }
+  modelChanged();
 }
 
 void
@@ -180,7 +191,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
       break;
     case TTableEvent::PAINT:
 // cout << "paint " << te.col << ", " << te.row << endl;
-      if (edit==this && te.col == col && te.row == row) {
+      if (te.focus && edit==this && te.col == col && te.row == row) {
         te.pen->setColor(255,255,192);
         te.pen->fillRectanglePC(0,0,te.w,te.h);
         te.pen->setColor(0,0,0);
@@ -232,12 +243,24 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
               sigChanged();
               return;
             case TK_LEFT:
-              if (cx>0)
+              if (cx>0) {
                 utf8dec(*s, &cx);
+              } else {
+                edit = 0;
+                reason = TTableModel::CONTENT;
+                sigChanged();
+                return; // don't set te.flag and go to the left column
+              }
               break;
             case TK_RIGHT:
-              if (cx<s->size())
+              if (cx<s->size()) {
                 utf8inc(*s, &cx);
+              } else {
+                edit = 0;
+                reason = TTableModel::CONTENT;
+                sigChanged();
+                return; // don't set te.flag and go to the right column
+              }
               break;
             case TK_HOME:
               cx=0;

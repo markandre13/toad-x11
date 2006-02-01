@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -112,12 +112,7 @@ class TDirectoryAdapter:
           w = max(w, font.getTextWidth(p->name));
         }
       }
-      if (newmodel) {
-        reason = TTableModel::CHANGED;
-        sigChanged();
-      } else {
-        TTableAdapter::modelChanged();
-      }
+      TTableAdapter::modelChanged(newmodel);
     }
     
     void tableEvent(TTableEvent &te);
@@ -203,12 +198,7 @@ class TFilterListAdapter:
           w = max(w, font.getTextWidth((*p)->toText()));
         }
       }
-      if (newmodel) {
-        reason = TTableModel::CHANGED;
-        sigChanged();
-      } else {
-        TTableAdapter::modelChanged();
-      }
+      TTableAdapter::modelChanged(newmodel);
     }
     size_t getCols() { return 1; }
 //    size_t getRows() { return model ? model->size() : 0; }
@@ -254,12 +244,7 @@ class TDequeStringAdapter:
           w = max(w, font.getTextWidth(*p));
         }
       }
-      if (newmodel) {
-        reason = TTableModel::CHANGED;
-        sigChanged();
-      } else {
-        TTableAdapter::modelChanged();
-      }
+      TTableAdapter::modelChanged(newmodel);
     }
     size_t getCols() { return 1; }
 //    size_t getRows() { return model ? model->size() : 0; }

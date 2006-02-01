@@ -371,6 +371,10 @@ class TTableAdapter:
     void handleString(TTableEvent &te, string *s, int offx=0);
     void handleCheckBox(TTableEvent &te, bool *b);
 
+    // to simplify implementing of modelChanged(bool) when a new class
+    // derives from TTableAdapter and GModelOwner<T>
+    void modelChanged(bool newmodel);
+
     // this method is to enable signals to trigger our signal:
     void modelChanged();
     
