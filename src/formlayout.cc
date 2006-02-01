@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,19 @@ using namespace toad;
 
 /**
  * \class toad::TFormLayout
+ * \pre
+toad::TFormLayout {
+  <windowname> = {
+    top|bottom|left|right = {
+      how = border|window|opposite
+      where = <windowname>
+      distance = <distance>
+    }
+    ...
+  }
+  ...
+}
+   \endpre
  */
 
 #define HAS_T 1
@@ -529,10 +542,7 @@ return;
 TFormLayout::TFormNode* 
 TFormLayout::_find(const string &which)
 {
-  if (which.empty()) {
-    cerr << "_find to empty name" << endl;
-    exit(1);
-  }
+  assert(!which.empty());
 
   if (!flist) {
     lastadd = flist = new TFormNode(which);
@@ -641,10 +651,20 @@ TFormLayout::restore(TInObjectStream &in)
             in.type.empty())
         {
           node = _find(in.attribute);
+          if (!node) {
+            cerr << "failed to locate node '" << in.attribute << "'" << endl;
+            break;
+          }
           // cout << "  new node " << node << endl;
+        } else {
+          node = 0;
         }
         break;
       case 1:
+        if (!node) {
+          cerr << "TFormLayout: no node" << endl;
+          return false;
+        }
         if (in.what == ATV_GROUP &&
             !in.attribute.empty() &&
             in.type.empty())
@@ -695,4 +715,5 @@ TFormLayout::restore(TInObjectStream &in)
     }
   } while(in.parse());
   in.setInterpreter(this);
+  return true;
 }
