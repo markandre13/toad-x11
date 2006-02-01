@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 
 namespace toad {
 
+class TFigureEditor;
 class TFigure;
 class TFGroup;
 
@@ -99,7 +100,7 @@ class TFigureModel:
 
     void translate(const TFigureSet&, int dx, int dy);
     void translateHandle(TFigure *figure, unsigned handle, int dx, int dy, unsigned);
-    bool startInPlace(TFigure *figure);
+    bool startInPlace(TFigure *figure, TFigureEditor *fe = 0);
     TFigure* group(TFigureSet &);
     void _undoGroup(TFGroup*, TFigureAtDepthList &figures);
 

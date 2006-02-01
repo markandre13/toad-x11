@@ -478,10 +478,26 @@ TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y, un
   TUndoManager::registerUndo(this, undo);
 }
 
+/**
+ * Tell the figure to start in-place-editing after a double click.
+ *
+ * For example: A text figure will begin to display a cursor or a
+ * file browser will try to load or execute the file.
+ *
+ * \param figure
+ *   The figure which will receive the message.
+ * \param fe
+ *   Sometimes the figure may need to know which figure editor caused
+ *   the event. May be NULL.
+ * \return
+ *   'true' when the figure wants to start the in-place-editing mode.
+ *   It will then receive keyboard events.
+ */
 bool
-TFigureModel::startInPlace(TFigure *figure) {
+TFigureModel::startInPlace(TFigure *figure, TFigureEditor *fe) {
   TFigureEditEvent ee;
   ee.model = this;
+  ee.editor = fe;
   ee.type = TFigureEditEvent::START_IN_PLACE;
   return figure->editEvent(ee);
 }

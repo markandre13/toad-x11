@@ -487,6 +487,8 @@ TFigureEditor::paint()
 void
 TFigureEditor::paintGrid(TPenBase &pen)
 {
+  if (!preferences)
+    return;
   if (preferences->drawgrid && preferences->gridsize) {
     const TColor &background_color = window->getBackground();
     pen.setColor(
@@ -1498,7 +1500,7 @@ redo:
               #if VERBOSE
                 cout << ", double click => ";
               #endif
-              if (model->startInPlace(g)) {
+              if (model->startInPlace(g, this)) {
                 #if VERBOSE
                   cout << "STATE_EDIT" << endl;
                 #endif
