@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2323,8 +2323,6 @@ TFCreateTool::stop(TFigureEditor *fe)
 {
   if (figure) {
     unsigned r = figure->stop(fe);
-    if ( r & TFigure::DELETE )
-      fe->deleteFigure(figure);
     figure = 0;
     fe->setCurrent(0);
     fe->getWindow()->ungrabMouse();
@@ -2364,8 +2362,6 @@ redo:
 //            cout << "  delete" << endl;
             delete figure;
             figure = 0;
-          } else {
-            fe->addFigure(figure);
           }
           if (r & TFigure::STOP) {
 //cout << "  stop" << endl;
@@ -2373,11 +2369,7 @@ redo:
             fe->getWindow()->ungrabMouse();
             fe->setCurrent(0);
             if (figure) {
-              TFigureModel *model = fe->getModel();
-              model->figures.clear();
-              model->figures.insert(figure);
-              model->type = TFigureModel::MODIFIED;
-              model->sigChanged();
+              fe->addFigure(figure);
             }
           }
           if (fe->state != TFigureEditor::STATE_NONE &&
@@ -2434,12 +2426,7 @@ redo:
         fe->state = TFigureEditor::STATE_NONE;
         fe->setCurrent(0);
         if (figure) {
-          TFigureModel *model = fe->getModel();
-          model->figures.clear();
-          model->figures.insert(figure);
-          model->type = TFigureModel::MODIFIED;
-          model->sigChanged();
-          fe->selection.insert(figure);
+          fe->addFigure(figure);
           figure = 0;
         }
       }
@@ -2483,11 +2470,7 @@ TFCreateTool::keyEvent(TFigureEditor *fe, TKeyEvent &ke)
     fe->getWindow()->ungrabMouse();
     fe->state = TFigureEditor::STATE_NONE;
     if (figure) {
-      TFigureModel *model = fe->getModel();
-      model->figures.clear();
-      model->figures.insert(figure);
-      model->type = TFigureModel::MODIFIED;
-      model->sigChanged();
+      fe->addFigure(figure);
       figure = 0;
     }
   }
@@ -2500,4 +2483,16 @@ TFCreateTool::setAttributes(TFigureAttributes *a)
 {
   if (figure)
     figure->setAttributes(a);
+}
+
+void
+TFCreateTool::paintSelection(TPenBase &pen)
+{
+  if (!figure)
+    return;
+  pen.push();
+  if (figure->mat)
+    pen.multiply(figure->mat);
+  figure->paint(pen, TFigure::EDIT);
+  pen.pop();
 }

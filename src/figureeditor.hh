@@ -85,6 +85,7 @@ class TFCreateTool:
     void mouseEvent(TFigureEditor *fe, TMouseEvent &me);
     void keyEvent(TFigureEditor *fe, TKeyEvent &ke);
     void setAttributes(TFigureAttributes *p);
+    void paintSelection(TPenBase &pen);
 };
 
 class TFigureAttributes:
