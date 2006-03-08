@@ -42,6 +42,8 @@ class TIntegerModel:
     /** true, when the last setValue call had an out of range value */    
     bool out_of_range;
 
+    virtual void changed();
+
   public:
     TIntegerModel();
     

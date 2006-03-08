@@ -50,8 +50,10 @@ TIntegerModel::setExtent(int extent)
     value = maximum-extent+1;
   if (value<minimum)
     value = minimum;
-  if (!adjusting)
+  if (!adjusting) {
+    changed();
     sigChanged();
+  }
 }
 
 void
@@ -64,8 +66,10 @@ TIntegerModel::setMaximum(int max)
     value=maximum-extent+1;
   if (value<minimum)
     value = minimum;
-  if (!adjusting)
+  if (!adjusting) {
+    changed();
     sigChanged();
+  }
 }
 
 void
@@ -76,8 +80,10 @@ TIntegerModel::setMinimum(int min)
   minimum = min;
   if (value<minimum)
     value = minimum;
-  if (!adjusting)
+  if (!adjusting) {
+    changed();
     sigChanged();
+  }
 }
 
 void
@@ -104,8 +110,10 @@ TIntegerModel::setRangeProperties(int value, int extent, int min, int max, bool 
   this->minimum = min;
   this->maximum = max;
   this->adjusting = adjusting;
-  if (!adjusting)
+  if (!adjusting) {
+    changed();
     sigChanged();
+  }
 }
 
 void
@@ -128,11 +136,18 @@ DBM(cerr << "-> not changed" << endl;)
   if (this->value != value) {
 DBM(cerr << "-> changed (previous value was " << this->value << ")\n";)
     this->value = value;
-    if (!adjusting)
+    if (!adjusting) {
+      changed();
       sigChanged();
+    }
   } else {
 DBM(cerr << "-> not changed" << endl;)
   }
+}
+
+void
+TIntegerModel::changed()
+{
 }
 
 void
@@ -141,8 +156,10 @@ TIntegerModel::setValueIsAdjusting(bool b)
   if (adjusting == b)
     return;
   adjusting = b;
-  if (b == false)
+  if (b == false) {
+    changed();
     sigChanged();
+  }
 }
 
 class TIntegerTextModel:
