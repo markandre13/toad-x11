@@ -103,6 +103,7 @@ class TUndoRemove:
   protected:
     void undo() {
       model->insert(figures);
+      figures.drop();
     }
     bool getUndoName(string *name) const {
       *name = "Undo: Remove";
