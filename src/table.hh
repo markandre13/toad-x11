@@ -33,6 +33,10 @@ class TAbstractSelectionModel:
   public TModel
 {
   public:
+    TAbstractSelectionModel() {
+      rowcolmode = FIELD;
+    }
+  
     enum ESelectionMode {
       MULTIPLE_INTERVAL,
       SINGLE_INTERVAL,
