@@ -319,19 +319,8 @@ TWindow::~TWindow()
     }
   }
 
-{
-  // delete all children
-  // note: this is also done by the TInteractor destructor this TWindow
-  // derives from but then this object isn't a TWindow but a TInteractor
-  // and this must not be because... some other functions don't like it.
-  // ({more specific please})
-  TInteractor *ptr = getFirstChild();
-  while(ptr) {
-    TInteractor *w = ptr;
-    ptr = ptr->getNextSibling();
-    delete w;
-  }
-}
+  // delete children before freeing resources which might be used be them
+  deleteChildren();
 
   setToolTip("");
 

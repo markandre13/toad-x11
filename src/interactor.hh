@@ -44,6 +44,7 @@ class TInteractor
     TInteractor* getFirstChild() const;
     TInteractor* getLastChild() const;
     bool isChildOf(const TInteractor*) const;
+    void deleteChildren();
 
     // Get the next/previous sibling of 'ptr' and return NULL when 'ptr'
     // points to the last/first child.

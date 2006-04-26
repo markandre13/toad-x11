@@ -86,15 +86,7 @@ TInteractor::TInteractor(TInteractor *parent, const string &title)
 
 TInteractor::~TInteractor()
 {
-  TInteractor *ptr;
-  
-  // delete all children
-  ptr = getFirstChild();
-  while(ptr) {
-    TInteractor *w = ptr;
-    ptr = ptr->next;
-    delete w;
-  }
+  deleteChildren();
 
   // remove myself from the parent
   if (parent) {
@@ -185,6 +177,21 @@ TInteractor::isChildOf(const TInteractor *p) const
     ptr = ptr->parent;
   }
   return false;
+}
+
+/**
+ * Delete all children.
+ */  
+void
+TInteractor::deleteChildren()
+{
+  TInteractor *ptr;
+  ptr = getFirstChild();
+  while(ptr) {
+    TInteractor *w = ptr;
+    ptr = ptr->next;
+    delete w;
+  }
 }
 
 TInteractor* 
