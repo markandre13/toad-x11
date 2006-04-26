@@ -612,6 +612,8 @@ checkCursor3(TTextArea *ta, size_t offset, size_t size)
 void
 TTextArea::modelChanged()
 {
+  if (!isRealized())
+    return;
 /*
   if (model->length==0) {
     adjustScrollbars();
