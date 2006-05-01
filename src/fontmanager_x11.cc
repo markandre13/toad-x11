@@ -28,7 +28,7 @@
 #include <X11/Xutil.h>
 
 #ifdef HAVE_LIBXUTF8
-#include <libXutf8/Xutf8.h>
+#include "xutf8/Xutf8.h"
 #endif
 
 #endif
@@ -619,7 +619,6 @@ cout << "allocate font of size " << x11->id << endl;
 void
 TFontManagerX11::drawString(TPenBase *penbase, int x, int y, const char *str, size_t strlen, bool transparent)
 {
-//cout << __PRETTY_FUNCTION__ << endl;
   TPen *pen = dynamic_cast<TPen*>(penbase);
   assert(pen);
   assert(pen->font);
@@ -629,11 +628,6 @@ TFontManagerX11::drawString(TPenBase *penbase, int x, int y, const char *str, si
   if (!allocate(pen->font, pen->mat))
     return;
   TX11Font *x11 = static_cast<TX11Font*>(pen->font->corefont);
-
-  if (!transparent /* && pen->using_bitmap*/) {
-    XSetFillStyle(toad::x11display, pen->o_gc, FillSolid);
-  }
-
   // y+=getAscent(pen->font);
 #ifdef HAVE_LIBXUTF8
   if (x11->xutf8font) {
@@ -645,10 +639,16 @@ TFontManagerX11::drawString(TPenBase *penbase, int x, int y, const char *str, si
     if (pen->mat)
       pen->mat->map(x, y, &x, &y);
 #ifdef HAVE_LIBXUTF8
-    if (transparent)
+    if (transparent) {
       XUtf8DrawString(toad::x11display, pen->x11drawable, x11->xutf8font, pen->o_gc, x, y, str, strlen);
-    else
-      XUtf8DrawImageString(toad::x11display, pen->x11drawable, x11->xutf8font, pen->o_gc, x, y, str, strlen);
+    } else {
+      int h = getHeight(pen->font);
+    	XFillRectangle(toad::x11display, pen->x11drawable, 
+                     pen->two_colors ? pen->f_gc : pen->o_gc,
+    	               x, y - h,
+    	               XUtf8TextWidth(x11->xutf8font, str, strlen), h);
+      XUtf8DrawString(toad::x11display, pen->x11drawable, x11->xutf8font, pen->o_gc, x, y, str, strlen);
+    }
 #endif
   } else {
     // Draw rotated and downscaled font char by char, using the horizontal
@@ -678,18 +678,20 @@ TFontManagerX11::drawString(TPenBase *penbase, int x, int y, const char *str, si
       int direction, fasc, fdesc;
 #ifdef HAVE_LIBXUTF8
       pen->mat->map(x, y, &x2, &y2);
-      if (transparent)
+      if (transparent) {
         XUtf8DrawString(toad::x11display, pen->x11drawable, x11->xutf8font_r, pen->o_gc, x2, y2, buffer, clen);
-      else
-        XUtf8DrawImageString(toad::x11display, pen->x11drawable, x11->xutf8font_r, pen->o_gc, x2, y2, buffer, clen);
+      } else {
+        int h = getHeight(pen->font);
+      	XFillRectangle(toad::x11display, pen->x11drawable, 
+                       pen->two_colors ? pen->f_gc : pen->o_gc,
+    	                 x, y - h,
+    	                 XUtf8TextWidth(x11->xutf8font, str, strlen), h);
+        XUtf8DrawString(toad::x11display, pen->x11drawable, x11->xutf8font, pen->o_gc, x, y, buffer, clen);
+      }
       x += x11->x11scale * XUtf8TextWidth(x11->xutf8font, buffer, clen);
 #endif
 //      x+=getTextWidth(pen->font, buffer, clen);
     }
-  }
-
-  if (!transparent /*&& using_bitmap*/) {
-    XSetFillStyle(toad::x11display, pen->o_gc, FillTiled);
   }
 }
 

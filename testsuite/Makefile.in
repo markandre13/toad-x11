@@ -7,20 +7,14 @@ files=$(wildcard *.cc)
 goal=$(patsubst %.cc,%.ok,$(files))
 # tests=$(patsubst %.cc,%.bin,$(files))
 
-CC  = @CC@
-CFLAGS  += @CFLAGS@ $(INCDIRS)
-CXX     = @CXX@   
-CXXFLAGS+= @CXXFLAGS@ @XML2_FLAGS@ @X_CFLAGS@ $(INCDIRS)
-DEFINES += @DEFS@
+CXX     = `sh ../conf/toad-config --cxx`
+CXXFLAGS = `sh ../conf/toad-config --cxxflags`
 LD      = $(CXX) 
-LDFLAGS += @LDFLAGS@ $(LIBDIRS)
-LIBS    += @LIBS@ @XML2_LIBS@ -L$(TOAD_LIB) -ltoad @X_LIBS@ @X_PRE_LIBS@ -lXmu -lX11
-TOAD_INC  = @toaddir@/src/include
-TOAD_LIB  = @toaddir@/src
+LIBS    = `sh ../conf/toad-config --libs`
 
-CXXFLAGS+= -Iinclude -frtti \
-           -Wno-return-type -Wno-pmf-conversions -Wwrite-strings \
-           -Woverloaded-virtual
+#CXXFLAGS+= -Iinclude -frtti \
+#           -Wno-return-type -Wno-pmf-conversions -Wwrite-strings \
+#           -Woverloaded-virtual
                       
 
 all: $(goal) report
@@ -35,7 +29,7 @@ clean:
 
 .cc.o:
 	@echo compile $*.cc
-	@$(CXX) $(CXXFLAGS) $(DEFINES) -I$(TOAD_INC) $*.cc -c -o $*.o
+	$(CXX) $(CXXFLAGS) $*.cc -c -o $*.o
 
 .o.bin:
 	@echo link $*.bin

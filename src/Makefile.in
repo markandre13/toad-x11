@@ -79,6 +79,10 @@ MDI		= mdiwindow.cc mdishell.cc
 
 DEBUG		= debug.cc stacktrace.cc
 
+XUTF8           = xutf8/utf8Input.cc xutf8/utf8Utils.cc xutf8/utf8Wrap.cc \
+                  xutf8/is_spacing.cc xutf8/is_right2left.cc \
+                  xutf8/keysym2Ucs.cc
+
 SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		popupmenu.cc layout.cc formlayout.cc tabbedlayout.cc popup.cc action.cc \
 		window.cc focusmanager.cc interactor.cc dialog.cc \
@@ -103,7 +107,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		resource.cc utf8.cc \
 		$(MDI) \
 		$(GADGET) $(IO) $(NEW_CHECKER) $(FILTER) \
-		$(DEBUG)
+		$(DEBUG) $(XUTF8)
 
 OBJS	= $(SRCS:.cc=.o)
 LOBJS	= $(SRCS:.cc=.lo)

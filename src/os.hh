@@ -25,4 +25,7 @@
 #define __X11__
 #endif
 
+/* Xutf8 library with UTF8 support for X11 */
+#define  HAVE_LIBXUTF8 1
+
 #endif

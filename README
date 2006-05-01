@@ -2,7 +2,7 @@
                       TOAD C++ GUI Library 0.64.0-preX
                          the "hacking again" release
 
-        Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+        Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
                                  and others
                     
 CONTENTS
@@ -22,16 +22,7 @@ CONTENTS
 1. SMALLPRINT
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  The TOAD C++ GUI Library is distributed under the terms of the GNU Lesser
-  General Public License (LGPL) See the file COPYING.LIB for more details.
-
-  Some programs that come with the TOAD C++ GUI Library may be under the
-  terms of the GNU General Public License (GPL). See the file COPYING for
-  more details.
-
-  The TOAD C++ GUI Library comes WITHOUT ANY WARRANTY; without even the
-  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
+  Please see the file COPYRIGHT for the complete copyright statements.
 
 2. A WORD OF WARNING
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -68,7 +59,6 @@ CONTENTS
   - zlib 1.1.1
   - libpng 1.0.1
   - fontconfig 2.2.0 or later
-  - Xutf8 0.1.1-1 or later
 
   The TOAD C++ GUI Library has been tested on the following platforms:
   - Debian GNU/Linux 3.0 (current)

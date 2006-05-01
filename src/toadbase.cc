@@ -44,7 +44,7 @@
 #include <sys/types.h>
 
 #ifdef HAVE_LIBXUTF8
-#include <libXutf8/Xutf8.h>
+#include "xutf8/Xutf8.h"
 #endif
 
 #ifdef __X11__
@@ -1183,9 +1183,9 @@ cout << endl;
     //--------------
     case MotionNotify: {
 
-    #warning compressing MotionNotify for all windows, must be optional
-    while(XCheckIfEvent(x11display, &x11event, checkMotion, 0))
-      ;
+      #warning compressing MotionNotify for all windows, must be optional
+      while(XCheckIfEvent(x11display, &x11event, checkMotion, 0))
+        ;
 
       CONSIDER_GRAB(xmotion)
 #if 1

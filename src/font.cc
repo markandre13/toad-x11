@@ -29,6 +29,7 @@
 
 #define _TOAD_PRIVATE
 
+#include <toad/os.hh>
 #include <toad/config.h>
 #include <toad/toadbase.hh>
 #include <toad/font.hh>
@@ -51,7 +52,7 @@ typedef struct _XftFont XftFont;
 #endif
 
 #ifdef HAVE_LIBXUTF8
-#include <libXutf8/Xutf8.h>
+#include "xutf8/Xutf8.h"
 #endif
 
 
