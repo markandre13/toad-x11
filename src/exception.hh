@@ -36,7 +36,7 @@ class TException:
       TStackTrace stack;
     public:
       explicit TException(const std::string &what):exception(), msg(what) {}
-      virtual TException::~TException() throw() { }
+      virtual ~TException() throw() { }
 
       void printStackTrace() const { stack.print(); }
       void print() const {

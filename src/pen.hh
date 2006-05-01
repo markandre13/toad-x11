@@ -374,8 +374,8 @@ class TPen:
 private:
     void setFont(TFont*);
 public:
-    static void TPen::initialize();
-    static void TPen::terminate();
+    static void initialize();
+    static void terminate();
 
     void setFont(const string &fontname);
     static TFont* lookupFont(const string &fontname);

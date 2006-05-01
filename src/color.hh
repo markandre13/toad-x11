@@ -251,7 +251,15 @@ class TColor
 } // namespace toad
 
 bool restore(atv::TInObjectStream &p, toad::TSerializableRGB *value);
-// bool restore(TInObjectStream &p, const char *name, TRGB **value);
+
+// the following is usually handled by a template in io/serializable.hh
+// but this fails with g++ 4.1.0...
+inline bool restore(atv::TInObjectStream &in, const char *attribute, toad::TSerializableRGB *value) {
+  if (in.attribute != attribute)
+    return false;
+  return restore(in, value);
+}
+        
 
 
 #endif
