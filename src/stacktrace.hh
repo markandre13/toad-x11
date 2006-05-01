@@ -29,7 +29,7 @@ class TStackTrace
     TStackTrace();
     void print() const;
   protected:
-    unsigned *addr;
+    void **addr;
     unsigned size;
 };
 

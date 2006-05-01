@@ -158,9 +158,9 @@ TStackTrace::TStackTrace()
     if (a==toad::top_address)
       break;
   }
-  addr = (unsigned*) malloc(sizeof(unsigned)*size);
+  addr = (void**) malloc(sizeof(void*)*size);
   for(unsigned i=0; i<size; ++i) {
-    addr[i] = (unsigned)getReturnAddress(i);
+    addr[i] = getReturnAddress(i);
   }
 }
 
@@ -212,7 +212,7 @@ void toad::printStackTrace()
   printf("stacktrace:\n");
   for(unsigned i=0; i<100; i++) {
     addr = getReturnAddress(i);
-    sprintf(buffer+p, "%08x ", (unsigned)addr);
+    sprintf(buffer+p, "%p ", addr);
     p+=9;
     if (p>4096-20)
       break;
