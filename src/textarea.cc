@@ -851,6 +851,10 @@ TTextArea::adjustScrollbars()
 
   // vertical visible lines
   TFont *font = TPen::lookupFont(preferences->getFont());
+  if (font->getHeight()==0) {
+    cout << "error: TTextArea::adjustScrollbars: font of height 0" << endl;
+    return;
+  }
   int vvl = visible.h/font->getHeight();
   if (vvl<model->nlines)
     need_vscroll = true;
@@ -1089,22 +1093,21 @@ cerr << "  selection: " << bos << " - " << eos << endl;
       }
       
       if (bos2 <= bol && eol <= eos2) {
-//cerr << "    line is inside selection\n";
+//cout << "    line is inside selection\n";
         // inside selection
         pen.setLineColor(fillcolor);
         pen.setFillColor(0,0,0);
       } else if (eol < bos2 || bol > eos2) {
-//cerr << "    line is outside selection\n";
+//cout << "    line is outside selection\n";
         // outside selection
         pen.setLineColor(0,0,0);
         pen.setFillColor(fillcolor);
       } else {
-//cerr << "    line and selection true intersection\n";
+//cout << "    line and selection true intersection\n";
         pen.setLineColor(0,0,0);
         pen.setFillColor(fillcolor);
         part = true;
       }
-      
       pen.fillString(-_tx,y,line);
       
       if (part) {
@@ -1517,6 +1520,10 @@ TTextArea::_catch_cursor()
 
   TFont *font = TPen::lookupFont(preferences->getFont());
   int h = font->getHeight();
+  if (h==0) {
+    cout << "error: TTextArea::_catch_cursor font of height 0" << endl;
+    return;
+  }
 //  int w = font->getTextWidth("X");
   int th = (visible.h-h+1) / h;
 //  int tw = (visible.w-w+1) / w;
