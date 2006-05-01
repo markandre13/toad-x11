@@ -47,7 +47,7 @@
 #include <X11/Xlocale.h>
 #include <X11/Xutil.h>
 
-#define HAVE_LIBC_ICONV 1
+/*#define HAVE_LIBC_ICONV 1*/
 
 typedef struct {
 	int nb_font;
