@@ -4,6 +4,7 @@
 # Copyright (C) 2002-2005 by Mark-André Hopf <mhopf@mark13.org>
 #
 
+
 AC_INIT(libtoad, 0.64.0, toad-bug@mark13.org)
 
 AC_CONFIG_SRCDIR([src/toadbase.cc])
@@ -19,8 +20,15 @@ AC_PROG_MAKE_SET
 # /usr/share/libtool/libltdl/install-sh
 # /usr/share/libtool/config.sub
 # /usr/share/libtool/config.guess
+
+dnl old style libtool
 AC_ENABLE_STATIC(no)
 AC_PROG_LIBTOOL
+
+dnl new style libtool
+dnl LT_INIT
+dnl AC_SUBST(LIBTOOL)
+dnl AC_SUBST(LIBTOOL_DEPS)
 
 AC_LANG(C)
 
@@ -39,7 +47,7 @@ AC_CHECK_LIB(X11, XOpenDisplay,,AC_MSG_ERROR([Could not link with X11]), $XLIBS)
 
 # AC_CHECK_LIB([Xext], [main])
 # AC_CHECK_LIB([Xmu], [XmuClientWindow],,AC_MSG_ERROR([Could not link with Xmu]),$XLIBS)
-AC_CHECK_LIB(Xutf8, XUtf8DrawString,,, $XLIBS)
+# AC_CHECK_LIB(Xutf8, XUtf8DrawString,,, $XLIBS)
 
 PKG_CHECK_MODULES(FONTCONFIG, fontconfig)
 # PKG_CHECK_MODULES(FREETYPE, freetype2)
