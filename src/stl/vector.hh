@@ -44,7 +44,9 @@ class GVector:
     typedef typename vector<T>::size_type size_type;
     
     const T& operator[](size_type n) const { return data[n]; }
+    T& operator[](size_type n) { return data[n]; }
     const T& at(size_type n) const { return data.at(n); }
+    T& at(size_type n) { return data.at(n); }
     T& front() { return data.front(); }
     T& back() { return data.back(); }
     const T& front() const { return data.front(); }
