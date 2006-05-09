@@ -1817,17 +1817,16 @@ TTable::adapterChanged()
 void
 TTable::_handleInsertRow()
 {
-//cout << "_handleInsertRow: where="<<adapter->where<<", size="<<adapter->size<<endl;
+  // allocate space for the new rows in 'row_info'
   int new_rows = rows + adapter->size;
   row_info = static_cast<TRCInfo*>(realloc(row_info, sizeof(TRCInfo)*new_rows));
-
-//cerr << "move from " << adapter->where << " to " << (adapter->where + adapter->size) << " an amount of " << (rows - adapter->where) << " entries" << endl;
   memmove(
     row_info + adapter->where + adapter->size,
     row_info + adapter->where,
     (rows - adapter->where) * sizeof(TRCInfo)
   );
 
+  // initialize the new entries
   TRCInfo *info = row_info + adapter->where;
   TTableEvent te;
   te.type = TTableEvent::GET_ROW_SIZE;
@@ -1843,30 +1842,41 @@ TTable::_handleInsertRow()
     pane.h += te.h + border;
     ++info;
   }
-    
+  
+  // adjust cy, sy, feven and ffy
   if (adapter->where<cy)
     cy+=adapter->size;
   if (adapter->where<sy)
     sy+=adapter->size;
   if (adapter->where<ffy) {
-    for(unsigned y=ffy; y<ffy+adapter->size; ++y) {
+    for(size_t y=ffy; y<ffy+adapter->size; ++y) {
       if (row_info[y].size)
         feven = !feven;
     }
     ffy+=adapter->size;
   }
-  
-  // fpy ...
-    
-  // scrolling, screen update
-      
-  // selection model ??? ouch ....
 
   rows = new_rows;
-//cout << __FILE__ << ":" << __LINE__ << " rows = "<<rows<<endl;
-  invalidateWindow();
-
   doLayout();
+
+  // don't invalidate window in case rows where added below current
+  // visible area
+  if (ffy <= adapter->where) {
+    int py = fpy;
+    for(size_t y = ffy; y<new_rows; ++y) {
+      if (py>visible.h) {
+        cout << "return" << endl;
+        return;
+      }
+      if (y==adapter->where)
+        break;
+      py += row_info[y].size + border;
+    }
+  }
+  
+  // invalidate the window (can't scroll because of the different
+  // color scheme for odd and even rows)
+  invalidateWindow();
 }
 
 void
