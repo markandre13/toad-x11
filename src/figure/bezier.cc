@@ -33,8 +33,8 @@ TFBezierline::paintSelectionLines(TPenBase &pen)
     pen.setLineStyle(TPen::SOLID);
     TPolygon::const_iterator p(polygon.begin());
     unsigned n = polygon.size();
-    if (pen.mat) {
-      TMatrix2D *mat = pen.mat;
+    if (pen.getMatrix()) {
+      TMatrix2D *mat = pen.getMatrix();
       pen.push();
       pen.identity();
       pen.setLineWidth(1);
@@ -132,8 +132,8 @@ TFBezierline::_paintSelection(TPenBase &pen, int handle, bool filled)
     if ( !getHandle(h, &pt) )
       break;
     int x, y;
-    if (pen.mat) {
-      pen.mat->map(pt.x, pt.y, &x, &y);
+    if (pen.getMatrix()) {
+      pen.getMatrix()->map(pt.x, pt.y, &x, &y);
       pen.push();
       pen.identity();
     } else {
@@ -175,7 +175,7 @@ TFBezierline::_paintSelection(TPenBase &pen, int handle, bool filled)
       }
       pen.setFillColor(TColor::WHITE); 
     }
-    if (pen.mat)
+    if (pen.getMatrix())
       pen.pop();
     h++;
   }

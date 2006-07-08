@@ -437,5 +437,3 @@ XUtf8LookupString(
 	}
         return len;
 }
-
-

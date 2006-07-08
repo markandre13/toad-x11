@@ -79,15 +79,15 @@ TFText::paint(TPenBase &pen, EPaintType type)
       unsigned dx = pen.getTextWidth(text.substr(l, cx-l));
       TPoint q0(p1.x+dx,yp);
       TPoint q1(p1.x+dx,yp+pen.getHeight());
-      if (pen.mat) {
-        pen.mat->map(q0.x, q0.y, &q0.x, &q0.y);
-        pen.mat->map(q1.x, q1.y, &q1.x, &q1.y);
+      if (pen.getMatrix()) {
+        pen.getMatrix()->map(q0.x, q0.y, &q0.x, &q0.y);
+        pen.getMatrix()->map(q1.x, q1.y, &q1.x, &q1.y);
         pen.push();
         pen.identity();
       }
       pen.setLineWidth(1);
       pen.drawLine(q0, q1);
-      if (pen.mat) {
+      if (pen.getMatrix()) {
         pen.pop();
       }
     }

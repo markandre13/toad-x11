@@ -32,14 +32,16 @@ using namespace toad;
 // #define DEBUG
 
 /**
- * \class toad::TFormLayout
+ * \class toad::TSpringLayout
  * \pre
-toad::TFormLayout {
+toad::TSpringLayout {
   <windowname> = {
+    [w = <width>]
+    [h = <height>]
     top|bottom|left|right = {
       how = border|window|opposite
-      where = <windowname>
-      distance = <distance>
+      [where = <windowname>]
+      [distance = <distance>]
     }
     ...
   }
@@ -63,24 +65,26 @@ toad::TFormLayout {
  * TFormNode                                                                 *
  *                                                                           *
  *****************************************************************************/
-class TFormLayout::TFormNode
+class TSpringLayout::TFormNode
 {
     TWindow *wnd;               // pointer to the window to be placed
   public:
     TFormNode(const string &name);
     TWindow* it(TWindow *parent);
+    void getShape(TWindow *parent, TRectangle *shape);
     string name;                // name of the window to be placed
     unsigned how[4];            // how to attach
     string whichname[4];
     TWindow *which[4];          // where to attach
     int dist[4];                // minimal distance to neighbours
     int coord[4];               // the left,right,top & bottom during calculation
+    int w, h;                   // fixed size (when >= 0)
     byte done;                  // flags for attached sides
     byte nflag;                 // flags for sides with undefined attachment
     TFormNode *next, *prev;     // should remove `prev'
 };
 
-inline TFormLayout::TFormNode::TFormNode(const string &name)
+inline TSpringLayout::TFormNode::TFormNode(const string &name)
 {
   this->name = name;
   // cerr << "new node '" << name << "'" << this << endl;
@@ -90,11 +94,16 @@ inline TFormLayout::TFormNode::TFormNode(const string &name)
     which[i]=NULL;
     dist[i]=0;
   }
+  w = h = -1;
   next = prev = NULL;
 }
 
+/**
+ * return the window associated by this node
+ * \param parent The windows parent window.
+ */
 TWindow*
-TFormLayout::TFormNode::it(TWindow *parent)
+TSpringLayout::TFormNode::it(TWindow *parent)
 {
   if (wnd)
     return wnd;
@@ -111,7 +120,17 @@ TFormLayout::TFormNode::it(TWindow *parent)
   return NULL;
 }
 
-TFormLayout::TFormLayout()
+void
+TSpringLayout::TFormNode::getShape(TWindow *parent, TRectangle *shape)
+{
+  it(parent)->getShape(shape);
+  if (w >= 0)
+    shape->w = w;
+  if (h >= 0)
+    shape->h = h;
+}
+
+TSpringLayout::TSpringLayout()
 {
   flist = lastadd = NULL;
   nBorderOverlap = 1;
@@ -119,7 +138,7 @@ TFormLayout::TFormLayout()
 running = false;
 }
 
-TFormLayout::~TFormLayout()
+TSpringLayout::~TSpringLayout()
 {
   if (flist) {
     flist->prev->next = 0;
@@ -133,7 +152,7 @@ TFormLayout::~TFormLayout()
 
 #if 0
 void
-TFormLayout::addForm(const string &child)
+TSpringLayout::addForm(const string &child)
 {
   if (flist) {
     lastadd = new TFormNode;
@@ -150,7 +169,7 @@ TFormLayout::addForm(const string &child)
 }
 
 void
-TFormLayout::removeForm(const string &child)
+TSpringLayout::removeForm(const string &child)
 {
   if (flist) {
     if (flist == flist->next) {
@@ -172,7 +191,7 @@ TFormLayout::removeForm(const string &child)
 
 #if 0
 void
-TFormLayout::attachLast(unsigned where, unsigned how, TWindow *which)
+TSpringLayout::attachLast(unsigned where, unsigned how, TWindow *which)
 {
   #ifdef SECURE
   if (!lastadd) {
@@ -194,7 +213,7 @@ TFormLayout::attachLast(unsigned where, unsigned how, TWindow *which)
 #endif
 
 void 
-TFormLayout::attach(const string &window, unsigned where, EMethod how, const string &which)
+TSpringLayout::attach(const string &window, unsigned where, EMethod how, const string &which)
 {
   TFormNode *node = _find(window);
   if (!node)
@@ -213,7 +232,7 @@ TFormLayout::attach(const string &window, unsigned where, EMethod how, const str
 }
 
 void
-TFormLayout::distance(const string &window, int distance, unsigned where)
+TSpringLayout::distance(const string &window, int distance, unsigned where)
 {
   TFormNode *node = _find(window);
   if (!node)
@@ -232,7 +251,7 @@ TFormLayout::distance(const string &window, int distance, unsigned where)
 }
 
 void
-TFormLayout::arrange()
+TSpringLayout::arrange()
 {
   arrange(0, 0, window->getWidth(), window->getHeight());
 }
@@ -242,7 +261,7 @@ TFormLayout::arrange()
  * arrange all children as described in the 'flist'
  */
 void
-TFormLayout::arrange(int fx,int fy,int fw,int fh)
+TSpringLayout::arrange(int fx,int fy,int fw,int fh)
 {
 if (running) {
 //  cout << "Rekursion" << endl;
@@ -275,7 +294,7 @@ running = false;
     nChildren++;
     ptr->done  = 0;
     ptr->nflag = 0;
-    ptr->it(window)->getShape(&shape);
+    ptr->getShape(window, &shape);
     ptr->coord[DTOP]    = shape.y;
     ptr->coord[DBOTTOM] = shape.y+shape.h;
     ptr->coord[DLEFT]   = shape.x;
@@ -376,7 +395,7 @@ running = false;
         // we're almost done with the window, the missing coordinates
         // can be calculated from the objects size
         //------------------------------------------------------------
-        ptr->it(window)->getShape(&shape);
+        ptr->getShape(window, &shape);
         #ifdef DEBUG
         printf("Placing %s now:\n",ptr->name.c_str());
         #endif
@@ -424,7 +443,7 @@ running = false;
         ptr->it(window)->setShape(TPOS_PREVIOUS, TPOS_PREVIOUS, w,h);
 
         // adjust top and/or left after SetSize
-        ptr->it(window)->getShape(&shape);
+        ptr->getShape(window, &shape);
         if (ptr->nflag & TOP)
           ptr->coord[DTOP] = ptr->coord[DBOTTOM] - shape.h;
         if (ptr->nflag & BOTTOM)
@@ -441,7 +460,7 @@ running = false;
         #endif
         
         ptr->it(window)->setPosition(ptr->coord[DLEFT],ptr->coord[DTOP]);
-        ptr->it(window)->getShape(&shape);
+        ptr->getShape(window, &shape);
 
         ptr->coord[DTOP]   = shape.y;
         ptr->coord[DBOTTOM] = shape.y+shape.h;
@@ -469,7 +488,7 @@ running = false;
       count=0;
       while(count<nChildren) {
         if (ptr->done != HAS_ALL) {
-          ptr->it(window)->getShape(&shape);
+          ptr->getShape(window, &shape);
           if ( (ptr->nflag&LEFT) && !(ptr->done&LEFT) && (ptr->done&RIGHT) ) {
             #ifdef DEBUG
             printf("guessing left side of %s\n",ptr->name.c_str());
@@ -539,8 +558,8 @@ running=false;
 return;
 }
 
-TFormLayout::TFormNode* 
-TFormLayout::_find(const string &which)
+TSpringLayout::TFormNode* 
+TSpringLayout::_find(const string &which)
 {
   assert(!which.empty());
 
@@ -567,7 +586,7 @@ TFormLayout::_find(const string &which)
 }
 
 void 
-TFormLayout::store(TOutObjectStream &out) const 
+TSpringLayout::store(TOutObjectStream &out) const 
 {
   // nBorderOverlap
   // bKeepOwnBorder
@@ -618,7 +637,7 @@ TFormLayout::store(TOutObjectStream &out) const
 }
 
 bool
-TFormLayout::restore(TInObjectStream &in)
+TSpringLayout::restore(TInObjectStream &in)
 {
   if (in.what==ATV_START || in.what==ATV_FINISHED)
     return true;
@@ -662,7 +681,7 @@ TFormLayout::restore(TInObjectStream &in)
         break;
       case 1:
         if (!node) {
-          cerr << "TFormLayout: no node" << endl;
+          cerr << "TSpringLayout: no node" << endl;
           return false;
         }
         if (in.what == ATV_GROUP &&
@@ -677,6 +696,17 @@ TFormLayout::restore(TInObjectStream &in)
             pos = DLEFT;
           else if (in.attribute=="right")
             pos = DRIGHT;
+        } else
+        if (in.what == ATV_VALUE &&
+            !in.attribute.empty() &&
+            in.type.empty() &&
+            !in.value.empty())
+        {
+          if (in.attribute=="w") {
+            node->w = atoi(in.value.c_str());
+          } else if (in.attribute=="h") {
+            node->h = atoi(in.value.c_str());
+          }
         }
         break;
       case 2:

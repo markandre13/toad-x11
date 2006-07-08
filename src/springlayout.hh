@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -25,7 +25,7 @@
 
 namespace toad {
 
-class TFormLayout:
+class TSpringLayout:
   public TLayout
 {
   public:
@@ -33,10 +33,16 @@ class TFormLayout:
     static const unsigned TOP=1, BOTTOM=2, LEFT=4, RIGHT=8, ALL=15;
     
     // attachment method
-    enum EMethod { NONE=0, FORM, WINDOW, OPPOSITE_WINDOW };
+    enum EMethod { 
+      NONE=0, 
+      FORM, 
+      WINDOW, 
+      OPPOSITE_WINDOW
+      /* FIXED */
+    };
   
-    TFormLayout();
-    ~TFormLayout();
+    TSpringLayout();
+    ~TSpringLayout();
 
     void attach(const string &window, unsigned where, EMethod how, const string &which);
     void attach(const string &window, unsigned where, const string &which="") {
@@ -55,7 +61,7 @@ class TFormLayout:
     TFormNode* _find(const string &window);
     TFormNode *flist, *lastadd;
 
-    SERIALIZABLE_INTERFACE(toad::, TFormLayout)  
+    SERIALIZABLE_INTERFACE(toad::, TSpringLayout)  
 };
 
 } // namespace toad

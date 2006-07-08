@@ -88,7 +88,7 @@ TFigure::initialize()
   serialize.registerObject(new TSerializableRGB());
   serialize.registerObject(new TDialogLayout());
   serialize.registerObject(new TMenuLayout());
-  serialize.registerObject(new TFormLayout());
+  serialize.registerObject(new TSpringLayout());
   serialize.registerObject(new TMenuEntry());
   serialize.registerObject(new TMenuSeparator());
   serialize.registerObject(new TMatrix2D());
@@ -269,8 +269,8 @@ TFigure::paintSelection(TPenBase &pen, int handle)
     if ( !getHandle(h, &pt) )
       break;
     int x, y;
-    if (pen.mat) {
-      pen.mat->map(pt.x, pt.y, &x, &y);
+    if (pen.getMatrix()) {
+      pen.getMatrix()->map(pt.x, pt.y, &x, &y);
       pen.push();
       pen.identity();
     } else {
@@ -285,7 +285,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
       pen.fillRectanglePC(x-2,y-2,5,5);
       pen.setFillColor(TColor::WHITE);
     }
-    if (pen.mat)
+    if (pen.getMatrix())
       pen.pop();
     h++;
   }
@@ -302,14 +302,14 @@ TFigure::paintSelection(TPenBase &pen, int handle)
         case 2: x = r.x+r.w-1; y = r.y+r.h-1; break;
         case 3: x = r.x;       y = r.y+r.h-1; break;
       }
-      if (pen.mat) {
-        pen.mat->map(x, y, &x, &y);
+      if (pen.getMatrix()) {
+        pen.getMatrix()->map(x, y, &x, &y);
         pen.push();
         pen.identity();
       }
       pen.setLineWidth(1);
       pen.fillRectanglePC(x-2,y-2,5,5);
-      if (pen.mat)
+      if (pen.getMatrix())
         pen.pop();
     }
   }

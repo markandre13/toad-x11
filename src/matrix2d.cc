@@ -198,10 +198,15 @@ TMatrix2D::multiply(const TMatrix2D *m)
 
   double n12 = a11 * m->a12 + a12 * m->a22;
   double n22 = a21 * m->a12 + a22 * m->a22;
-
+#if 1
+  // toad 0.64.0
   double ntx = a11 * m->tx + a12 * m->ty + tx;
   double nty = a21 * m->tx + a22 * m->ty + ty;
-  
+#else  
+  // cairo
+  double ntx =  tx    * m->a11 + ty    * m->a12 + m->tx;
+  double nty =  tx    * m->a21 + ty    * m->a22 + b->ty;
+#endif  
   a11 = n11;
   a21 = n21;
   a12 = n12;

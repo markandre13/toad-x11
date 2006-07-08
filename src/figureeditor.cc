@@ -575,8 +575,8 @@ TFigureEditor::paintSelection(TPenBase &pen)
   }
 
   if (state==STATE_SELECT_RECT) {
-    if (pen.mat) {
-      TMatrix2D *mat = pen.mat;
+    TMatrix2D *mat = pen.getMatrix();
+    if (mat) {
       pen.push();
       pen.identity();
       pen.setColor(0,0,0);
@@ -600,8 +600,8 @@ TFigureEditor::paintSelection(TPenBase &pen)
 
     // draw center of rotation
     int x, y;
-    if (pen.mat) {
-      pen.mat->map(rotx, roty, &x, &y);
+    if (pen.getMatrix()) {
+      pen.getMatrix()->map(rotx, roty, &x, &y);
       pen.push();
       pen.identity();
     } else {
@@ -616,7 +616,7 @@ TFigureEditor::paintSelection(TPenBase &pen)
     pen.drawLine(x+3,y,x+6,y);
     pen.drawLine(x,y-3,x,y-6);
     pen.drawLine(x-3,y,x-6,y);
-    if (pen.mat)
+    if (pen.getMatrix())
       pen.pop();
     
     // draw handles for rotated figure
@@ -639,8 +639,8 @@ TFigureEditor::paintSelection(TPenBase &pen)
         case 3: x = r.x;       y = r.y+r.h-1; break;
         case 4: x = r.x+r.w/2; y = r.y+r.h/2; break;
       }
-      if (pen.mat) {
-        pen.mat->map(x, y, &x, &y);
+      if (pen.getMatrix()) {
+        pen.getMatrix()->map(x, y, &x, &y);
         pen.push();
         pen.identity();
       }
@@ -650,7 +650,7 @@ TFigureEditor::paintSelection(TPenBase &pen)
         pen.drawLine(x-2, y-2, x+2, y+2);
         pen.drawLine(x+2, y-2, x-2, y+2);
       }
-      if (pen.mat)
+      if (pen.getMatrix())
         pen.pop();
     }
     pen.pop();
@@ -716,6 +716,7 @@ TFigureEditor::print(TPenBase &pen, TFigureModel *model, bool withSelection)
     return;
     
   TRectangle cb, r;
+  cb.set(0,0,getWidth(),getHeight());
   pen.getClipBox(&cb);
   for(TFigureModel::iterator p = model->begin();
       p != model->end();

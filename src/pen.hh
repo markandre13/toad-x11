@@ -40,8 +40,6 @@ class TPenBase:
   public TOADBase
 {
   public:
-    TMatrix2D *mat;
-
     virtual ~TPenBase();
   
     enum EMode {
@@ -79,7 +77,7 @@ class TPenBase:
     virtual void push() = 0;
     virtual void pop() = 0;
     virtual void popAll() = 0;
-    TMatrix2D *getMatrix() const { return mat; }
+    virtual TMatrix2D *getMatrix() const = 0;
 
     // color & pattern
     //-----------------------
@@ -332,6 +330,8 @@ class TPen:
     friend class TFontManagerFT;
 
   public:
+    TMatrix2D *mat;
+
     TPen(TBitmap*);
     TPen(TWindow*);
     virtual ~TPen();
@@ -346,6 +346,7 @@ class TPen:
     void push();
     void pop();
     void popAll();
+    TMatrix2D *getMatrix() const { return mat; }
 
     // color & pattern
     //-----------------------

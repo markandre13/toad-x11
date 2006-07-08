@@ -433,7 +433,9 @@ class TWindow:
     #ifdef __WIN32__
     static void w32registerclass();
     #endif
+  #ifndef _TOAD_PRIVATE
   protected:
+  #endif
 
     #ifdef __X11__
     _TOAD_WINDOW x11window;

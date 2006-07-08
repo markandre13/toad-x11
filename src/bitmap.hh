@@ -120,7 +120,9 @@ class TBitmap:
   protected:
     EBitmapMode mode;
     EBitmapDither dither;
+  public:
     unsigned long pixmap;   // server side pixmap
+  protected:
     unsigned long mask;     // server side mask
     int pix_width, pix_height;
     void pCopyToLine(int x1,int x2,int y,int *line);
