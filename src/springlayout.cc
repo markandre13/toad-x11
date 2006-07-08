@@ -18,7 +18,7 @@
  * MA  02111-1307,  USA
  */
 
-#include <toad/formlayout.hh>
+#include <toad/springlayout.hh>
 #include <toad/stacktrace.hh>
 
 #include <algorithm>

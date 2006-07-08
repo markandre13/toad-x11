@@ -25,7 +25,7 @@
 
 #include <toad/dialog.hh>
 #include <toad/menuhelper.hh>
-#include <toad/formlayout.hh>
+#include <toad/springlayout.hh>
 
 using namespace toad;
 
