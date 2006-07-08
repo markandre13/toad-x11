@@ -20,6 +20,7 @@
 
 #include <toad/toad.hh>
 #include <toad/table.hh>
+#include <toad/figure.hh>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -490,11 +491,34 @@ TSelectionModel::isSelected(size_t x, size_t y) const
  * containing one or more blanks.)
  */
 
+TDefaultTableHeaderRenderer::~TDefaultTableHeaderRenderer()
+{
+  for(vector<TFigure*>::iterator p = figures.begin();
+      p != figures.end();
+      ++p)
+    if (*p)
+      delete *p;
+}
+
 void
 TDefaultTableHeaderRenderer::setText(unsigned pos, const string &txt) {
-  if (text.size()<=pos)
-    text.resize(pos+1);
-  text[pos] = txt;
+  setFigure(pos, new TFText(0,0,txt));
+}
+
+void
+TDefaultTableHeaderRenderer::setImage(unsigned pos, const string &filename) {
+  setFigure(pos, new TFImage(filename));
+}
+
+void
+TDefaultTableHeaderRenderer::setFigure(unsigned pos, TFigure *figure) {
+  if (figures.size()<=pos) {
+    vector<TFigure*>::size_type i = figures.size();
+    figures.resize(pos+1);
+    for(;i<=pos;++i)
+      figures[i]=0;
+  }
+  figures[pos] = figure;
 }
  
 int
@@ -515,9 +539,15 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, size_t idx, int w, int h)
   TRectangle r(0,0,w,h);
   char buffer[16];
   string str;
-  const char *txt;
-  if (idx<text.size() && !text[idx].empty()) {
-    txt = text[idx].c_str();
+  const char *txt = 0;
+  TFigure *fig = 0;
+  int x, y;
+  if (idx<figures.size() && figures[idx]) {
+    fig = figures[idx];
+    TRectangle r;
+    fig->getShape(&r);
+    x = (w - r.w)>>1;
+    y = (h - r.h)>>1;
   } else
   if (numeric) {
     snprintf(buffer, 15, "%i", idx+1);
@@ -529,9 +559,9 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, size_t idx, int w, int h)
       idx/=26;
     } while(idx>0);
     txt = str.c_str();
+    x = (w - pen.getTextWidth(txt))>>1;
+    y = (h - pen.getHeight())>>1;
   }
-  int x = (w - pen.getTextWidth(txt))>>1;
-  int y = (h - pen.getHeight())>>1;
   
   if (x<0)
     x=0;
@@ -539,7 +569,13 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, size_t idx, int w, int h)
   pen.setColor(TColor::BTNFACE);
   pen.fillRectanglePC(r);
   pen.setColor(TColor::BTNTEXT);
-  pen.drawString(x,y, txt);
+  if (txt)
+    pen.drawString(x,y, txt);
+  if (fig) {
+    pen.translate(x,y);
+    fig->paint(pen);
+    pen.translate(-x, -y);
+  }
   pen.draw3DRectanglePC(r,false);
 }
 

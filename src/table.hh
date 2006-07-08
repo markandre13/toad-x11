@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -28,6 +28,7 @@ namespace toad {
 
 class TTable;
 class TTableAdapter;
+class TFigure;
 
 class TAbstractSelectionModel:
   public TModel
@@ -425,14 +426,17 @@ class TDefaultTableHeaderRenderer:
   public TAbstractTableHeaderRenderer
 {
     bool numeric;
-    vector<string> text;
+    vector<TFigure*> figures;
   public:
     TDefaultTableHeaderRenderer(bool numeric_mode=true):
       numeric(numeric_mode) {}
+    ~TDefaultTableHeaderRenderer();
     int getHeight();
     int getWidth();
     void renderItem(TPen &pen, size_t idx, int w, int h);
     void setText(unsigned pos, const string &txt);
+    void setImage(unsigned pos, const string &filename);
+    void setFigure(unsigned pos, TFigure *figure);
 };
 
 class TTable:

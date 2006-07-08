@@ -94,13 +94,14 @@ class TFigure:
     enum EPaintType {
       NORMAL,
       SELECT,
-      EDIT
+      EDIT,
+      OUTLINE
     };
     virtual void setAttributes(const TFigureAttributes*);
     virtual void getAttributes(TFigureAttributes*) const;
     
     //! Called to paint the gadget.
-    virtual void paint(TPenBase& pen, EPaintType) = 0;
+    virtual void paint(TPenBase& pen, EPaintType type = NORMAL) = 0;
     virtual void paintSelection(TPenBase &pen, int handle);
 
     /**
