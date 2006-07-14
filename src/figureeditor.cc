@@ -2324,6 +2324,11 @@ TFCreateTool::stop(TFigureEditor *fe)
 {
   if (figure) {
     unsigned r = figure->stop(fe);
+    if (r & TFigure::DELETE) {
+      delete figure;
+    } else {
+      fe->addFigure(figure);
+    }
     figure = 0;
     fe->setCurrent(0);
     fe->getWindow()->ungrabMouse();
