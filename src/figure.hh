@@ -278,11 +278,10 @@ class TFPolygon:
     void translate(int dx, int dy);
     bool getHandle(unsigned n, TPoint *p);
     void translateHandle(unsigned handle, int mx, int my, unsigned);
+    TPolygon polygon;
     
     SERIALIZABLE_INTERFACE(toad::, TFPolygon);
   protected:
-    TPolygon polygon;
-
     // polygon creation
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);
@@ -292,6 +291,8 @@ class TFPolygon:
   public:
     virtual void insertPointNear(int, int);
     virtual void deletePoint(unsigned);
+    void addPoint(const TPoint &p) { polygon.addPoint(p); }
+    void addPoint(int x, int y) { polygon.addPoint(x,y); }
 };
 
 /**

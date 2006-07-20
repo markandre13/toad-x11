@@ -393,12 +393,13 @@ TOADBase::mainLoop()
     }
   }
 
-  TWindow::destroyParentless();
 
   // flush paint event buffer
   //---------------------------------
   while(TWindow::_havePaintEvents())
     TWindow::_dispatchPaintEvent();
+
+  TWindow::destroyParentless();
 
   return nStatus;
 }

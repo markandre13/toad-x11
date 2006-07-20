@@ -32,6 +32,7 @@ class TScrollPane:
 {
   public:
     TScrollPane(TWindow *p, const string &t);
+    const TRectangle& getVisible() const { return visible; }
     
   protected:
     //! the visible part of the pane (better: pane?)

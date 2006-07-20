@@ -293,6 +293,8 @@ class TFigureEditor:
     void shear(double, double);
     void multiply(const TMatrix2D*);
 
+    const TMatrix2D* getMatrix() const { return mat; }
+
     // methods to modify selected or objects to be created
     void setLineColor(const TRGB&);
     void setFillColor(const TRGB&);
