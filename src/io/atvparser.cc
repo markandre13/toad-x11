@@ -503,7 +503,7 @@ TATVParser::yylex()
         if (c>='A' && c<='F') {
           hex += 10+c-'A';
         } else {
-           err += "expected hexadecimal digit";
+           err << "expected hexadecimal digit";
            return TKN_ERROR;
         }
         hex<<=4;
@@ -519,7 +519,7 @@ TATVParser::yylex()
         if (c>='A' && c<='F') {
           hex += 10+c-'A';
         } else {
-           err += "expected hexadecimal digit";
+           err << "expected hexadecimal digit";
            return TKN_ERROR;
         }
         yytext += hex;
