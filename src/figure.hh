@@ -348,6 +348,7 @@ class TFBezierline:
     void paintSelectionLines(TPenBase &pen);
   public:
     unsigned mouseLDown(TFigureEditor*, int, int, unsigned);
+    unsigned mouseLUp(TFigureEditor*, int, int, unsigned);
     unsigned mouseMove(TFigureEditor*, int, int, unsigned);
 
     void insertPointNear(int x, int y);

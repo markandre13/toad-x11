@@ -132,7 +132,8 @@ void TOADBase::toolTipClose()
 TToolTipWindow::TToolTipWindow()
   :TWindow(NULL, "TToolTipWindow")
 {
-  bPopup = true;
+  bPopup = true; // no frame
+  bParentlessAssistant = true; // not important enough to keep app running
   setBackground(255,255,192);
 }
 

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,7 @@
 #define TCursor TCursor
 
 #include <toad/os.hh>
+#include <toad/toadbase.hh>
 
 namespace toad {
 
@@ -29,6 +30,9 @@ class TWindow;
 
 class TCursor
 {
+    friend class TWindow;
+    _TOAD_CURSOR cursor;
+
   public:
     enum EType {
       // Java compatible cursor types
@@ -69,6 +73,9 @@ class TCursor
     static Cursor X11Cursor(EType);
     #endif
   #endif
+
+    TCursor(const char shape[32][32+1], unsigned x=0, unsigned y=0);
+    ~TCursor();
 };
 
 } // namespace toad

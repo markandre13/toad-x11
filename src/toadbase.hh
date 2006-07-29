@@ -46,6 +46,7 @@
     typedef Window _TOAD_WINDOW;
     typedef XFontStruct* _TOAD_FONTSTRUCT;
     typedef Font _TOAD_FONT;
+    typedef Cursor _TOAD_CURSOR;
     typedef Region _TOAD_REGION;
   } // namespace toad
 #endif
@@ -58,6 +59,7 @@
     typedef unsigned long _TOAD_WINDOW;
     typedef void* _TOAD_FONTSTRUCT;
     typedef unsigned long _TOAD_FONT;
+    typedef unsigned long _TOAD_CURSOR;
     typedef struct _XRegion* _TOAD_REGION;
   } // namespace toad
 #endif

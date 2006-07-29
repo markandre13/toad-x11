@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -168,6 +168,16 @@ class TWindow:
 
     //! don't add a menu to a shell window
     bool bNoMenu:1;
+    
+    //! compress mouse move events for this window (default is true)
+    bool bCompressMotion:1;
+    
+    /**
+     * toad::mainLoop will exit when all windows with a parent of NULL
+     * and bParentlessAssistant equal 'false' are closed.
+     * The default is 'false'.
+     */
+    bool bParentlessAssistant:1;
 
     //! Return 'true' when the window is created on the screen.
     #ifdef __X11__
@@ -215,6 +225,7 @@ class TWindow:
 
     void setIcon(TBitmap*);
     void setCursor(TCursor::EType);
+    void setCursor(const TCursor *cursor);
     // void SetToolTip(TToolTip*);              // implemented in tooltip.cc
     void setToolTip(const string&);             // implemented in tooltip.cc
     
@@ -268,7 +279,7 @@ class TWindow:
     int _x, _y, _w, _h;       // window position and size
     int _b;                   // border width
     int _dx, _dy;             // origin for TPen
-    unsigned char _cursor;    // cursor type
+    _TOAD_CURSOR _cursor;
     
   private:
     TLayout *layout;          // layout

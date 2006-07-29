@@ -66,3 +66,35 @@ TPolygon::isInside(int x, int y) const
   }
   return (hits % 2) != 0;
 }
+
+bool
+TPolygon::getShape(TRectangle *r) const
+{
+  TPoint p1, p2;
+
+  const_iterator p(begin()), e(end());
+  
+  if (p==e) {
+    r->set(0,0,0,0);
+    return false;
+  }
+
+  p1.x = p2.x = p->x;
+  p1.y = p2.y = p->y;
+
+  ++p;
+  while(p!=e) {
+    if (p->x < p1.x)
+      p1.x = p->x;
+    if (p->x > p2.x)
+      p2.x = p->x;
+    if (p->y < p1.y)
+      p1.y = p->y;
+    if (p->y > p2.y)
+      p2.y = p->y;
+    ++p;
+  }
+
+  r->set(p1,p2);
+  return true;
+}

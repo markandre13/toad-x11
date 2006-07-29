@@ -66,33 +66,101 @@ static unsigned int xtype[TCursor::_MAX] = {
 
 static Cursor cursor[TCursor::_MAX];
 
-
-Cursor TCursor::X11Cursor(TCursor::EType type)
+Cursor
+TCursor::X11Cursor(TCursor::EType type)
 {
   static bool init = false;
   if (!init) {
     for(int i=0; i<TCursor::_MAX; i++)
-      cursor[i]=0;
+      ::cursor[i]=0;
     init=true;
   }
 
-  if (!cursor[type]) {
-    cursor[type] = XCreateFontCursor(toad::x11display, xtype[type]);
+  if (!::cursor[type] && type!=PARENT) {
+    ::cursor[type] = XCreateFontCursor(toad::x11display, xtype[type]);
   }
   
-  return cursor[type];
+  return ::cursor[type];
 }
 
-void TWindow::setCursor(TCursor::EType type)
+void
+TWindow::setCursor(TCursor::EType type)
 {
-  if (_cursor==type)
-    return;
   Cursor cursor = TCursor::X11Cursor(type);
-  if (x11window) {
-    if (type!=TCursor::PARENT)
-      XDefineCursor(x11display, x11window, cursor);
-    else
-      XUndefineCursor(x11display, x11window);
+  if (cursor == _cursor)
+    return;
+  _cursor = cursor;
+  if (x11window)
+    XDefineCursor(x11display, x11window, _cursor);
+}
+
+void
+TWindow::setCursor(const TCursor *c)
+{
+  if (c) {
+    if (_cursor == c->cursor)
+      return;
+    _cursor = c->cursor;
+  } else {
+    if (_cursor == 0)
+      return;
+    _cursor = 0;
   }
-  _cursor = type;
+  if (x11window)
+    XDefineCursor(x11display, x11window, _cursor);
+}
+
+TCursor::TCursor(const char shape[32][32+1], unsigned ox, unsigned oy)
+{
+  XColor fc, bc;
+  fc.red = fc.green = fc.blue = 0xFFFF;
+  fc.flags = DoRed|DoGreen|DoBlue;
+  bc.red = bc.green = bc.blue = 0x0000;
+  fc.flags = DoRed|DoGreen|DoBlue;
+
+  GC gc0, gc1;
+  gc0 = None;
+
+  Pixmap pm_icon;
+  Pixmap pm_mask;
+  pm_icon = XCreatePixmap(x11display, DefaultRootWindow(x11display),
+            32, 32, 1);
+  pm_mask = XCreatePixmap(x11display, DefaultRootWindow(x11display),
+            32, 32, 1);
+
+  XGCValues gv;
+  gv.foreground=0;
+  gc0 = XCreateGC(x11display, pm_icon, GCForeground, &gv);
+  gv.foreground=1;
+  gc1 = XCreateGC(x11display, pm_icon, GCForeground, &gv);
+
+  for(int y=0; y<32; y++) {
+    for(int x=0; x<32; x++) {
+      if (shape[y][x]==' ') {
+        XDrawPoint(x11display, pm_mask, gc0, x,y);
+      } else {
+        XDrawPoint(x11display, pm_mask, gc1, x,y);
+      }
+      if (shape[y][x]=='.') {
+        XDrawPoint(x11display, pm_icon, gc0, x,y);
+      } else {
+        XDrawPoint(x11display, pm_icon, gc1, x,y);
+      }
+    }
+  }
+  cursor = XCreatePixmapCursor(x11display, 
+                               pm_icon, pm_mask,
+                               &fc, &bc,
+                               ox,oy);
+  XFreePixmap(x11display, pm_icon);
+  XFreePixmap(x11display, pm_mask);
+  
+  XFreeGC(x11display, gc0);
+  XFreeGC(x11display, gc1);
+}
+
+TCursor::~TCursor()
+{
+  if (cursor)
+    XFreeCursor(x11display, cursor);
 }

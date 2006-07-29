@@ -80,6 +80,7 @@ class TPolygon:
     void addPoint(const TPoint &p) { push_back(p); }
     void addPoint(int x, int y) { push_back(TPoint(x,y)); }
     bool isInside(int x, int y) const;
+    bool getShape(TRectangle *r) const;
 };
 
 class TDPolygon: 

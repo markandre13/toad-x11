@@ -577,9 +577,12 @@ static const char *x11eventname[34] = {
       !window->isChildOf(modal_stack.back()->wnd) ) { \
       break; }
 
+static Window checkMotionWindow;
+
 static Bool
 checkMotion(Display*, XEvent *event, XPointer) {
-  return event->type == MotionNotify;
+  return event->type == MotionNotify &&
+         event->xany.window == checkMotionWindow;
 }
 
 bool
@@ -1184,9 +1187,11 @@ cout << endl;
     //--------------
     case MotionNotify: {
 
-      #warning compressing MotionNotify for all windows, must be optional
-      while(XCheckIfEvent(x11display, &x11event, checkMotion, 0))
-        ;
+      if (window->bCompressMotion) {
+        checkMotionWindow = window->x11window;
+        while(XCheckIfEvent(x11display, &x11event, checkMotion, 0))
+          ;
+      }
 
       CONSIDER_GRAB(xmotion)
 #if 1

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,30 +29,7 @@ using namespace toad;
 void
 TFPolygon::getShape(TRectangle *r)
 {
-  TPoint p1, p2;
-
-  TPolygon::const_iterator p(polygon.begin()), e(polygon.end());
-  
-  if (p==e)
-    return;
-
-  p1.x = p2.x = p->x;
-  p1.y = p2.y = p->y;
-
-  ++p;
-  while(p!=e) {
-    if (p->x < p1.x)
-      p1.x = p->x;
-    if (p->x > p2.x)
-      p2.x = p->x;
-    if (p->y < p1.y)
-      p1.y = p->y;
-    if (p->y > p2.y)
-      p2.y = p->y;
-    ++p;
-  }
-
-  r->set(p1,p2);
+  polygon.getShape(r);
 }
 
 void 

@@ -28,6 +28,17 @@
  * eg. from the mouse pointer, the keyboard, displays graphics and can
  * contain other windows.
  *
+ * \li
+ *   parentless windows: Windows with a parent of NULL are parentless windows.
+ *   An application will have at least one such windows. When all parentless
+ *   windows are closed, the toad::mainLoop() function will return and the
+ *   application can shutdown. (Another way is calling 'postQuitMessage').
+ *
+ *   See also: bParentlessAssistant.
+ */
+ 
+/*
+ *
  * How paint events are handled:
  * 
  * \li
@@ -259,7 +270,7 @@ TWindow::TWindow(TWindow *p, const string &title)
   bBackingStore = bNoBackground = bX11GC = bFocusManager = bNoFocus = 
   bNoMenu = bTabKey = bDialogEditRequest = bDoubleBuffer = false;
   
-  bFocusTraversal = true;
+  bCompressMotion = bFocusTraversal = true;
 
   // private flags
   bEraseBe4Paint = false;
@@ -274,7 +285,8 @@ TWindow::TWindow(TWindow *p, const string &title)
   _h  = 200;
   _b  = 1;
   _dx = _dy = 0;  // origin for TPen
-  _cursor = TCursor::DEFAULT;
+  _cursor = 0;
+  setCursor(TCursor::DEFAULT);
   paint_rgn = NULL;
   background.set(255,255,255);
   layout = NULL;
@@ -306,16 +318,15 @@ TWindow::~TWindow()
 //  printf("%s: %08x\n", __PRETTY_FUNCTION__, this);
   if (getParent()==NULL) {
 //    printf("  is parentless\n");
-    TVectorParentless::iterator p, e;
-    p = parentless.begin();
-    e = parentless.end();
-    while(p!=e) {
+    for(TVectorParentless::iterator p = parentless.begin();
+        p != parentless.end();
+        ++p)
+    {
       if (*p == this) {
 //        printf("  removed\n");
         parentless.erase(p);
         break;
       }
-      p++;
     }
   }
 
@@ -616,9 +627,9 @@ TWindow::_interactor_create()
   mask|=CWColormap;
   attr.colormap = x11colormap;
 
-  if (_cursor!=TCursor::PARENT) {
+  if (_cursor!=0) {
     mask|=CWCursor;
-    attr.cursor = TCursor::X11Cursor(static_cast<TCursor::EType>(_cursor));
+    attr.cursor = _cursor;
   }
   
   if (bPopup) {
@@ -628,7 +639,7 @@ TWindow::_interactor_create()
     // still want the windows cursor:
     mask|=CWCursor;
     // attr.cursor = TCursor::X11Cursor(TCursor::DEFAULT);
-    attr.cursor = TCursor::X11Cursor(static_cast<TCursor::EType>(_cursor));
+    attr.cursor = _cursor;
   }
 
   // 'createX11Window' messsage is needed for things like OpenGL support
@@ -861,15 +872,17 @@ TWindow::destroyWindow()
   
   endModalLoop(this);
 
+  if (getParent())
+    return;
+
   // stop the message loop, when there are no more X11 windows
-  TVectorParentless::iterator p, e;
-  p = parentless.begin();
-  e = parentless.end();
-  while(p!=e) {
-    if ((*p)->isRealized()) {
+  for(TVectorParentless::iterator p = parentless.begin();
+      p != parentless.end();
+      ++p)
+  {
+    if (!(*p)->bParentlessAssistant && (*p)->isRealized()) {
       return;
     }
-    p++;
   }
   postQuitMessage(0);
 }
@@ -934,7 +947,6 @@ TWindow::_destroy()
   ::DestroyWindow(w32window);
   w32window = 0;
 #endif
-
   // take care of pointer in TFocusManager
   //---------------------------------------
   focusDelWindow(this);
