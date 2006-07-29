@@ -376,6 +376,7 @@ int
 TATVParser::yylex()
 {
   int c;
+  int hex;
   int state = 0;
   
   yytext.clear();
@@ -448,8 +449,13 @@ TATVParser::yylex()
         }
         break;
       case 3:
-        yytext+=c;
-        state = 2;
+        if (c=='x' || c=='X') {
+          hex = 0;
+          state = 8;
+        } else {
+          yytext+=c;
+          state = 2;
+        }
         break;
       case 4:
         switch(c) {
@@ -486,6 +492,39 @@ TATVParser::yylex()
           default:
             state = 6;
         }
+        break;
+      case 8: 
+        if (c>='0' && c<='9') {
+          hex += c-'0';
+        } else
+        if (c>='a' && c<='f') {
+          hex += 10+c-'a';
+        } else
+        if (c>='A' && c<='F') {
+          hex += 10+c-'A';
+        } else {
+           err += "expected hexadecimal digit";
+           return TKN_ERROR;
+        }
+        hex<<=4;
+        state = 9;
+        break;
+      case 9: 
+        if (c>='0' && c<='9') {
+          hex += c-'0';
+        } else
+        if (c>='a' && c<='f') {
+          hex += 10+c-'a';
+        } else
+        if (c>='A' && c<='F') {
+          hex += 10+c-'A';
+        } else {
+           err += "expected hexadecimal digit";
+           return TKN_ERROR;
+        }
+        yytext += hex;
+        state = 2;
+        break;
     }
   }
 }
