@@ -118,6 +118,9 @@ TFont::setFamily(const string &family)
 const char*
 TFont::getFamily() const
 {
+  char *s;
+  FcPatternGetString(font, FC_FAMILY, 0, (FcChar8**)&s);
+  return s;
 }
 
 void
