@@ -176,6 +176,8 @@ TATVParser::parse()
   
   running = true;
 
+//cerr << "(parse started in state " << state << ", unknown='" << unknown << "')";
+
   while( running ) {
     if (state < 10 ) {
       t = yylex();
@@ -258,10 +260,10 @@ TATVParser::parse()
             break;
           case TKN_STRING:
             value = unknown;
+            unknown = yytext;
             if (!single()) {
               return false;
             }
-            unknown = yytext;
             if (!interpreter)
               return true;
             break;
