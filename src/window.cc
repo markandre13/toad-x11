@@ -268,7 +268,8 @@ TWindow::TWindow(TWindow *p, const string &title)
   // public flags
   bShell = bPopup = bExplicitCreate = bSaveUnder = bStaticFrame =
   bBackingStore = bNoBackground = bX11GC = bFocusManager = bNoFocus = 
-  bNoMenu = bTabKey = bDialogEditRequest = bDoubleBuffer = false;
+  bNoMenu = bTabKey = bDialogEditRequest = bDoubleBuffer = 
+  bParentlessAssistant = false;
   
   bCompressMotion = bFocusTraversal = true;
 
