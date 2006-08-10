@@ -395,6 +395,8 @@ TFBezierline::_translateHandle(unsigned h0, int x, int y, unsigned m, bool fille
   }
 }
 
+namespace {
+
 class TMyPopupMenu:
   public TPopupMenu
 {
@@ -416,6 +418,8 @@ class TMyPopupMenu:
     
     TInteractor *tree;
 };
+
+}
 
 unsigned
 TFBezierline::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
