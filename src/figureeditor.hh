@@ -53,7 +53,7 @@ class TFigureTool
     virtual void mouseEvent(TFigureEditor *fe, TMouseEvent &me);
     virtual void keyEvent(TFigureEditor *fe, TKeyEvent &ke);
     virtual void setAttributes(TFigureAttributes *p);
-    virtual void paintSelection(TPenBase &pen);
+    virtual void paintSelection(TFigureEditor *fe, TPenBase &pen);
 };
 
 /**
@@ -85,7 +85,7 @@ class TFCreateTool:
     void mouseEvent(TFigureEditor *fe, TMouseEvent &me);
     void keyEvent(TFigureEditor *fe, TKeyEvent &ke);
     void setAttributes(TFigureAttributes *p);
-    void paintSelection(TPenBase &pen);
+    void paintSelection(TFigureEditor *fe, TPenBase &pen);
 };
 
 class TFigureAttributes:
@@ -414,7 +414,7 @@ class TFigureEditor:
     unsigned operation;
     
     TFigure* gadget;        // the current gadget during create & edit
-    
+
     int handle;             // the current handle or -1 during select
     bool tht; // translate handle transform?
     

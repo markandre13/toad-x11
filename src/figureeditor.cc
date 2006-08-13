@@ -657,7 +657,7 @@ TFigureEditor::paintSelection(TPenBase &pen)
   }
 
   if (tool) {
-    tool->paintSelection(pen);
+    tool->paintSelection(this, pen);
   }
 }
 
@@ -2315,7 +2315,7 @@ TFigureTool::setAttributes(TFigureAttributes *p)
 }
 
 void
-TFigureTool::paintSelection(TPenBase &)
+TFigureTool::paintSelection(TFigureEditor *fe, TPenBase &)
 {
 }
 
@@ -2492,7 +2492,7 @@ TFCreateTool::setAttributes(TFigureAttributes *a)
 }
 
 void
-TFCreateTool::paintSelection(TPenBase &pen)
+TFCreateTool::paintSelection(TFigureEditor *fe, TPenBase &pen)
 {
   if (!figure)
     return;
