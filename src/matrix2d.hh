@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,10 +34,11 @@ class TMatrix2D:
     TMatrix2D();
     TMatrix2D(const TMatrix2D&);
     TMatrix2D& operator=(const TMatrix2D&);
-    TMatrix2D& operator*(const TMatrix2D &m) {
+    TMatrix2D& operator*=(const TMatrix2D &m) {
       multiply(&m);
       return *this;
     }
+    TMatrix2D operator*(const TMatrix2D &m) const;
   
     double a11, a12;
     double a21, a22;

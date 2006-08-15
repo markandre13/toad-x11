@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -205,7 +205,7 @@ TMatrix2D::multiply(const TMatrix2D *m)
 #else  
   // cairo
   double ntx =  tx    * m->a11 + ty    * m->a12 + m->tx;
-  double nty =  tx    * m->a21 + ty    * m->a22 + b->ty;
+  double nty =  tx    * m->a21 + ty    * m->a22 + m->ty;
 #endif  
   a11 = n11;
   a21 = n21;
@@ -215,6 +215,28 @@ TMatrix2D::multiply(const TMatrix2D *m)
   ty = nty; 
   
   _identity = false;
+}
+
+TMatrix2D
+TMatrix2D::operator*(const TMatrix2D &m) const
+{
+  TMatrix2D r;
+  r.a11 = a11 * m.a11 + a12 * m.a21;
+  r.a21 = a21 * m.a11 + a22 * m.a21;
+
+  r.a12 = a11 * m.a12 + a12 * m.a22;
+  r.a22 = a21 * m.a12 + a22 * m.a22;
+#if 1
+  // toad 0.64.0
+  r.tx = a11 * m.tx + a12 * m.ty + tx;
+  r.ty = a21 * m.tx + a22 * m.ty + ty;
+#else  
+  // cairo
+  r.tx =  tx    * m.a11 + ty    * m.a12 + m.tx;
+  r.ty =  tx    * m.a21 + ty    * m.a22 + m.ty;
+#endif  
+  r._identity = false;
+  return r;
 }
  
 /**
