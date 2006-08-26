@@ -330,11 +330,11 @@ void TFigureEditor::rotate(double d)
 
 /**
  */
-void TFigureEditor::rotateAt(double x, double y, double d)
+void TFigureEditor::rotateAt(double x, double y, double radiants)
 {
   if (!mat)
     mat = new TMatrix2D();
-  mat->rotateAt(x, y, d);
+  mat->rotateAt(x, y, radiants);
   updateScrollbars();
   invalidateWindow();
 }
@@ -1619,7 +1619,7 @@ redo:
               gadget = g;
             }
             rotd0=atan2(static_cast<double>(my - roty), 
-                        static_cast<double>(mx - rotx)) * 360.0 / (2.0 * M_PI);
+                        static_cast<double>(mx - rotx));
             rotd = 0.0;
             invalidateWindow(visible);
 //            cerr << "state = STATE_ROTATE" << endl;
@@ -1804,7 +1804,7 @@ redo:
     
     case STATE_ROTATE: {
       rotd=atan2(static_cast<double>(my - roty), 
-                 static_cast<double>(mx - rotx)) * 360.0 / (2.0 * M_PI);
+                 static_cast<double>(mx - rotx));
 //      cerr << "rotd="<<rotd<<", rotd0="<<rotd0<<" -> " << (rotd-rotd0) << "\n";
       rotd-=rotd0;
       invalidateWindow(visible);

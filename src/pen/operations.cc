@@ -265,11 +265,11 @@ TPen::multiply(const TMatrix2D *m)
 }
 
 void
-TPen::setMatrix(double a11, double a12, double a21, double a22, double tx, double ty)
+TPen::setMatrix(double a11, double a21, double a12, double a22, double tx, double ty)
 {
   if (!mat)
     mat = new TMatrix2D();
-  mat->set(a11, a12, a21, a22, tx, ty);
+  mat->set(a11, a21, a12, a22, tx, ty);
   _setLineAttributes();
 }
 

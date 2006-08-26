@@ -73,7 +73,7 @@ class TPenBase:
     virtual void scale(double, double) = 0;
     virtual void shear(double, double) = 0;
     virtual void multiply(const TMatrix2D*) = 0;
-    virtual void setMatrix(double a11, double a12, double a21, double a22, double tx, double ty) = 0;
+    virtual void setMatrix(double a11, double a21, double a12, double a22, double tx, double ty) = 0;
     virtual void push() = 0;
     virtual void pop() = 0;
     virtual void popAll() = 0;

@@ -46,8 +46,8 @@ class TMatrix2D:
 
     void identity();
     bool isIdentity() const { return _identity; }
-    void rotate(double);
-    void rotateAt(double x, double y, double degree);
+    void rotate(double radiant);
+    void rotateAt(double x, double y, double radiant);
     void translate(double, double);
 
     void scale(double, double);
@@ -56,10 +56,10 @@ class TMatrix2D:
     void multiply(const TMatrix2D*);
     void invert();
 
-    void set(double a11, double a12, double a21, double a22, double tx, double ty) {
+    void set(double a11, double a21, double a12, double a22, double tx, double ty) {
       this->a11 = a11;
-      this->a12 = a12;
       this->a21 = a21;
+      this->a12 = a12;
       this->a22 = a22;
       this->tx  = tx;
       this->ty  = ty;

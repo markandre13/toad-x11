@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -287,7 +287,7 @@ class TFigureEditor:
     // not all these methods work now, but the first 4 should do
     void identity();
     void rotate(double);
-    void rotateAt(double x, double y, double degree);
+    void rotateAt(double x, double y, double radiants);
     void translate(double, double);
     void scale(double sx, double sy);
     void shear(double, double);

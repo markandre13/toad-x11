@@ -27,6 +27,7 @@
 #endif
 
 using namespace toad;
+using namespace std;
 
 TMatrix2D::TMatrix2D()
 {
@@ -83,12 +84,11 @@ TMatrix2D::identity()
    \endpre
  */
 void
-TMatrix2D::rotate(double degree)
+TMatrix2D::rotate(double radiant)
 {
-  double a = degree / 360.0 * 2.0 * M_PI;
   double r11, r12, r21, r22;
-  r11 = r22 = cos(a);
-  r21 = sin(a);
+  r11 = r22 = cos(radiant);
+  r21 = sin(radiant);
   r12 = -r21;  
 
   double n11 = a11 * r11 + a12 * r21;
@@ -97,15 +97,10 @@ TMatrix2D::rotate(double degree)
   double n12 = a11 * r12 + a12 * r22;
   double n22 = a21 * r12 + a22 * r22;
 
-  double ntx = tx;
-  double nty = ty;
-  
   a11 = n11;
   a21 = n21;
   a12 = n12;
   a22 = n22;
-  tx = ntx; 
-  ty = nty; 
   
   _identity = false;
 }
@@ -137,12 +132,11 @@ TMatrix2D::translate(double x, double y)
    \endpre
  */
 void
-TMatrix2D::rotateAt(double x, double y, double degree)
+TMatrix2D::rotateAt(double x, double y, double radiant)
 {
-  double a = degree / 360.0 * 2.0 * M_PI;
   double r11, r12, r21, r22;
-  r11 = r22 = cos(a);
-  r21 = sin(a);
+  r11 = r22 = cos(radiant);
+  r21 = sin(radiant);
   r12 = -r21;  
 
   double n11 = a11 * r11 + a21 * r12;
@@ -198,15 +192,10 @@ TMatrix2D::multiply(const TMatrix2D *m)
 
   double n12 = a11 * m->a12 + a12 * m->a22;
   double n22 = a21 * m->a12 + a22 * m->a22;
-#if 1
-  // toad 0.64.0
+
   double ntx = a11 * m->tx + a12 * m->ty + tx;
   double nty = a21 * m->tx + a22 * m->ty + ty;
-#else  
-  // cairo
-  double ntx =  tx    * m->a11 + ty    * m->a12 + m->tx;
-  double nty =  tx    * m->a21 + ty    * m->a22 + m->ty;
-#endif  
+
   a11 = n11;
   a21 = n21;
   a12 = n12;
@@ -226,15 +215,10 @@ TMatrix2D::operator*(const TMatrix2D &m) const
 
   r.a12 = a11 * m.a12 + a12 * m.a22;
   r.a22 = a21 * m.a12 + a22 * m.a22;
-#if 1
-  // toad 0.64.0
+
   r.tx = a11 * m.tx + a12 * m.ty + tx;
   r.ty = a21 * m.tx + a22 * m.ty + ty;
-#else  
-  // cairo
-  r.tx =  tx    * m.a11 + ty    * m.a12 + m.tx;
-  r.ty =  tx    * m.a21 + ty    * m.a22 + m.ty;
-#endif  
+  
   r._identity = false;
   return r;
 }
