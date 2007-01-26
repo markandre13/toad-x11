@@ -334,6 +334,8 @@ TFileDialog::TFileDialog(TWindow *parent, const string &title, EMode mode):
 
   if (previous_cwds.empty()) {
     previous_cwds.push_front(cwd);
+  } else {
+    cwd = previous_cwds[0];
   }
   first_chdir = true;
 
@@ -775,13 +777,7 @@ TDirectory::load(const string &cwd, const TFileFilter *filter, bool hidden)
     e.size = st.st_size;
     entries.push_back(e);
   }
-#if 0
-#if __GLIBCXX__ != 20050421
   sort(entries.begin(), entries.end());
-#else
-  std::__insertion_sort(entries.begin(), entries.end());
-#endif
-#endif  
 //  entries.unlock();
   sigChanged();  
   closedir(dd);
