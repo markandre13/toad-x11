@@ -55,6 +55,8 @@ class TFontManager
     
     virtual string getName() const = 0;
     virtual FcConfig* getFcConfig() = 0;    
+    virtual FcFontSet* getFcFontSet() = 0;
+    
     static bool setDefaultByName(const string &engine);
     static TFontManager* getDefault();
 };
@@ -72,6 +74,7 @@ class TFontManagerX11:
 
     string getName() const { return "x11"; }
     FcConfig* getFcConfig();
+    FcFontSet* getFcFontSet();
     
   protected:
     bool allocate(TFont *font, const TMatrix2D *mat);
@@ -92,6 +95,7 @@ class TFontManagerFT:
 
     string getName() const { return "freetype"; }
     FcConfig* getFcConfig();
+    FcFontSet* getFcFontSet();
     
   protected:
     bool allocate(TFont *font, const TMatrix2D *mat);

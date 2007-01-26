@@ -47,11 +47,18 @@
 using namespace toad;
 
 static FcConfig *fc_x11fonts = 0;
+static FcFontSet *fc_x11fontset = 0;
 
 FcConfig*
 TFontManagerX11::getFcConfig()
 {
   return fc_x11fonts;
+}
+
+FcFontSet*
+TFontManagerX11::getFcFontSet()
+{
+  return fc_x11fontset;
 }
 
 // X Logical Font Description
@@ -70,17 +77,6 @@ struct TX11FontName {
 
 static string d2s(double d);
 
-
-extern "C" {
-extern void 
-FcConfigSetFonts(FcConfig *config,
-                 FcFontSet *fonts,
-                 FcSetName set);
-
-extern FcFontSet *
-FcConfigGetFonts (FcConfig  *config,
-                  FcSetName set);
-}
 
 static FcBool
 FcPatternAddCharset(FcPattern *p, const char *object, FcCharSet *charset)
@@ -349,7 +345,8 @@ TFontManagerX11::buildFontList(FcConfig *config)
   }
   XFreeFontNames(fl);
 
-  FcConfigSetFonts(config, fs, FcSetSystem);
+//  FcConfigSetFonts(config, fs, FcSetSystem);
+  fc_x11fontset = fs;
 
 #if 0
   if (fs) {
@@ -508,7 +505,11 @@ cout << "allocate font of size " << x11->id << endl;
   FcDefaultSubstitute(pattern);
   
   FcResult result;
-  FcPattern *found = FcFontMatch(fc_x11fonts, pattern, &result);
+  FcPattern *found = FcFontSetMatch(fc_x11fonts,
+                                    &fc_x11fontset, 1,
+                                    pattern,
+                                    &result);
+//  FcPattern *found = FcFontMatch(fc_x11fonts, pattern, &result);
 
   FcChar8 *filename;
   FcPatternGetString(found, FC_FILE, 0, &filename);
