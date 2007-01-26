@@ -74,8 +74,9 @@ class TDirectory:
       string name;
       mode_t mode;
       off_t size;
-
-//      bool operator<(const TDirectoryEntry &f) const;
+      bool operator<(const TDirectoryEntry &f) const {
+        return name < f.name;
+      }
 //      int getColWidth(int col) const;
 //      void renderItem(TPen &pen, int col, int w, int h) const;
     };
