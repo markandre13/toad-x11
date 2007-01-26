@@ -40,6 +40,10 @@ class TPenBase:
   public TOADBase
 {
   public:
+    bool keepcolor:1; // true: ignore setColor
+    bool outline:1;   // true: do not fill
+  
+    TPenBase();
     virtual ~TPenBase();
   
     enum EMode {

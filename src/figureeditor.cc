@@ -249,6 +249,8 @@ TFigureEditor::setWindow(TWindow *w)
 void
 TFigureEditor::init(TFigureModel *m)
 {
+  quick = false;
+  quickready = false;
   modified = false;
   preferences = 0;
   tool = 0;
@@ -701,20 +703,23 @@ TFigureEditor::paintDecoration(TPenBase &scr)
  *
  * \param pen
  *   The pen to be used, ie. TPen for the screen or TPrinter for the printer.
+ * \param model
+ *   The figuremodel to be drawn
  * \param withSelection
  *   When set to 'true', the method will call the paint method of all
  *   selected figures with TFigure::SELECT as 2nd parameter. The figure
  *   TFText uses this to draw the text caret when in edit mode.
+ * \param justSelection
+ *   Only draw figures which are part of the selection
  *
  *   Handles to move, resize and rotate figures are drawn by the paint
  *   method itself.
  */  
 void
-TFigureEditor::print(TPenBase &pen, TFigureModel *model, bool withSelection)
+TFigureEditor::print(TPenBase &pen, TFigureModel *model, bool withSelection, bool justSelection)
 {
   if (!model)
     return;
-    
   TRectangle cb, r;
   cb.set(0,0,getWidth(),getHeight());
   pen.getClipBox(&cb);
@@ -749,10 +754,19 @@ TFigureEditor::print(TPenBase &pen, TFigureModel *model, bool withSelection)
       pen.multiply( (*p)->mat );
     }
     
-    if (withSelection && gadget!=*p && selection.find(*p)!=selection.end()) {
-      pt = TFigure::SELECT;
+    bool skip = false;
+    if (withSelection || justSelection) {
+      if (gadget==*p || selection.find(*p)!=selection.end()) {
+        if (withSelection)
+          pt = TFigure::SELECT;
+      } else {
+        if (justSelection)
+          skip = true;
+      }
     }
-    (*p)->paint(pen, pt);
+    if (!skip) {
+      (*p)->paint(pen, pt);
+    }
     while(pushs) {
       pen.pop();
       pushs--;

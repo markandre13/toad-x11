@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-Andr? Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,12 @@
 #endif
 
 using namespace toad;
+
+TPenBase::TPenBase()
+{
+  keepcolor = false;
+  outline   = false;
+}
 
 TPenBase::~TPenBase()
 {
@@ -696,6 +702,8 @@ TPen::updateW32Brush() const
 void 
 TPen::setColor(const TColor &color)
 {
+  if (keepcolor)
+    return;
 #ifdef __X11__
   if (using_bitmap) {
     XSetFillStyle(x11display, o_gc, FillSolid);
@@ -725,6 +733,8 @@ TPen::setColor(const TColor &color)
 void 
 TPen::setLineColor(const TColor &color)
 {
+  if (keepcolor)
+    return;
 #ifdef __X11__
   if (using_bitmap) {
     XSetFillStyle(x11display, o_gc, FillSolid);
@@ -759,6 +769,8 @@ TPen::setLineColor(const TColor &color)
 void 
 TPen::setFillColor(const TColor &color)
 {
+  if (keepcolor)
+    return;
 #ifdef __X11__
   if (using_bitmap) {
     XSetFillStyle(x11display, o_gc, FillSolid);

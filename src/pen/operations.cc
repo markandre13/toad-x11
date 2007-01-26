@@ -483,11 +483,15 @@ TPen::vfillRectangle(int x, int y, int w, int h)
   XDRAW_RASTER_COORD(w,h)
 #ifdef __X11__
   if (!mat) {
-    if (two_colors) {
-      XFillRectangle(x11display, x11drawable, f_gc, x, y,w,h);
-      XDrawRectangle(x11display, x11drawable, o_gc, x, y,w,h);
+    if (!outline) {
+      if (two_colors) {
+        XFillRectangle(x11display, x11drawable, f_gc, x, y,w,h);
+        XDrawRectangle(x11display, x11drawable, o_gc, x, y,w,h);
+      } else {
+        XFillRectangle(x11display, x11drawable, o_gc, x,y,w+1,h+1);
+      }
     } else {
-      XFillRectangle(x11display, x11drawable, o_gc, x,y,w+1,h+1);
+      XDrawRectangle(x11display, x11drawable, o_gc, x, y,w,h);
     }
   } else {
     XPoint pts[5];
@@ -498,8 +502,10 @@ TPen::vfillRectangle(int x, int y, int w, int h)
     mat->map(x, y+h, &p->x, &p->y); ++p;
     p->x = pts->x;
     p->y = pts->y;
-    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
-                 pts, 4, Nonconvex, CoordModeOrigin);
+    if (!outline) {
+      XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
+                   pts, 4, Nonconvex, CoordModeOrigin);
+    }
     PIXMAP_FIX_001(pts, 5)
     XDrawLines(x11display, x11drawable, o_gc, pts, 5, CoordModeOrigin);
   }
@@ -661,7 +667,8 @@ TPen::vfillCircle(int x, int y, int w, int h)
 #ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
   if (!mat) {
-    XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
+    if (!outline)
+      XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, 0,360*64);
     XDrawArc(x11display, x11drawable, o_gc, x, y,w,h, 0,360*64);
   } else {
     unsigned long m = lround(pow(max(w, h), 0.25));
@@ -677,9 +684,10 @@ TPen::vfillCircle(int x, int y, int w, int h)
     p = qtr_elips(this, p,  x+w  , y+h/2 ,  x+w/2, y+h  ,  x+w, y+h,  m);
     p = qtr_elips(this, p,  x+w/2, y+h   ,  x    , y+h/2,  x  , y+h,  m);
     p = qtr_elips(this, p,  x    , y+h/2 ,  x+w/2, y    ,  x  , y  ,  m);
-    
-    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
-                 pts, n, Nonconvex, CoordModeOrigin);
+    if (!outline) {
+      XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
+                   pts, n, Nonconvex, CoordModeOrigin);
+    }
     PIXMAP_FIX_001(pts, n)
     XDrawLines(x11display, x11drawable, o_gc, pts, n, CoordModeOrigin);
   }
@@ -727,7 +735,9 @@ TPen::vfillArc(int x, int y, int w, int h, double r1, double r2)
   XDRAW_PIXEL_COORD(w,h)
   int i1=(int)(r1*64.0);
   int i2=(int)(r2*64.0);
-  XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, i1,i2);
+  if (!outline) {
+    XFillArc(x11display, x11drawable, two_colors ? f_gc : o_gc, x, y,w,h, i1,i2);
+  }
   XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, i1,i2);
 #endif
 }
@@ -783,8 +793,10 @@ TPen::fillPolygon(const TPoint s[], int n)
 #ifdef __X11__
   XPoint d[n];
   tpoint2xpoint(s, d, n, mat);
-  XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
-    d, n, Nonconvex, CoordModeOrigin);
+  if (!outline) {
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
+      d, n, Nonconvex, CoordModeOrigin);
+  }
   XDrawLines(x11display, x11drawable, o_gc, 
       d, n, CoordModeOrigin);
   XDrawLine(x11display, x11drawable, o_gc,
@@ -839,8 +851,10 @@ TPen::fillPolygon(const TPolygon &polygon)
   XPoint d[n];
   polygon2xpoint(polygon, d, mat);
 
-  XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
-    d, n, Nonconvex, CoordModeOrigin);
+  if (!outline) {
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc, 
+      d, n, Nonconvex, CoordModeOrigin);
+  }
   XDrawLine(x11display, x11drawable, o_gc,
     d[0].x, d[0].y,
     d[n-1].x, d[n-1].y);

@@ -232,8 +232,10 @@ TPen::fillPolyBezier(const TPoint *p, int np)
 
   XPoint *d = lst.ptr();
   unsigned n = lst.size();
-  XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
-    d, n, Nonconvex, CoordModeOrigin);
+  if (!outline) {
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
+      d, n, Nonconvex, CoordModeOrigin);
+  }
   PIXMAP_FIX_001(d, n)
   lst.push(d[0].x, d[0].y);
   XDrawLines(x11display, x11drawable, o_gc,
@@ -248,8 +250,10 @@ TPen::fillPolyBezier(const TDPoint *p, int np)
 
   XPoint *d = lst.ptr();
   unsigned n = lst.size();
-  XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
-    d, n, Nonconvex, CoordModeOrigin);
+  if (!outline) {
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
+      d, n, Nonconvex, CoordModeOrigin);
+  }
   XDrawLine(x11display, x11drawable, o_gc,
      d[0].x,d[0].y,
      d[n-1].x,d[n-1].y);
@@ -371,8 +375,10 @@ TPen::fillPolyBezier(const TPolygon &polygon)
 
   XPoint *d = lst.ptr();
   unsigned n = lst.size();
-  XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
-    d, n, Nonconvex, CoordModeOrigin);
+  if (!outline) {
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
+      d, n, Nonconvex, CoordModeOrigin);
+  }
   PIXMAP_FIX_001(d, n)
   lst.push(d[0].x, d[0].y);
   XDrawLines(x11display, x11drawable, o_gc,
@@ -387,8 +393,10 @@ TPen::fillPolyBezier(const TDPolygon &polygon)
 
   XPoint *d = lst.ptr();
   unsigned n = lst.size();
-  XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
-    d, n, Nonconvex, CoordModeOrigin);
+  if (!outline) {
+    XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
+      d, n, Nonconvex, CoordModeOrigin);
+  }
   PIXMAP_FIX_001(d, n)
   lst.push(d[0].x, d[0].y);
   XDrawLines(x11display, x11drawable, o_gc,

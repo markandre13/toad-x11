@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_FIGUREEDITOR
-#define _TOAD_FIGUREEDITOR
+#define _TOAD_FIGUREEDITOR 1
 
 #include <toad/figure.hh>
 #include <toad/figuremodel.hh>
@@ -217,10 +217,13 @@ class TFigureEditor:
     PFigureModel model;
     TFigureTool *tool;
   public:
+    bool quick:1;     // active TFigureTool wants quick drawing method
+    bool quickready:1;// TFigureEditor is prepared for quick drawing mode
     
     TFigureEditor();
     void setWindow(TWindow*);
     TWindow* getWindow() const { return window; }
+    TFigureTool* getTool() const { return tool; }
 
     TFigureEditor(TWindow*, const string &title, TFigureModel *model=0);
     ~TFigureEditor();
@@ -388,7 +391,7 @@ class TFigureEditor:
     void paintGrid(TPenBase &pen);
     void paintSelection(TPenBase &pen);
     void paintDecoration(TPenBase &pen);
-    virtual void print(TPenBase &pen, TFigureModel *model, bool withSelection=false);
+    virtual void print(TPenBase &pen, TFigureModel *model, bool withSelection=false, bool justSelection=false);
     
     void resize();
     void mouseEvent(TMouseEvent&);
