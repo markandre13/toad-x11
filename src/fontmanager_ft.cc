@@ -62,7 +62,13 @@ TFontManagerFT::getFcConfig()
 {
   cerr << __FILE__ << ":" << __LINE__ << " not implemented" << endl;
   return 0;
-//  return fc_x11fonts;
+}
+
+FcFontSet*
+TFontManagerFT::getFcFontSet()
+{
+  cerr << __FILE__ << ":" << __LINE__ << " not implemented" << endl;
+  return 0;
 }
 
 static string d2s(double d);
