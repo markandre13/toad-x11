@@ -410,6 +410,7 @@ class TFigureEditor:
     void store(TOutObjectStream&) const;
 
     void setCurrent(TFigure *f) { gadget = f; }
+    TFigure* getCurrent() const { return gadget; }
 
   protected:
     void init(TFigureModel *m);
