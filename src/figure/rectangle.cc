@@ -35,11 +35,26 @@ TFRectangle::paint(TPenBase &pen, EPaintType)
   pen.setLineStyle(line_style);
   pen.setLineWidth(line_width);
   pen.setAlpha(alpha);
-  if (!filled) {
-    pen.drawRectangle(p1,p2);
+  if (!cmat) {
+    if (!filled) {
+      pen.drawRectangle(p1,p2);
+    } else {
+      pen.setFillColor(fill_color);
+      pen.fillRectangle(p1,p2);
+    }
   } else {
-    pen.setFillColor(fill_color);
-    pen.fillRectangle(p1,p2);
+    TPoint p[5];
+    cmat->map(p1.x, p1.y, &p[0].x,  &p[0].y);
+    cmat->map(p2.x, p1.y, &p[1].x,  &p[1].y);
+    cmat->map(p2.x, p2.y, &p[2].x,  &p[2].y);
+    cmat->map(p1.x, p2.y, &p[3].x,  &p[3].y);
+    if (!filled) {
+      p[4] = p[0];
+      pen.drawPolygon(p,5);
+    } else {
+      pen.setFillColor(fill_color);
+      pen.fillPolygon(p, 4);
+    }
   }
   pen.setLineStyle(TPen::SOLID);
   pen.setLineWidth(0);
@@ -92,19 +107,24 @@ TFRectangle::getHandle(unsigned handle, TPoint *p)
   switch(handle) {
     case 0:
       *p = p1;
-      return true;
+      break;
     case 1:
       p->x = p2.x;
       p->y = p1.y;
-      return true;
+      break;
     case 2:
       *p = p2;
-      return true;
+      break;
     case 3:
       p->x = p1.x;
       p->y = p2.y;
-      return true;
+      break;
   }
+  if (cmat) {
+    cmat->map(p->x, p->y, &p->x, &p->y);
+  }
+  if (handle<4)
+    return true;
   return false;
 }
 

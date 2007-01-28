@@ -118,21 +118,25 @@ TInObjectStream TFigure::serialize;
 TFigure::TFigure()
 {
   removeable = true;
-  mat = 0;
+  mat = cmat = 0;
 }
 
 TFigure::TFigure(const TFigure &f)
 {
   removeable = f.removeable;
-  mat = 0;
+  mat = cmat = 0;
   if (f.mat)
     mat = new TMatrix2D(*f.mat);
+  if (f.cmat)
+    cmat = new TMatrix2D(*f.cmat);
 }
 
 TFigure::~TFigure()
 {
   if (mat)
     delete mat;
+  if (cmat)
+    delete cmat;
 }
 
 /**
@@ -263,16 +267,20 @@ TFigure::paintSelection(TPenBase &pen, int handle)
   pen.setLineColor(TColor::FIGURE_SELECTION);
   pen.setFillColor(TColor::WHITE);
 
+  TMatrix2D *m0 = pen.getMatrix();
+  if (m0) {
+    pen.push();
+    pen.identity();
+  }
+
   unsigned h=0;
   TPoint pt;
   while(true) {
     if ( !getHandle(h, &pt) )
       break;
     int x, y;
-    if (pen.getMatrix()) {
-      pen.getMatrix()->map(pt.x, pt.y, &x, &y);
-      pen.push();
-      pen.identity();
+    if (m0) {
+      m0->map(pt.x, pt.y, &x, &y);
     } else {
       x = pt.x;
       y = pt.y;
@@ -285,8 +293,6 @@ TFigure::paintSelection(TPenBase &pen, int handle)
       pen.fillRectanglePC(x-2,y-2,5,5);
       pen.setFillColor(TColor::WHITE);
     }
-    if (pen.getMatrix())
-      pen.pop();
     h++;
   }
   
@@ -302,17 +308,15 @@ TFigure::paintSelection(TPenBase &pen, int handle)
         case 2: x = r.x+r.w-1; y = r.y+r.h-1; break;
         case 3: x = r.x;       y = r.y+r.h-1; break;
       }
-      if (pen.getMatrix()) {
-        pen.getMatrix()->map(x, y, &x, &y);
-        pen.push();
-        pen.identity();
-      }
+      if (m0)
+        m0->map(x, y, &x, &y);
       pen.setLineWidth(1);
       pen.fillRectanglePC(x-2,y-2,5,5);
-      if (pen.getMatrix())
-        pen.pop();
     }
   }
+
+  if (m0)
+    pen.pop();
 }
 
 /**
@@ -416,6 +420,9 @@ TFigure::store(TOutObjectStream &out) const
   if (mat) {
     ::store(out, "trans", mat);
   }
+  if (cmat) {
+    ::store(out, "coord-trans", cmat);
+  }
 }
 
 void
@@ -447,6 +454,7 @@ TFigure::restore(TInObjectStream &in)
 {
   if (
     ::restorePtr(in, "trans", &mat) ||
+    ::restorePtr(in, "coord-trans", &cmat) ||
     TSerializable::restore(in)
   ) return true;
   ATV_FAILED(in)

@@ -2058,18 +2058,36 @@ TFigureEditor::invalidateFigure(TFigure* figure)
   invalidateWindow(r);
 }
 
+/**
+ * Get the figures shape (bounding rectangle)
+ *
+ * TFigure::getShape's returned will not include it's 'mat' and 'cmat'
+ * transformations, thus this method is doing that.
+ *
+ * \note
+ *   This function should be better part for TFigure. And we could also
+ *   declare mat and cmat as protected.
+ *
+ * \param figure
+ *   The figure, whose shape we seek.
+ * \param r
+ *   The resulting shape
+ * \param mat
+ *   A matrix or NULL.
+ */
 void
 TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r, TMatrix2D *mat)
 {
   figure->getShape(r);
 
-  if (mat || figure->mat) {
+  if (mat || figure->mat || figure->cmat) {
     TMatrix2D m;
-    if (mat) {
+    if (mat)
       m=*mat;
-    }
     if (figure->mat)
       m.multiply(figure->mat);
+    if (figure->cmat)
+      m.multiply(figure->cmat);
       
     int x1, x2, y1, y2;
     int x, y;
@@ -2134,8 +2152,11 @@ TFigureEditor::findFigureAt(int mx, int my)
     --p;
     if (*p!=gadget) {
       int x, y;
-      if ((*p)->mat) {
-        stack.multiply((*p)->mat);
+      if ((*p)->mat || (*p)->cmat) {
+        if ( (*p)->mat )
+          stack.multiply((*p)->mat);
+        if ( (*p)->cmat )
+          stack.multiply((*p)->cmat);
         stack.invert();
         stack.map(mx, my, &x, &y);
       } else {
@@ -2513,6 +2534,8 @@ TFCreateTool::paintSelection(TFigureEditor *fe, TPenBase &pen)
   pen.push();
   if (figure->mat)
     pen.multiply(figure->mat);
+  if (figure->cmat)
+    pen.multiply(figure->cmat);
   figure->paint(pen, TFigure::EDIT);
   pen.pop();
 }

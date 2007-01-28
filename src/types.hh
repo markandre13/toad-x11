@@ -64,7 +64,7 @@ struct TRectangle {
   void operator =(const TRectangle &r){ x=r.x;y=r.y;w=r.w;h=r.h; }
   void operator =(const TRectangle *r){ x=r->x;y=r->y;w=r->w;h=r->h; }
   bool isInside(int px,int py) const {
-    return (x<=px && px<x+w && y<=py && py<y+h);
+    return (x<=px && px<=x+w && y<=py && py<=y+h);
   }
   bool intersects(const TRectangle &r) const;
 };

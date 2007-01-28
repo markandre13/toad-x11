@@ -130,6 +130,11 @@ class TFigure:
      * or 0.
      */
     TMatrix2D *mat;
+    
+    /**
+     * Coordinate transformation matrix
+     */
+    TMatrix2D *cmat;
   
     // editor related stuff per gadget for manipulation
     //-------------------------------------------------
