@@ -164,7 +164,7 @@ TATVParser::getWhatName() const
 bool
 TATVParser::parse()
 {  
-  int t;
+  int t=EOF;
 
   if (running && interpreter) {
     err << "bool TATVParser::parse() recursion";

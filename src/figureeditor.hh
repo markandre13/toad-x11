@@ -132,15 +132,15 @@ class TFigureAttributes:
       /**
        * All parameters have changed or, apply all parameters.
        */
-      ALLCHANGED,
+      ALLCHANGED=0, ALL=0,
       /**
        * Where going to edit another object.
        */
-      CURRENTCHANGED,
+      CURRENTCHANGED=1, CURRENT=1,
       /**
        * Drawing properties have changed.
        */
-      GRID,
+      GRID=2,
       LINECOLOR,
       FILLCOLOR,
       UNSETFILLCOLOR,

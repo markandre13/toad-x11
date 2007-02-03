@@ -126,6 +126,7 @@ TFigureAttributes::TFigureAttributes()
   arrowtype = TFLine::EMPTY;
   
   current = 0;
+  tool = 0;
 }
 
 TFigureAttributes::~TFigureAttributes()
@@ -147,10 +148,11 @@ TFigureAttributes::setCreate(TFigure *figure)
 #endif
 
 void
-TFigureAttributes::setTool(TFigureTool *tool)
+TFigureAttributes::setTool(TFigureTool *aTool)
 {
-  this->tool = tool;
-//  if (current) current->setTool(tool);
+  if (tool==aTool)
+    return;
+  tool = aTool;
   reason = TOOL;
   sigChanged();
 }
@@ -803,6 +805,11 @@ TFigureEditor::preferencesChanged()
     invalidateWindow(visible);
     return;
   }
+  
+  if (preferences->reason == TFigureAttributes::ALL) {
+    setTool(preferences->getTool());
+    invalidateWindow(visible);
+  }
 
   if (tool)
     tool->setAttributes(preferences);
@@ -1134,11 +1141,11 @@ TFigureEditor::setOperation(unsigned op)
 }
 
 void
-TFigureEditor::setTool(TFigureTool *tool)
+TFigureEditor::setTool(TFigureTool *aTool)
 {
   stopOperation();
   clearSelection();
-  this->tool = tool;
+  tool = aTool;
   if (window)
     window->setFocus();
 }
