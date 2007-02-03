@@ -801,3 +801,8 @@ TPen::setFillColor(const TColor &color)
   updateW32Brush();
 #endif
 }
+
+void
+TPenBase::showPage()
+{
+}

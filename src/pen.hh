@@ -319,6 +319,8 @@ class TPenBase:
     virtual void curveTo(int x2, int y2, int x3, int y3, int x4, int y4) = 0;
     virtual void curveTo(const TPoint &p2, const TPoint &p3, const TPoint &p4) = 0;
     virtual void curveTo(double x2, double y2, double x3, double y3, double x4, double y4) = 0;
+
+    virtual void showPage();
 };
 
 class TFontManagerX11;
