@@ -373,6 +373,16 @@ TModel *span_undogroup = 0;
 
 } // namespace
 
+void
+TUndoManager::terminate()
+{
+  models.clear();
+  undomanagers.clear();
+  groupstack.clear();
+  undogroups.clear();
+  redogroups.clear();
+  span_undogroup = 0;
+}
 
 /**
  * Start to group upcoming undo events.

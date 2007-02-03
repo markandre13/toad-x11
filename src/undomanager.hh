@@ -73,6 +73,7 @@ class TUndoManager:
 
     static bool isUndoing();
     static bool isRedoing();
+    static void terminate();
 
   protected:    
     //! models managed by the undomanager
