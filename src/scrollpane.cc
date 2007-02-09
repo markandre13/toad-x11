@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,6 +39,20 @@ TScrollPane::TScrollPane(TWindow *p, const string &t):
   vscroll = hscroll = 0;
   uix = uiy = 1;
   resetScrollPane();
+}
+
+void
+TScrollPane::mouseEvent(TMouseEvent &me)
+{
+  if (vscroll && (
+        me.type == TMouseEvent::ROLL_UP ||
+        me.type == TMouseEvent::ROLL_UP_END ||
+        me.type == TMouseEvent::ROLL_DOWN ||
+        me.type == TMouseEvent::ROLL_DOWN_END) )
+  {
+    vscroll->mouseEvent(me);
+    return;
+  }
 }
 
 void

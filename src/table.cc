@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -1255,6 +1255,15 @@ cerr << " y=" << y
 void
 TTable::mouseEvent(TMouseEvent &me)
 {
+  if (me.type == TMouseEvent::ROLL_UP ||
+      me.type == TMouseEvent::ROLL_UP_END ||
+      me.type == TMouseEvent::ROLL_DOWN ||
+      me.type == TMouseEvent::ROLL_DOWN_END)
+  {
+    TScrollPane::mouseEvent(me);
+    return;
+  }
+
   // handle resizing of columns
   //----------------------------
   bool between_h = false;
