@@ -786,6 +786,7 @@ TFigureEditor::setAttributes(TFigureAttributes *p) {
   preferences = p;
   if (preferences) {
     preferences->setCurrent(this);
+    setTool(preferences->getTool());
     connect(preferences->sigChanged, this, &TThis::preferencesChanged);
   }
 }
@@ -2083,7 +2084,7 @@ TFigureEditor::invalidateFigure(TFigure* figure)
  *   A matrix or NULL.
  */
 void
-TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r, TMatrix2D *mat)
+TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r, const TMatrix2D *mat)
 {
   figure->getShape(r);
 

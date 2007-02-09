@@ -321,7 +321,7 @@ class TFigureEditor:
         window->invalidateWindow(r, b);
     }
     virtual void invalidateFigure(TFigure*);
-    void getFigureShape(TFigure*, TRectangle*, TMatrix2D*);
+    void getFigureShape(TFigure*, TRectangle*, const TMatrix2D*);
 
     void addFigure(TFigure*);   
     void deleteFigure(TFigure*);
