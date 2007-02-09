@@ -318,6 +318,7 @@ TFigureEditor::identity()
   if (mat) {
     mat->identity();
     updateScrollbars();
+    quickready = false;
   }
 }
 
@@ -329,6 +330,7 @@ void TFigureEditor::rotate(double d)
     mat = new TMatrix2D();
   mat->rotate(d);
   updateScrollbars();
+  quickready = false;
   invalidateWindow();
 }
 
@@ -340,6 +342,7 @@ void TFigureEditor::rotateAt(double x, double y, double radiants)
     mat = new TMatrix2D();
   mat->rotateAt(x, y, radiants);
   updateScrollbars();
+  quickready = false;
   invalidateWindow();
 }
 
@@ -351,6 +354,7 @@ void TFigureEditor::translate(double x, double y)
     mat = new TMatrix2D();
   mat->translate(x, y);
   updateScrollbars();
+  quickready = false;
   invalidateWindow();
 }
 
@@ -366,7 +370,7 @@ void TFigureEditor::scale(double sx, double sy)
 // better: create 2 points, transform 'em and calculate the
 // distance
   fuzziness = static_cast<int>(2.0 / sx);
-  
+  quickready = false;
   updateScrollbars();
   invalidateWindow();
 }
@@ -379,6 +383,7 @@ void TFigureEditor::shear(double x, double y)
   if (!mat)
     mat = new TMatrix2D();
   mat->shear(x, y);
+  quickready = false;
   updateScrollbars();
   invalidateWindow();
 }
@@ -392,6 +397,7 @@ void TFigureEditor::multiply(const TMatrix2D *m)
     mat = new TMatrix2D(*m);
   else
     mat->multiply(m);
+  quickready = false;
   updateScrollbars();
   invalidateWindow();
 }
@@ -413,6 +419,7 @@ TFigureEditor::enableGrid(bool b)
 {
   if (b==preferences->drawgrid)
     return;
+  quickready = false;
   preferences->drawgrid = b;
   invalidateWindow(visible);
 }
@@ -425,6 +432,7 @@ TFigureEditor::setGrid(int gridsize) {
   if (gridsize<0)
     gridsize=0;
   preferences->gridsize = gridsize;
+  quickready = false;
   invalidateWindow(visible);
 }
 
