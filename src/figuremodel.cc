@@ -328,6 +328,39 @@ TFigureModel::erase(TFigureSet &set)
   TUndoManager::registerUndo(this, undo);
 }
 
+void
+TFigureModel::transform(const TFigureSet &set, const TMatrix2D &m)
+{
+  if (set.empty())
+    return;
+
+cout << "figure model transform" << endl;
+
+  figures.clear();
+  figures.insert(set.begin(), set.end());
+  type = MODIFY;
+  sigChanged();
+
+  for(TFigureSet::const_iterator p = set.begin();
+      p!=set.end();
+      ++p)
+  {
+    if ( !(*p)->cmat) {
+      (*p)->cmat = new TMatrix2D(m);
+    } else {
+      *(*p)->cmat *= m;
+    }
+  }
+
+  type = MODIFIED;
+  sigChanged();
+/*
+  TUndoTranslate *undo = new TUndoTranslate(this, set, -dx, -dy);
+  TUndoManager::registerUndo(this, undo);
+*/
+}
+
+
 class TUndoTranslate:
   public TUndo
 {

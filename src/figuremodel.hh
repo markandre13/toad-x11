@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -97,7 +97,7 @@ class TFigureModel:
     
     
     void insert(TFigureAtDepthList &store);
-
+    void transform(const TFigureSet&, const TMatrix2D&);
     void translate(const TFigureSet&, int dx, int dy);
     void translateHandle(TFigure *figure, unsigned handle, int dx, int dy, unsigned);
     bool startInPlace(TFigure *figure, TFigureEditor *fe = 0);
