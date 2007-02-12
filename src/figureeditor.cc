@@ -804,7 +804,7 @@ TFigureEditor::preferencesChanged()
 {
   if (!preferences)
     return;
-
+  quickready=false;
   if (preferences->reason == TFigureAttributes::TOOL) {
     setTool(preferences->getTool());
     return;
@@ -822,7 +822,7 @@ TFigureEditor::preferencesChanged()
 
   if (tool)
     tool->setAttributes(preferences);
-    
+  
   model->setAttributes(selection, preferences);
 //  invalidateWindow(visible); 
 }
@@ -966,6 +966,7 @@ TFigureEditor::selectAll()
   {
     selection.insert(*p);
   }
+  quickready = false;
   invalidateWindow(visible);
 }
 
@@ -1012,7 +1013,7 @@ TFigureEditor::selection2Top()
       break;
     --p;
   }
-  
+  quickready = false;
   window->invalidateWindow(visible);
 }
 
@@ -1044,6 +1045,7 @@ TFigureEditor::selection2Bottom()
     }
     ++p;
   }
+  quickready = false;
   window->invalidateWindow(visible);
 }
 
@@ -1070,6 +1072,7 @@ TFigureEditor::selectionUp()
       break;
     --p;
   }
+  quickready = false;
   window->invalidateWindow(visible);
 }
 
@@ -1092,6 +1095,7 @@ TFigureEditor::selectionDown()
     }
     ++p;
   }
+  quickready = false;
   window->invalidateWindow(visible);
 }
 
@@ -2335,6 +2339,7 @@ DBM(cout << __PRETTY_FUNCTION__ << ": exit" << endl << endl;)
 void
 TFigureEditor::scrolled(int dx, int dy)
 {
+  quickready = false;
   int x, y;
   getPanePos(&x, &y);
   // window->scrollTo(-x, -y);
