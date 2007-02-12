@@ -57,14 +57,15 @@ void
 TTableAdapter::modelChanged()
 {
   TTableModel *model = getModel();
-  if (!model) {
-    cerr << "TTableAdapter::modelChanged: received modelChanged but no model is set" << endl;
-    return;
+  if (model) {
+    reason = model->reason;
+    where  = model->where;
+    size   = model->size;
+  } else {
+    reason = TTableModel::CHANGED;
+    where  = 0;
+    size   = 0;
   }
-  
-  reason = model->reason;
-  where  = model->where;
-  size   = model->size;
 /*
 cout << "TTableAdapter::modelChanged propagates ";
 switch(reason) { 
