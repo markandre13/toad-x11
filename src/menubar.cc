@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,7 @@ using namespace toad;
  * or more names connected with the '+' sign. For example 'Alt+F4'.
  *
  * Known names are case insensitive and can be one of the common keyboard
- * symbols or 'Alt', 'Ctrl', 'Strg' or 'F1' to 'F20'.
+ * symbols or 'Alt', 'Ctrl', 'Strg', 'Del', 'PgUp', 'PgDown', 'Esc' or 'F1' to 'F20'.
  *
  * \note The name 'Shift' isn't implemented because the symbol which can
  * be typed with 'Shift' is usually already seen on the keyboard. It would
@@ -59,6 +59,7 @@ iterate(TMenuBar::TNode *node, const string &str, TKey key, unsigned modifier, u
   TMenuBar::TNode *p = node;
   while(p) {
     string s = p->getShortcut();    
+//cout << "compare shortcut '" << s << "'" << endl;
     int state = 0;
     size_t pos = 0;
     string pattern;
@@ -86,6 +87,7 @@ iterate(TMenuBar::TNode *node, const string &str, TKey key, unsigned modifier, u
       }
       
       if (state>=2) {
+//cout << "pattern '" << pattern << "'" << endl;
         if (strcasecmp(pattern.c_str(), "strg")==0 ||
             strcasecmp(pattern.c_str(), "ctrl")==0 )
         {
@@ -94,6 +96,33 @@ iterate(TMenuBar::TNode *node, const string &str, TKey key, unsigned modifier, u
         if (strcasecmp(pattern.c_str(), "alt")==0)
         {
           m |= MK_ALT;
+        } else
+        if (strcasecmp(pattern.c_str(), "shift")==0)
+        {
+          m |= MK_SHIFT;
+        } else
+        if (strcasecmp(pattern.c_str(), "pgup")==0 ||
+            strcasecmp(pattern.c_str(), "bildhoch")==0)
+        {
+//cout << "verify pgup: key="<<key<<", TK_PAGE_UP="<<TK_PAGE_UP<<endl;
+          if (key!=TK_PAGE_UP)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "pgdown")==0 ||
+            strcasecmp(pattern.c_str(), "bildrunter")==0)
+        {
+          if (key!=TK_PAGE_DOWN)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "esc")==0) {
+          if (key!=TK_ESCAPE)
+            match = false;
+        } else
+        if (strcasecmp(pattern.c_str(), "del")==0 ||
+            strcasecmp(pattern.c_str(), "entf")==0) 
+        {
+          if (key!=TK_DELETE)
+            match = false;
         } else
         if (strcasecmp(pattern.c_str(), "f1")==0) {
           if (key!=TK_F1)
@@ -184,6 +213,7 @@ iterate(TMenuBar::TNode *node, const string &str, TKey key, unsigned modifier, u
         pattern.clear();
       }
     }
+//cout << "  match="<<match<<",m="<<m<<", modifier="<<modifier<<endl;
     if (!s.empty() && match && m==modifier) {
 //      cout << "found match " << p->getLabel(0) << endl;
       p->trigger(0);
