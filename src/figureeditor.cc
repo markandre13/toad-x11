@@ -858,6 +858,7 @@ void
 TFigureEditor::modelChanged()
 {
   modified = true;
+  quickready = false;
   switch(model->type) {
     case TFigureModel::MODIFY:
     case TFigureModel::MODIFIED:
@@ -950,7 +951,6 @@ void
 TFigureEditor::deleteSelection()
 {
 //cout << "delete selection" << endl;
-
   if (gadget && selection.find(gadget)!=selection.end()) {
     gadget = 0;
   }
