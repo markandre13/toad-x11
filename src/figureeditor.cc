@@ -285,6 +285,20 @@ TFigureEditor::init(TFigureModel *m)
 
   action = new TAction(this, "edit|delete");
   CONNECT(action->sigClicked, this, deleteSelection);
+
+  action = new TAction(this, "object|order|top");
+  CONNECT(action->sigClicked, this, selection2Top);
+  action = new TAction(this, "object|order|up");
+  CONNECT(action->sigClicked, this, selectionUp);
+  action = new TAction(this, "object|order|down");
+  CONNECT(action->sigClicked, this, selectionDown);
+  action = new TAction(this, "object|order|bottom");
+  CONNECT(action->sigClicked, this, selection2Bottom);
+
+  action = new TAction(this, "object|group");
+  CONNECT(action->sigClicked, this, group);
+  action = new TAction(this, "object|ungroup");
+  CONNECT(action->sigClicked, this, ungroup);
 }
 
 bool
