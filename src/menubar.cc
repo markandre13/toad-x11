@@ -244,9 +244,11 @@ class TMenuBar::TMyKeyFilter:
         unsigned modifier = 0;
         if (m & MK_CONTROL)
           modifier|=MK_CONTROL;
+        if (m & MK_SHIFT)
+          modifier|=MK_SHIFT;
         if ((m & MK_ALT) || (m & MK_ALTGR))
           modifier|=MK_ALT;
-        m &= ~(MK_CONTROL|MK_ALT|MK_ALTGR);
+        m &= ~(MK_SHIFT|MK_CONTROL|MK_ALT|MK_ALTGR);
         ke.setModifier(m);
         string str = ke.getString();
         bool result = iterate(&menubar->root, str, ke.getKey(), modifier);
