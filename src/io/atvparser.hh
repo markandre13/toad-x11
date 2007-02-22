@@ -1,6 +1,6 @@
 /*
  * Attribute-Type-Value Object Language Parser
- * Copyright (C) 2001-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 2001-2007 by Mark-André Hopf <mhopf@mark13.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  */
 
 #ifndef _ATV_ATVPARSER_HH
-#define _ATV_ATVPARSER_HH
+#define _ATV_ATVPARSER_HH 1
 
 #include <string>
 #include <iostream>
@@ -126,6 +126,8 @@ class TATVParser
      */
     unsigned getDepth() const { return depth; }
     
+    unsigned getLine() const { return line; }
+    
     /**
      * To set a user defined state, ie. after 'what==ATV_GROUP'.
      */
@@ -145,7 +147,11 @@ class TATVParser
     bool operator!() const { return !err.str().empty(); }
 
     unsigned stacksize() const { return stack.size(); }
+    
+    int get() { in->get(); }
     void putback(char c) { in->putback(c); }
+
+    bool getCode(std::string*);
     
   protected:
     bool single();

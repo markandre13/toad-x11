@@ -60,7 +60,9 @@ TATVParser::TATVParser(istream *stream)
 {
   _eof = false;
   verbose = false;
+  debug = false;
   interpreter = NULL;
+  what = ATV_START;
   depth = 0;
   line = 1;
   istate = 0;
@@ -115,11 +117,7 @@ TATVParser::unexpectedToken(int t)
     default:
       err << '\'' << (char)t;
   }
-  err << " in line " << line << ':' << endl
-      << line1 << line2 << endl;
-  for(unsigned i=0; i<line1.size(); ++i)
-    err << ' ';
-  err << "^ around here" << endl;
+  err << " in line " << line;
 }
 
 /**
@@ -133,11 +131,7 @@ TATVParser::semanticError()
   if (err.str().size()==0) {
     err << "syntax/semantic error";
   }
-  err << " in line " << line << ':' << endl
-      << line1 << line2 << endl;
-  for(unsigned i=0; i<line1.size(); ++i)
-    err << ' ';
-  err << "^ around here" << endl;
+  err << " in line " << line << endl;
 }
 
 void
@@ -175,27 +169,34 @@ TATVParser::parse()
   }
   
   running = true;
+  unsigned startdepth = depth;
 
-//cerr << "(parse started in state " << state << ", unknown='" << unknown << "')";
+  if (!interpreter) {
+    switch(what) {
+      case ATV_GROUP:
+        ++depth;
+        break;
+      case ATV_FINISHED:
+        --depth;
+        break;
+    }
+  }
+//cout << "(parse started in state " << state << ", unknown='" << unknown << "')";
 
   while( running ) {
     if (state < 10 ) {
       t = yylex();
       if (t==TKN_ERROR) {
-        err << " in line " << line << ':' << endl
-            << line1 << line2 << endl;
-        for(unsigned i=0; i<line1.size(); ++i)
-          err << ' ';
-        err << "^ around here" << endl;
+        err << " in line " << line << endl;
         return false;
       }
 #if 0
       switch(t) {
         case TKN_STRING:
-          printf("%i ['%s']\n", state, yytext.c_str() );
+          printf("state=%i depth=%i ['%s']\n", state, depth, yytext.c_str() );
           break;
         default:
-          printf("%i ['%c']\n", state, t);
+          printf("state=%i depth=%i ['%c']\n", state, depth, t);
       }
 #endif
     }
@@ -232,7 +233,7 @@ TATVParser::parse()
             break;
           default:
             unexpectedToken(t);
-            return EXIT_FAILURE;
+            return false;
         }
         break;
       case 1: // string ?
@@ -259,11 +260,13 @@ TATVParser::parse()
             }
             break;
           case TKN_STRING:
+//cout << "+++++++++, unknown=" << unknown << ", yytext=" << yytext << ", value=" << value << endl;
             value = unknown;
             unknown = yytext;
             if (!single()) {
               return false;
             }
+//cout << "---------, unknown=" << unknown << ", yytext=" << yytext << ", value=" << value << endl;
             if (!interpreter)
               return true;
             break;
@@ -362,13 +365,7 @@ TATVParser::parse()
       return true;
   }
   if (t==EOF && state!=0) {
-      err << "incomplete atv triple";
-//err << ", state=" << state;
-      err << " in line " << line << ':' << endl
-          << line1 << line2 << endl;
-      for(unsigned i=0; i<line1.size(); ++i)
-        err << ' ';
-      err << "^ around here" << endl;
+      err << "incomplete atv triple in line " << line << endl;
       return false;
   } 
   return true;
@@ -383,11 +380,11 @@ TATVParser::yylex()
   
   yytext.clear();
   while(true) {
-    c = in->get();
+    c = get();
+//printf("lex: %d '%c'\n", state, c);
     if (c==EOF)
       _eof=true;
     if (c=='\n') {
-      ++line;
       line1.clear();
       line2.clear();
     } else {
@@ -418,10 +415,9 @@ TATVParser::yylex()
             break;
         }
         break;
-      case 1:
+      case 1: // ?...
         switch(c) {
           case '\n':
-            --line; /* we do ungetc, don't count this line 2 times */
           case ' ':
           case '\t':
           case '\r':
@@ -430,13 +426,13 @@ TATVParser::yylex()
           case '=':
           case '/':
           case EOF:
-            in->putback(c);
+            putback(c);
             return TKN_STRING;
           default:
             yytext+=c;
         }
         break;
-      case 2:
+      case 2: // "?
         switch(c) {
           case EOF:
             err << "unterminated string or character constant";
@@ -450,16 +446,22 @@ TATVParser::yylex()
             yytext+=c;
         }
         break;
-      case 3:
-        if (c=='x' || c=='X') {
-          hex = 0;
-          state = 8;
-        } else {
-          yytext+=c;
-          state = 2;
+      case 3: // "..\?
+        switch(c) {
+          case 'x':
+          case 'X':
+            hex = 0;
+            state = 8;
+            break;
+          case EOF:
+            err << "unterminated string or character constant";
+            return TKN_ERROR;
+          default:
+            yytext+=c;
+            state = 2;
         }
         break;
-      case 4:
+      case 4: // /?
         switch(c) {
           case '/':
             state = 5;
@@ -472,30 +474,40 @@ TATVParser::yylex()
             return TKN_ERROR;
         }
         break;
-      case 5:
+      case 5: // //?
         switch(c) {
           case '\n':
             state = 0;
             break;
+          case EOF:
+            return EOF;
         }
         break;
-      case 6:
+      case 6: // /*..?
         switch(c) {
           case '*':
             state = 7;
             break;
+          case EOF:
+            err << "unexpected end of file in comment";
+            return TKN_ERROR;
         }
         break;
-      case 7:
+      case 7: // /*..*?
         switch(c) {
+          case '*':
+            break;
           case '/':
             state = 0;
             break;
+          case EOF:
+            err << "unexpected end of file in comment";
+            return TKN_ERROR;
           default:
             state = 6;
         }
         break;
-      case 8: 
+      case 8: // \x?
         if (c>='0' && c<='9') {
           hex += c-'0';
         } else
@@ -511,7 +523,7 @@ TATVParser::yylex()
         hex<<=4;
         state = 9;
         break;
-      case 9: 
+      case 9: // \x??
         if (c>='0' && c<='9') {
           hex += c-'0';
         } else
@@ -568,6 +580,7 @@ TATVParser::single()
 bool
 TATVParser::startGroup()
 {
+//printf("startGroup\n");
   if (verbose) {
     cerr << "group: ";
     for(unsigned i=0; i<depth; ++i)
@@ -596,9 +609,14 @@ TATVParser::startGroup()
       value.clear();
       interpreter->interpret(*this);
     }
+    if (what==ATV_FINISHED) {
+      pop();
+      return true;
+    }
+    if (interpreter)
+      ++depth;
   }
   position = 0;
-  ++depth;
   line1+=line2;
   line2.clear();
   return true;
@@ -607,17 +625,21 @@ TATVParser::startGroup()
 bool
 TATVParser::endGroup()
 {
-  --depth;
   if (verbose) {
     for(unsigned i=0; i<depth; ++i)
-      cout << "  ";
-    cout << "}" << endl;
+      cerr << "  ";
+    cerr << "}" << endl;
   }
   what = ATV_FINISHED;
   attribute.clear();
   type.clear();
   value.clear();
   if (interpreter) {
+    if (depth==0) {
+      cerr << "unexpected end of group" << endl;
+      return false;
+    }
+    --depth;
     if (!interpreter->interpret(*this)) {
       semanticError();
       return false;
@@ -626,5 +648,144 @@ TATVParser::endGroup()
       return false;
     }
   }
+  return true;
+}
+
+/**
+ * Interpret the group as a C/C++ style code section and return
+ * its content (except comments) as a text string.
+ *
+\pre
+bool
+regvariable_t::interpret(TATVParser &p)
+{
+  switch(p.what) {
+    ...
+    case ATV_GROUP:
+       if (p.attribute == "script" && p.type.empty())
+         return p.getCode(&script);
+       ...
+       break;
+    ...
+  }
+}
+\endpre
+ */
+bool
+TATVParser::getCode(string *code)
+{
+  unsigned state = 1;
+  unsigned depth = 0;
+  unsigned startline = line;
+  unsigned startstring = 0;
+  while(state) {
+    int c = get();
+    if (c==EOF) {
+      if (state==2 || state==3) {
+        err << "Unexpected end file in string beginning at line "
+            << startstring;
+      } else {
+        err << "Unexpected end of file in code section at beginning at line " 
+            << startline;
+      }
+      return false;
+    }
+
+//printf("state %u depth=%u '%c' '%s'\n", state, depth, c, code->c_str());
+
+    switch(state) {
+      case 1:
+        switch(c) {
+          case '/':
+            state = 4;
+            break;
+          case '"':
+            code->append(1, c);
+            state = 2;
+            startstring = line;
+            break;
+          case '{':
+            code->append(1, c);
+            ++depth;
+            break;
+          case '}':
+            if (depth==0) {
+              state = 0;
+            } else {
+              code->append(1, c);
+              --depth;
+            }
+            break;
+          default:
+            code->append(1, c);
+        }
+        break;
+      case 2:
+        switch(c) {
+          case '"':
+            code->append(1, c);
+            state = 1;
+            break;
+          case '\\':
+            code->append(1, c);
+            state = 3;
+            break;
+          default:
+            code->append(1, c);
+        }
+        break;
+      case 3:
+        code->append(1, c);
+        state = 2;
+        break;
+        
+      case 4:
+        switch(c) {
+          case '/':
+            state = 7;
+            break;
+          case '*':
+            state = 5;
+            break;
+          default:
+            code->append(1, '/');
+            putback(c);
+            state = 1;
+        }
+        break;
+        
+      case 5: // C style comment
+        if (c=='*')
+          state = 6;
+        break;
+      case 6:
+        switch(c) {
+          case '*':
+            break;
+          case '/':
+            state = 1;
+            break;
+          default:
+            state = 5;
+        }
+        break;
+        
+      case 7: // C++ style comment
+        if (c=='\n')
+          state = 1;
+        break;
+    }
+  }
+
+  if (verbose) {
+    for(unsigned i=0; i<depth; ++i)
+      cerr << "  ";
+    cerr << "} // code" << endl;
+  }
+  
+  what=ATV_FINISHED;
+
+//printf("got code: <begin>\n%s\n<end>\n", code->c_str());
+
   return true;
 }
