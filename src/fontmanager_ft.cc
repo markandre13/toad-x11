@@ -301,7 +301,7 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
     const char *p = str;
     int len=0;
     while(*p && len<strlen) {
-      char buffer[5];
+      char buffer[6];
       unsigned clen=1;
       buffer[0]=*p;   
       ++p;
@@ -313,6 +313,7 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
         ++p;  
         ++clen;
       }
+      buffer[clen]=0;
   
       int direction, fasc, fdesc;
   

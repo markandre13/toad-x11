@@ -256,7 +256,6 @@ TFigureEditor::init(TFigureModel *m)
   modified = false;
   preferences = 0;
   tool = 0;
-  setAttributes(new TFigureAttributes);
   fuzziness = 2;
 
   handle = -1;
@@ -267,12 +266,14 @@ TFigureEditor::init(TFigureModel *m)
   mat = 0;
 //  vscroll = NULL;
 //  hscroll = NULL;
+  window = 0;
   model = 0;
-  if (!m)
-    m=new TFigureModel();
-  setModel(m);
   x1=y1=x2=y2=0;
   update_scrollbars = false;
+  if (!m)
+    m=new TFigureModel();
+  setAttributes(new TFigureAttributes);
+  setModel(m);
 
   TAction *action;
 
