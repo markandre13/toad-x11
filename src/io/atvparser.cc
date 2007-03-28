@@ -588,9 +588,9 @@ TATVParser::startGroup()
     cerr << "atv=(\""<< attribute << "\", \"" << type << "\", ...)" << endl;
   }
   ++position;
-  push();
   what = ATV_GROUP;
   if (interpreter) {
+    push();
     TATVInterpreter *oldintp = interpreter;
     if (!interpreter->interpret(*this)) {
       if (debug)
@@ -610,6 +610,8 @@ TATVParser::startGroup()
       interpreter->interpret(*this);
     }
     if (what==ATV_FINISHED) {
+      if (interpreter)
+        --depth;
       pop();
       return true;
     }
@@ -783,6 +785,7 @@ TATVParser::getCode(string *code)
     cerr << "} // code" << endl;
   }
   
+  ++this->depth;
   what=ATV_FINISHED;
 
 //printf("got code: <begin>\n%s\n<end>\n", code->c_str());
