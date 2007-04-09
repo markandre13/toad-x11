@@ -348,7 +348,8 @@ cout << "figure model transform" << endl;
     if ( !(*p)->cmat) {
       (*p)->cmat = new TMatrix2D(m);
     } else {
-      *(*p)->cmat *= m;
+      // *(*p)->cmat *= m;
+      *(*p)->cmat = m * *(*p)->cmat;
     }
   }
 
