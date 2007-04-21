@@ -582,6 +582,11 @@ TFigureEditor::paintGrid(TPenBase &pen)
 void
 TFigureEditor::paintSelection(TPenBase &pen)
 {
+  if (tool) {
+    tool->paintSelection(this, pen);
+    return;
+  }
+
   // draw the selection marks over all figures
   for(TFigureSet::iterator sp = selection.begin();
       sp != selection.end();
@@ -683,9 +688,6 @@ TFigureEditor::paintSelection(TPenBase &pen)
     pen.pop();
   }
 
-  if (tool) {
-    tool->paintSelection(this, pen);
-  }
 }
 
 /**
