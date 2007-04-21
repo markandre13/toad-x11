@@ -50,6 +50,7 @@ typedef GSmartPointer<TWindow> PWindow;
 #ifdef DEBUG
 #define CHECK_REALIZED(txt) debug_check_realized(txt)
 #else
+#define CHECK_REALIZED(txt)
 #endif
 
 #include <limits.h>

@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-// uncomment this to compile a debug version of TOAD
-#define DEBUG
+// uncomment this to compile a debug version of TOAD (obsolete)
+//#define DEBUG
 #define TOAD_DEBUG
 
 // uncomment this to compile a secure version of TOAD (extra parameter checks)
