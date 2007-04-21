@@ -219,6 +219,9 @@ class TColoredFigure:
     virtual void setAttributes(const TFigureAttributes*);
     virtual void getAttributes(TFigureAttributes*) const;
 
+    void setColor(const TRGB &color) {
+      line_color = fill_color = color;
+    }
     void setLineColor(const TRGB &color) {
       line_color = color;
     }
