@@ -54,6 +54,7 @@ class TFigureTool
     virtual void keyEvent(TFigureEditor *fe, TKeyEvent &ke);
     virtual void setAttributes(TFigureAttributes *p);
     virtual void paintSelection(TFigureEditor *fe, TPenBase &pen);
+    virtual void modelChanged(TFigureEditor *fe);
 };
 
 /**

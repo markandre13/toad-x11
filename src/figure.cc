@@ -331,6 +331,14 @@ TFigure::getHandle(unsigned n, TPoint *p)
   return false;
 }
 
+/**
+ * This method was added to support TFGroup so that it knows when handle
+ * modification begins and when it ends.
+ *
+ * \return
+ *   Returns 'true' when code manipulating the handle must also manipulate
+ *   the figure's mat and cmat attributes.
+ */
 bool
 TFigure::startTranslateHandle()
 {

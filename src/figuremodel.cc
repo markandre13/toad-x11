@@ -328,13 +328,39 @@ TFigureModel::erase(TFigureSet &set)
   TUndoManager::registerUndo(this, undo);
 }
 
+class TUndoTransform:
+  public TUndo
+{
+    TFigureModel *model;
+    TFigureSet figures;
+    TMatrix2D m;
+  public:
+    TUndoTransform(TFigureModel *model, const TFigureSet &set, const TMatrix2D &m) {
+      this->model = model;
+      this->figures.insert(set.begin(), set.end());
+      this->m = m;
+      this->m.invert();
+    }
+  protected:
+    void undo() {
+      model->transform(figures, m);
+    }
+    bool getUndoName(string *name) const {
+      *name = "Undo: Transformation";
+      return true;
+    }
+    bool getRedoName(string *name) const {
+      *name = "Redo: Transformation";
+      return true;
+    }
+};
+
+
 void
 TFigureModel::transform(const TFigureSet &set, const TMatrix2D &m)
 {
   if (set.empty())
     return;
-
-cout << "figure model transform" << endl;
 
   figures.clear();
   figures.insert(set.begin(), set.end());
@@ -355,10 +381,8 @@ cout << "figure model transform" << endl;
 
   type = MODIFIED;
   sigChanged();
-/*
-  TUndoTranslate *undo = new TUndoTranslate(this, set, -dx, -dy);
+  TUndoTransform *undo = new TUndoTransform(this, set, m);
   TUndoManager::registerUndo(this, undo);
-*/
 }
 
 
@@ -452,18 +476,28 @@ TFigureModel::translate(const TFigureSet &set, int dx, int dy)
       p!=set.end();
       ++p)
   {
-    if ( !(*p)->mat) {
+    if ((*p)->cmat) {
+      TMatrix2D m(*(*p)->cmat);
+      m.invert();
+      double x0, y0, dx0, dy0;
+      m.map(0,0,&x0,&y0);
+      m.map(dx, dy, &dx0, &dy0);
+      dx0-=x0;
+      dy0-=y0;
+      (*p)->translate(dx0, dy0);
+    } else
+    if ((*p)->mat) {
+      TMatrix2D m;
+      m.translate(dx, dy);
+      m.multiply((*p)->mat);
+      *(*p)->mat = m;
+    } else {
       TFigureEditEvent ee;
       ee.model = this;
       ee.type = TFigureEditEvent::TRANSLATE;
       ee.x = dx;
       ee.y = dy;
       (*p)->editEvent(ee);
-    } else {
-      TMatrix2D m;
-      m.translate(dx, dy);
-      m.multiply((*p)->mat);
-      *(*p)->mat = m;
     }
   }
   type = MODIFIED;

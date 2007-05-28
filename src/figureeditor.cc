@@ -875,7 +875,10 @@ void
 TFigureEditor::modelChanged()
 {
   modified = true;
-  quickready = false;
+  quickready = false; // force a view update when quick mode is enabled
+  if (tool) {
+    tool->modelChanged(this);
+  }
   switch(model->type) {
     case TFigureModel::MODIFY:
     case TFigureModel::MODIFIED:
@@ -2389,6 +2392,15 @@ TFigureTool::setAttributes(TFigureAttributes *p)
 
 void
 TFigureTool::paintSelection(TFigureEditor *fe, TPenBase &)
+{
+}
+
+/**
+ * This virtual method is called each time TFigureEditor's TFigureModel
+ * reported a change.
+ */
+void
+TFigureTool::modelChanged(TFigureEditor *fe)
 {
 }
 
