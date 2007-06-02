@@ -270,11 +270,13 @@ void
 TComboBox::TComboButton::mouseLDown(int,int,unsigned)
 {
   setDown(!isDown());
+#if 0
   if (isDown()) {
     sigArm();
   } else {
     sigDisarm();
   }
+#endif
 }
 
 void
