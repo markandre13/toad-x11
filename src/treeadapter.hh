@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef _TOAD_TREERENDERER_HH
-#define _TOAD_TREERENDERER_HH
+#ifndef _TOAD_TREEADAPTER_HH
+#define _TOAD_TREEADAPTER_HH 1
 
 #include <toad/treemodel.hh>
 
@@ -48,6 +48,9 @@ class TTreeAdapter:
     size_t findOpenRowAbove(size_t row);
     
     size_t getRows() { return getModel() ? getModel()->getRows() : 0; }
+    
+    void dropRequest(TDnDObject &obj);
+    void drop(TDnDObject &obj);
 };
 
 template <class T>

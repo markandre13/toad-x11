@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_TREEMODEL_HH
-#define _TOAD_TREEMODEL_HH
+#define _TOAD_TREEMODEL_HH 1
 
 #include <toad/table.hh>
 
@@ -51,6 +51,7 @@ class TTreeModel:
     size_t addTreeBefore(size_t row);
     size_t addTreeBelow(size_t row);
     size_t deleteRow(size_t row);
+    void reorder(TAbstractSelectionModel *from, size_t to, bool below, TTable *table=0);
     
     virtual void* _createNode() = 0;
     virtual void _deleteNode(void*) = 0;

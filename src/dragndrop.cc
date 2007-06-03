@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -546,7 +546,7 @@ DBM(cout << __FILE__ << ":" << __LINE__ << endl;)
     }
     SetDropSite(NULL);
   } else if (inside_local_window) {
-    // now dow a direct call into the drop code and it's
+    // now do a direct call into the drop code and it's
     // XTranslateCoordinates stuff
     HandlePosition(x11_current_window,
                    event.xmotion.x_root,
@@ -617,7 +617,6 @@ void UpdateCursor()
 {
   // target_action: the action the target wants
   // drag_action  : the action we want
-  
   Atom action = drag_action;
   int cs=0;
   if ((inside_extern_window||inside_local_window) && target_action!=None) {
@@ -968,6 +967,34 @@ void TDropSite::leave()
   cout << __PRETTY_FUNCTION__ << endl;
 }
 
+/**
+ * This virtual method is called to draw into the drop sites parent
+ * window to indicate that the drop site is willing to accept a drop.
+ *
+ * The default implementation is to draw a black and white dotted
+ * two pixel wide frame.
+ */
+void
+TDropSite::paint()
+{
+  TPen pen(getParent());
+  pen.identity();
+  TBitmap bitmap(2,2, TBITMAP_SERVER);
+  TPen bpen(&bitmap);
+  bpen.setColor(255,255,255);   
+  bpen.fillRectanglePC(0,0,2,2);
+  bpen.setColor(0,0,0);  
+  bpen.drawLine(0,0,1,1);
+  pen.setBitmap(&bitmap);
+  TRectangle r(getShape());
+  pen.drawRectanglePC(r);
+  r.x++;
+  r.y++; 
+  r.w-=2;
+  r.h-=2;
+  pen.drawRectanglePC(r);
+}
+
 //---------------------------------------------------------------------------
 // drop handling (extern)
 //---------------------------------------------------------------------------
@@ -991,7 +1018,8 @@ static TDnDObject drop_request;
 
 // static TDropSite *dropsite;
 
-void SetDropSite(TDropSite *ds)
+void
+SetDropSite(TDropSite *ds)
 {
   if (ds==dropsite)
     return;
@@ -1001,22 +1029,7 @@ void SetDropSite(TDropSite *ds)
   }
   dropsite = ds;
   if (dropsite) {
-    TPen pen(dropsite->getParent());
-    pen.identity();
-    TBitmap bitmap(2,2, TBITMAP_SERVER);
-    TPen bpen(&bitmap);
-    bpen.setColor(255,255,255);
-    bpen.fillRectanglePC(0,0,2,2);
-    bpen.setColor(0,0,0);
-    bpen.drawLine(0,0,1,1);
-    pen.setBitmap(&bitmap);
-    TRectangle r(dropsite->getShape());
-    pen.drawRectanglePC(r);
-    r.x++;
-    r.y++;
-    r.w-=2;
-    r.h-=2;
-    pen.drawRectanglePC(r);
+    dropsite->paint();
   }
 }
 
@@ -1308,6 +1321,7 @@ bool TOADBase::DnDSelectionNotify(XEvent &event)
     drop.type=drop.typelist[0];
     drop.x = drop_request.x;
     drop.y = drop_request.y;
+    drop.local = false;
     dropsite->drop(drop);
   }
   requested_type = NULL;
@@ -1373,6 +1387,7 @@ void HandlePosition(Window wnd,         // top-level window
         // The time stamp in XdndPosition should be used for XConvertSelection.
         // This feature isn't supported by TOAD.
         drop->action = action;
+        drop->local = inside_local_window;
         ds->dropRequest(*drop);
         if (drop->action==ACTION_NONE)
           ds = NULL;
@@ -1387,11 +1402,13 @@ void HandlePosition(Window wnd,         // top-level window
 }
 
 // local
-void HandleDrop(TDnDObject *drop)
+void
+HandleDrop(TDnDObject *drop)
 {
   if (dropsite) {
     ClearDropSite();
     drop->type = NULL;
+    drop->local = true;
     dropsite->drop(*drop);
   }
 }

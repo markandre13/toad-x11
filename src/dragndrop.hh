@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TDragObject
-#define TDragObject TDragObject
+#ifndef _TOAD_DRAGNDROP_HH
+#define _TOAD_DRAGNDROP_HH 1
 
 #include <string>
 #include <vector>
@@ -80,7 +80,6 @@ struct TDnDObject:
 
   //! Store your data in <VAR>flatdata</VAR> using type <VAR>type</VAR>.
   virtual void flatten();
-  
   TDnDTypeList typelist;
   
   PDnDType type;
@@ -91,6 +90,7 @@ struct TDnDObject:
   static bool select(TDnDObject &drop, const string &major, const string &minor);
 
   unsigned action;    // set by TDropSite::dropRequest
+  bool local;         // drop is within this application
 };
 
 typedef GSmartPointer<TDnDObject> PDnDObject;
@@ -114,6 +114,7 @@ class TDropSite
     virtual void dropRequest(TDnDObject&) = 0;
     virtual void drop(TDnDObject&) = 0;
     virtual void leave();
+    virtual void paint();
   protected:
     void init();
     TWindow *parent;

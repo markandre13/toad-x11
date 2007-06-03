@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,7 @@
  */
 
 #include <toad/treemodel.hh>
+#include <algorithm>
 
 using namespace toad;
 
@@ -585,4 +586,206 @@ TTreeModel::deleteRow(size_t row)
 #endif
   _deleteNode(dn);
   return row;
+}
+
+/**
+ * Reorder tree.
+ *
+ * \param mark
+ *   A list of selected rows in the tree. The first column (x=0) is
+ *   used.
+ * \param row
+ *   The destination row
+ * \param asParent
+ *   false: move selected rows behind 'row'
+ *   true: 'row' becomes a parent of the selected rows
+ *
+ * reorder({row 4 selected}, 0, true) will make row 4 the root of the tree
+ */
+void
+TTreeModel::reorder(TAbstractSelectionModel *selection, size_t row, bool asParent, TTable *table)
+{
+//  cout << "TTreeModel::reorder(..., "<<row<<", "<<asParent<<")"<< endl;
+
+  // we must use the _* function to work the tree
+  // 'rows' provides the relation to the selection model
+  
+  // 1st: reorder the 'rows' table
+/*
+cout << "before:" << endl;
+  for(size_t i=0; i<rows->size(); ++i) {
+    cout << i << ": " << (*rows)[i].depth << " " << (*rows)[i].node << endl;
+  }
+*/
+  vector<bool> mark;
+  mark.resize(rows->size(), false);
+  size_t marked=0;
+  for(size_t i=0; i<rows->size(); ++i) {
+    if ( selection->isSelected(0, i) ) {
+      mark[i] = true;
+      ++marked;
+    }
+  }
+
+//  vector<bool> rowopen;
+  if (table) {
+//    rowopen.resize(rows->size(), true);
+    // fill in missing mark definition and set the mark of hidden
+    // children to the parents mark value
+    int last_depth = -1;
+    for(size_t i=0; i<rows->size(); ++i) {
+//      if (!table->isRowOpen(i))
+//        rowopen[i] = false;
+      if (last_depth!=-1) {
+        if (last_depth < (*rows)[i].depth) {
+          if ( !mark[i] ) {
+            mark[i] = true;
+            ++marked;
+          }
+        } else {
+          last_depth = -1;
+        }
+      }
+      if (last_depth == -1) {
+        if (!table->isRowOpen(i) && mark[i]) {
+          last_depth = (*rows)[i].depth;
+        }
+      }
+    }
+  }
+
+  // new depth of moved rows will be relative to destination
+  int last_depth = -1;
+  int dest_depth;
+  if (row==0)
+    dest_depth = 0;
+  else
+    dest_depth = (*rows)[row-1].depth;
+  if (asParent)
+    ++dest_depth;
+    
+  // skip subtree
+  while(row<rows->size() && (*rows)[row].depth>dest_depth)
+    ++row;
+  
+  // create alternative order in 'order' and adjust depth for each entry
+  vector<unsigned> order;
+  order.resize(rows->size(), 0);
+  size_t hd_cntr = 0;
+  size_t md_cntr = row;
+  for(size_t i=0; i<row; ++i) {
+    if ( mark[i] )
+      --md_cntr;
+  }
+  size_t tl_cntr = md_cntr+marked;
+  for(size_t i=0; i<rows->size(); ++i) {
+    if ( mark[i] ) {
+      order[i] = md_cntr++;
+      // adjust depth of moved rows
+      if (last_depth == -1) {
+        last_depth = (*rows)[i].depth;
+      }
+      (*rows)[i].depth += dest_depth - last_depth;
+    } else {
+      if (i < row)
+        order[i] = hd_cntr++;
+      else
+        order[i] = tl_cntr++;
+      if (last_depth!=-1 && last_depth<(*rows)[i].depth) {
+        (*rows)[i].depth--;
+      } else {
+        last_depth = -1;
+      }
+    }
+  }
+/*
+cout << "order:" << endl;  
+for(size_t i=0; i<order.size(); ++i) {
+  cout << i << ": " << order[i] << " " << (*rows)[i].depth << " " << (*rows)[i].node << endl;
+}
+*/
+  // sort 'rows' using 'order'
+  for(size_t i=0; i<rows->size(); ++i) {
+    for(size_t j=0; j<rows->size(); ++j) {
+      if (order[i]<order[j]) {
+//        int o = order[i]; order[i]=order[j]; order[j]=o;
+        swap(order[i], order[j]);
+//        void *n = (*rows)[i].node; (*rows)[i].node = (*rows)[j].node; (*rows)[j].node = n;
+        swap((*rows)[i], (*rows)[j]);
+#if 0
+        if (table) {
+          // swap(rowopen[i], rowopen[j]);
+          bool b = rowopen[i];
+          rowopen[i] = rowopen[j];
+          rowopen[j] = b;
+        }
+#endif
+      }
+    }
+  }
+/*
+cout << "order:" << endl;  
+for(size_t i=0; i<order.size(); ++i) {
+  cout << i << ": " << order[i] << endl;
+}
+
+cout << "after: rows->size()=" << rows->size() << endl;
+  for(size_t i=0; i<rows->size(); ++i) {
+    cout << i << ": " << (*rows)[i].depth << " " << (*rows)[i].node << endl;
+  }
+*/
+  // 2nd: construct a new tree based on the 'rows' table
+  for(size_t i=0; i<rows->size(); ++i) {
+    _setNext((*rows)[i].node, 0);
+    _setDown((*rows)[i].node, 0);
+  }
+
+  _setRoot((*rows)[0].node);
+//cout << "first is " << (*rows)[0].node << endl;
+  vector<void*> stack;
+  stack.push_back((*rows)[0].node);
+  for(size_t i=1; i<rows->size(); ++i) {
+    if ((*rows)[i-1].depth==(*rows)[i].depth) {
+//cout << "next of " << stack.back() << " is " << (*rows)[i].node << endl;
+      _setNext(stack.back(), (*rows)[i].node);
+      stack.back() = (*rows)[i].node;
+    } else
+    if ((*rows)[i-1].depth<(*rows)[i].depth) {
+//cout << "down of " << stack.back() << " is " << (*rows)[i].node << endl;
+      _setDown(stack.back(), (*rows)[i].node);
+      stack.push_back((*rows)[i].node);
+    } else {
+//cout << "stack size " << stack.size() << endl;
+      stack.resize((*rows)[i].depth+1);
+//cout << "stack size " << stack.size() << endl;
+//stack.pop_back();
+//cout << "Next of " << stack.back() << " is " << (*rows)[i].node << endl;
+      _setNext(stack.back(), (*rows)[i].node);
+      stack.back() = (*rows)[i].node;
+    }
+  }
+/* 
+cout<<"tree now:"<<endl;
+void *n = _getRoot();
+while(n) {
+  cout << n << endl;
+  void *n1 = _getDown(n);
+  if (n1)
+    cout << "  " << n1 << endl;
+  n = _getNext(n);
+};
+*/
+  update(false);
+  reason = CHANGED; // well, not exactly a new model...
+  sigChanged();
+#if 0
+  if (table) {
+    for(size_t i=0; i<rows->size(); ++i) {
+      if (!rowopen[i]) {
+cout << "close row " << i << endl;
+        table->setRowOpen(i, false);
+      }
+    }
+  }
+#endif
 }

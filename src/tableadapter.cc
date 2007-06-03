@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -20,6 +20,7 @@
 
 #include <toad/table.hh>
 #include <toad/utf8.hh>
+#include <toad/dragndrop.hh>
 
 using namespace toad;
 
@@ -78,6 +79,26 @@ switch(reason) {
 */
   sigChanged();
 };
+
+/**
+ * This virtual method should return 'true' when the table adapter
+ * supports drag'n drop. The default is 'false'.
+ */
+bool
+TTableAdapter::canDrag() const
+{
+  return false;
+}
+
+void
+TTableAdapter::dropRequest(TDnDObject &obj)
+{
+}
+
+void
+TTableAdapter::drop(TDnDObject &obj)
+{
+}
 
 void
 TTableAdapter::renderBackground(TTableEvent &te)  

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -18,11 +18,12 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TTable
-#define TTable TTable
+#ifndef _TOAD_TABLE_HH
+#define _TOAD_TABLE_HH 1
 
 #include <toad/scrollpane.hh>
 #include <toad/model.hh>
+#include <toad/dragndrop.hh>
 
 namespace toad {
 
@@ -370,6 +371,11 @@ class TTableAdapter:
     virtual size_t getCols() { return getModel() ? getModel()->getCols() : 1; }
     virtual size_t getRows() { return getModel() ? getModel()->getRows() : 1; }
 
+    // drag'n drop methods
+    virtual bool canDrag() const;
+    virtual void dropRequest(TDnDObject &obj);
+    virtual void drop(TDnDObject &obj);
+
     // utility methods
     void renderBackground(TTableEvent &te);
     void renderCursor(TTableEvent &te);
@@ -442,6 +448,7 @@ class TDefaultTableHeaderRenderer:
 class TTable:
   public TScrollPane
 {
+    friend class TTableDropSite;
     typedef TScrollPane super;
 //    PTableModel model;
     PTableAdapter adapter;
@@ -462,8 +469,8 @@ class TTable:
     size_t sx, sy;
 
     //! 'true' means, user is defining a selection over multiple fields
-    bool selecting;
-    bool start_selecting;
+    bool selecting:1;
+    bool start_selecting:1;
     
     //! first (upper, left) field
     size_t ffx, ffy;
@@ -566,6 +573,7 @@ class TTable:
     //! true: the current mouse position with button pressed will always be selected
     bool selectionFollowsMouse;
     
+    bool mouse2field(int mx, int my, size_t *fx, size_t *fy, int *rfx=0, int *rfy=0);
   protected:
     void _moveCursor(size_t newcx, size_t newcy, unsigned modifier);
     void _setSXSY(size_t x, size_t y);
@@ -576,7 +584,6 @@ class TTable:
 
     void adjustPane();
     void scrolled(int dx, int dy);
-    bool mouse2field(int mx, int my, size_t *fx, size_t *fy, int *rfx=0, int *rfy=0);
     
     // void modelChanged();
     void _handleInsertRow();
@@ -603,6 +610,24 @@ class TTable:
                                int ax, int ay,
                                int bx, int by);
                                                                 
+
+    void dropRequest(TDnDObject &obj);
+    void drop(TDnDObject &obj);
+};
+
+class TDnDTable:
+  public TDnDObject
+{
+  public:
+    TDnDTable(TTable *aTable):table(aTable) {
+      setType("x-application/x-toad-table", ACTION_MOVE);
+    }
+    TTable *table;
+/*
+    static bool select(TDnDObject&);
+    void flatten();
+    static PDnDTextPlain convertData(TDnDObject&);
+*/    
 };
 
 } // namespace toad

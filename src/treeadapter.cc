@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,7 @@
  */
 
 #include <toad/treeadapter.hh>
+#include <toad/dragndrop.hh>
 
 #define DBM(CMD)
 
@@ -257,4 +258,94 @@ bool
 TTreeAdapter::isClosed(size_t row)
 {
   return !table->isRowOpen(row);
+}
+
+void
+TTreeAdapter::dropRequest(TDnDObject &obj)
+{
+  if (!canDrag())
+    return;
+  if (!obj.local)
+    return;
+  TDnDTable *dnd = dynamic_cast<TDnDTable*>(&obj);
+  if (!dnd)
+    return;
+  obj.action = ACTION_MOVE;
+//  cout << "local drop request" << endl;
+  
+  size_t fx, fy; // field
+  int mx, my;    // mouse within field
+  static int x, y; // last position drawn to
+  static TTable *lt = 0; // last table drawn to
+  if (dnd->table->mouse2field(obj.x, obj.y, &fx, &fy, &mx, &my)) {
+//    cout << "field ("<<fx<<", "<<fy<<"), mouse ("<<mx<<", "<<my<<")"<<endl;
+    int lp = getLeafPos(fy);
+    int rh = dnd->table->getRowHeight(fy);
+
+    int nx, ny;
+    if (mx>=lp) {
+      nx = lp;
+      ny = obj.y-my+rh/2;
+    } else {
+      if (my<rh/2) {
+        nx = lp - 7;
+        ny = obj.y - my;
+      } else {
+        nx = lp - 7;
+        ny = obj.y - my + rh;
+      }
+    }
+    if (lt==dnd->table && x == nx && y == ny)
+      return;
+    if (lt==dnd->table) {
+      dnd->table->invalidateWindow(TRectangle(x-3, y-3, 7, 7));
+      dnd->table->paintNow();
+    }
+    TPen pen(dnd->table);
+    pen.fillCirclePC(nx-3, ny-3, 7, 7);
+    x = nx;
+    y = ny;
+    lt = dnd->table;
+  } else {
+    if (lt==dnd->table) {
+      dnd->table->invalidateWindow(TRectangle(x-3, y-3, 7, 7));
+      dnd->table->paintNow();
+      lt = 0;
+    }
+  }
+}
+
+void
+TTreeAdapter::drop(TDnDObject &obj)
+{
+//  cout << "dropped something on table at " << obj.x << ", " << obj.y << endl;
+  TDnDTable *dnd = dynamic_cast<TDnDTable*>(&obj);
+  if (!dnd)
+    return;
+
+  size_t fx, fy; // field
+  int mx, my;    // mouse within field
+  if (dnd->table->mouse2field(obj.x, obj.y, &fx, &fy, &mx, &my)) {
+//    cout << "field ("<<fx<<", "<<fy<<"), mouse ("<<mx<<", "<<my<<")"<<endl;
+    int lp = getLeafPos(fy);
+    int rh = dnd->table->getRowHeight(fy);
+
+//    dnd->table->invalidateWindow();
+//    dnd->table->paintNow();
+    bool below;
+    if (mx>=lp) {
+      below = true;
+      ++fy;
+//      cout << "as child" << endl;
+    } else {
+      below = false;
+      if (my<rh/2) {
+//        cout << "above" << endl;
+      } else {
+//        cout << "below" << endl;
+        ++fy;
+      }
+    }
+    getModel()->reorder(table->getSelectionModel(), fy, below, dnd->table);
+  }
 }

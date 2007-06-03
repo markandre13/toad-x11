@@ -21,6 +21,7 @@
 #include <toad/toad.hh>
 #include <toad/table.hh>
 #include <toad/figure.hh>
+#include <toad/dragndrop.hh>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -626,6 +627,55 @@ TTable::setModel(TTableModel *m)
 }
 #endif
 
+namespace toad {
+class TTableDropSite:
+  public TDropSite
+{
+    typedef TDropSite super;
+    TTable *table;
+  public:
+    TTableDropSite(TTable *p):super(p), table(p) {};
+    TTableDropSite(TTable *p, const TRectangle &r):super(p,r), table(p) {};
+  protected:
+    void dropRequest(TDnDObject&);
+    void drop(TDnDObject&);
+    void paint();
+};
+} // namespace toad
+
+void
+TTableDropSite::dropRequest(TDnDObject &obj)
+{
+  obj.action = ACTION_NONE;
+  table->dropRequest(obj);
+}
+
+void
+TTableDropSite::drop(TDnDObject &obj)
+{
+  table->drop(obj);
+}
+
+void
+TTableDropSite::paint()
+{
+  // no operation, TTableAdapter shall do this during dropRequest
+}
+
+void
+TTable::dropRequest(TDnDObject &obj)
+{
+  if (adapter)
+    adapter->dropRequest(obj);
+}
+
+void
+TTable::drop(TDnDObject &obj)
+{
+  if (adapter)
+    adapter->drop(obj);
+}
+
 void
 TTable::setAdapter(TTableAdapter *r) 
 {
@@ -642,6 +692,9 @@ TTable::setAdapter(TTableAdapter *r)
     adapter->setTable(this);
 //    if (model)
 //      adapter->setModel(model);
+    if (adapter->canDrag()) {
+      new TTableDropSite(this); // we need a way to delete dropsites!
+    }
   }
   handleNewModel();
 }
@@ -1357,7 +1410,6 @@ TTable::mouseLDown(int mx, int my, unsigned modifier)
   if (!mouse2field(mx, my, &x, &y, &fx, &fy)) {
     return;
   }
-
   // invoke adapter mouseEvent (ie. for tree widgets, check boxes, etc.)
   if (adapter) {
     TTableEvent te;
@@ -1463,6 +1515,15 @@ TTable::mouseMove(int mx, int my, unsigned modifier)
     cout << "leave mouseMove" << endl << endl;)
     return;
   }
+
+  // experimental drag'n drop
+  if (adapter && adapter->canDrag() &&
+      selection && selection->isSelected(x, y)) 
+  {
+    startDrag(new TDnDTable(this), MK_SHIFT /* move */);
+    return;
+  }
+
 //  cout << "mouse move on field " << x << ", " << y << endl;
 
   if (cx==x && cy==y) {
