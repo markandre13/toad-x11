@@ -123,12 +123,12 @@ TColorSelector::paint()
 }  
    
 void
-TColorSelector::mouseLDown(int x, int y, unsigned modifier)
+TColorSelector::mouseLDown(const TMouseEvent &me)
 {
-  if (x<border ||
-      y<border ||
-      x>w2-border ||
-      y>h-border)  
+  if (me.x<border ||
+      me.y<border ||
+      me.x>w2-border ||
+      me.y>h-border)  
   {
     return;
   }
@@ -147,16 +147,16 @@ TColorSelector::mouseLDown(int x, int y, unsigned modifier)
 }
 
 void
-TColorSelector::mouseMDown(int x, int y, unsigned modifier)
+TColorSelector::mouseMDown(const TMouseEvent &me)
 {
-  if (x<border ||
-      y<border ||
-      x>w2-border ||
-      y>h-border)  
+  if (me.x<border ||
+      me.y<border ||
+      me.x>w2-border ||
+      me.y>h-border)  
   {
-    startDrag(new TDnDColor(linecolor), modifier);
+    startDrag(new TDnDColor(linecolor), me.modifier());
   } else {
-    startDrag(new TDnDColor(fillcolor), modifier);
+    startDrag(new TDnDColor(fillcolor), me.modifier());
   }
 }
 

@@ -42,7 +42,7 @@ TScrollPane::TScrollPane(TWindow *p, const string &t):
 }
 
 void
-TScrollPane::mouseEvent(TMouseEvent &me)
+TScrollPane::mouseEvent(const TMouseEvent &me)
 {
   if (vscroll && (
         me.type == TMouseEvent::ROLL_UP ||
@@ -68,15 +68,15 @@ TScrollPane::resetScrollPane()
 void
 TScrollPane::_scrolled()
 {
-  int dx, dy;
+  TCoord dx, dy;
   dx = dy = 0;
   if (hscroll) {
-    int n = hscroll->getValue();
+    TCoord n = hscroll->getValue();
     dx = lx - n;
     lx = n;
   }
   if (vscroll) {
-    int n = vscroll->getValue();  
+    TCoord n = vscroll->getValue();  
     dy = ly - n;
     ly = n;
   }
@@ -113,9 +113,9 @@ TScrollPane::_scrolled()
  *   delta movement on y-axis
  */
 void
-TScrollPane::scrolled(int dx, int dy)
+TScrollPane::scrolled(TCoord dx, TCoord dy)
 {
-  int x, y;
+  TCoord x, y;
   getPanePos(&x, &y);
   setOrigin(-x, -y);
 }
@@ -274,7 +274,7 @@ TScrollPane::paintCorner(TPenBase &pen)
 }
 
 void
-TScrollPane::getPanePos(int *x, int *y, bool setall) const {
+TScrollPane::getPanePos(TCoord *x, TCoord *y, bool setall) const {
   if (setall) {
     *x = *y = 0;
   }
@@ -283,13 +283,13 @@ TScrollPane::getPanePos(int *x, int *y, bool setall) const {
 }
 
 void
-TScrollPane::setPanePos(int x, int y) {
+TScrollPane::setPanePos(TCoord x, TCoord y) {
   if (hscroll) hscroll->setValue(x);
   if (vscroll) vscroll->setValue(y);
 }
 
 void
-TScrollPane::setUnitIncrement(int uix, int uiy)
+TScrollPane::setUnitIncrement(TCoord uix, TCoord uiy)
 {
   this->uix = uix;
   this->uiy = uiy;

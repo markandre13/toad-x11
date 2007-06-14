@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TRadioButtonBase
-#define TRadioButtonBase TRadioButtonBase
+#ifndef _TOAD_RADIOBUTTONBASE_HH
+#define _TOAD_RADIOBUTTONBASE_HH 1
 
 #include <toad/buttonbase.hh>
 #include <toad/model.hh>
@@ -88,10 +88,10 @@ class TRadioButtonBase:
     void setDown(bool down=true);
     void _setDown(bool);
     
-    void mouseLDown(int,int,unsigned);
-    void mouseLUp(int,int,unsigned);
-    void mouseEnter(int,int,unsigned);
-    void mouseLeave(int,int,unsigned);
+    void mouseLDown(const TMouseEvent&);
+    void mouseLUp(const TMouseEvent&);
+    void mouseEnter(const TMouseEvent&);
+    void mouseLeave(const TMouseEvent&);
     
     bool isDown() const;
 };

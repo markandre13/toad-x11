@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_COLORSELECTOR_HH
-#define _TOAD_COLORSELECTOR_HH
+#define _TOAD_COLORSELECTOR_HH 1
 
 #include <toad/dnd/color.hh>
 #include <toad/figureeditor.hh>
@@ -51,8 +51,8 @@ class TColorSelector:
   protected:
     void resize();
     void paint();
-    void mouseLDown(int, int, unsigned);
-    void mouseMDown(int, int, unsigned);
+    void mouseLDown(const TMouseEvent&);
+    void mouseMDown(const TMouseEvent&);
 
     void dropColor(const PDnDColor&);
     void openColorDialog();

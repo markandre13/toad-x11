@@ -75,21 +75,21 @@ TPopupMenu::open(TMouseEvent &event)
 {
   x = event.x;
   y = event.y;
-  modifier = event.modifier;
+  modifier = event.modifier();
   placeWindow(this, PLACE_CORNER_MOUSE_POINTER, 0);
   createWindow();
-  grabPopupMouse(TMMM_PREVIOUS);
+  grabPopupMouse();
 }
 
 void
-TPopupMenu::open(int x, int y, unsigned modifier)
+TPopupMenu::open(TCoord x, TCoord y, unsigned modifier)
 {
   this->x = x;
   this->y = y;
   this->modifier = modifier;
   placeWindow(this, PLACE_CORNER_MOUSE_POINTER, 0);
   createWindow();
-  grabPopupMouse(TMMM_PREVIOUS);
+  grabPopupMouse();
 }
 
 /**

@@ -63,9 +63,9 @@ using namespace toad;
  */
 
 #if 1
-double toad::TFigure::OUT_OF_RANGE = HUGE_VAL;
-double toad::TFigure::RANGE = 5.0;
-double toad::TFigure::INSIDE = -1.0;
+TCoord toad::TFigure::OUT_OF_RANGE = HUGE_VAL;
+TCoord toad::TFigure::RANGE = 5.0;
+TCoord toad::TFigure::INSIDE = -1.0;
 #endif
 
 // this class is for backward compability
@@ -160,13 +160,13 @@ TFigure::editEvent(TFigureEditEvent &ee)
  * many beziers. I still need to work it out.
  */
 double
-TFigure::_distance(TFigureEditor *fe, int x, int y)
+TFigure::_distance(TFigureEditor *fe, TCoord x, TCoord y)
 {
   return distance(x, y);
 }
 
 double
-TFigure::distance(int x, int y)
+TFigure::distance(TCoord x, TCoord y)
 {
   TRectangle r;
   getShape(&r);
@@ -174,7 +174,7 @@ TFigure::distance(int x, int y)
 }
     
 void
-TFigure::translate(int dx, int dy)
+TFigure::translate(TCoord dx, TCoord dy)
 {
 }
 
@@ -182,6 +182,7 @@ TFigure::translate(int dx, int dy)
 TColoredFigure::TColoredFigure()
 {
   filled = false;
+  closed = false;
   line_color.set(0,0,0);
   fill_color.set(0,0,0);
   alpha = 255;
@@ -267,7 +268,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
   pen.setLineColor(TColor::FIGURE_SELECTION);
   pen.setFillColor(TColor::WHITE);
 
-  TMatrix2D *m0 = pen.getMatrix();
+  const TMatrix2D *m0 = pen.getMatrix();
   if (m0) {
     pen.push();
     pen.identity();
@@ -278,7 +279,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
   while(true) {
     if ( !getHandle(h, &pt) )
       break;
-    int x, y;
+    TCoord x, y;
     if (m0) {
       m0->map(pt.x, pt.y, &x, &y);
     } else {
@@ -300,7 +301,7 @@ TFigure::paintSelection(TPenBase &pen, int handle)
   if (h==0) {
     TRectangle r;
     getShape(&r);
-    int x, y;
+    TCoord x, y;
     for(int i=0; i<4; ++i) {
       switch(i) {
         case 0: x = r.x;       y = r.y;       break;
@@ -354,7 +355,7 @@ TFigure::endTranslateHandle()
  * Set handle <I>handle</I> to position (x,y).
  */
 void
-TFigure::translateHandle(unsigned handle, int x, int y, unsigned)
+TFigure::translateHandle(unsigned handle, TCoord x, TCoord y, unsigned)
 {
 }
 
@@ -371,7 +372,7 @@ TFigure::stop(TFigureEditor*)
 }
 
 unsigned 
-TFigure::keyDown(TFigureEditor*, TKey, char*, unsigned)
+TFigure::keyDown(TFigureEditor*, const TKeyEvent&)
 { 
   return CONTINUE; 
 }
@@ -382,25 +383,25 @@ TFigure::startCreate()
 }
 
 unsigned
-TFigure::mouseLDown(TFigureEditor*, int, int, unsigned)
+TFigure::mouseLDown(TFigureEditor*, const TMouseEvent&)
 {
   return STOP;
 }
 
 unsigned
-TFigure::mouseMove(TFigureEditor*, int, int, unsigned)
+TFigure::mouseMove(TFigureEditor*, const TMouseEvent&)
 {
   return CONTINUE;
 }
 
 unsigned 
-TFigure::mouseLUp(TFigureEditor*, int, int, unsigned)
+TFigure::mouseLUp(TFigureEditor*, const TMouseEvent&)
 {
   return CONTINUE;
 }
 
 unsigned
-TFigure::mouseRDown(TFigureEditor*, int, int, unsigned)
+TFigure::mouseRDown(TFigureEditor*, const TMouseEvent&)
 {
   return CONTINUE;
 }
@@ -513,18 +514,18 @@ TColoredFigure::restore(TInObjectStream &in)
 /**
  * Returns the distance of point (x,y) to the line (x1,y1)-(x2,y2).
  */
-double 
-TFigure::distance2Line(int x, int y, int x1, int y1, int x2, int y2)
+TCoord 
+TFigure::distance2Line(TCoord x, TCoord y, TCoord x1, TCoord y1, TCoord x2, TCoord y2)
 {
-  double bx = x2 - x1;
-  double by = y2 - y1;
-  double ax = x-x1;
-  double ay = y-y1;
+  TCoord bx = x2 - x1;
+  TCoord by = y2 - y1;
+  TCoord ax = x-x1;
+  TCoord ay = y-y1;
   if (bx==0.0 && by==0.0) {
     return sqrt(ax*ax+ay*ay);
   }
-  double lb = bx*bx+by*by;
-  double t = (bx * ax + by * ay ) / lb;
+  TCoord lb = bx*bx+by*by;
+  TCoord t = (bx * ax + by * ay ) / lb;
   if (t<0.0 || t>1.0)
     return OUT_OF_RANGE;
   return fabs(by * ax - bx * ay) / sqrt(lb);

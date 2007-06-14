@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_HTMLVIEW_HH
-#define _TOAD_HTMLVIEW_HH
+#define _TOAD_HTMLVIEW_HH 1
 
 #include <toad/scrollpane.hh>
 
@@ -48,8 +48,8 @@ class THTMLView:
     void adjustPane();
     void paint();
     void parse(istream &in);
-    void mouseLDown(int x,int y, unsigned modifier);
-    void mouseMove(int x,int y, unsigned modifier);
+    void mouseLDown(const TMouseEvent&);
+    void mouseMove(const TMouseEvent&);
 };
 
 } // namespace toad

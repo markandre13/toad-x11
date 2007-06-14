@@ -19,6 +19,7 @@
  */
 
 #include <toad/os.hh>
+#include <toad/config.h>
 
 #ifdef __X11__
 #include <X11/Xlib.h>
@@ -34,6 +35,7 @@
 #include <toad/toadbase.hh>
 #include <toad/pen.hh>
 #include <toad/window.hh>
+#include <toad/bitmap.hh>
 #include <toad/region.hh>
 
 #include <iostream>
@@ -58,6 +60,7 @@ TPenBase::TPenBase()
 {
   keepcolor = false;
   outline   = false;
+  font = default_font;
 }
 
 TPenBase::~TPenBase()
@@ -128,6 +131,15 @@ TPen::TPen(TWindow *wnd)
     bmp = 0;
     x11drawable = wnd->x11window;
   }
+#endif
+
+#ifdef __COCOA__
+  [[NSGraphicsContext currentContext] saveGraphicsState];
+  [[NSGraphicsContext currentContext] setShouldAntialias: NO];
+  clipPath = [NSBezierPath bezierPath];
+  [clipPath appendBezierPathWithRect: NSMakeRect(0, 0, wnd->w, wnd->h)];
+  [clipPath setClip];
+  mstack.push_back([NSAffineTransform transform]);
 #endif
 
   this->wnd = wnd;
@@ -239,8 +251,15 @@ TPen::~TPen()
 #ifdef HAVE_LIBXFT
   if (xftdraw) {
     XftDrawDestroy(xftdraw);
+    xftdraw = 0;
   }
 #endif
+#endif
+
+#ifdef __COCOA__
+  [NSBezierPath setDefaultLineWidth: 1];
+  [[NSGraphicsContext currentContext] restoreGraphicsState];
+  // [clipPath release];
 #endif
 
 #ifdef __WIN32__
@@ -503,7 +522,7 @@ void TPen::setMode(EMode mode)
  * Sets the width of the line for all line drawing operations, eg.
  * drawLine, drawRectangle, etc.
  */
-void TPen::setLineWidth(int n)
+void TPen::setLineWidth(TCoord n)
 {
   if (n<0)
     width=0;
@@ -512,6 +531,10 @@ void TPen::setLineWidth(int n)
 
 #ifdef __X11__
   _setLineAttributes();
+#endif
+
+#ifdef __COCOA__
+  [NSBezierPath setDefaultLineWidth: w];
 #endif
 
 #ifdef __WIN32__
@@ -700,7 +723,7 @@ TPen::updateW32Brush() const
  * Set the line and fill color to <VAR>color</VAR>.
  */
 void 
-TPen::setColor(const TColor &color)
+TPen::vsetColor(TCoord r, TCoord g, TCoord b)
 {
   if (keepcolor)
     return;
@@ -712,18 +735,28 @@ TPen::setColor(const TColor &color)
 #endif
 
   two_colors = false;
+  TColor color(r, g, b);
   if (color==o_color) {
     return;
   }
   o_color=color;
+
 #ifdef __X11__
   o_color._setPen(this, o_gc);
   XSetBackground(x11display, o_gc, TColor::_getPixel(color));
 #endif
+
 #ifdef __WIN32__
   w32logpen.lopnColor = o_color.colorref;
   updateW32Pen();
   updateW32Brush();
+#endif
+
+#ifdef __COCOA__
+  stroke.r = fill.r = r;
+  stroke.g = fill.g = g;
+  stroke.b = fill.b = b;
+  [[NSColor colorWithDeviceRed: r green: g blue: b alpha: stroke.a] set];
 #endif
 }
 
@@ -731,7 +764,7 @@ TPen::setColor(const TColor &color)
  * Set the line color to <VAR>color</VAR>.
  */
 void 
-TPen::setLineColor(const TColor &color)
+TPen::vsetLineColor(TCoord r, TCoord g, TCoord b)
 {
   if (keepcolor)
     return;
@@ -741,7 +774,7 @@ TPen::setLineColor(const TColor &color)
     using_bitmap = false;
   }
 #endif
-
+  TColor color(r, g, b);
   if (two_colors) {
     if (color==o_color)
       return;
@@ -761,13 +794,19 @@ TPen::setLineColor(const TColor &color)
 #ifdef __WIN32__
   updateW32Pen();
 #endif
+#ifdef __COCOA__
+  stroke.r = r;
+  stroke.g = g;
+  stroke.b = b;
+  [[NSColor colorWithDeviceRed: r green: g blue: b alpha: stroke.a] setStroke];
+#endif
 }
 
 /**
  * Set the fill color to <VAR>color</VAR>.
  */
 void 
-TPen::setFillColor(const TColor &color)
+TPen::vsetFillColor(TCoord r, TCoord g, TCoord b)
 {
   if (keepcolor)
     return;
@@ -777,7 +816,7 @@ TPen::setFillColor(const TColor &color)
     using_bitmap = false;
   }
 #endif
-
+  TColor color(r, g, b);
   if (two_colors) {
     if (color==f_color)
       return;
@@ -800,9 +839,10 @@ TPen::setFillColor(const TColor &color)
 #ifdef __WIN32__
   updateW32Brush();
 #endif
-}
-
-void
-TPenBase::showPage()
-{
+#ifdef __COCOA__
+  fill.r = r;
+  fill.g = g;
+  fill.b = b;
+  [[NSColor colorWithDeviceRed: r green: g blue: b alpha: fill.a] setFill];
+#endif
 }

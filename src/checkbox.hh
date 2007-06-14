@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_CHECKBOX_HH
-#define _TOAD_CHECKBOX_HH
+#define _TOAD_CHECKBOX_HH 1
 
 #include <toad/labelowner.hh>
 #include <toad/boolmodel.hh>
@@ -59,8 +59,8 @@ class TCheckBox:
     
   private:
     void valueChanged();
-    void keyDown(TKey,char*,unsigned);
-    void mouseLDown(int,int,unsigned);
+    void keyDown(const TKeyEvent&);
+    void mouseLDown(const TMouseEvent&);
     void paint();
 
     void _init(TBoolModel *);

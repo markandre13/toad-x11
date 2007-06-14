@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_SCROLLPANE_HH
-#define _TOAD_SCROLLPANE_HH
+#define _TOAD_SCROLLPANE_HH 1
 
 #include <toad/window.hh>
 
@@ -33,7 +33,7 @@ class TScrollPane:
   public:
     TScrollPane(TWindow *p, const string &t);
     const TRectangle& getVisible() const { return visible; }
-    void mouseEvent(TMouseEvent &me);
+    void mouseEvent(const TMouseEvent &me);
     
   protected:
     //! the visible part of the pane (better: pane?)
@@ -44,7 +44,7 @@ class TScrollPane:
     
     void resetScrollPane();
     
-    virtual void scrolled(int x, int y);
+    virtual void scrolled(TCoord x, TCoord y);
     
     void adjust();
     void created();
@@ -52,9 +52,9 @@ class TScrollPane:
     void doLayout();
     virtual void adjustPane() = 0;
     
-    void getPanePos(int *x, int *y, bool setall=true) const;
-    void setPanePos(int x, int y);
-    void setUnitIncrement(int uix, int uiy);
+    void getPanePos(TCoord *x, TCoord *y, bool setall=true) const;
+    void setPanePos(TCoord x, TCoord y);
+    void setUnitIncrement(TCoord uix, TCoord uiy);
     void paintCorner(TPenBase&);
     
     void pageUp();
@@ -62,10 +62,10 @@ class TScrollPane:
 
   private:
     //! unit increment as set by setUnitIncrement
-    int uix, uiy;
+    TCoord uix, uiy;
   
     //! last scrollbar position (so we know how much to scroll)
-    int lx, ly;
+    TCoord lx, ly;
 
     TScrollBar *vscroll, *hscroll;
 

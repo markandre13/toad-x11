@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,10 +19,10 @@
  */
 
 #ifndef _TOAD_RGBMODEL_HH
-#define _TOAD_RGBMODEL_HH
+#define _TOAD_RGBMODEL_HH 1
 
 #include <toad/model.hh>
-#include <toad/integermodel.hh>
+#include <toad/floatmodel.hh>
 #include <toad/textarea.hh>
 
 namespace toad {
@@ -39,9 +39,9 @@ class TRGBModel:
       return *this; 
     }
     operator TRGB() const { TRGB c(r, g, b); return c; }
-    TIntegerModel r, g, b;
+    TFloatModel r, g, b;
     
-    void set(int r, int g, int b) {
+    void set(TCoord r, TCoord g, TCoord b) {
       if (this->r == r && this->g == g && this->b == b)
         return;
       lock = true;

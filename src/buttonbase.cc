@@ -18,11 +18,11 @@
  * MA  02111-1307,  USA
  */
 
+#include <toad/buttonbase.hh>
 #include <toad/toadbase.hh>
 #include <toad/pen.hh>
 #include <toad/window.hh>
-
-#include <toad/buttonbase.hh>
+#include <toad/bitmap.hh>
 
 using namespace toad;
 
@@ -95,8 +95,8 @@ TButtonBase::drawLabel(TPen &pen,const string &text, bool bDown, bool bEnabled)
 {
   int n=bDown?1:0;
   if (!bitmap) {
-    int x = (getWidth()-pen.getTextWidth(text)) >> 1;
-    int y = (getHeight()-pen.getHeight()) >> 1;
+    TCoord x = (getWidth()-pen.getTextWidth(text)) / 2;
+    TCoord y = (getHeight()-pen.getHeight()) / 2;
     if(isEnabled() && bEnabled) {
       pen.setColor(TColor::BTNTEXT);
       pen.drawString(x+n, y+n, text);
@@ -180,7 +180,7 @@ TButtonBase::drawShadow(TPen &pen, bool down, bool onwhite)
 }
 
 void
-TButtonBase::mouseLDown(int,int,unsigned)
+TButtonBase::mouseLDown(const TMouseEvent&)
 {
   if (!isEnabled() || !sigClicked.isConnected())
     return;
@@ -196,7 +196,7 @@ TButtonBase::mouseLDown(int,int,unsigned)
 }
 
 void
-TButtonBase::mouseLUp(int,int,unsigned)
+TButtonBase::mouseLUp(const TMouseEvent&)
 {
   if (bDown) {
     bDown=false;
@@ -209,12 +209,12 @@ TButtonBase::mouseLUp(int,int,unsigned)
 }
 
 void
-TButtonBase::keyDown(TKey key, char* str, unsigned modifier)
+TButtonBase::keyDown(const TKeyEvent &ke)
 {
   if (!isEnabled() || !sigClicked.isConnected())
     return;
 
-  if (!bDown && modifier==0 && (key==TK_RETURN || *str==' ')) {
+  if (!bDown && ke.modifier()==0 && (ke.key()==TK_RETURN || ke.str()==" ")) {
     sigArm();
     sigDisarm();
     sigClicked();
@@ -222,7 +222,7 @@ TButtonBase::keyDown(TKey key, char* str, unsigned modifier)
 }
 
 void
-TButtonBase::mouseEnter(int,int,unsigned)
+TButtonBase::mouseEnter(const TMouseEvent&)
 {
   bInside = true;
   if(bDown) {
@@ -232,7 +232,7 @@ TButtonBase::mouseEnter(int,int,unsigned)
 }
 
 void
-TButtonBase::mouseLeave(int,int,unsigned)
+TButtonBase::mouseLeave(const TMouseEvent&)
 {
   bInside = false;
   if(bDown) {

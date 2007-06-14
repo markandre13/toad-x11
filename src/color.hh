@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TColor
-#define TColor TColor
+#ifndef _TOAD_COLOR_HH
+#define _TOAD_COLOR_HH 1
 
 #include <toad/toadbase.hh>
 #include <toad/os.hh>
@@ -34,12 +34,17 @@ namespace toad {
 
 class TPen;
 
+struct TRGB24 {
+  byte r, g, b;
+};
+
 struct TRGB
 {
-    byte r,g,b;
+    TCoord r,g,b,a;
     TRGB() {
+      r=g=b=a=0.0;
     }
-    TRGB(byte ir, byte ig, byte ib) {
+    TRGB(TCoord ir, TCoord ig, TCoord ib) {
       r=ir; g=ig; b=ib;
     }
 
@@ -49,10 +54,10 @@ struct TRGB
     bool operator !=(const TRGB &c) const {
       return (r!=c.r || g!=c.g || b!=c.b);
     }
-    void operator() (byte rn,byte gn,byte bn) {
+    void operator() (TCoord rn,TCoord gn,TCoord bn) {
       r=rn;g=gn;b=bn;
     }
-    void set(byte rn,byte gn,byte bn) {
+    void set(TCoord rn,TCoord gn,TCoord bn) {
       r=rn;g=gn;b=bn;
     }
 };
@@ -64,7 +69,7 @@ struct TSerializableRGB:
 
     TSerializableRGB() {}
 
-    TSerializableRGB(byte ir, byte ig, byte ib) {
+    TSerializableRGB(TCoord ir, TCoord ig, TCoord ib) {
       r=ir; g=ig; b=ib;
     }
     TSerializableRGB& operator= (const TRGB &c) {
@@ -88,28 +93,15 @@ struct TSerializableRGB:
     SERIALIZABLE_INTERFACE(toad::, TSerializableRGB)
 };
 
-class TColor
-  :public TSerializableRGB
+class TColor:
+  public TSerializableRGB
 {
     friend class TPen;
     friend class TWindow;
     friend class TBitmap;
 
-#ifdef __X11__
-    class TData:
-      public TSmartObject
-    {
-      public:
-        TData();
-        ~TData();
-        bool pixel_is_valid;
-        ulong xpixel;
-        ulong /* Pixmap */ pm;
-    };
-#endif
-
   public:
-    enum EColor16 {
+    enum EColor {
       BLACK=0,
       RED=1,
       GREEN=2,
@@ -126,11 +118,8 @@ class TColor
       LIGHTMAGENTA,
       LIGHTCYAN,
       WHITE,
-      COLOR16_MAX
-    };
 
-    enum ESystemColor {
-      BTNTEXT=0,            // buttonbase
+      BTNTEXT,              // buttonbase
       BTNSHADOW,
       BTNFACE,
       BTNLIGHT,
@@ -157,6 +146,8 @@ class TColor
       FIGURE_SELECTION,     // used by figureeditor to mark selections
       MAX
     };
+    
+    static const TRGB* lookup(EColor);
 
     enum EDitherMode {
       NEAREST = 0,
@@ -167,43 +158,32 @@ class TColor
     };
 
     TColor();
-    TColor(byte r, byte g, byte b);
-    TColor(EColor16);
-    TColor(ESystemColor);
+    TColor(TCoord r, TCoord g, TCoord b);
+    TColor(EColor);
     ~TColor();
 
     void set(const TRGB &c) {
       r = c.r;
       g = c.g;
       b = c.b;
-#ifdef __X11__
-      _data = NULL;
-#endif
 #ifdef __WIN32__
       colorref = RGB(r, g, b);
 #endif
     }
-    void set(byte cr, byte cg, byte cb) {
+    void set(TCoord cr, TCoord cg, TCoord cb) {
       r = cr; g = cg; b = cb;
-#ifdef __X11__
-      _data = NULL;
-#endif
 #ifdef __WIN32__
       colorref = RGB(r, g, b);
 #endif
     }
-    void set(EColor16);
-    void set(ESystemColor);
+    void set(EColor);
 
     TColor& operator =(const TColor &c) {
       r = c.r;
       g = c.g;
       b = c.b;
-#ifdef __X11__
-      _data = c._data;
-#endif
 #ifdef __WIN32__
-      colorref = RGB(r, g, b);
+      colorref = RGB(r*255, g*255, b*255);
 #endif
       return *this;
     }
@@ -212,11 +192,8 @@ class TColor
       r = c.r;
       g = c.g;
       b = c.b;
-#ifdef __X11__
-      _data = NULL;
-#endif
 #ifdef __WIN32__
-      colorref = RGB(r, g, b);
+      colorref = RGB(r*255, g*255, b*255);
 #endif
       return *this;
     }
@@ -231,13 +208,8 @@ class TColor
     //-----------------------------
     void _setPen(TPen*, _TOAD_GC &gc);
     static ulong _getPixel(const TRGB&);
+    static ulong _getPixel(const TRGB24&);
     ulong _getPixel() { return _getPixel(*this); }
-    static ulong _getPixelAt(const TRGB&, int x,int y);
-    ulong _getPixelAt(int x, int y) { return _getPixelAt(*this,x,y); }
-    
-    static bool _shouldNotDither();
-    typedef GSmartPointer<TData> PData;
-    PData _data;
 #endif
 
 #ifdef __WIN32__

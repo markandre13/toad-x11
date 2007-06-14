@@ -18,12 +18,13 @@
  * MA  02111-1307,  USA
  */
 
+#include <toad/messagebox.hh>
 #include <toad/toadbase.hh>
 #include <toad/pen.hh>
 #include <toad/window.hh>
 #include <toad/font.hh>
 #include <toad/pushbutton.hh>
-#include <toad/messagebox.hh>
+#include <toad/bitmap.hh>
 
 using namespace toad;
 
@@ -53,7 +54,7 @@ TMessageBox::TMessageBox(TWindow* p,
   #define VSPACE 16
 
   // icon dimensions
-  int icon_width, icon_height;
+  TCoord icon_width, icon_height;
   if (bitmap) {
     icon_width = bitmap->width;
     icon_height = bitmap->height;
@@ -63,15 +64,15 @@ TMessageBox::TMessageBox(TWindow* p,
   }
 
   // button dimensions
-  const unsigned btn_width  = 100;    // width for all buttons
-  const unsigned btn_height = getDefaultFont().getHeight() + 8;
-  const unsigned btn_hspace = 8;      // space between buttons
-  const unsigned vspace = VSPACE;     // space between buttons and window bottom
+  const TCoord btn_width  = 100;    // width for all buttons
+  const TCoord btn_height = getDefaultFont().getHeight() + 8;
+  const TCoord btn_hspace = 8;      // space between buttons
+  const TCoord vspace = VSPACE;     // space between buttons and window bottom
 
-  unsigned y;
+  TCoord y;
 
-  int msg_height;
-  int msg_width=380-32 + icon_width;    // width of the messagebox
+  TCoord msg_height;
+  TCoord msg_width=380-32 + icon_width;    // width of the messagebox
 
   // space for icon & position for text;
   if (type & 0xF000 || bitmap)
@@ -80,8 +81,8 @@ TMessageBox::TMessageBox(TWindow* p,
     tx=8;
 
   // text size
-  int txt_width = msg_width - tx - 8;
-  int txt_height = TPen::getHeightOfTextFromWidth(&getDefaultFont(), text, txt_width);
+  TCoord txt_width = msg_width - tx - 8;
+  TCoord txt_height = TPen::getHeightOfTextFromWidth(&getDefaultFont(), text, txt_width);
 
   tw = txt_width; // store value for 'paint()' method
 
@@ -94,9 +95,9 @@ TMessageBox::TMessageBox(TWindow* p,
     iy = vspace+txt_height/2-icon_height/2;
   }
 
-  y = (vspace<<1) + txt_height;
+  y = vspace*2 + txt_height;
   
-  msg_height = vspace + txt_height + (vspace<<1) + btn_height;
+  msg_height = vspace + txt_height + vspace*2 + btn_height;
   
   setSize(msg_width,msg_height);
 
@@ -117,8 +118,8 @@ TMessageBox::TMessageBox(TWindow* p,
   }
   
   // create buttons
-  unsigned w = n * btn_width + (n-1) * btn_hspace;
-  unsigned x = (_w - w)>>1;
+  TCoord w = n * btn_width + (n-1) * btn_hspace;
+  TCoord x = (this->w - w)/2;
   static const char* label[8] =
   {
     "Accept","Abort","Ok","Retry","Yes","No","Cancel","Ignore"

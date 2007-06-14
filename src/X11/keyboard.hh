@@ -59,9 +59,6 @@
 #define MK_ALTGR   8192
 //#define MK_ANY     (1<<15)
 
-// a special TOAD modifier for double click events
-#define MK_DOUBLE  (1<<14)
-
 // key definitions that came from "X11/keysymdef.h"
 
 typedef unsigned long TKey;

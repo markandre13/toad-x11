@@ -18,10 +18,11 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TDnDImage
-#define TDnDImage TDnDImage
+#ifndef _TOAD_DND_IMAGE_HH
+#define _TOAD_DND_IMAGE_HH 1
 
 #include <toad/dragndrop.hh>
+#include <toad/bitmap.hh>
 
 namespace toad {
 

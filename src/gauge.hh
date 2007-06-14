@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_GAUGE_HH
-#define _TOAD_GAUGE_HH
+#define _TOAD_GAUGE_HH 1
 
 #include <toad/arrowbutton.hh>
 #include <toad/integermodel.hh>
@@ -31,16 +31,16 @@ class TGauge:
 {
     PIntegerModel model;
     TArrowButton *up, *down;
-    int unitIncrement;
-    int down_y, down_val;
+    TCoord unitIncrement;
+    TCoord down_y, down_val;
     
   public:
     TGauge(TWindow*, const string&, TIntegerModel *model=0);
     
     void setModel(TIntegerModel*);
     TIntegerModel* getModel() const { return model; }
-    void setUnitIncrement(int i) { unitIncrement=i; }
-    int getUnitIncrement() const { return unitIncrement; }
+    void setUnitIncrement(TCoord i) { unitIncrement=i; }
+    TCoord getUnitIncrement() const { return unitIncrement; }
 
     void resize();
     void increment();
@@ -48,7 +48,7 @@ class TGauge:
     
     void modelChanged();
     
-    void mouseEvent(TMouseEvent &me);
+    void mouseEvent(const TMouseEvent &me);
 };
 
 } // namespace toad

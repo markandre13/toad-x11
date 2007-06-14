@@ -42,14 +42,14 @@ TFWindow::paint(TPenBase&, EPaintType)
 }
 
 double
-TFWindow::distance(int x, int y)
+TFWindow::distance(TCoord x, TCoord y)
 {
   filled = true;
   return super::distance(x,y);
 }
 
 void
-TFWindow::translate(int dx, int dy)
+TFWindow::translate(TCoord dx, TCoord dy)
 {
   if (window==NULL) {
     cerr << "toad warning: TFWindow.window==NULL : " << title << endl;
@@ -62,7 +62,7 @@ TFWindow::translate(int dx, int dy)
 }
 
 void
-TFWindow::translateHandle(unsigned handle, int mx, int my, unsigned m)
+TFWindow::translateHandle(unsigned handle, TCoord mx, TCoord my, unsigned m)
 {
   if (window==NULL) {
     cerr << "toad warning: TFWindow.window==NULL : " << title << endl;

@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_TEXTAREA_HH
-#define _TOAD_TEXTAREA_HH
+#define _TOAD_TEXTAREA_HH 1
 
 #include <toad/toad.hh>
 #include <toad/control.hh>
@@ -117,11 +117,11 @@ class TTextArea:
     }
     ~TTextArea();
 
-    void keyDown(TKey, char*, unsigned);
-    void mouseLDown(int, int, unsigned);
-    void mouseMove(int, int, unsigned);
-    void mouseLUp(int, int, unsigned);
-    void mouseMDown(int, int, unsigned);
+    void keyDown(const TKeyEvent&);
+    void mouseLDown(const TMouseEvent&);
+    void mouseMove(const TMouseEvent&);
+    void mouseLUp(const TMouseEvent&);
+    void mouseMDown(const TMouseEvent&);
     void focus(bool);
 
     /**

@@ -43,13 +43,6 @@ enum EBitmapType
   TBITMAP_SERVER
 };
 
-enum EBitmapDither
-{ 
-  TBITMAP_SUBSTITUTE = 0, 
-  TBITMAP_ORDERED,
-  TBITMAP_FLOYD_STEINBERG
-};
-
 // beware, this class is pure alpha code:
 class TBitmapMask
 {
@@ -95,10 +88,9 @@ class TBitmap:
     static void initialize();
     static void terminate();
     
-    void setDither(EBitmapDither);
     void setZoom(int z);
-    void setPixel(int x,int y,short r,short g,short b);
-    bool getPixel(int x,int y,short *r,short *g,short *b);
+    void setPixel(int x,int y,TCoord r, TCoord g, TCoord b);
+    bool getPixel(int x,int y,TCoord *r, TCoord *g, TCoord *b);
     bool getPixel(int x,int y,TRGB*);
     bool load(const string &url);
     bool load(istream&);
@@ -119,7 +111,6 @@ class TBitmap:
 
   protected:
     EBitmapMode mode;
-    EBitmapDither dither;
   public:
     unsigned long pixmap;   // server side pixmap
   protected:
@@ -128,10 +119,10 @@ class TBitmap:
     void pCopyToLine(int x1,int x2,int y,int *line);
     void copy_bitmap_to_pixmap_and_delete_it();
 
-    TRGB *color;        // color table
+    TRGB24 *color;        // color table
     unsigned char *index; // NULL for true color
-    TRGB& pGetColor(int,int);
-    TRGB& pGetColor(int);
+    TRGB24& pGetColor(int,int);
+    TRGB24& pGetColor(int);
     
     bool modified;
 };

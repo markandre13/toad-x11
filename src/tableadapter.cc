@@ -202,7 +202,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
   static size_t col, row;
 
   int x0;
-  const char *str;
+  string str;
 
   switch(te.type) {
     case TTableEvent::GET_COL_SIZE:
@@ -233,8 +233,8 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
 //cout << "keyDown" << endl;
         if (edit!=this) {
 //cout << "not edit" << endl;
-          if (te.key->getKey()==TK_RETURN ||
-              te.key->getKey()==TK_KP_RETURN) 
+          if (te.key->key()==TK_RETURN ||
+              te.key->key()==TK_KP_RETURN) 
           {
 //            cout << "begin to edit string" << endl;
             if (edit!=0) {
@@ -248,7 +248,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
             te.flag = true;
           }
         } else {
-          TKey key = te.key->getKey();
+          TKey key = te.key->key();
           switch(key) {
             case TK_KP_RETURN:
             case TK_RETURN:
@@ -302,7 +302,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
               }
               break;
             default:
-              str = te.key->getString();
+              str = te.key->str();
               if ( (unsigned char)str[0]>=32 ||
                    (str[0]!=0 && str[1]!=0) )
               {

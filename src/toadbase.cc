@@ -912,7 +912,7 @@ handle_event:
       //---------------------------
       if (wndTopPopup && (wndTopPopup!=window || 
                           (x<0 || y<0 || 
-                           x>=window->_w || y>=window->_h)) )
+                           x>=window->w || y>=window->h)) )
       {
         // printf("special for popup windows\n");
         if (!window->isChildOf(wndTopPopup) 
@@ -967,7 +967,11 @@ handle_event:
             break;
           } else {
             // window is part of the application
-            wnd->mouseEnter(x, y, x11event.xbutton.state);
+            me.window = wnd;
+            me.x = x;
+            me.y = y;
+            me._modifier = x11event.xbutton.state;
+            wnd->mouseEnter(me);
             window = wnd;
             x11event.xany.send_event = true;
           }
@@ -983,7 +987,7 @@ handle_event:
       me.window = window;
       me.x = x-window->getOriginX();
       me.y = y-window->getOriginY();
-      me.modifier = x11event.xbutton.state;
+      me._modifier = x11event.xbutton.state;
       switch(x11event.xbutton.button) {
         case Button1:
           me.type = TMouseEvent::LDOWN;
@@ -1005,11 +1009,11 @@ handle_event:
       {
         static Time last_click_time = 0;
         static Window last_click_window = 0;
-        x11event.xbutton.state &= ~MK_DOUBLE;
+        me.dblClick = false;
         if (x11event.xbutton.time-last_click_time<250 &&
             last_click_window == x11event.xbutton.window )
         {
-          me.modifier |= MK_DOUBLE;
+          me.dblClick = true;
           last_button_down_was_double = true;
         } else {
           last_button_down_was_double = false;
@@ -1043,7 +1047,7 @@ handle_event:
       me.window = window;
       me.x = x11event.xbutton.x-window->getOriginX();
       me.y = x11event.xbutton.y-window->getOriginY();
-      me.modifier = x11event.xbutton.state;
+      me._modifier = x11event.xbutton.state;
       switch(x11event.xbutton.button) {
         case Button1:
           me.type = TMouseEvent::LUP;
@@ -1062,7 +1066,7 @@ handle_event:
           break;
       }
       if (last_button_down_was_double) {
-        me.modifier |= MK_DOUBLE;
+        me.dblClick = true;
         last_button_down_was_double = false;
       }
       TEventFilter *flt = toad::global_evt_filter;
@@ -1107,7 +1111,7 @@ cout << endl;
           me.window = window;
           me.x = x11event.xcrossing.x-window->getOriginX();
           me.y = x11event.xcrossing.y-window->getOriginY();
-          me.modifier = x11event.xcrossing.state;
+          me._modifier = x11event.xcrossing.state;
           me.type = TMouseEvent::ENTER;
           TEventFilter *flt = toad::global_evt_filter;
           while(flt) {
@@ -1147,7 +1151,7 @@ cout << endl;
         me.window = window;
         me.x = x11event.xcrossing.x-window->getOriginX();
         me.y = x11event.xcrossing.y-window->getOriginY();
-        me.modifier = x11event.xcrossing.state;
+        me._modifier = x11event.xcrossing.state;
         me.type = TMouseEvent::LEAVE;
         TEventFilter *flt = toad::global_evt_filter;
         while(flt) {
@@ -1205,11 +1209,11 @@ cout << endl;
 #if 0
       me.x = x-window->getOriginX();
       me.y = y-window->getOriginY();
-      me.modifier = x11event.xbutton.state;
+      me._modifier = x11event.xbutton.state;
 #else
       me.x = x11event.xmotion.x-window->getOriginX();
       me.y = x11event.xmotion.y-window->getOriginY();
-      me.modifier = x11event.xmotion.state;
+      me._modifier = x11event.xmotion.state;
 #endif
       
       TEventFilter *flt = toad::global_evt_filter;
@@ -1250,8 +1254,8 @@ cout << endl;
         */
         // resize
         //--------
-        if (  x11event.xconfigure.width  != window->_w
-           || x11event.xconfigure.height  != window->_h )
+        if (  x11event.xconfigure.width  != window->w
+           || x11event.xconfigure.height  != window->h )
         {
           // FVWM does not deliver the right position relative to the root
           // window after resizing the toplevel window. Instead it's (0,0).
@@ -1275,23 +1279,23 @@ cout << endl;
             x11event.xconfigure.x = x;
             x11event.xconfigure.y = y;
           }
-          window->_w = x11event.xconfigure.width;
-          window->_h = x11event.xconfigure.height;
+          window->w = x11event.xconfigure.width;
+          window->h = x11event.xconfigure.height;
 
 //printf("resize: '%s' is set to (%i,%i)\n", window->Title(),(int)window->_w, (int)window->_h);
           window->doResize(); // event structure maybe changed afterwards!
         }
 
         // REPOSITION EVENT
-        if (  x11event.xconfigure.x != window->_x
-           || x11event.xconfigure.y != window->_y )
+        if (  x11event.xconfigure.x != window->x
+           || x11event.xconfigure.y != window->y )
         {
 /*          printf("Position of %s set to (%i,%i)\n",
             window->Title(),
             event.xconfigure.x,
             event.xconfigure.y); */
-          window->_x = x11event.xconfigure.x;
-          window->_y = x11event.xconfigure.y;
+          window->x = x11event.xconfigure.x;
+          window->y = x11event.xconfigure.y;
         }
       }
       break;
@@ -1588,24 +1592,24 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
   switch(how) {
     case PLACE_SCREEN_RANDOM:
     case PLACE_PARENT_RANDOM: {
-      x = where.x + (where.w>>1) - (who.w>>1);
-      y = where.y + (where.h>>1) - (who.h>>1);
+      x = where.x + (where.w/2) - (who.w/2);
+      y = where.y + (where.h/2) - (who.h/2);
       int xr = (int) (0.5*where.w*rand()/(RAND_MAX+1.0));
-      xr-=(where.w>>2);
+      xr-=(where.w/4);
       x+=xr;
       int yr = (int) (0.5*where.h*rand()/(RAND_MAX+1.0));
-      yr-=(where.h>>2);
+      yr-=(where.h/4);
       y+=yr;
       } break;
     case PLACE_SCREEN_CENTER:
     case PLACE_PARENT_CENTER:
-      x = where.x + (where.w>>1) - (who.w>>1);
-      y = where.y + (where.h>>1) - (who.h>>1);
+      x = where.x + (where.w/2) - (who.w/2);
+      y = where.y + (where.h/2) - (who.h/2);
       break;
     case PLACE_MOUSE_POINTER:
       getMousePos(&x,&y);
-      x-=who.w>>1;
-      y-=who.h>>1;
+      x-=who.w/2;
+      y-=who.h/2;
       break;
     case PLACE_CORNER_MOUSE_POINTER:
       getMousePos(&x,&y);
@@ -1619,7 +1623,7 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
       break;
     case PLACE_TOOLTIP:
       parent->getRootPos(&where.x, &where.y);
-      x = where.x + (where.w>>2);
+      x = where.x + (where.w/4);
       y = where.y + where.h + 5;
       if (y+who.h>sh)
         y = where.y - who.h - 5;
@@ -1742,9 +1746,15 @@ static KeySym key;
 static unsigned modifier;
 
 unsigned
-TKeyEvent::getModifier() const
+TKeyEvent::modifier() const
 {
+#ifdef __X11__
   return x11event.xkey.state;
+#endif
+
+#ifdef __COCOA__
+  return [nsevent modifierFlags];
+#endif
 }
 
 void
@@ -1755,17 +1765,26 @@ TKeyEvent::setModifier(unsigned m)
 }
 
 TKey
-TKeyEvent::getKey() const
+TKeyEvent::key() const
 {
+  if (_key)
+    return _key;
+#ifdef __X11__
   if (new_key_eventhack) {
-    getString();
+    str();
   }
   return ::key;
+#endif
+
+#ifdef __COCOA__
+  return [nsevent keyCode];
+#endif
 }
 
-const char *
-TKeyEvent::getString() const
+string
+TKeyEvent::str() const
 {
+#ifdef __X11__
   if (new_key_eventhack) {
     new_key_eventhack = false;
 
@@ -1773,7 +1792,7 @@ TKeyEvent::getString() const
 
   if (xic_current) {
     Status status;
-    key=NoSymbol;
+    ::key=NoSymbol;
 #ifndef HAVE_LIBXUTF8
 #ifdef X_HAVE_UTF8_STRING
     count = Xutf8LookupString(
@@ -1791,8 +1810,8 @@ TKeyEvent::getString() const
 
     // the above functions do fail for KeyReleased event so we look
     // up the symbol again in case they failed:
-    if (key==NoSymbol)
-      key = XLookupKeysym(&x11event.xkey, 0);
+    if (::key==NoSymbol)
+      ::key = XLookupKeysym(&x11event.xkey, 0);
 
     if (status==XLookupNone)
       return 0;
@@ -1805,7 +1824,7 @@ TKeyEvent::getString() const
     static XComposeStatus compose_status = {NULL, 0};
     count = XLookupString(&x11event.xkey,
                           buffer, KB_BUFFER_SIZE, 
-                          &key, 
+                          &::key, 
                           &compose_status);
   }
   buffer[count]=0;        // add zero terminator to string
@@ -1813,4 +1832,10 @@ TKeyEvent::getString() const
   }
   
   return buffer;
+#endif
+
+#ifdef __COCOA__
+  NSString *ns = [nsevent characters];
+  return [ns UTF8String];
+#endif
 }

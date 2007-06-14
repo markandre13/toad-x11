@@ -62,14 +62,14 @@ void TBitmapFilter::createBuffer(int width,int height,EBitmapType type)
   h = height;
   switch(type) {
     case TBITMAP_INDEXED:
-      color = new TRGB[256];
+      color = new TRGB24[256];
       index = new unsigned char[w*h];
 //      cout << __FILE__ << ":" << __LINE__ << " color=" << color << endl;
 //      cout << __FILE__ << ":" << __LINE__ << " index=" << index << endl;
       break;
     case TBITMAP_TRUECOLOR:
     default:
-      color = new TRGB[w*h];
+      color = new TRGB24[w*h];
 //      cout << __FILE__ << ":" << __LINE__ << " color=" << color << endl;
 //      cout << __FILE__ << ":" << __LINE__ << " index=" << index << endl;
       index = NULL;
@@ -78,7 +78,7 @@ void TBitmapFilter::createBuffer(int width,int height,EBitmapType type)
   myindex=mycolor=true;
 }
 
-void TBitmapFilter::setBuffer(int width, int height, TRGB *c, unsigned char *i)
+void TBitmapFilter::setBuffer(int width, int height, TRGB24 *c, unsigned char *i)
 {
   w = width;
   h = height;
@@ -87,7 +87,7 @@ void TBitmapFilter::setBuffer(int width, int height, TRGB *c, unsigned char *i)
   myindex=mycolor=false;
 }
 
-void TBitmapFilter::getBuffer(int *width, int *height, TRGB **c, unsigned char **i)
+void TBitmapFilter::getBuffer(int *width, int *height, TRGB24 **c, unsigned char **i)
 {
   *width = w;
   *height = h;
@@ -116,7 +116,7 @@ void TBitmapFilter::deleteBuffer()
   Set palette color <VAR>index</VAR> to <VAR>c</VAR> when buffer is of
   type TBITMAP_INDEXED.
 */
-void TBitmapFilter::setIndexColor(int i, TRGB &c)
+void TBitmapFilter::setIndexColor(int i, TRGB24 &c)
 {
   #ifdef SECURE
   if (!index) {
@@ -168,7 +168,7 @@ TBitmapFilter::getIndexPixel(int x,int y)
 }
 
 bool 
-TBitmapFilter::getIndexColor(int i,TRGB *c)
+TBitmapFilter::getIndexColor(int i,TRGB24 *c)
 {
   #ifdef SECURE
   if (!index) {
@@ -187,7 +187,7 @@ TBitmapFilter::getIndexColor(int i,TRGB *c)
 // methods for true color mode
 //----------------------------------------------------------------------------
 void 
-TBitmapFilter::setColorPixel(int x,int y,TRGB &c)
+TBitmapFilter::setColorPixel(int x,int y,TRGB24 &c)
 {
   if (index) {
     printf("toad: TBitmapFilter::SetColorPixel: not a truecolor bitmap\n");
@@ -198,7 +198,7 @@ TBitmapFilter::setColorPixel(int x,int y,TRGB &c)
 }
 
 bool 
-TBitmapFilter::getColorPixel(int x,int y,TRGB *c)
+TBitmapFilter::getColorPixel(int x,int y,TRGB24 *c)
 {
   if (!color || x<0 || x>=w || y<0 || y>=h) return false;
   if (index) {
@@ -207,75 +207,6 @@ TBitmapFilter::getColorPixel(int x,int y,TRGB *c)
   } else {
     *c=color[x+y*w];
   }
-  return true;
-}
-
-/**
-  Reduces a true color bitmap to an indexed bitmap. 
-*/
-
-struct TCompare
-{
-  bool operator()(const TRGB &a, const TRGB &b) const {
-    return (a.r +(a.g<<8) + (a.b<<16)) < (b.r + (b.g<<8) + (b.b<<16));
-  }
-};
-typedef map<TRGB,short,TCompare> TColorMap;
-
-bool 
-TBitmapFilter::convertToIndexed(int *palette_size)
-{
-  TColorMap cm;
-  TColorMap::iterator p;
-  TRGB c;
-
-  if (index) {
-    *palette_size = 256;
-    return true;
-  }
-
-//  printf("ConvertToIndexed\n");
-
-  unsigned char *nindex = new unsigned char[w*h];
-  TRGB *ncolor = new TRGB[256];
-
-  int x,y;
-  unsigned last=0;
-  unsigned short ndx;
-  unsigned char *pp = nindex;
-  for(y=0; y<h; y++) {
-    for(x=0; x<w; x++) {
-      getColorPixel(x,y,&c);
-      p = cm.find(c);
-      if (p==cm.end()) {
-        if (cm.size()>=256) {
-          setError("'%s' has more than 256 colors");
-          delete ncolor;
-          delete nindex;
-//          printf("failed\n");
-          return false;
-        }
-        cm[c]=last;
-        ndx = last;
-        ncolor[last]=c;
-        last++;
-      } else {
-        ndx = (*p).second;
-      }
-      *pp = ndx;
-      pp++;
-    }
-  }
-  if (mycolor)
-    delete color;
-  color = ncolor;
-  index = nindex;
-  if (palette_size)
-    *palette_size = last;
-  myindex=mycolor=true;
-
-//  printf("converted to indexed bitmap\n");
-
   return true;
 }
 

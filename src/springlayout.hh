@@ -48,10 +48,10 @@ class TSpringLayout:
     void attach(const string &window, unsigned where, const string &which="") {
       attach(window, where, which.empty() ? FORM : WINDOW, which);
     }
-    void distance(const string &window, int distance, unsigned where=ALL);
+    void distance(const string &window, TCoord distance, unsigned where=ALL);
 
   private:
-    void arrange(int x, int y, int w, int h);
+    void arrange(TCoord x, TCoord y, TCoord w, TCoord h);
     void arrange();
     int nBorderOverlap;
     bool bKeepOwnBorder;

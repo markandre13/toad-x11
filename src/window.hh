@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TWindow
-#define TWindow TWindow
+#ifndef _TOAD_WINDOW_HH
+#define _TOAD_WINDOW_HH 1
 
 #include <toad/os.hh>
 #include <toad/toadbase.hh>
@@ -31,6 +31,69 @@
 #include <toad/command.hh>
 
 #ifdef _TOAD_PRIVATE
+
+#ifdef __COCOA__
+@class NSEvent, NSView, toadWindow, toadView;
+
+// see /Developer/SDKs/MacOSX10.3.9.sdk/Developer/Headers/CFMCarbon/Events.h
+
+#define MK_SHIFT     (1 << 9)
+#define MK_LOCK      (1 << 10)
+#define MK_CONTROL   (1 << 12)
+#define MK_ALT       (1 << 11)
+#define MK_APPLE     (1 << 8) 
+
+#define MK_ALTGR   0   
+#define MK_LBUTTON 1   
+#define MK_MBUTTON 2   
+#define MK_RBUTTON 4
+#define MK_DOUBLE  8
+
+#define TK_SHIFT_L 56   
+#define TK_SHIFT_R 56   
+
+#define TK_RETURN    36
+#define TK_KP_RETURN 0xffff
+#define TK_TAB       48
+#define TK_LEFT_TAB  0xffff
+#define TK_INSERT    0xffff
+#define TK_SPACE     49
+#define TK_BACKSPACE 51
+#define TK_ESCAPE    53
+#define TK_SHIFT     56
+#define TK_CONTROL_L   0xffff
+#define TK_CONTROL_R   0xffff
+#define TK_HOME      115
+#define TK_PAGEUP    116
+#define TK_DELETE    117
+#define TK_END       119
+#define TK_PAGEDOWN  121
+#define TK_LEFT      123
+#define TK_RIGHT     124
+#define TK_DOWN      125
+#define TK_UP        126
+#define TK_F1        122
+#define TK_F2        120
+#define TK_F3        99 
+#define TK_F4        118
+#define TK_F5        96 
+#define TK_F6        97 
+#define TK_F7        98 
+#define TK_F8        100
+#define TK_F9        101
+#define TK_F10       109
+#define TK_F11       103
+#define TK_F12       111
+#define TK_F13       0xffff
+#define TK_F14       0xffff
+#define TK_F15       0xffff
+#define TK_F16       0xffff
+#define TK_F17       0xffff
+#define TK_F18       0xffff
+#define TK_F19       0xffff
+#define TK_F20       0xffff
+
+#endif
 
 #ifdef __X11__
 #include <toad/X11/x11window.hh>
@@ -76,9 +139,23 @@ class TMouseEvent {
       ROLL_UP, ROLL_UP_END,
       ROLL_DOWN, ROLL_DOWN_END
     } type;
+#ifdef __COCOA__
+    NSEvent *nsevent;
+    TMouseEvent(NSEvent *ne, NSView *view, TWindow *window);
+    void _down(TMouseEvent::EType type, NSEvent *theEvent);
+    void _up(TMouseEvent::EType type, NSEvent *theEvent);
+#endif
+    TMouseEvent(TWindow *aWindow=0, TCoord anX=0.0, TCoord anY=0.0, unsigned aModifier=0):
+      window(aWindow), x(anX), y(anY), _modifier(aModifier) {dblClick=false;}
     TWindow *window;
-    int x, y;
-    unsigned modifier;
+    TCoord x, y;
+    bool dblClick;
+    unsigned modifier() const { return _modifier; }
+    TCoord pressure() { return 0; }
+    TCoord rotation() { return 0; }
+    TCoord tilt() { return 0; }
+    
+    unsigned _modifier;
 };
 
 class TKeyEvent {
@@ -86,11 +163,20 @@ class TKeyEvent {
     enum EType {
       DOWN, UP
     } type;
+    TKeyEvent(EType aType=DOWN, TWindow *aWindow=0, TKey aKey=0): window(aWindow), type(aType), _key(aKey) {}
+#ifdef __COCOA__
+    TKeyEvent(NSEvent *ns) {
+      nsevent = ns;
+    }
+    NSEvent *nsevent;
+#endif
     TWindow *window;
-    const char* getString() const;
-    TKey getKey() const;
-    unsigned getModifier() const;
+    string str() const;
+    TKey key() const;
+    void setKey(TKey key) { _key = key; }
+    unsigned modifier() const;
     void setModifier(unsigned);
+    TKey _key;
 };
 
 #ifdef __WIN32__
@@ -122,7 +208,7 @@ class TWindowEvent {
 };  
 
 class TWindow: 
-  public TInteractor, public TOADBase
+  public TInteractor, public TRectangle, public TOADBase
 {
     friend class TOADBase;
     friend class TPen;
@@ -185,18 +271,23 @@ class TWindow:
     bool isRealized() const {return x11window!=0;}
     #endif
     
+    #ifdef __XCB__
+    bool isRealized() const {return xcbWindow!=0;}
+    #endif
+    
     #ifdef __WIN32__
     bool isRealized() const {return w32window!=0;}
     #endif
 
     void clearWindow();
-    void grabMouse(unsigned short mouseMessages=TMMM_PREVIOUS,TWindow* confine_window=NULL, TCursor::EType type=TCursor::DEFAULT);
-    void grabPopupMouse(unsigned short mouseMessages=TMMM_PREVIOUS, TCursor::EType type=TCursor::DEFAULT);
+    void setAllMouseMoveEvents(bool);
+    void grabMouse(bool allmove=true, TWindow* confine_window=NULL, TCursor::EType type=TCursor::DEFAULT);
+    void grabPopupMouse(bool allmove=true, TCursor::EType type=TCursor::DEFAULT);
     void ungrabMouse();
-    void getRootPos(int*,int*);
+    void getRootPos(TCoord*,TCoord*);
     
     void invalidateWindow(bool clearbg=true);
-    void invalidateWindow(int,int,int,int, bool clearbg=true);
+    void invalidateWindow(TCoord,TCoord,TCoord,TCoord, bool clearbg=true);
     void invalidateWindow(const TRectangle&, bool clearbg=true);
     void invalidateWindow(const TRegion&, bool bClrBG=true);
 
@@ -205,18 +296,18 @@ class TWindow:
     void raiseWindow();
     void lowerWindow();
     
-    void scrollWindow(int x,int y, bool bClrBG=true);
-    void scrollRectangle(const TRectangle &rect, int x,int y, bool bClrBG=true);
+    void scrollWindow(TCoord x,TCoord y, bool bClrBG=true);
+    void scrollRectangle(const TRectangle &rect, TCoord x,TCoord y, bool bClrBG=true);
     
-    void setOrigin(int x,int y);
-    void scrollTo(int x, int y);
-    void getOrigin(int *x, int *y) const { *x = _dx; *y = _dy; }
-    int getOriginX() const { return _dx; }
-    int getOriginY() const { return _dy; }
+    void setOrigin(TCoord x,TCoord y);
+    void scrollTo(TCoord x, TCoord y);
+    void getOrigin(TCoord *x, TCoord *y) const { *x = _dx; *y = _dy; }
+    TCoord getOriginX() const { return _dx; }
+    TCoord getOriginY() const { return _dy; }
 
-    void setPosition(int x,int y);
-    void setSize(int x,int y);
-    void setShape(int,int,int,int);
+    void setPosition(TCoord x,TCoord y);
+    void setSize(TCoord x,TCoord y);
+    void setShape(TCoord,TCoord,TCoord,TCoord);
     void setShape(const TRectangle &r){setShape(r.x,r.y,r.w,r.h);}
     void setShape(const TRectangle *r){setShape(r->x,r->y,r->w,r->h);}
     void getShape(TRectangle*) const;
@@ -231,35 +322,17 @@ class TWindow:
     void setToolTip(const string&);             // implemented in tooltip.cc
     
     const TColor& getBackground() const { return background; }
-    void setBackground(const TColor&);
+    void setBackground(const TRGB &c);
     void setBackground(byte r,byte g,byte b) {
-       setBackground(TColor(r,g,b));
+       setBackground(TRGB(r,g,b));
     }
-    void setBackground(const TRGB &c) {
-       setBackground(TColor(c.r,c.g,c.b));
-    }
-    void setBackground(TColor::ESystemColor c) {
-      setBackground(TColor(c));
-    }
-    void setBackground(TColor::EColor16 c) {
-      setBackground(TColor(c));
+    void setBackground(TColor::EColor c) {
+      const TRGB *rgb = TColor::lookup(c);
+      setBackground(*rgb);
     }
     void setBackground(TBitmap*);
     void setHasBackground(bool);
                                           
-    // MouseMoveMessages
-    static const unsigned short TMMM_NONE      =0x0000;
-    static const unsigned short TMMM_FIRST     =0x0010;
-    static const unsigned short TMMM_ALL       =0x0020;
-    static const unsigned short TMMM_LBUTTON   =0x0040;
-    static const unsigned short TMMM_MBUTTON   =0x0080;
-    static const unsigned short TMMM_RBUTTON   =0x0100;
-    static const unsigned short TMMM_ANYBUTTON =0x0200;
-    static const unsigned short TMMM_PREVIOUS  =0x03FF;
-    void setMouseMoveMessages(unsigned short);
-    void addMouseMoveMessages(unsigned short);
-    void clrMouseMoveMessages(unsigned short);
-
     bool setFocus();
     bool isFocus() const;
 
@@ -277,10 +350,10 @@ class TWindow:
     bool isSuppressMessages() const;
 
   protected:
-    int _x, _y, _w, _h;       // window position and size
     int _b;                   // border width
-    int _dx, _dy;             // origin for TPen
+    TCoord _dx, _dy;             // origin for TPen
     _TOAD_CURSOR _cursor;
+    bool _allmousemove;
     
   private:
     TLayout *layout;          // layout
@@ -292,10 +365,10 @@ class TWindow:
   
     void setBorder(unsigned b){ _b=b?1:0; }
     unsigned getBorder() const {return _b;}
-    int getXPos() const { return _x; }
-    int getYPos() const { return _y; }
-    int getWidth() const { return _w; }
-    int getHeight() const { return _h; }
+    TCoord getXPos() const { return x; }
+    TCoord getYPos() const { return y; }
+    TCoord getWidth() const { return w; }
+    TCoord getHeight() const { return h; }
     
     #ifdef DEBUG
     void debug_check_realized(const char *txt);
@@ -330,19 +403,13 @@ class TWindow:
     #endif
     
   
-    virtual void keyEvent(TKeyEvent&);
-#ifdef TOAD_EVENTCLASSES
-    virtual void keyDown(TKeyEvent&);
-    virtual void keyUp(TKeyEvent&);
-#else   
-    virtual void keyDown(TKey key, char *string, unsigned modifier);
-    virtual void keyUp(TKey key, char *string, unsigned modifier);
-#endif    
+    virtual void keyEvent(const TKeyEvent&);
+    virtual void keyDown(const TKeyEvent&);
+    virtual void keyUp(const TKeyEvent&);
 
-    void mouseEvent(TMouseEvent &);
-    void windowEvent(TWindowEvent &we);
-
-#ifdef TOAD_EVENTCLASSES
+    void mouseEvent(const TMouseEvent &);
+    void windowEvent(const TWindowEvent &we);
+#if 0
     class TMouseCrossingEvent:
       public TMouseEvent
     {
@@ -351,29 +418,19 @@ class TWindow:
       Emode mode;
       EDetail detail;
     };
-    
+#endif    
     //! This method receives all mouse events and distributes them
     //! to the other mouse methods like mouseMove or mouseLDown.
-    virtual void mouseMove(TMouseEvent&);
-    virtual void mouseEnter(TMouseCrossingEvent&);
-    virtual void mouseLeave(TMouseCrossingEvent&);
-    virtual void mouseLDown(TMouseEvent&);
-    virtual void mouseMDown(TMouseEvent&);
-    virtual void mouseRDown(TMouseEvent&);
-    virtual void mouseLUp(TMouseEvent&);
-    virtual void mouseMUp(TMouseEvent&);
-    virtual void mouseRUp(TMouseEvent&);
-#else
-    virtual void mouseMove(int x,int y, unsigned modifier);
-    virtual void mouseEnter(int x,int y, unsigned modifier);
-    virtual void mouseLeave(int x,int y, unsigned modifier);
-    virtual void mouseLDown(int x,int y, unsigned modifier);
-    virtual void mouseMDown(int x,int y, unsigned modifier);
-    virtual void mouseRDown(int x,int y, unsigned modifier);
-    virtual void mouseLUp(int x,int y, unsigned modifier);
-    virtual void mouseMUp(int x,int y, unsigned modifier);
-    virtual void mouseRUp(int x,int y, unsigned modifier);
-#endif
+    virtual void mouseMove(const TMouseEvent&);
+    virtual void mouseEnter(const TMouseEvent&);
+    virtual void mouseLeave(const TMouseEvent&);
+    virtual void mouseLDown(const TMouseEvent&);
+    virtual void mouseMDown(const TMouseEvent&);
+    virtual void mouseRDown(const TMouseEvent&);
+    virtual void mouseLUp(const TMouseEvent&);
+    virtual void mouseMUp(const TMouseEvent&);
+    virtual void mouseRUp(const TMouseEvent&);
+
     virtual void paint();
     virtual void saveYourself();            // the window should save itself
 
@@ -451,6 +508,15 @@ class TWindow:
 
     #ifdef __X11__
     _TOAD_WINDOW x11window;
+    #endif
+    
+    #ifdef __XCB__
+    xcb_window_t xcbWindow;
+    #endif
+    
+    #ifdef __COCOA__
+    toadView *nsview;
+    toadWindow *nswindow;
     #endif
     
     #ifdef __WIN32__

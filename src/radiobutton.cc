@@ -18,10 +18,10 @@
  * MA  02111-1307,  USA
  */
 
+#include <toad/radiobutton.hh>
 #include <toad/toadbase.hh>
 #include <toad/pen.hh>
 #include <toad/window.hh>
-#include <toad/radiobutton.hh>
 
 using namespace toad;
 
@@ -47,7 +47,7 @@ TRadioButton::paint()
 {
   TPen pen(this);
   // draw text
-  int y = ( (getHeight()-pen.getHeight()) >> 1 );
+  TCoord y = ( (getHeight()-pen.getHeight()) / 2 );
 
   pen.setColor(TColor::BTNSHADOW);
   pen.fillCirclePC(0,0,11,11);

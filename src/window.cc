@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -101,6 +101,7 @@
 #include <toad/dialogeditor.hh>
 #include <toad/layout.hh>
 #include <toad/io/urlstream.hh>
+#include <toad/bitmap.hh>
 
 using namespace toad;
 
@@ -194,6 +195,251 @@ struct PropMotifWmHints {
 };
 #endif
 
+#ifdef __COCOA__
+@interface toadWindow : NSWindow
+{
+  @public
+    TWindow *twindow;
+}
+@end
+
+@implementation toadWindow : NSWindow
+- (void)becomeKeyWindow {
+  [super becomeKeyWindow];
+  TFocusManager::domainToWindow(twindow);
+}
+- (void)resignKeyWindow {
+  [super resignKeyWindow];
+  TFocusManager::domainToWindow(0);
+}
+@end
+
+@interface toadView : NSView
+{
+  @public
+    TWindow *twindow;
+    NSTrackingRectTag trackAll;
+}
+@end
+
+@implementation toadView : NSView
+- (void) initTrackAll:(NSRect)frame {
+  trackAll = [self addTrackingRect: frame
+              owner: self
+              userData: NULL
+              assumeInside: NO];
+  // [self translateOriginToPoint: NSMakePoint(-0.5, -0.5)];
+  // [self setBoundsOrigin: NSMakePoint(-0.5, -0.5)];
+}
+// TRUE: (0,0) is in the upper-left-corner
+- (BOOL)isFlipped {
+  return TRUE;
+}
+- (BOOL)isOpaque {
+  return TRUE;
+}
+- (void) setFrameSize:(NSSize)newSize
+{
+//  printf("%s: (%f,%f)\n", __FUNCTION__, newSize.width, newSize.height);
+  [super setFrameSize:newSize];
+  [self removeTrackingRect: trackAll];
+  trackAll = [self addTrackingRect: NSMakeRect(0, 0, newSize.width, newSize.height)
+              owner: self
+              userData: NULL
+              assumeInside: NO];
+  twindow->w = newSize.width;   
+  twindow->h = newSize.height;  
+  twindow->doResize();
+}
+ 
+- (void) drawRect:(NSRect)rect
+{
+  // [self inLiveResize]
+//printf("print draw rect (%f,%f,%f,%f)\n",rect.origin.x,rect.origin.y,
+//                                         rect.size.width,rect.size.height);
+  if (aw.find(twindow)==aw.end()) {
+    cerr << "window is no more" << endl;
+    exit(1);
+  }
+   
+  {
+  TPen pen(twindow);
+  pen.setColor(twindow->_bg.r/255.0, twindow->_bg.g/255.0, twindow->_bg.b/255.0);
+  pen.fillRectangle(0,0,twindow->w,twindow->h);
+  }
+  twindow->paint();
+}
+/**
+ * return YES when we can handle key events and action messages
+ */
+- (BOOL)acceptsFirstResponder
+{
+//  printf("accept focus: %s %s\n", __FUNCTION__, twindow->getTitle().c_str());
+  return YES;
+}
+ 
+- (BOOL)becomeFirstResponder
+{
+//  printf("became focus: %s %s\n", __FUNCTION__, twindow->getTitle().c_str());
+  return YES;
+}
+ 
+- (BOOL)resignFirstResponder
+{
+  printf("lost focus: %s %s\n", __FUNCTION__, twindow->getTitle().c_str());
+  return YES;
+}
+ 
+- (void) keyDown:(NSEvent*)theEvent
+{
+//printf("key down\n");
+  TKeyEvent ke(theEvent);
+  ke.type = TKeyEvent::DOWN;
+  //twindow->keyEvent(ke);  
+  TFocusManager::handleEvent(ke);
+  executeMessages();
+}
+- (void) keyUp:(NSEvent*)theEvent
+{
+//printf("key up\n");
+  TKeyEvent ke(theEvent);
+  ke.type = TKeyEvent::UP;
+  //twindow->keyEvent(ke);
+  TFocusManager::handleEvent(ke);
+  executeMessages();
+}
+ 
+- (void) mouseEntered:(NSEvent*)theEvent
+{
+//printf("%s: %s\n",__FUNCTION__, twindow->getTitle().c_str());
+  twindow->_inside = true;
+  TMouseEvent me(theEvent, self, twindow);
+  me.type = TMouseEvent::ENTER;
+  twindow->mouseEvent(me);
+  executeMessages();
+}
+- (void) mouseExited:(NSEvent*)theEvent
+{
+//printf("%s: %s\n",__FUNCTION__, twindow->getTitle().c_str());
+  twindow->_inside = false;
+  TMouseEvent me(theEvent, self, twindow);
+  me.type = TMouseEvent::LEAVE;
+  twindow->mouseEvent(me);
+  executeMessages();
+}
+ 
+- (void) mouseDown:(NSEvent*)theEvent
+{
+  TMouseEvent::_modifier |= MK_LBUTTON;
+  twindow->_down(TMouseEvent::LDOWN, theEvent);
+}
+- (void) rightMouseDown:(NSEvent*)theEvent
+{
+  TMouseEvent::_modifier |= MK_RBUTTON;
+  twindow->_down(TMouseEvent::RDOWN, theEvent);
+}
+- (void) otherMouseDown:(NSEvent*)theEvent
+{
+  TMouseEvent::_modifier |= MK_MBUTTON;
+  twindow->_down(TMouseEvent::MDOWN, theEvent);
+}
+void
+TWindow::_down(TMouseEvent::EType type, NSEvent *theEvent)
+{
+//printf("%s: %s\n",__FUNCTION__, twindow->getTitle().c_str());
+  TMouseEvent me(theEvent, nsview, this);
+  if (!_inside) {
+//printf("  flip inside\n");
+    _inside = true;
+    TMouseEvent me(theEvent, nsview, this);
+    me.type = TMouseEvent::ENTER;
+    mouseEvent(me);
+  }
+  me.type = type;
+  me.dblClick = [theEvent clickCount]==2;
+  _inside = true;
+  mouseEvent(me);
+  executeMessages();
+}
+ 
+- (void) mouseUp:(NSEvent*)theEvent
+{
+  TMouseEvent::_modifier &= ~MK_LBUTTON;
+  twindow->_up(TMouseEvent::LUP, theEvent);
+}
+- (void) rightMouseUp:(NSEvent*)theEvent
+{
+  TMouseEvent::_modifier &= ~MK_RBUTTON;
+  twindow->_up(TMouseEvent::RUP, theEvent);
+}
+- (void) otherMouseUp:(NSEvent*)theEvent
+{
+  TMouseEvent::_modifier &= ~MK_MBUTTON;
+  twindow->_up(TMouseEvent::MUP, theEvent);
+}
+void
+TWindow::_up(TMouseEvent::EType type, NSEvent *theEvent)
+{
+//printf("%s: %s\n",__FUNCTION__, twindow->getTitle().c_str());
+  TMouseEvent me(theEvent, nsview, this);
+  if (!_inside) {
+//printf("  flip outside\n");
+    _inside = false;
+    TMouseEvent me(theEvent, nsview, this);
+    me.type = TMouseEvent::LEAVE;
+    mouseEvent(me);
+  }
+  me.type = type;
+  mouseEvent(me);
+  executeMessages();
+}
+- (void) mouseDragged:(NSEvent*)theEvent
+{
+//printf("%s: %s _inside=%i\n",__FUNCTION__, twindow->getTitle().c_str(),twindow->_inside);
+  TMouseEvent me(theEvent, self, twindow);
+  TRectangle r(0,0,twindow->w,twindow->h);
+  if (twindow->_inside != r.isInside(me.x, me.y)) {
+//printf("  flip inside/outide\n");
+    twindow->_inside = !twindow->_inside;
+    TMouseEvent me(theEvent, self, twindow);
+    me.type = twindow->_inside ? TMouseEvent::ENTER : TMouseEvent::LEAVE;
+    twindow->mouseEvent(me);
+  }
+  me.type = TMouseEvent::MOVE;
+  twindow->mouseEvent(me);
+  executeMessages();
+}
+ 
+- (void) mouseMoved:(NSEvent*)theEvent
+{
+//printf("%s: %s _inside=%i\n",__FUNCTION__, twindow->getTitle().c_str(),twindow->_inside);
+  TMouseEvent me(theEvent, self, twindow);
+  TRectangle r(0,0,twindow->w,twindow->h);
+  if (twindow->_inside != r.isInside(me.x, me.y)) {
+//printf("  flip inside/outide\n");
+    twindow->_inside = !twindow->_inside;
+    TMouseEvent me(theEvent, self, twindow);
+    me.type = twindow->_inside ? TMouseEvent::ENTER : TMouseEvent::LEAVE;
+    twindow->mouseEvent(me);
+  }
+  me.type = TMouseEvent::MOVE;
+  twindow->mouseEvent(me);
+  executeMessages();
+}
+@end
+
+TMouseEvent::TMouseEvent(NSEvent *ne, NSView *view, TWindow *w) {
+  nsevent = ne;
+  NSPoint pt = [view convertPoint:[ne locationInWindow] fromView:nil];
+  x = pt.x;
+  y = pt.y;
+  x -= w->getOriginX();
+  y -= w->getOriginY();
+  window = w;
+  dblClick = false;
+}
+#endif
+
 // virtual method auto selection (VMAS)
 //---------------------------------------------------------------------------
 //  X11 requires the selection of events. The VMAS checks if a virtual method
@@ -280,16 +526,16 @@ TWindow::TWindow(TWindow *p, const string &title)
   _bToolTipAvailable = false;
   _visible = true;
 
-  _x    = 0;
-  _y    = 0;
-  _w  = 320;
-  _h  = 200;
+  x    = 0;
+  y    = 0;
+  w  = 320;
+  h  = 200;
   _b  = 1;
   _dx = _dy = 0;  // origin for TPen
   _cursor = 0;
   setCursor(TCursor::DEFAULT);
   paint_rgn = NULL;
-  background.set(255,255,255);
+  background.set(1.0,1.0,1.0);
   layout = NULL;
   
   // private flags
@@ -297,10 +543,7 @@ TWindow::TWindow(TWindow *p, const string &title)
   flag_mmm_modified = flag_create          = flag_suppress_msg = 
   flag_child_notify = false;
   flag_position_undefined = true;
-//  _mmm_mask = TMMM_ALL;
-  _mmm_mask = TMMM_ANYBUTTON;
-//  setMouseMoveMessages(TMMM_ANYBUTTON);
-
+  _allmousemove = false;
 #ifdef DEBUG
   debug_flags = 0;
 #endif
@@ -462,7 +705,7 @@ TWindow::createWindow()
 {
   if (isRealized())
     return;
-
+    
   #ifdef __X11__
   if (x11window || flag_create)
     return;
@@ -481,7 +724,7 @@ TWindow::createWindow()
   }
   flag_create = false;
   #endif
-  
+
   #ifdef __WIN32__
   if (w32window || flag_create)
     return;
@@ -601,9 +844,9 @@ TWindow::_interactor_create()
 
   // get all window attributes
   //---------------------------
-  unsigned long mask=0;
 
 #ifdef __X11__
+  unsigned long mask=0;
   XSetWindowAttributes attr;
 
   TWndBmpList::iterator p = backgroundlist.find(this);
@@ -644,14 +887,13 @@ TWindow::_interactor_create()
   }
 
   // 'createX11Window' messsage is needed for things like OpenGL support
-  //---------------------------------------------------------------------
   static TX11CreateWindow x11;
   x11.display   = x11display;
   x11.parent    = ( getParent() && !bShell ) ? getParent()->x11window : DefaultRootWindow(x11display);
-  x11.x         = _x;
-  x11.y         = _y;
-  x11.width     = _w;
-  x11.height    = _h;
+  x11.x         = (int)x;
+  x11.y         = (int)y;
+  x11.width     = (unsigned)w;
+  x11.height    = (unsigned)h;
   x11.border    = _b;
   x11.depth     = x11depth;
   x11.wclass    = InputOutput;
@@ -661,7 +903,6 @@ TWindow::_interactor_create()
   createX11Window(&x11);
 
   // create the window
-  //-------------------
   x11window = XCreateWindow(
     x11.display,
     x11.parent,
@@ -671,11 +912,84 @@ TWindow::_interactor_create()
   );
 
   // save TWindow in Xlib window context (it's a hash table)
-  //---------------------------------------------------------
   if(XSaveContext(x11display, x11window, nClassContext, (XPointer)this))  {
     cerr << "toad: XSaveContext failed\n";
     exit(1);
   }
+#endif
+
+#ifdef __XCB__
+  uint32_t mask = 0;
+  size_t cnt=0;
+  uint32_t values[16];
+
+  // XCB_CW_BACK_PIXMAP
+  // XCB_CW_BACK_PIXEL
+  // XCB_CW_BORDER_PIXMAP
+  // XCB_CW_BORDER_PIXEL
+  // XCB_CW_BIT_GRAVITY
+  // XCB_CW_WIN_GRAVITY
+  // XCB_CW_BACKING_STORE
+  if (bBackingStore) {
+    mask |= XCB_CW_BACKING_STORE
+    values[cnt++] = 
+  }
+  // XCB_CW_BACKING_PLANES
+  // XCB_CW_BACKING_PIXEL
+  // XCB_CW_OVERRIDE_REDIRECT
+  // XCB_CW_SAVE_UNDER
+  if (bSaveUnder) {
+    mask | = XCB_CW_SAVE_UNDER;
+    values[cnt++] = XCB_NONE;
+  }
+  // XCB_CW_EVENT_MASK
+  // XCB_CW_DONT_PROPAGATE
+  // XCB_CW_COLORMAP
+  // XCB_CW_CURSOR
+
+  xcbWindow = xcb_generate_id(xcbConnection);
+  xcbWindow = xcb_create_window(
+    xcbConnection,
+    XCB_COPY_FROM_PARENT, // depth
+    xcbWindow,
+    (getParent()&&!bShell) ? getParent()->xcbWindow : screen->root,
+    x, y, w, h, _b,
+    XCB_WINDOW_CLASS_INPUT_OUTPUT,
+    mask,
+    values
+  );
+#endif
+
+#ifdef __COCOA__
+  nsview = [[toadView alloc] initWithFrame: NSMakeRect(x,y,w,h)];
+  nsview->twindow = this;
+  if (getParent() && !flagShell && !flagPopup) {
+    [getParent()->nsview addSubview: nsview];   
+  } else {
+    nswindow = [toadWindow alloc];
+    nswindow->twindow = this;
+    unsigned int styleMask = 0;
+    if (!flagPopup) {
+      styleMask |= NSTitledWindowMask
+                | NSMiniaturizableWindowMask
+                | NSClosableWindowMask
+                | NSResizableWindowMask;
+    } else {
+      styleMask |= NSBorderlessWindowMask;
+    }
+    [nswindow initWithContentRect: NSMakeRect(x, y, w, h)
+         styleMask: styleMask
+         backing: NSBackingStoreBuffered
+         defer: NO];
+    
+    [nswindow setTitle: [NSString stringWithUTF8String: getTitle().c_str()]];
+    [nswindow setContentView: nsview];
+    [nswindow makeKeyAndOrderFront: nil];
+    [nswindow setAcceptsMouseMovedEvents: true];
+  }
+  // we must create the tracking window after the view was added to it's
+  // parent, otherwise tracking does not work
+  [nsview initTrackAll: NSMakeRect(0,0,w,h)];
 #endif
 
 #ifdef __WIN32__
@@ -684,15 +998,15 @@ TWindow::_interactor_create()
     WS_OVERLAPPEDWINDOW;
     
   RECT rect;
-  rect.left = _x;
-  rect.top  = _y;
-  rect.right = _x+_w-1 + _b*2;
-  rect.bottom = _y+_h-1 + _b*2;
+  rect.left = x;
+  rect.top  = y;
+  rect.right = x+w-1 + _b*2;
+  rect.bottom = y+h-1 + _b*2;
   if ( !getParent() || bShell ) {
     ::AdjustWindowRect(&rect, style, false);
   }
 #if 0
-cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w << "," << _h << " -> "
+cerr << "w32createwindow: " << getTitle() << " " << x << "," << y << "," << w << "," << h << " -> "
      << (rect.right - rect.left + 1) << "," << (rect.bottom - rect.top + 1)
      << endl;
 #endif
@@ -700,7 +1014,7 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
     "TOAD:BASE",
     getTitle().c_str(),
     style,
-    ( getParent() && !bShell ) ? _x : CW_USEDEFAULT , _y,
+    ( getParent() && !bShell ) ? x : CW_USEDEFAULT , y,
     rect.right - rect.left + 1, rect.bottom - rect.top + 1,
     ( getParent() && !bShell ) ? getParent()->w32window : 0,
     NULL,
@@ -709,7 +1023,6 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
   );
   ::SetWindowLong(w32window, 0, (LONG)this);
 #endif
-
   
   focusNewWindow(this); // inform focus management about the new window
 
@@ -759,8 +1072,8 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
 
     if (!flag_position_undefined) {
       xsizehints.flags|=PPosition;
-      xsizehints.x = _x;
-      xsizehints.y = _y;
+      xsizehints.x = (int)x;
+      xsizehints.y = (int)y;
     }
 
     XWMHints *wh;
@@ -791,8 +1104,8 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
       // set standard X11 Window Manager Hints
       //---------------------------------------
       xsizehints.flags |= PMinSize | PMaxSize;
-      xsizehints.min_width = xsizehints.max_width = _w;
-      xsizehints.min_height= xsizehints.max_height= _h;
+      xsizehints.min_width = xsizehints.max_width = (int)w;
+      xsizehints.min_height= xsizehints.max_height= (int)h;
   
       PropMotifWmHints motif_hints;
       motif_hints.flags = MWM_HINTS_FUNCTIONS|MWM_HINTS_DECORATIONS|MWM_HINTS_INPUT_MODE;
@@ -841,7 +1154,7 @@ cerr << "w32createwindow: " << getTitle() << " " << _x << "," << _y << "," << _w
     // between the, upper-left frame corner and the upper-left corner of our
     // window)
     if (bShell && !flag_position_undefined)
-       XMoveWindow(x11display, x11window, _x, _y);
+       XMoveWindow(x11display, x11window, (int)x, (int)y);
 #endif
 
 #ifdef __WIN32__
@@ -944,6 +1257,17 @@ TWindow::_destroy()
   x11window = 0;
 #endif
 
+#ifdef __COCOA__
+  [nsview setHidden: true];
+  [nsview removeFromSuperview];
+  nsview = nil;
+  
+  if (!nswindow)
+    return;
+  [nswindow close];
+  nswindow = nil;  
+#endif
+
 #ifdef __WIN32__
   ::DestroyWindow(w32window);
   w32window = 0;
@@ -974,12 +1298,18 @@ void
 TWindow::raiseWindow()
 {
   CHECK_REALIZED("RaiseWindow");
-  #ifdef __X11__
+#ifdef __X11__
   XRaiseWindow(x11display, x11window);
-  #endif
+#endif
+
+#ifdef __COCOA__
+  if (!nswindow)
+    return;
+  [nswindow orderFront: nswindow];
+#endif
   
-  #ifdef __WIN32__
-  #endif
+#ifdef __WIN32__
+#endif
 }
 
 void 
@@ -1029,7 +1359,7 @@ TWindow::_dispatchPaintEvent()
   
   if (rgn->wnd) { // when the region is still valid...
     if (rgn->wnd->x11window)  { // .. and the window is still valid:
-      TRectangle wrect(0, 0, rgn->wnd->_w, rgn->wnd->_h);
+      TRectangle wrect(0, 0, rgn->wnd->w, rgn->wnd->h);
       
       // clip update region to window (needed after scrolling)
       (*rgn) &= wrect;
@@ -1043,7 +1373,8 @@ TWindow::_dispatchPaintEvent()
         TRectangle r;
         for(long i=0; i<n; i++) {
           rgn->getRect(i, &r);
-          XClearArea(x11display, rgn->wnd->x11window, r.x,r.y,r.w,r.h, false);
+          XClearArea(x11display, rgn->wnd->x11window, 
+                     (int)r.x, (int)r.y, (unsigned)r.w, (unsigned)r.h, false);
         }
       }
       if (rgn->wnd->layout) {
@@ -1093,7 +1424,7 @@ THREAD_LOCK(mutexPaintQueue);
       TRectangle r;
       for(long i=0; i<n; i++) {
         paint_rgn->getRect(i, &r);
-        XClearArea(x11display, x11window, r.x,r.y,r.w,r.h, false);
+        XClearArea(x11display, x11window, (int)r.x,(int)r.y,(unsigned)r.w,(unsigned)r.h, false);
       }
     }
     bEraseBe4Paint = false;
@@ -1145,27 +1476,37 @@ TWindow::invalidateWindow(bool clear)
 {
 #ifdef __X11__
   _providePaintRgn();
-  paint_rgn->addRect(0,0,_w,_h);
+  paint_rgn->addRect(0,0,w,h);
   bEraseBe4Paint |= clear;
+#endif
+
+#ifdef __COCOA__
+  if (nsview) {
+    [nsview setNeedsDisplay: YES];
+  }
 #endif
 
 #ifdef __WIN32__
   RECT rect;
   rect.left = 0;
-  rect.right = _w;
+  rect.right = w;
   rect.top = 0;
-  rect.bottom = _h;
+  rect.bottom = h;
   ::InvalidateRect(w32window, &rect, clear);
 #endif
 }
 
 void 
-TWindow::invalidateWindow(int x,int y,int w,int h, bool clear)
+TWindow::invalidateWindow(TCoord x,TCoord y,TCoord w,TCoord h, bool clear)
 {
 #ifdef __X11__
   _providePaintRgn();
   paint_rgn->addRect(x,y,w,h);
   bEraseBe4Paint |= clear;
+#endif
+
+#ifdef __COCOA__
+  invalidateWindow(clear);
 #endif
 
 #ifdef __WIN32__
@@ -1187,6 +1528,10 @@ TWindow::invalidateWindow(const TRectangle &r, bool clear)
   bEraseBe4Paint |= clear;
 #endif
 
+#ifdef __COCOA__
+  invalidateWindow(clear);
+#endif
+
 #ifdef __WIN32__
   RECT rect;
   rect.left = r.x;
@@ -1204,6 +1549,11 @@ TWindow::invalidateWindow(const TRegion &r, bool clear)
   _providePaintRgn();
   (*paint_rgn)|=r;
   bEraseBe4Paint |= clear;
+#endif
+
+
+#ifdef __COCOA__
+  invalidateWindow(clear);
 #endif
 
 #ifdef __WIN32__
@@ -1237,13 +1587,13 @@ static Bool CheckEvent(Display*, XEvent *event, char *window)
  * Should be done asynchronusly for fewer and faster screen updates.
  */
 void
-TWindow::scrollWindow(int dx, int dy, bool clear)
+TWindow::scrollWindow(TCoord dx, TCoord dy, bool clear)
 {
 #ifdef __X11__
   if (!x11window || (dx==0 && dy==0)) 
     return;
 
-  if (abs(dx)>=_w || abs(dy)>=_h) {
+  if (abs(dx)>=w || abs(dy)>=h) {
     invalidateWindow(clear);
     return;
   }
@@ -1268,19 +1618,19 @@ TWindow::scrollWindow(int dx, int dy, bool clear)
 
   // scroll the windows contents
   //-----------------------------
-  XCopyArea(x11display, x11window, x11window, x11gc, 0,0, _w, _h, dx,dy);
+  XCopyArea(x11display, x11window, x11window, x11gc, 0,0, w, h, dx,dy);
   
   // decide which parts of the window must be redrawn
   //-------------------------------------------------------------
   if (dy>0) // scroll down, clear top
-    invalidateWindow(0,0, _w, dy+1, clear);
+    invalidateWindow(0,0, w, dy+1, clear);
   else if (dy<0)  // scroll up, clear bottom
-    invalidateWindow(0,_h+dy, _w, -dy, clear);
+    invalidateWindow(0,h+dy, w, -dy, clear);
 
   if (dx>0) // scroll right, clear left
-    invalidateWindow(0,0, dx+1, _h, clear);
+    invalidateWindow(0,0, dx+1, h, clear);
   else if (dx<0)  // scroll left, clear right
-    invalidateWindow(_w+dx, 0, -dx, _h, clear);
+    invalidateWindow(w+dx, 0, -dx, h, clear);
 
   #ifdef SCROLL_WITH_SERVER_GRAB
   XUngrabServer(x11display);
@@ -1299,7 +1649,7 @@ TWindow::scrollWindow(int dx, int dy, bool clear)
  * should be done asynchronly for fewer and faster screen updates
  */
 void
-TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool clear)
+TWindow::scrollRectangle(const TRectangle &r, TCoord dx, TCoord dy, bool clear)
 {
 #ifdef __X11__
   if (!x11window || (dx==0 && dy==0)) 
@@ -1338,8 +1688,8 @@ TWindow::scrollRectangle(const TRectangle &r, int dx,int dy, bool clear)
 
   // scroll the windows contents
   //-----------------------------
-  struct {int x,y;} s,d;
-  int xs,ys;
+  TPoint s,d;
+  TCoord xs,ys;
 
   if (dy>0) {
     s.y = r.y;
@@ -1633,77 +1983,80 @@ void TWindow::handleX11Event(){}
  */
 
 void
-TWindow::keyEvent(TKeyEvent &ke)
+TWindow::keyEvent(const TKeyEvent &ke)
 {
   switch(ke.type) {
     case TKeyEvent::DOWN:
-      keyDown(ke.getKey(), const_cast<char*>(ke.getString()), ke.getModifier());
+      keyDown(ke);
       break;
     case TKeyEvent::UP:
-      keyUp(ke.getKey(), const_cast<char*>(ke.getString()), ke.getModifier());
+      keyUp(ke);
       break;
   }
 }
 
-void TWindow::keyDown(TKey,char*,unsigned){}
-void TWindow::keyUp(TKey,char*,unsigned){}
+void TWindow::keyDown(const TKeyEvent&){}
+void TWindow::keyUp(const TKeyEvent&){}
 
 void
-TWindow::mouseEvent(TMouseEvent &me)
+TWindow::mouseEvent(const TMouseEvent &me)
 {
-  if (layout && layout->mouseEvent(me))
-    return;
+  if (layout) {
+    TMouseEvent me0(me);
+    if (layout->mouseEvent(me0))
+      return;
+  }
 
   switch(me.type) {
     case TMouseEvent::MOVE:
-      mouseMove(me.x, me.y, me.modifier);
+      mouseMove(me);
       break;
     case TMouseEvent::ENTER:
-      mouseEnter(me.x, me.y, me.modifier);
+      mouseEnter(me);
       break;
     case TMouseEvent::LEAVE:
-      mouseLeave(me.x, me.y, me.modifier);
+      mouseLeave(me);
       break;
     case TMouseEvent::LDOWN:
-      mouseLDown(me.x, me.y, me.modifier);
+      mouseLDown(me);
       break;
     case TMouseEvent::MDOWN:
-      mouseMDown(me.x, me.y, me.modifier);
+      mouseMDown(me);
       break;
     case TMouseEvent::RDOWN:
-      mouseRDown(me.x, me.y, me.modifier);
+      mouseRDown(me);
       break;
     case TMouseEvent::LUP:
-      mouseLUp(me.x, me.y, me.modifier);
+      mouseLUp(me);
       break;
     case TMouseEvent::MUP:
-      mouseMUp(me.x, me.y, me.modifier);
+      mouseMUp(me);
       break;
     case TMouseEvent::RUP:
-      mouseRUp(me.x, me.y, me.modifier);
+      mouseRUp(me);
       break;
   }
 }
 
 //! See `SetMouseMoveMessages' when you need mouseMove.
-void TWindow::mouseMove(int,int,unsigned){}
-void TWindow::mouseEnter(int,int,unsigned){}
-void TWindow::mouseLeave(int,int,unsigned){}
+void TWindow::mouseMove(const TMouseEvent&){}
+void TWindow::mouseEnter(const TMouseEvent&){}
+void TWindow::mouseLeave(const TMouseEvent&){}
 
 //! Called when the left mouse button is pressed. Since X11 performs an
 //! automatic mouse grab you will receive a mouseLUp message afterwards
 //! unless you call UngrabMouse().
-void TWindow::mouseLDown(int,int,unsigned){}
+void TWindow::mouseLDown(const TMouseEvent&){}
 //! Same as mouseLDown for the middle mouse button.
-void TWindow::mouseMDown(int,int,unsigned){}
+void TWindow::mouseMDown(const TMouseEvent&){}
 //! Same as mouseLDown for the right mouse button.
-void TWindow::mouseRDown(int,int,unsigned){}
-void TWindow::mouseLUp(int,int,unsigned){}
-void TWindow::mouseMUp(int,int,unsigned){}
-void TWindow::mouseRUp(int,int,unsigned){}
+void TWindow::mouseRDown(const TMouseEvent&){}
+void TWindow::mouseLUp(const TMouseEvent&){}
+void TWindow::mouseMUp(const TMouseEvent&){}
+void TWindow::mouseRUp(const TMouseEvent&){}
 
 void
-TWindow::windowEvent(TWindowEvent &we)
+TWindow::windowEvent(const TWindowEvent &we)
 {
   switch(we.type) {
     case TWindowEvent::NEW:
@@ -1745,11 +2098,11 @@ void TWindow::saveYourself(){printf("saveYourself\n");}
  * Set the size of the window.
  */
 void 
-TWindow::setSize(int w,int h)
+TWindow::setSize(TCoord w, TCoord h)
 {
   assert(this!=NULL);
-  if (w==TSIZE_PREVIOUS) w=_w;
-  if (h==TSIZE_PREVIOUS) h=_h;
+  if (w==TSIZE_PREVIOUS) w=this->w;
+  if (h==TSIZE_PREVIOUS) h=this->h;
 
   if (w<=0 || h<=0) {
     // we should unmap the window instead...
@@ -1757,11 +2110,11 @@ TWindow::setSize(int w,int h)
     if (h<=0) h=1;
   }
 
-  if (_w==w && _h==h)
+  if (this->w==w && this->h==h)
     return;
 
-  _w=w;
-  _h=h;
+  this->w=w;
+  this->h=h;
 
 #ifdef __X11__  
   if (x11window) {
@@ -1772,11 +2125,17 @@ TWindow::setSize(int w,int h)
       sh.min_height= sh.max_height= h;
       XSetWMSizeHints(x11display, x11window, &sh, XA_WM_NORMAL_HINTS);
     }
-  
-    XResizeWindow(x11display, x11window ,_w,_h);
+    XResizeWindow(x11display, x11window ,w,h);
   } else {
     _bResizedBeforeCreate = true;
     return;
+  }
+#endif
+
+#ifdef __COCOA__
+  if (nsview) {
+    NSRect nr = NSMakeRect(x, y, w, h);
+    [nsview setFrame: nr];
   }
 #endif
 
@@ -1789,13 +2148,13 @@ TWindow::setSize(int w,int h)
     WS_OVERLAPPEDWINDOW;
     
   RECT rect;
-  rect.left = _y;
-  rect.top  = _x;
-  rect.right = _x+_w-1+_b*2;
-  rect.bottom = _y+_h-1+_b*2;
+  rect.left = y;
+  rect.top  = x;
+  rect.right = x+w-1+_b*2;
+  rect.bottom = y+h-1+_b*2;
   ::AdjustWindowRect(&rect, style, false);
 
-    ::MoveWindow(w32window, _x, _y, rect.right - rect.left+1, rect.bottom - rect.top+1, FALSE);
+    ::MoveWindow(w32window, x, y, rect.right - rect.left+1, rect.bottom - rect.top+1, FALSE);
   } else {
     _bResizedBeforeCreate = true;
     return;
@@ -1852,6 +2211,23 @@ void TWindow::setMapped(bool b)
   }
 #endif
 
+#ifdef __COCOA__
+  if (!nsview)
+    return;   
+  if (_mapped==b)
+    return;
+  _mapped = b;
+  [nsview setHidden: !b];
+  if (!nswindow)
+    return;
+  //[nswindow setOpaque: !b];
+  if (!b) {
+    [nswindow orderOut: nswindow];
+  } else {
+    [nswindow orderFront: nswindow];
+  }
+#endif
+
 #ifdef __WIN32__
   if (!w32window)
     return;
@@ -1883,7 +2259,7 @@ bool TWindow::isMapped() const
 /**
  * Set the origin for all drawing operations.
  */
-void TWindow::setOrigin(int dx, int dy)
+void TWindow::setOrigin(TCoord dx, TCoord dy)
 {
   _dx = dx; _dy = dy;
 }
@@ -1895,10 +2271,10 @@ void TWindow::setOrigin(int dx, int dy)
  * \note
  *   Child windows will not be moved.
  */
-void TWindow::scrollTo(int nx, int ny)
+void TWindow::scrollTo(TCoord nx, TCoord ny)
 {
-  int dx = nx - _dx;
-  int dy = ny - _dy;
+  TCoord dx = nx - _dx;
+  TCoord dy = ny - _dy;
   scrollWindow(dx, dy, true);
   _dx = nx; _dy = ny;
 }
@@ -2012,23 +2388,33 @@ TWindow::setLayout(TLayout *l)
  * @sa getXPos, getYPos, getShape, setSize, setShape
  */
 void
-TWindow::setPosition(int x,int y)
+TWindow::setPosition(TCoord x, TCoord y)
 {
   assert(this!=NULL);
   flag_position_undefined = false;
 
-  if (x==_x && y==_y)
+  if (x==this->x && y==this->y)
     return;
-  _x = x;
-  _y = y;
+  this->x = x;
+  this->y = y;
+
 #ifdef __X11__
   if (x11window)
     XMoveWindow(x11display, x11window,x,y);
 #endif
+
+#ifdef __COCOA__
+  if (nsview) {
+    NSRect nr = NSMakeRect(x, y, w, h);
+    [nsview setFrame: nr];
+  }
+#endif
+
 #ifdef __WIN32__
     ::InvalidateRect(w32window, NULL, TRUE);
-    ::MoveWindow(w32window, _x, _y, _w+(_b<<1), _h+(_b<<1), FALSE);
+    ::MoveWindow(w32window, x, y, w+(_b<<1), h+(_b<<1), FALSE);
 #endif
+
   _childNotify(TCHILD_POSITION);
 }
 
@@ -2036,8 +2422,7 @@ void
 TWindow::getShape(TRectangle *r) const
 {
   assert(this!=NULL);
-
-  r->set(_x, _y, _w + (_b<<1), _h+ (_b<<1));
+  r->set(x, y, w + (_b<<1), h+ (_b<<1));
 } 
 
 /**
@@ -2045,11 +2430,11 @@ TWindow::getShape(TRectangle *r) const
  * border.
  */
 void 
-TWindow::setShape(int x,int y,int w,int h)
+TWindow::setShape(TCoord x, TCoord y, TCoord w, TCoord h)
 {
   assert(this!=NULL);
 
-  int x2=x, y2=y, w2=w, h2=h;
+  TCoord x2=x, y2=y, w2=w, h2=h;
   if (x==TPOS_PREVIOUS) x=0;
   if (y==TPOS_PREVIOUS) y=0;
   if (w==TSIZE_PREVIOUS) w=0;
@@ -2057,16 +2442,23 @@ TWindow::setShape(int x,int y,int w,int h)
   TRectangle r(x,y,w,h);
   r.w -= (_b<<1);
   r.h -= (_b<<1);
-  if (x2==TPOS_PREVIOUS) r.x=_x;
-  if (y2==TPOS_PREVIOUS) r.y=_y;
-  if (w2==TSIZE_PREVIOUS) r.w=_w;
-  if (h2==TSIZE_PREVIOUS) r.h=_h;
+  if (x2==TPOS_PREVIOUS) r.x=this->x;
+  if (y2==TPOS_PREVIOUS) r.y=this->y;
+  if (w2==TSIZE_PREVIOUS) r.w=this->w;
+  if (h2==TSIZE_PREVIOUS) r.h=this->h;
+#ifndef __COCOA__
   setPosition(r.x, r.y);
   setSize(r.w, r.h);
+#else
+  if (nsview) {
+    NSRect nr = NSMakeRect(x, y, w, h);
+    [nsview setFrame: nr];
+  }
+#endif
 }
 
 void 
-TWindow::setBackground(const TColor &nc)
+TWindow::setBackground(const TRGB &nc)
 {
   background.set(nc.r,nc.g,nc.b);
 #ifdef __X11__
@@ -2158,7 +2550,7 @@ TWindow::clearWindow()
  *
  * (Returns <CODE>(0,0)</CODE>, when the window is not realized.)
  */
-void TWindow::getRootPos(int* x, int* y)
+void TWindow::getRootPos(TCoord* x, TCoord* y)
 {
 #ifdef __X11__
   if (!x11window) {
@@ -2166,12 +2558,15 @@ void TWindow::getRootPos(int* x, int* y)
     *y=0;
   } else {
     Window wnd;
+    int ix, iy;
+    ix=*x;
+    iy=*y;
     XTranslateCoordinates(x11display,
                           x11window, 
                           DefaultRootWindow(x11display),
-                          0,0,x,y, &wnd);
-    *x -= _b;
-    *y -= _b;
+                          0,0,&ix,&iy, &wnd);
+    *x = ix - _b;
+    *y = iy - _b;
   }
 #endif
 }
@@ -2218,7 +2613,7 @@ void TWindow::debug_check_realized(const char *txt)
  * \sa grabPopupMouse, ungrabMouse
  */
 void 
-TWindow::grabMouse(unsigned short mouseMessages, TWindow* confine_window, TCursor::EType cursor)
+TWindow::grabMouse(bool allmousemove, TWindow* confine_window, TCursor::EType cursor)
 {
 #ifdef __X11__
 //  cerr << "grabMouse for window '" << getTitle() << "'\n";
@@ -2227,13 +2622,8 @@ TWindow::grabMouse(unsigned short mouseMessages, TWindow* confine_window, TCurso
 
   // set flags for MouseMoveMessages
   //---------------------------------
-  unsigned short old_mmm_mask = _mmm_mask;
-  
-  if (mouseMessages!=TMMM_PREVIOUS) {
-    // modify _mmm_mask for 'build_mouse_event_mask()'
-    _mmm_mask = mouseMessages;
-    flag_mmm_modified = true;
-  }
+  bool omm = _allmousemove;
+  setAllMouseMoveEvents(allmousemove);
 
   // grab the mouse pointer
   //------------------------
@@ -2252,7 +2642,7 @@ TWindow::grabMouse(unsigned short mouseMessages, TWindow* confine_window, TCurso
   {
     cerr << "toad: warning; GrapPointer failed\n";
   }
-  _mmm_mask = old_mmm_mask;
+  setAllMouseMoveEvents(omm);
 #endif
 }
 
@@ -2274,7 +2664,7 @@ TWindow::grabMouse(unsigned short mouseMessages, TWindow* confine_window, TCurso
  * \sa grabMouse, ungrabMouse
  */
 void
-TWindow::grabPopupMouse(unsigned short mouseMessages, TCursor::EType cursor)
+TWindow::grabPopupMouse(bool allmousemove, TCursor::EType cursor)
 {
 #ifdef __X11__
 //printf("%s.GrabPopupMouse(%03lx) (MMM:%03lx)\n",Title(),ulMouseMessages,iflags%IFLAG_MMM_MASK);
@@ -2283,11 +2673,8 @@ TWindow::grabPopupMouse(unsigned short mouseMessages, TCursor::EType cursor)
 
   // set flags for MouseMoveMessages
   //---------------------------------
-  unsigned short old_mmm_mask = _mmm_mask;
-  if (mouseMessages!=TMMM_PREVIOUS) {
-    _mmm_mask = mouseMessages;
-    flag_mmm_modified = true;
-  }
+  bool omm = _allmousemove;
+  setAllMouseMoveEvents(allmousemove);
 
   // grab the mouse pointer
   //------------------------
@@ -2304,7 +2691,7 @@ TWindow::grabPopupMouse(unsigned short mouseMessages, TCursor::EType cursor)
   }
   
   TOADBase::wndTopPopup = this;
-  _mmm_mask = old_mmm_mask;
+  setAllMouseMoveEvents(omm);
 #endif
 }
 
@@ -2323,74 +2710,15 @@ TWindow::ungrabMouse()
 #endif
 }
 
-/**
- * To optimize the communication between the X server and your program,
- * you may specify which message your application need. The default is
- * to select all mouse move events.
- * 
- * The following values define <VAR>mode</VAR> and can be joined by the 
- * '|' operator:
- *  <TABLE BORDER=1>
- *  <TR><TH>TMMM_NONE</TH><TD>
- *    Don't select any messages now but <I>grabMouse</I> or 
- *    <I>grabPopupMouse</I> might select some messages later.
- *  </TD></TR><TR><TH>TMMM_ALL</TH><TD>
- *    Get all mouse move event types.
- *  </TD></TR><TR><TH>TMMM_LBUTTON</TH><TD>
- *    Enable mouseMove when the left mouse button is held down.
- *  </TD></TR><TR><TH>TMMM_MBUTTON</TH><TD>
- *    Enable mouseMove when the middle mouse button is held down.<BR>
- *    (Attention: This might be reserved for drag and drop.)
- *  </TD></TR><TR><TH>TMMM_RBUTTON</TH><TD>
- *    Enable mouseMove when the right mouse button is held down.
- *  </TD></TR><TR><TH>TMMM_ANYBUTTON</TH><TD>
- *  </TD></TR><TR><TH>TMMM_FIRST</TH><TD>
- *    Get only the first event. (I've never tried that [MAH])
- *  </TD></TR><TR><TH>TMMM_LAST</TH><TD>
- *    <B>Not available yet.</B><BR>
- *    Only deliver the last mouseMove, skip previous events.
- *  </TD></TR><TR><TH>TMMM_PREVIOUS</TH><TD>
- *    Don't make any changes.
- *  </TD></TR>
- *  </TABLE>
- */
 void
-TWindow::setMouseMoveMessages(unsigned short mode)
+TWindow::setAllMouseMoveEvents(bool all)
 {
-#ifdef __X11__
-  if ( !(CHK_VMAS(VMAS_MOUSEMOVE, mouseMove)) )
+  if (_allmousemove == all)
     return;
-  _mmm_mask = mode;
+  _allmousemove = all;
   flag_mmm_modified = true;
   if (x11window)
     XSelectInput(x11display, x11window, _buildEventmask());
-#endif
-}
-
-void
-TWindow::addMouseMoveMessages(unsigned short mode)
-{
-#ifdef __X11__
-  if ( !(CHK_VMAS(VMAS_MOUSEMOVE, mouseMove)) )
-    return;
-  _mmm_mask |= mode;
-  flag_mmm_modified = true;
-  if (x11window)
-    XSelectInput(x11display, x11window, _buildEventmask());
-#endif
-}
-
-void
-TWindow::clrMouseMoveMessages(unsigned short mode)
-{
-#ifdef __X11__
-  if ( !(CHK_VMAS(VMAS_MOUSEMOVE, mouseMove)) )
-    return;
-  _mmm_mask &= ~mode;
-  flag_mmm_modified = true;
-  if (x11window)
-    XSelectInput(x11display, x11window, _buildEventmask());
-#endif
 }
 
 #ifdef __X11__
@@ -2455,18 +2783,11 @@ TWindow::_buildMouseEventmask(bool force)
   }
 
   if ( force || CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) ) {
-    if (_mmm_mask & TMMM_FIRST)
-      mask |= PointerMotionHintMask;
-    if (_mmm_mask & TMMM_ALL)
+    if (_allmousemove) {
       mask |= PointerMotionMask;
-    if (_mmm_mask & TMMM_LBUTTON)
-      mask |= Button1MotionMask;
-    if (_mmm_mask & TMMM_MBUTTON)
-      mask |= Button2MotionMask;
-    if (_mmm_mask & TMMM_RBUTTON)
-      mask |= Button3MotionMask;
-    if (_mmm_mask & TMMM_ANYBUTTON)
+    } else {
       mask |= ButtonMotionMask;
+    }
   }
   return mask;
 }

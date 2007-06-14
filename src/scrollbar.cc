@@ -20,13 +20,10 @@
 
 #define NO_FLICKER
 
-#include <toad/toadbase.hh>
+// #include <toad/core.hh>
+#include <toad/scrollbar.hh>
 #include <toad/pen.hh>
 #include <toad/window.hh>
-#include <toad/region.hh>
-#include <toad/pushbutton.hh>
-#include <toad/simpletimer.hh>
-#include <toad/scrollbar.hh>
 #include <toad/arrowbutton.hh>
 
 #include <unistd.h>
@@ -45,12 +42,38 @@ using namespace toad;
 #define DEFAULT_FIXED_SIZE 15
 #define DEFAULT_FIXED_BORDER 1
 
+TScrollBar::TScrollBar(TWindow *parent, const string &title, TFloatModel*):
+  TControl(parent, title)
+{
+  _b = DEFAULT_FIXED_BORDER;
+//  flagNoBackground = true;
+  bNoBackground = true;
+  model = new TIntegerModel();
+  CONNECT(model->sigChanged, this, modelChanged);
+  
+  bVertical   = true;
+  nMouseDown  = -1;
+  unitIncrement = 1;
+  w=h=DEFAULT_FIXED_SIZE;
+
+//  setMouseMoveMessages(TMMM_LBUTTON);
+  btn1 = new TArrowButton(this, "up/left", bVertical ? 
+                                TArrowButton::ARROW_UP : 
+                                TArrowButton::ARROW_LEFT);
+  CONNECT(btn1->sigClicked, this, decrement);
+  btn2 = new TArrowButton(this, "down/right", bVertical ? 
+                                TArrowButton::ARROW_DOWN : 
+                                TArrowButton::ARROW_RIGHT);
+  CONNECT(btn2->sigClicked, this, increment);
+}
+
 // Constructor
 //---------------------------------------------------------------------------
 TScrollBar::TScrollBar(TWindow *parent, const string &title, TIntegerModel *model)
   :TControl(parent,title)
 {
   _b = DEFAULT_FIXED_BORDER;
+//  flagNoBackground = true;
   bNoBackground = true;
   if (!model)
     model = new TIntegerModel();
@@ -60,9 +83,9 @@ TScrollBar::TScrollBar(TWindow *parent, const string &title, TIntegerModel *mode
   bVertical   = true;
   nMouseDown  = -1;
   unitIncrement = 1;
-  _w=_h=DEFAULT_FIXED_SIZE;
+  w=h=DEFAULT_FIXED_SIZE;
 
-  setMouseMoveMessages(TMMM_LBUTTON);
+//  setMouseMoveMessages(TMMM_LBUTTON);
   btn1 = new TArrowButton(this, "up/left", bVertical ? 
                                 TArrowButton::ARROW_UP : 
                                 TArrowButton::ARROW_LEFT);
@@ -89,6 +112,7 @@ TScrollBar::getFixedSize()
 void
 TScrollBar::resize()
 {
+  printf("%s\n", __FUNCTION__);
   bVertical = getWidth() < getHeight();
   _placeChildren();
   _placeSlider();
@@ -112,13 +136,13 @@ TScrollBar::_drawSlider(TPen &pen, TRectangle &r)
   // draw shadow(s)
   //----------------
   pen.setColor(TColor::SLIDER_SHADOW);
-  int c;
+  TCoord c;
   if (bVertical)
   {
-    c = r.y+(r.h>>1)-2;
+    c = r.y+(r.h/2)-2;
     pen.fillRectanglePC(r.x+5, c+1, r.w-8, 5);
   } else {
-    c = r.x+(r.w>>1)-2;
+    c = r.x+(r.w/2)-2;
     pen.fillRectanglePC(c+1, r.y+5, 5, r.h-8);
   }
 
@@ -173,11 +197,11 @@ void
 TScrollBar::_drawArea(TPen &pen)
 {
   TPoint p[3];
-  int v, n, m;
+  TCoord v, n, m;
 
   if (isFocus()) {
     pen.setColor(0,0,0);
-    pen.drawRectanglePC(0,0, _w, _h);
+    pen.drawRectanglePC(0,0, w, h);
     v=1;
   } else {
     v=0;
@@ -188,37 +212,37 @@ TScrollBar::_drawArea(TPen &pen)
     //------------
     pen.setColor(TColor::BTNFACE);
 //pen.setColor(255,0,0);  // red
-    n = rectSlider.y-_w-2;
+    n = rectSlider.y-w-2;
     if (n>0)
-      pen.fillRectanglePC(v+1,_w+1, _w-2-(v<<1), n+1);
+      pen.fillRectanglePC(v+1,w+1, w-2-(v*2), n+1);
 //pen.setColor(255,128,0); // orange
-    n += rectSlider.h + _w + 2;
-    m = _h-_w-n;
+    n += rectSlider.h + w + 2;
+    m = h-w-n;
     if (m>0)
-      pen.fillRectanglePC(v+1, n, _w-2-(v<<1), m);
+      pen.fillRectanglePC(v+1, n, w-2-(v*2), m);
   
     // shadow
     //------------
     pen.setColor(TColor::BTNSHADOW);
 //pen.setColor(0,128,0); // dark green
-    if (_w+1<=rectSlider.y-1) {
-      p[0].set(_w-2-v, _w);
-      p[1].set(     v, _w);
+    if (w+1<=rectSlider.y-1) {
+      p[0].set(w-2-v, w);
+      p[1].set(     v, w);
       p[2].set(     v, rectSlider.y-1);
       pen.drawLines(p,3);
     }
 //pen.setColor(0,255,0); // bright green
     pen.drawLine(v, rectSlider.y + rectSlider.h + 1,
-                 v, _h-_w-1 );
+                 v, h-w-1 );
 
     // light
     //------------
     pen.setColor(TColor::BTNLIGHT);
 //pen.setColor(0,0,255); // blue
-    pen.drawLine(_w-1-v,0, _w-1-v,rectSlider.y-1);
-    p[0].set(_w-1-v,rectSlider.y+rectSlider.h+1);   // slider bottom, right
-    p[1].set(_w-1-v,_h-_w-1);                       // bottom,right
-    p[2].set(1+v,_h-_w-1);                          // bottom,left
+    pen.drawLine(w-1-v,0, w-1-v,rectSlider.y-1);
+    p[0].set(w-1-v,rectSlider.y+rectSlider.h+1);   // slider bottom, right
+    p[1].set(w-1-v,h-w-1);                       // bottom,right
+    p[2].set(1+v,h-w-1);                          // bottom,left
 //pen.setColor(0,128,255); // light blue
     pen.drawLines(p,3);
   } else {
@@ -227,33 +251,33 @@ TScrollBar::_drawArea(TPen &pen)
     pen.setColor(TColor::BTNFACE);
 
     // left side of the slider
-    n = rectSlider.x-_h;
+    n = rectSlider.x-h;
     if (n>0)
-      pen.fillRectanglePC(_h+1, v+1, n, _h-(v<<1)-2);
+      pen.fillRectanglePC(h+1, v+1, n, h-(v*2)-2);
 
     // right side of the slider
     n = rectSlider.x+rectSlider.w + 1;
-    m = _w - n - _h;
-    pen.fillRectanglePC(n, v+1, m, _h-(v<<1)-2);
+    m = w - n - h;
+    pen.fillRectanglePC(n, v+1, m, h-(v*2)-2);
   
     // shadow
     //------------
     pen.setColor(TColor::BTNSHADOW);
-    p[0].set(_h,_h-1-v);
-    p[1].set(_h,v);
+    p[0].set(h,h-1-v);
+    p[1].set(h,v);
     p[2].set(rectSlider.x,v);
     pen.drawLines(p,3);
     pen.drawLine(rectSlider.x+rectSlider.w+1, v,
-                 _w-_h-1, v);
+                 w-h-1, v);
 
     // light
     //------------
     pen.setColor(TColor::BTNLIGHT);
-    pen.drawLine(_h+1, _h-1-v,
-                 rectSlider.x-1, _h-1-v);
-    p[0].set(rectSlider.x+rectSlider.w+2,_h-1-v);
-    p[1].set(_w-_h-1, _h-1-v);
-    p[2].set(_w-_h-1,v+1);
+    pen.drawLine(h+1, h-1-v,
+                 rectSlider.x-1, h-1-v);
+    p[0].set(rectSlider.x+rectSlider.w+2,h-1-v);
+    p[1].set(w-h-1, h-1-v);
+    p[2].set(w-h-1,v+1);
     pen.drawLines(p,3);
   }
 }
@@ -293,25 +317,17 @@ TScrollBar::pageDown()
 void
 TScrollBar::modelChanged()
 {
-  _placeSlider();
-  invalidateWindow();
-  valueChanged();
-}
-
-void
-TScrollBar::valueChanged()
-{
   if (isRealized()) {
-    invalidateWindow();
     _placeSlider();
+    invalidateWindow();
   }
 }
 
 void
-TScrollBar::keyDown(TKey key,char*,unsigned)
+TScrollBar::keyDown(const TKeyEvent &ke)
 {
 //  setFocus();
-  switch(key) {
+  switch(ke.key()) {
     case TK_UP:
       if (bVertical)
         decrement();
@@ -338,7 +354,7 @@ TScrollBar::keyDown(TKey key,char*,unsigned)
 }
 
 void
-TScrollBar::mouseEvent(TMouseEvent &me)
+TScrollBar::mouseEvent(const TMouseEvent &me)
 {
   switch(me.type) {
     case TMouseEvent::ROLL_UP:
@@ -353,44 +369,48 @@ TScrollBar::mouseEvent(TMouseEvent &me)
 }
 
 void
-TScrollBar::mouseLDown(int x,int y,unsigned)
+TScrollBar::mouseLDown(const TMouseEvent &me)
 {
   setFocus();
   int v = model->getValue();
   
-  if (!rectSlider.isInside(x,y)) {
+  if (!rectSlider.isInside(me.x,me.y)) {
     // move by a page
     int e = model->getExtent();
     if (e<1) e=1; else e--;
-    if (bVertical ? y<rectSlider.y : x<rectSlider.x) {
+    if (bVertical ? me.y<rectSlider.y : me.x<rectSlider.x) {
       model->setValue(v-e);
     } else {
       model->setValue(v+e);
     }
   } else {
+/*
     // move slider
     TPen pen(this);
     _drawSlider(pen, rectSlider);
-    nMouseDown = bVertical ? y-rectSlider.y : x-rectSlider.x;
+*/
+    invalidateWindow();
+    nMouseDown = bVertical ? me.y-rectSlider.y : me.x-rectSlider.x;
     // model->setValueIsAdjusting(true);
   }
 }
 
 void
-TScrollBar::mouseMove(int x,int y,unsigned)
+TScrollBar::mouseMove(const TMouseEvent &me)
 {
+//printf("scrollbar mouseMove: x=%i,y=%i,nMouseDown=%i\n",x,y,nMouseDown);
   if (nMouseDown!=-1) {
     TRectangle rectOld;
     rectOld = rectSlider;
     if (bVertical)
-      _moveSliderTo(y - nMouseDown);
+      _moveSliderTo(me.y - nMouseDown);
     else
-      _moveSliderTo(x - nMouseDown);
+      _moveSliderTo(me.x - nMouseDown);
   }
 }
 
 void
-TScrollBar::mouseLUp(int,int,unsigned)
+TScrollBar::mouseLUp(const TMouseEvent&)
 {
   if (nMouseDown!=-1) {
     nMouseDown = -1;
@@ -404,20 +424,25 @@ TScrollBar::paint()
   TPen pen(this);
   _drawArea(pen);
   _drawSlider(pen, rectSlider);
+//printf("paint: rectSlider: %i,%i,%i,%i\n", rectSlider.x,rectSlider.y,rectSlider.w,rectSlider.h);
 }
 
 void
 TScrollBar::_placeSlider()
 {
   assert(model!=NULL);
-
+//printf("_placeSlider\n");
   if (model->getExtent()<0)
     return;
+//printf("_placeSlider 2\n");
       
   // calculate range of possible slider positions 
   //----------------------------------------------
   int nRange = model->getMaximum() - model->getMinimum() - model->getExtent() + 1;
 
+//printf("range = %i\n", model->getMaximum() - model->getMinimum());
+
+//printf("nRange=%i, min=%i, max=%i, extend=%i\n", nRange, model->getMinimum(), model->getMaximum() , model->getExtent());
   if (nRange<0)
     nRange = 0;
 
@@ -426,32 +451,32 @@ TScrollBar::_placeSlider()
   TRectangle rect1,rect2;
   btn1->getShape(&rect1);
   btn2->getShape(&rect2);
-  int nSize = bVertical ? _h - rect1.h - rect1.y - _h+ rect2.y
-                        : _w  - rect1.w - rect1.x - _w + rect2.x;
+  TCoord nSize = bVertical ? h - rect1.h - rect1.y - h+ rect2.y
+                        : w - rect1.w - rect1.x - w + rect2.x;
     
   // calculate slider size 
   //-----------------------
   assert(model->getExtent() + nRange != 0);
   
-  int nSlider = (model->getExtent() * nSize) / (model->getExtent() + nRange);
+  TCoord nSlider = (model->getExtent() * nSize) / (model->getExtent() + nRange);
 
   // limit slider size
   if (bVertical) {
-    if (nSlider<_w)
-      nSlider=_w;
+    if (nSlider<w)
+      nSlider=w;
     else if (nSlider>nSize)
       nSlider=nSize;
   } else {
-    if (nSlider<_h)
-      nSlider=_h;
+    if (nSlider<h)
+      nSlider=h;
     else if (nSlider>nSize)
       nSlider=nSize;
   } 
 
   // calculate slider position
   //---------------------------
-  int nSetRange = nSize-nSlider+1;
-  int pos;
+  TCoord nSetRange = nSize-nSlider+1;
+  TCoord pos;
   if (nRange==0)
     pos = 0;
   else
@@ -465,17 +490,18 @@ TScrollBar::_placeSlider()
   if (bVertical) {
     if ( pos+nSlider-1 > rect2.y ) 
       pos = rect2.y - nSlider + 1;
-    rectSlider.set(isFocus()?1:0,pos, _w+(isFocus()?-2:0), nSlider);
+    rectSlider.set(isFocus()?1:0,pos, w+(isFocus()?-2:0), nSlider);
   } else {
     if ( pos+nSlider-1 > rect2.x ) 
       pos = rect2.x - nSlider + 1;
-    rectSlider.set(pos, isFocus()?1:0, nSlider, _h+(isFocus()?-2:0));
+    rectSlider.set(pos, isFocus()?1:0, nSlider, h+(isFocus()?-2:0));
   }
 }
 
 void
-TScrollBar::_moveSliderTo(int pos)
+TScrollBar::_moveSliderTo(TCoord pos)
 {
+//printf("moveSliderTo %i\n", pos);
   TRectangle rect1,rect2;
   btn1->getShape(&rect1);
   btn2->getShape(&rect2);
@@ -501,12 +527,12 @@ TScrollBar::_moveSliderTo(int pos)
   // change _data 
   //---------------
   // slider size
-  int nSlider = bVertical ? rectSlider.h : rectSlider.w;
+  TCoord nSlider = bVertical ? rectSlider.h : rectSlider.w;
   // size of slider area
-  int nSize = bVertical ? _h - rect1.h - rect1.y - _h+ rect2.y - 2
-                        : _w  - rect1.w - rect1.x - _w + rect2.x - 2 ;
+  TCoord nSize = bVertical ? h - rect1.h - rect1.y - h + rect2.y - 2
+                        : w - rect1.w - rect1.x - w + rect2.x - 2 ;
   // size of area to place the slider
-  int nSetRange = nSize-nSlider;
+  TCoord nSetRange = nSize-nSlider;
 
   // avoid division by zero
   //------------------------
@@ -515,15 +541,15 @@ TScrollBar::_moveSliderTo(int pos)
     return;
   }
   
-  int nValue2;
-  int nRange = model->getMaximum() - model->getMinimum() - model->getExtent() + 1;
+  TCoord nValue2;
+  TCoord nRange = model->getMaximum() - model->getMinimum() - model->getExtent() + 1;
   
   if (nRange<0)
     nRange=0;
   
   pos -= bVertical ? rect1.y+rect1.h-1 : rect1.x+rect1.w-1;
   nValue2 = ( pos * nRange ) / nSetRange + model->getMinimum();
-
+//printf("new value = %i\n", nValue2);
   model->setValue(nValue2);
 }
 
@@ -533,14 +559,14 @@ TScrollBar::_placeChildren()
   if (bVertical) {
     btn1->setType(TArrowButton::ARROW_UP);
     btn2->setType(TArrowButton::ARROW_DOWN);
-    btn1->setShape(0,0,_w,_w);
+    btn1->setShape(0,0,w,w);
     // btn1->setShape(0,_h-_w-_w,_w,_w);
-    btn2->setShape(0,_h-_w,_w,_w);
+    btn2->setShape(0,h-w,w,w);
   } else {  
     btn1->setType(TArrowButton::ARROW_LEFT);
     btn2->setType(TArrowButton::ARROW_RIGHT);
-    btn1->setShape(0,0,_h,_h);
+    btn1->setShape(0,0,h,h);
     // btn1->setShape(_w-_h-_h,0,_h,_h);
-    btn2->setShape(_w-_h,0,_h,_h);
+    btn2->setShape(w-h,0,h,h);
   }
 }

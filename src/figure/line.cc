@@ -69,14 +69,13 @@ void
 TFLine::drawArrow(TPenBase &pen, 
                   const TPoint &p1, const TPoint &p2,
                   const TRGB &line, const TRGB &fill,
-                  int w, int h,
+                  TCoord w, TCoord h,
                   EArrowType type)
 {
-  double d = atan2((double)p2.y - p1.y, 
-                   (double)p2.x - p1.x);
+  TCoord d = atan2(p2.y - p1.y, p2.x - p1.x);
   
-  double height = h;
-  double width  = 0.5 * w;
+  TCoord height = h;
+  TCoord width  = 0.5 * w;
   
   TPoint p0;
   
@@ -84,14 +83,14 @@ TFLine::drawArrow(TPenBase &pen,
   
   p[0] = p1;
   
-  p0.x = static_cast<int>(cos(d) * height + p1.x);
-  p0.y = static_cast<int>(sin(d) * height + p1.y);
+  p0.x = cos(d) * height + p1.x;
+  p0.y = sin(d) * height + p1.y;
 
-  double r = 90.0 / 360.0 * (2.0 * M_PI);
-  p[1].x = p0.x + static_cast<int>(cos(d-r) * width);
-  p[1].y = p0.y + static_cast<int>(sin(d-r) * width);
-  p[3].x = p0.x + static_cast<int>(cos(d+r) * width);
-  p[3].y = p0.y + static_cast<int>(sin(d+r) * width);
+  TCoord r = 90.0 / 360.0 * (2.0 * M_PI);
+  p[1].x = p0.x + cos(d-r) * width;
+  p[1].y = p0.y + sin(d-r) * width;
+  p[3].x = p0.x + cos(d+r) * width;
+  p[3].y = p0.y + sin(d+r) * width;
   
   pen.setLineColor(line);
   switch(type) {
@@ -111,29 +110,29 @@ TFLine::drawArrow(TPenBase &pen,
       break;
     case EMPTY_CONCAVE:
       height -= height / 4;
-      p[2].x = static_cast<int>(cos(d) * height + p1.x);
-      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      p[2].x = cos(d) * height + p1.x;
+      p[2].y = sin(d) * height + p1.y;
       pen.setFillColor(fill);
       pen.fillPolygon(p, 4);
       break;
     case FILLED_CONCAVE:
       height -= height / 4;
-      p[2].x = static_cast<int>(cos(d) * height + p1.x);
-      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      p[2].x = cos(d) * height + p1.x;
+      p[2].y = sin(d) * height + p1.y;
       pen.setFillColor(line);
       pen.fillPolygon(p, 4);
       break;
     case EMPTY_CONVEX:
       height += height / 4;
-      p[2].x = static_cast<int>(cos(d) * height + p1.x);
-      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      p[2].x = cos(d) * height + p1.x;
+      p[2].y = sin(d) * height + p1.y;
       pen.setFillColor(fill);
       pen.fillPolygon(p, 4);
       break;
     case FILLED_CONVEX:
       height += height / 4;
-      p[2].x = static_cast<int>(cos(d) * height + p1.x);
-      p[2].y = static_cast<int>(sin(d) * height + p1.y);
+      p[2].x = cos(d) * height + p1.x;
+      p[2].y = sin(d) * height + p1.y;
       pen.setFillColor(line);
       pen.fillPolygon(p, 4);
       break;
@@ -166,11 +165,11 @@ TFLine::paint(TPenBase &pen, EPaintType)
 }
 
 double 
-TFLine::distance(int mx, int my)
+TFLine::distance(TCoord mx, TCoord my)
 {
   TPolygon::const_iterator p(polygon.begin()), e(polygon.end());
-  int x1,y1,x2,y2;
-  double min = OUT_OF_RANGE, d;
+  TCoord x1,y1,x2,y2;
+  TCoord min = OUT_OF_RANGE, d;
 
   assert(p!=e);
   x2=p->x;
@@ -195,21 +194,19 @@ TFLine::distance(int mx, int my)
  * 2 points instead of 3.
  */
 unsigned 
-TFLine::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
+TFLine::mouseLDown(TFigureEditor *editor, const TMouseEvent &me)
 {
-  if (editor->state == TFigureEditor::STATE_CREATE &&
-      m & MK_DOUBLE) 
-  {
+  if (editor->state == TFigureEditor::STATE_CREATE && me.dblClick) {
     if (polygon.size()<3)
       return STOP|DELETE;
     polygon.erase(--polygon.end());
     return STOP;
   }
-  return super::mouseLDown(editor, mx, my, m);
+  return super::mouseLDown(editor, me);
 }
 
 void
-TFLine::insertPointNear(int x, int y)
+TFLine::insertPointNear(TCoord x, TCoord y)
 {
   _insertPointNear(x, y, false);
 }
@@ -255,8 +252,8 @@ bool
 TFLine::restore(TInObjectStream &in)
 {
   static bool flag;
-  static int x;
-  int y;
+  static TCoord x;
+  TCoord y;
 
   if (in.what == ATV_START)
     flag = false;

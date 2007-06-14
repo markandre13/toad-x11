@@ -58,7 +58,7 @@ LIBFULLNAME	= $(LIBNAME).$(VERSION)
 #----------------------------------------------------------------------------
 OS_GUI          =
 OS_SYS          =
-GRAPHIC		= pen/parameters.cc pen/operations.cc pen/bezier.cc matrix2d.cc
+GRAPHIC		= penbase.cc pen/parameters.cc pen/operations.cc pen/bezier.cc matrix2d.cc
 
 NEW_CHECKER	= new.cc
 
@@ -75,8 +75,6 @@ GADGET		= figure.cc figuremodel.cc figurewindow.cc \
 		  figure/polygon.cc figure/line.cc figure/window.cc figure/image.cc \
 		  figureeditor.cc colorselector.cc
 
-MDI		= mdiwindow.cc mdishell.cc
-
 DEBUG		= debug.cc stacktrace.cc
 
 XUTF8           = xutf8/utf8Input.cc xutf8/utf8Utils.cc xutf8/utf8Wrap.cc \
@@ -92,7 +90,7 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		color.cc colormanager.cc font.cc \
                 fontmanager_x11.cc fontmanager_ft.cc \
 		bitmap.cc bitmapfilter.cc \
-		control.cc form.cc rowcolumn.cc \
+		control.cc rowcolumn.cc \
 		labelowner.cc buttonbase.cc pushbutton.cc \
 		radiobuttonbase.cc fatradiobutton.cc radiobutton.cc \
 		fatcheckbutton.cc \
@@ -103,9 +101,8 @@ SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
 		dialogeditor.cc colordialog.cc \
 		table.cc tableadapter.cc treemodel.cc treeadapter.cc \
                 combobox.cc textarea.cc textfield.cc \
-		model.cc integermodel.cc rgbmodel.cc textmodel.cc \
+		model.cc integermodel.cc floatmodel.cc rgbmodel.cc textmodel.cc \
 		resource.cc utf8.cc \
-		$(MDI) \
 		$(GADGET) $(IO) $(NEW_CHECKER) $(FILTER) \
 		$(DEBUG) $(XUTF8)
 

@@ -289,7 +289,7 @@ struct TTableEvent
   } type;
   TPen *pen;
   TMouseEvent mouse;
-  TKeyEvent *key;
+  const TKeyEvent *key;
   size_t col, row;   // current field
   int w, h;          // field size in pixels
   size_t cols, rows; // table size in fields
@@ -512,15 +512,15 @@ class TTable:
     void resize();
     void focus(bool);
 
-    void mouseEvent(TMouseEvent &me);
-    void keyEvent(TKeyEvent &ke);
+    void mouseEvent(const TMouseEvent &me);
+    void keyEvent(const TKeyEvent &ke);
     
-    void mouseLDown(int x,int y, unsigned modifier);
-    void mouseMove(int x,int y, unsigned modifier);
-    void mouseLUp(int x,int y, unsigned modifier);
+    void mouseLDown(const TMouseEvent&);
+    void mouseMove(const TMouseEvent&);
+    void mouseLUp(const TMouseEvent &me);
 
-    void keyDown(TKey key, char *string, unsigned modifier);
-    void keyUp(TKey key, char *string, unsigned modifier);
+    void keyDown(const TKeyEvent&);
+    void keyUp(const TKeyEvent&);
     
     void setCursor(size_t col, size_t row);
     size_t getCursorCol() const { return cx; }
@@ -573,7 +573,7 @@ class TTable:
     //! true: the current mouse position with button pressed will always be selected
     bool selectionFollowsMouse;
     
-    bool mouse2field(int mx, int my, size_t *fx, size_t *fy, int *rfx=0, int *rfy=0);
+    bool mouse2field(TCoord mx, TCoord my, size_t *fx, size_t *fy, TCoord *rfx=0, TCoord *rfy=0);
   protected:
     void _moveCursor(size_t newcx, size_t newcy, unsigned modifier);
     void _setSXSY(size_t x, size_t y);
@@ -583,7 +583,7 @@ class TTable:
     void center(int how);
 
     void adjustPane();
-    void scrolled(int dx, int dy);
+    void scrolled(TCoord dx, TCoord dy);
     
     // void modelChanged();
     void _handleInsertRow();

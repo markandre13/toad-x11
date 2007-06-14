@@ -45,7 +45,7 @@ void TRowColumn::adjust()
 
 void TRowColumn::resize()
 {
-  int x,y,max,total;
+  TCoord x,y,max,total;
   x=y=max=total=0;
   TRectangle shape;
   

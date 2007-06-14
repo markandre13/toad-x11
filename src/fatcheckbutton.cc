@@ -48,7 +48,7 @@ TFatCheckButton::setModel(TBoolModel *m)
     connect(model->sigChanged, this, &TFatCheckButton::valueChanged);
 }
 
-void TFatCheckButton::mouseLDown(int, int, unsigned)
+void TFatCheckButton::mouseLDown(const TMouseEvent&)
 {
   if (!isEnabled()) {
     return;
@@ -68,10 +68,19 @@ TFatCheckButton::valueChanged()
 }
 
 void
-TFatCheckButton::keyDown(TKey key, char* str, unsigned modifier)
+TFatCheckButton::keyDown(const TKeyEvent &ke)
 {
-  if (!modifier && (key==TK_RETURN || *str==' '))
-    mouseLDown(0,0,0);
+  if (!ke.modifier() && (ke.key()==TK_RETURN || ke.str()==" ")) {
+    if (!isEnabled()) {
+      return;
+    }
+
+    if (model) {
+      setValue(!*model);
+    }
+    setFocus();
+    invalidateWindow();
+  }
 }
 
 void

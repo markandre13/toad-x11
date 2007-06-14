@@ -55,7 +55,7 @@ TGauge::setModel(TIntegerModel *m)
 void
 TGauge::resize()
 {
-  int h = getHeight()/2-1;
+  TCoord h = getHeight()/2-1;
   up->setShape(0,0,getWidth(),h);
   down->setShape(0,getHeight()-h,getWidth(),h);
 }
@@ -88,7 +88,7 @@ TGauge::modelChanged()
 }
 
 void
-TGauge::mouseEvent(TMouseEvent &me)
+TGauge::mouseEvent(const TMouseEvent &me)
 {
   if (!model)
     return;

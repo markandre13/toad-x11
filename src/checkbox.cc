@@ -76,7 +76,7 @@ void
 TCheckBox::paint()
 {
   TPen pen(this);
-  int height;
+  TCoord height;
 
   pen.setColor(255,255,255);
   if (isEnabled()) {
@@ -92,12 +92,12 @@ TCheckBox::paint()
 
   if (isEnabled()) {
     pen.setColor(0,0,0);
-    height = pen.drawTextWidth(20,0, getLabel(),_w-20);
+    height = pen.drawTextWidth(20,0, getLabel(),w-20);
   } else {
     pen.setColor(TColor::BTNLIGHT);
-    pen.drawTextWidth(21,1, getLabel(),_w-20);
+    pen.drawTextWidth(21,1, getLabel(),w-20);
     pen.setColor(TColor::BTNSHADOW);
-    height = pen.drawTextWidth(20,0, getLabel(),_w-20);
+    height = pen.drawTextWidth(20,0, getLabel(),w-20);
   }
 
   if (model->getValue()) {
@@ -111,15 +111,15 @@ TCheckBox::paint()
     
   if (isFocus()) {
     pen.setLineStyle(TPen::DOT);
-    pen.drawRectanglePC(18,0,_w-18,height);
+    pen.drawRectanglePC(18,0,w-18,height);
   } else {
     pen.setColor(TColor::DIALOG);
-    pen.drawRectanglePC(18,0,_w-18,height);
+    pen.drawRectanglePC(18,0,w-18,height);
   }
 }
 
 void 
-TCheckBox::mouseLDown(int,int,unsigned)
+TCheckBox::mouseLDown(const TMouseEvent&)
 {
   if (!isEnabled())
     return;
@@ -129,9 +129,9 @@ TCheckBox::mouseLDown(int,int,unsigned)
 }
 
 void
-TCheckBox::keyDown(TKey key, char* str, unsigned modifier)
+TCheckBox::keyDown(const TKeyEvent &ke)
 {
-  if (!modifier && (key==TK_RETURN || *str==' ')) {
+  if (!ke.modifier() && (ke.key()==TK_RETURN || ke.str()==" ")) {
     if (model)
       model->toggleValue();
     setFocus();

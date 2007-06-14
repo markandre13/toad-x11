@@ -20,6 +20,7 @@
 
 #include <toad/htmlview.hh>
 #include <toad/scrollbar.hh>
+#include <toad/bitmap.hh>
 #include <toad/io/urlstream.hh>
 #include <toad/action.hh>
 #include <toad/filedialog.hh>
@@ -1831,7 +1832,7 @@ THTMLView::THTMLView(TWindow *parent, const string &title):
   anchors = 0;
   stage1 = false;
   setSize(540,680);
-  setMouseMoveMessages(TMMM_ALL);
+  setAllMouseMoveEvents(true);
   pane.set(0,0,getWidth(),getHeight());
   
   TAction *action = new TAction(this, "file|open");
@@ -1972,7 +1973,7 @@ THTMLView::paint()
   TElementStorage::iterator p, e;
 
 #ifdef SPEEDUP_KLUDGE
-int x, y, h;
+TCoord x, y, h;
 getPanePos(&x, &y);
 h = getHeight() + y;
 int flag=0;
@@ -2005,7 +2006,7 @@ if (state.newline && state.getBottom() > h) {
 }
 
 void
-THTMLView::mouseLDown(int x,int y, unsigned modifier)
+THTMLView::mouseLDown(const TMouseEvent &me)
 {
   if (!anchors) {
     return;
@@ -2014,7 +2015,7 @@ THTMLView::mouseLDown(int x,int y, unsigned modifier)
   p = anchors->begin();
   e = anchors->end();
   while(p!=e) {
-    if ((*p)->polygon.isInside(x, y)) {
+    if ((*p)->polygon.isInside(me.x, me.y)) {
       setCursor(TCursor::DEFAULT);
 //      cerr << "goto: '" << (*p)->href << "'\n";
       if ( !(*p)->href.empty()) {
@@ -2032,7 +2033,7 @@ cerr << __FILE__ << ":" << __LINE__ << ": not adding undo object" << endl;
 }
 
 void
-THTMLView::mouseMove(int x,int y, unsigned modifier)
+THTMLView::mouseMove(const TMouseEvent &me)
 {
   if (!anchors) {
     return;
@@ -2041,7 +2042,7 @@ THTMLView::mouseMove(int x,int y, unsigned modifier)
   p = anchors->begin();
   e = anchors->end();
   while(p!=e) {
-    if ((*p)->polygon.isInside(x, y)) {
+    if ((*p)->polygon.isInside(me.x, me.y)) {
       setCursor(TCursor::HAND);
       return;
     }

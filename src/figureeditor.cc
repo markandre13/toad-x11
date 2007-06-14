@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2006 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -443,7 +443,7 @@ TFigureEditor::enableGrid(bool b)
  * Set the size of the grid.
  */
 void
-TFigureEditor::setGrid(int gridsize) {
+TFigureEditor::setGrid(TCoord gridsize) {
   if (gridsize<0)
     gridsize=0;
   preferences->gridsize = gridsize;
@@ -523,8 +523,8 @@ TFigureEditor::paintGrid(TPenBase &pen)
       background_color.g > 128 ? background_color.g-64 : background_color.g+64,
       background_color.b > 128 ? background_color.b-64 : background_color.b+64
     );
-    int x1, x2, y1, y2;
-    int g = preferences->gridsize;
+    TCoord x1, x2, y1, y2;
+    TCoord g = preferences->gridsize;
   
     TRectangle r;
     pen.getClipBox(&r);
@@ -533,9 +533,9 @@ TFigureEditor::paintGrid(TPenBase &pen)
     x2=r.x+r.w+1;
     y2=r.y+r.h+1;
 
-    TMatrix2D *mat = pen.getMatrix();
+    const TMatrix2D *mat = pen.getMatrix();
     if (mat) {
-      int gx0, gx, gy0, gy;
+      TCoord gx0, gx, gy0, gy;
       TMatrix2D m(*mat);   
       m.map(0, 0, &gx0, &gy0);
       m.map(preferences->gridsize, preferences->gridsize, &gx, &gy);
@@ -553,23 +553,23 @@ TFigureEditor::paintGrid(TPenBase &pen)
         m.map(x1, y1, &x1, &y1);
         m.map(x2, y2, &x2, &y2);
         if (x1>x2) {
-          int a = x1; x1 = x2; x2 = a;
+          TCoord a = x1; x1 = x2; x2 = a;
         }
         if (y1>y2) {
-          int a = y1; y1 = y2; y2 = a;
+          TCoord a = y1; y1 = y2; y2 = a;
         }
       }
     }
 
     // justify to grid
-    x1 -= x1 % g;
-    y1 -= y1 % g;
+    x1 -= fmod(x1, g);
+    y1 -= fmod(y1, g);
 
 //    cerr << "draw grid from (" << x1 << ", " << y1 << ") to ("
 //         << x2 << ", " << y2 << ")" << endl;
 
-    for(int y=y1; y<=y2; y+=g) {
-      for(int x=x1; x<=x2; x+=g) {
+    for(TCoord y=y1; y<=y2; y+=g) {
+      for(TCoord x=x1; x<=x2; x+=g) {
         pen.drawPoint(x, y);
       }
     }
@@ -607,14 +607,14 @@ TFigureEditor::paintSelection(TPenBase &pen)
   }
 
   if (state==STATE_SELECT_RECT) {
-    TMatrix2D *mat = pen.getMatrix();
+    const TMatrix2D *mat = pen.getMatrix();
     if (mat) {
       pen.push();
       pen.identity();
       pen.setColor(0,0,0);
       pen.setLineStyle(TPen::DOT);
       pen.setLineWidth(1.0);
-      int x0, y0, x1, y1;
+      TCoord x0, y0, x1, y1;
       mat->map(down_x, down_y, &x0, &y0);
       mat->map(select_x, select_y, &x1, &y1);
       pen.drawRectanglePC(x0, y0, x1-x0, y1-y0);
@@ -631,7 +631,7 @@ TFigureEditor::paintSelection(TPenBase &pen)
   if (gadget && operation==OP_ROTATE) {
 
     // draw center of rotation
-    int x, y;
+    TCoord x, y;
     if (pen.getMatrix()) {
       pen.getMatrix()->map(rotx, roty, &x, &y);
       pen.push();
@@ -1209,7 +1209,7 @@ TFigureEditor::stopOperation()
           model->type = TFigureModel::MODIFIED;
           model->sigChanged();
         }
-        window->setMouseMoveMessages(TMMM_ANYBUTTON);
+        window->setAllMouseMoveEvents(true);
         break;
     }
   }
@@ -1270,7 +1270,7 @@ TFigureEditor::selectionPaste()
 }
 
 void
-TFigureEditor::keyEvent(TKeyEvent &ke)
+TFigureEditor::keyEvent(const TKeyEvent &ke)
 {
   if (!model)
     return;
@@ -1282,10 +1282,13 @@ TFigureEditor::keyEvent(TKeyEvent &ke)
 }
 
 void
-TFigureEditor::keyDown(TKey key, char *s, unsigned m)
+TFigureEditor::keyDown(const TKeyEvent &ke)
 {
   if (!window || !model || tool)
     return;
+
+  TKey key = ke.key();
+  unsigned m = ke.modifier();
 
   if (key == TK_ESCAPE) {
 #if 0
@@ -1338,7 +1341,7 @@ redo:
         break;
       }
       assert(gadget!=NULL);
-      unsigned r = gadget->keyDown(this,key,s,m);
+      unsigned r = gadget->keyDown(this,ke);
       if (r & TFigure::DELETE)
         deleteFigure(gadget); 
       if (r & TFigure::STOP)  
@@ -1349,7 +1352,7 @@ redo:
   }
 }
 void
-TFigureEditor::mouse2sheet(int mx, int my, int *sx, int *sy)
+TFigureEditor::mouse2sheet(TCoord mx, TCoord my, TCoord *sx, TCoord *sy)
 {
   mx-=visible.x;
   my-=visible.y;
@@ -1363,13 +1366,13 @@ TFigureEditor::mouse2sheet(int mx, int my, int *sx, int *sy)
 }
 
 void
-TFigureEditor::mouseEvent(TMouseEvent &me)
+TFigureEditor::mouseEvent(const TMouseEvent &me)
 {
   if (!model)
     return;
 
-  int x = me.x + getOriginX();
-  int y = me.y + getOriginY();
+  TCoord x = me.x + getOriginX();
+  TCoord y = me.y + getOriginY();
   
   switch(me.type) {
     case TMouseEvent::LDOWN:
@@ -1386,15 +1389,17 @@ TFigureEditor::mouseEvent(TMouseEvent &me)
           x < visible.x &&
           y >= visible.y ) 
       {
-        me.x = x;
-        row_header_renderer->mouseEvent(me);
+        TMouseEvent me0(me);
+        me0.x = x;
+        row_header_renderer->mouseEvent(me0);
       } else
       if (col_header_renderer &&
           x >= visible.x &&
           y < visible.y ) 
       {
-        me.y = y;
-        row_header_renderer->mouseEvent(me);
+        TMouseEvent me0(me);
+        me0.y = y;
+        row_header_renderer->mouseEvent(me0);
       } else {
         if (!tool) {
           super::mouseEvent(me);
@@ -1427,12 +1432,12 @@ TFigureEditor::mouseEvent(TMouseEvent &me)
 }
 
 void
-TFigureEditorHeaderRenderer::mouseEvent(TMouseEvent &me)
+TFigureEditorHeaderRenderer::mouseEvent(const TMouseEvent &me)
 {
 }
 
 void
-TFigureEditor::sheet2grid(int sx, int sy, int *gx, int *gy)
+TFigureEditor::sheet2grid(TCoord sx, TCoord sy, TCoord *gx, TCoord *gy)
 {
   if (!preferences->drawgrid) {
     *gx = sx;
@@ -1440,7 +1445,7 @@ TFigureEditor::sheet2grid(int sx, int sy, int *gx, int *gy)
     return;
   }
   if (state!=STATE_ROTATE && state!=STATE_MOVE_ROTATE) {
-    int g = preferences->gridsize;
+    TCoord g = preferences->gridsize;
     *gx = ((sx+g/2)/g)*g;
     *gy = ((sy+g/2)/g)*g;
   } else {
@@ -1454,8 +1459,10 @@ namespace {
 }
 
 void
-TFigureEditor::mouseLDown(int mx, int my, unsigned m)
+TFigureEditor::mouseLDown(const TMouseEvent &me)
 {
+  TCoord mx(me.x), my(me.y);
+  unsigned m(me.modifier());
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
   #endif
@@ -1468,7 +1475,7 @@ TFigureEditor::mouseLDown(int mx, int my, unsigned m)
     preferences->setCurrent(this);
 
   mouse2sheet(mx, my, &mx, &my);
-  int x, y;
+  TCoord x, y;
   sheet2grid(mx, my, &x, &y);
 
 //cerr << "mouse down at " << mx << ", " << my << endl;
@@ -1495,13 +1502,13 @@ redo:
 
           // handle the handles
           //--------------------
-          if ( !selection.empty() && !(m&MK_DOUBLE) ) {
+          if ( !selection.empty() && !me.dblClick ) {
             for(TFigureSet::iterator p=selection.begin();
                 p!=selection.end();
                 ++p)
             {
               // map desktop (mx,my) to figure (x,y) (copied from findFigureAt)
-              int x, y;
+              TCoord x, y;
               if ((*p)->mat) {
                 TMatrix2D m(*(*p)->mat);
                 m.invert();
@@ -1551,7 +1558,7 @@ redo:
             #endif
             TFigureSet::iterator gi = selection.find(g);
             
-            if (m & MK_DOUBLE) {
+            if (me.dblClick) {
               #if VERBOSE
                 cout << ", double click => ";
               #endif
@@ -1692,7 +1699,7 @@ redo:
       else
         cout << "  STATE_EDIT" << endl;
       #endif
-      unsigned r = gadget->mouseLDown(this,x,y,m);
+      unsigned r = gadget->mouseLDown(this, TMouseEvent(this,x,y,me.modifier()));
       if (r & TFigure::DELETE) {
         #if VERBOSE
           cout << "    delete gadget" << endl;
@@ -1706,7 +1713,7 @@ redo:
         stopOperation();
       }
       if (r & TFigure::REPEAT) {
-        if (m & MK_DOUBLE) {
+        if (me.dblClick) {
           cerr << "TFigureEditor: kludge: avoiding endless loop bug\n";
           break;
         }
@@ -1720,8 +1727,9 @@ redo:
 }
 
 void
-TFigureEditor::mouseMove(int mx, int my, unsigned m)
+TFigureEditor::mouseMove(const TMouseEvent &me)
 {
+  TCoord mx(me.x), my(me.y);
 //cout << "mouseMove for window " << window->getTitle() << endl;
   #if VERBOSE
     cout << __PRETTY_FUNCTION__ << endl;
@@ -1731,7 +1739,7 @@ TFigureEditor::mouseMove(int mx, int my, unsigned m)
     return;
 
   mouse2sheet(mx, my, &mx, &my);
-  int x, y;
+  TCoord x, y;
   sheet2grid(mx, my, &x, &y);
 
 redo:
@@ -1746,7 +1754,7 @@ redo:
           cout << "  STATE_EDIT => mouseMove to gadget" << endl;
       #endif
       assert(gadget!=NULL);
-      unsigned r = gadget->mouseMove(this,x,y,m);
+      unsigned r = gadget->mouseMove(this, TMouseEvent(this,x,y,me.modifier()));
       if (r & TFigure::DELETE) {
         #if VERBOSE
           cout << "    delete gadget" << endl;
@@ -1772,8 +1780,8 @@ redo:
 #if VERBOSE
       cout << "  STATE_MOVE => moving selection" << endl;
 #endif
-      int dx = x-down_x; down_x=x;
-      int dy = y-down_y; down_y=y;
+      TCoord dx = x-down_x; down_x=x;
+      TCoord dy = y-down_y; down_y=y;
       memo_x+=dx;
       memo_y+=dy;
       model->translate(selection, dx, dy);
@@ -1793,7 +1801,7 @@ redo:
 
       if (mouseMoved) {
         /* copied from findFigureAt */
-        int x2, y2;
+        TCoord x2, y2;
         if (tht && gadget->mat) {
           TMatrix2D m(*gadget->mat);
           m.invert();
@@ -1802,8 +1810,7 @@ redo:
           x2 = x;
           y2 = y;
         }
-
-        model->translateHandle(gadget, handle, x2, y2, m);
+        model->translateHandle(gadget, handle, x2, y2, me.modifier());
       }
     } break;
 
@@ -1812,13 +1819,13 @@ redo:
       // selected and the mouse was only moved a little bit due to a
       // shacky hand
       if (selection.begin() != selection.end()) {
-        int dx = down_x - x;
-        int dy = down_y - y;
+        TCoord dx = down_x - x;
+        TCoord dy = down_y - y;
         if (dx<0) dx=-dx;
         if (dy<0) dy=-dy;
         if (dx<2 || dy<2)
           break;
-        if (!(m&MK_CONTROL)) {
+        if (!(me.modifier()&MK_CONTROL)) {
           clearSelection();
           sigSelectionChanged();
         }
@@ -1873,8 +1880,9 @@ redo:
 }
 
 void
-TFigureEditor::mouseLUp(int mx, int my, unsigned m)
+TFigureEditor::mouseLUp(const TMouseEvent &me)
 {
+  TCoord mx(me.x), my(me.y);
 #if VERBOSE
   cout << __PRETTY_FUNCTION__ << endl;
 #endif
@@ -1883,7 +1891,7 @@ TFigureEditor::mouseLUp(int mx, int my, unsigned m)
     return;
 
   mouse2sheet(mx, my, &mx, &my);
-  int x, y;
+  TCoord x, y;
   sheet2grid(mx, my, &x, &y);
 
 redo:
@@ -1892,7 +1900,7 @@ redo:
     case STATE_CREATE:
     case STATE_EDIT: {
       assert(gadget!=NULL);
-      unsigned r = gadget->mouseLUp(this,x,y,m);
+      unsigned r = gadget->mouseLUp(this, TMouseEvent(this,x,y,me.modifier()));
       if (r & TFigure::DELETE) {
         #if VERBOSE
           cout << "    delete gadget" << endl;
@@ -1930,7 +1938,7 @@ redo:
 
       if (mouseMoved) {      
         /* copied from findFigureAt */            
-        int x2, y2;
+        TCoord x2, y2;
         if (tht && gadget->mat) {
           TMatrix2D m(*gadget->mat);
           m.invert();
@@ -1940,7 +1948,7 @@ redo:
           y2 = y;
         }
 
-        model->translateHandle(gadget, handle, x2, y2,m);
+        model->translateHandle(gadget, handle, x2, y2,me.modifier());
         TUndoManager::endUndoGrouping();
       }
       invalidateFigure(gadget);
@@ -1982,8 +1990,8 @@ redo:
 
       bool selecting = true;
       if (selection.begin() != selection.end()) {
-        int dx = down_x - x;
-        int dy = down_y - y;
+        TCoord dx = down_x - x;
+        TCoord dy = down_y - y;
         if (dx<0) dx=-dx;
         if (dy<0) dy=-dy;
         if (dx<2 || dy<2)
@@ -2046,7 +2054,7 @@ redo:
 }
 
 void
-TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
+TFigureEditor::mouseRDown(const TMouseEvent &me)
 {
   if (!window || !model)
     return;
@@ -2054,6 +2062,7 @@ TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
 //  stopOperation();
 //  clearSelection();
   setFocus();
+  TCoord mx(me.x), my(me.y);
   mouse2sheet(mx, my, &mx, &my);
   TFigure *f = findFigureAt(mx, my);
   if (f) {
@@ -2062,7 +2071,7 @@ TFigureEditor::mouseRDown(int mx, int my, unsigned modifier)
       selection.insert(f);
       invalidateFigure(f);
     }
-    unsigned op = f->mouseRDown(this, mx, my, modifier);
+    unsigned op = f->mouseRDown(this, TMouseEvent(this, mx, my, me.modifier()));
     if (op & TFigure::STOP) {
       stopOperation();
       clearSelection();
@@ -2085,12 +2094,12 @@ TFigureEditor::invalidateFigure(TFigure* figure)
   r.x+=window->getOriginX() + visible.x;
   r.y+=window->getOriginY() + visible.y;
   if (r.x < visible.x ) {
-    int d = visible.x - r.x;
+    TCoord d = visible.x - r.x;
     r.x += d;
     r.w -= d;
   }
   if (r.y < visible.y ) {
-    int d = visible.y - r.y;
+    TCoord d = visible.y - r.y;
     r.y += d;
     r.h -= d;
   }
@@ -2129,8 +2138,8 @@ TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r, const TMatrix2D *m
     if (figure->cmat)
       m.multiply(figure->cmat);
       
-    int x1, x2, y1, y2;
-    int x, y;
+    TCoord x1, x2, y1, y2;
+    TCoord x, y;
     m.map(r->x, r->y, &x, &y);
     x1 = x2 = x;
     y1 = y2 = y;
@@ -2174,7 +2183,7 @@ TFigureEditor::getFigureShape(TFigure* figure, TRectangle *r, const TMatrix2D *m
  * This method doesn't find gadgets which are currently created or edited.
  */
 TFigure*
-TFigureEditor::findFigureAt(int mx, int my)
+TFigureEditor::findFigureAt(TCoord mx, TCoord my)
 {
 #if VERBOSE
   cerr << "TFigureEditor::findFigureAt(" << mx << ", " << my << ")\n";
@@ -2191,7 +2200,7 @@ TFigureEditor::findFigureAt(int mx, int my)
   while(p!=b && !stop) {
     --p;
     if (*p!=gadget) {
-      int x, y;
+      TCoord x, y;
       if ((*p)->mat || (*p)->cmat) {
         if ( (*p)->mat )
           stack.multiply((*p)->mat);
@@ -2257,8 +2266,8 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
 
   // determine area size
   //-----------------------------------------------------------------
-  int x1, y1; // upper, left corner
-  int x2, y2; // lower, right corner
+  TCoord x1, y1; // upper, left corner
+  TCoord x2, y2; // lower, right corner
 
   x1 = y1 = INT_MAX;
   x2 = y2 = INT_MIN;
@@ -2270,7 +2279,7 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
       p != model->end();
       ++p)
   {
-    int ax1, ay1, ax2, ay2;
+    TCoord ax1, ay1, ax2, ay2;
     (*p)->getShape(&r);
     ax1=r.x;
     ay1=r.y;
@@ -2285,10 +2294,10 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
 //       "upper right (%i, %i)\n", ax1, ay1, ax2, ay2);
       
       if (ax1>ax2) {
-        int a = ax1; ax1 = ax2; ax2 = a;
+        TCoord a = ax1; ax1 = ax2; ax2 = a;
       }
       if (ay1>ay2) {
-        int a = ay1; ay1 = ay2; ay2 = a;
+        TCoord a = ay1; ay1 = ay2; ay2 = a;
       }
 
       
@@ -2311,10 +2320,10 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
 //printf("upper left  (%i, %i)\n"
 //       "lower right (%i, %i)\n\n", ax1, ay1, ax2, ay2);
       if (ax1>ax2) {
-        int a = ax1; ax1 = ax2; ax2 = a;
+        TCoord a = ax1; ax1 = ax2; ax2 = a;
       }
       if (ay1>ay2) {
-        int a = ay1; ay1 = ay2; ay2 = a;
+        TCoord a = ay1; ay1 = ay2; ay2 = a;
       }
     }
 
@@ -2344,23 +2353,23 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
     pane.w = x2-x1+1;
     pane.h = y2-y1+1;
   } else {
-    double dx1, dy1, dx2, dy2;
+    TCoord dx1, dy1, dx2, dy2;
     mat->map(x1, y1, &dx1, &dy1);
     mat->map(x2+1, y2+1, &dx2, &dy2);
-    pane.x = static_cast<int>(dx1);
-    pane.y = static_cast<int>(dy1);
-    pane.w = static_cast<int>(dx2-dx1);
-    pane.h = static_cast<int>(dy2-dy1);
+    pane.x = dx1;
+    pane.y = dy1;
+    pane.w = dx2-dx1;
+    pane.h = dy2-dy1;
   }
   doLayout();
 DBM(cout << __PRETTY_FUNCTION__ << ": exit" << endl << endl;)
 }
 
 void
-TFigureEditor::scrolled(int dx, int dy)
+TFigureEditor::scrolled(TCoord dx, TCoord dy)
 {
   quickready = false;
-  int x, y;
+  TCoord x, y;
   getPanePos(&x, &y);
   // window->scrollTo(-x, -y);
   window->setOrigin(-x, -y);
@@ -2376,12 +2385,12 @@ TFigureTool::stop(TFigureEditor*)
 }
 
 void
-TFigureTool::mouseEvent(TFigureEditor *fe, TMouseEvent &me)
+TFigureTool::mouseEvent(TFigureEditor *fe, const TMouseEvent &me)
 {
 }
 
 void
-TFigureTool::keyEvent(TFigureEditor *fe, TKeyEvent &ke)
+TFigureTool::keyEvent(TFigureEditor *fe, const TKeyEvent &ke)
 {
 }
 
@@ -2422,10 +2431,10 @@ TFCreateTool::stop(TFigureEditor *fe)
 }
 
 void
-TFCreateTool::mouseEvent(TFigureEditor *fe, TMouseEvent &me)
+TFCreateTool::mouseEvent(TFigureEditor *fe, const TMouseEvent &me)
 {
 //cout << "TFCreateTool::mouseEvent" << endl;
-  int x0, y0, x1, y1;
+  TCoord x0, y0, x1, y1;
   unsigned r;
 
 redo:
@@ -2447,7 +2456,8 @@ redo:
           figure->setAttributes(fe->getAttributes());
           figure->startCreate();
           fe->state = TFigureEditor::STATE_START_CREATE;
-          r = figure->mouseLDown(fe, x1, y1, me.modifier);
+          TMouseEvent(fe, x1, y1, me.modifier());
+          r = figure->mouseLDown(fe, TMouseEvent(fe, x1, y1, me.modifier()));
           fe->state = TFigureEditor::STATE_CREATE;
           if (r & TFigure::DELETE) {
 //            cout << "  delete" << endl;
@@ -2466,7 +2476,7 @@ redo:
           if (fe->state != TFigureEditor::STATE_NONE &&
               !(r & TFigure::NOGRAB) )
           {
-            fe->getWindow()->grabMouse(TWindow::TMMM_ALL);
+            fe->getWindow()->grabMouse(true);
           }
           if (r & TFigure::REPEAT) {
 //            cout << "  repeat" << endl;
@@ -2486,19 +2496,19 @@ redo:
       switch(me.type) {
         case TMouseEvent::LDOWN:
 //          cout << "TFCreateTool: mouseLDown during create" << endl;
-          r = figure->mouseLDown(fe, x1, y1, me.modifier);
+          r = figure->mouseLDown(fe, TMouseEvent(fe, x1, y1, me.modifier()));
           break;
         case TMouseEvent::MOVE:
 //          cout << "TFCreateTool: mouseMove during create" << endl;
-          r = figure->mouseMove(fe, x1, y1, me.modifier);
+          r = figure->mouseMove(fe, TMouseEvent(fe, x1, y1, me.modifier()));
           break;
         case TMouseEvent::LUP:
 //          cout << "TFCreateTool: mouseLUp during create" << endl;
-          r = figure->mouseLUp(fe, x1, y1, me.modifier);
+          r = figure->mouseLUp(fe, TMouseEvent(fe, x1, y1, me.modifier()));
           break;
         case TMouseEvent::RDOWN:
 //          cout << "TFCreateTool: mouseRDown during create" << endl;
-          r = figure->mouseRDown(fe, x1, y1, me.modifier);
+          r = figure->mouseRDown(fe, TMouseEvent(fe, x1, y1, me.modifier()));
           break;
         default:
 //          cout << "TFCreateTool: unhandled mouse event in state 1" << endl;
@@ -2523,7 +2533,7 @@ redo:
       }
       if (r & TFigure::REPEAT) {
 //        cout << "  repeat" << endl;
-        if (me.modifier & MK_DOUBLE) {
+        if (me.dblClick) {
 //          cerr << "TFigureEditor: kludge: avoiding endless loop bug\n";
           break;
         }
@@ -2536,14 +2546,14 @@ redo:
 }
 
 void
-TFCreateTool::keyEvent(TFigureEditor *fe, TKeyEvent &ke)
+TFCreateTool::keyEvent(TFigureEditor *fe, const TKeyEvent &ke)
 {
   if (fe->state == TFigureEditor::STATE_NONE && ke.type == TKeyEvent::DOWN) {
     fe->clearSelection();
   }
   if (!figure || ke.type != TKeyEvent::DOWN)
     return;
-  if (ke.getKey() == TK_ESCAPE) {
+  if (ke.key() == TK_ESCAPE) {
     fe->deleteFigure(figure);
     fe->state = TFigureEditor::STATE_NONE;
     fe->getWindow()->ungrabMouse();
@@ -2551,7 +2561,7 @@ TFCreateTool::keyEvent(TFigureEditor *fe, TKeyEvent &ke)
     return;
   }
 
-  unsigned r = figure->keyDown(fe, ke.getKey(), const_cast<char*>(ke.getString()), ke.getModifier());
+  unsigned r = figure->keyDown(fe, ke);
   if (r & TFigure::DELETE) {
 //        cout << "  delete figure" << endl;
     fe->deleteFigure(figure);

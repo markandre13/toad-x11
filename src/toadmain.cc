@@ -172,8 +172,6 @@ toad::initialize(int argc, char **&argv, char **envv)
     exit(1);
   }
   
-  TFont::default_font.setFont(fontname);
-  
   toad::argv = argv;
   toad::argc = argc;
   toad::envv = envv;

@@ -204,9 +204,9 @@ TFGroup::endTranslateHandle()
 }
 
 void
-TFGroup::translateHandle(unsigned handle, int x, int y, unsigned m)
+TFGroup::translateHandle(unsigned handle, TCoord x, TCoord y, unsigned m)
 {
-  double w0, w1, h0, h1;
+  TCoord w0, w1, h0, h1;
 #if 1
 //cout << "TFGroup::translateHandle("<<handle<<", "<<x<<", "<<y<<",m)"<<endl;
   switch(handle) {
@@ -263,16 +263,16 @@ cerr << "  p2.x = " << p2.x << ", x = " << x << endl;
 }
 
 double
-TFGroup::_distance(TFigureEditor *fe, int mx, int my)
+TFGroup::_distance(TFigureEditor *fe, TCoord mx, TCoord my)
 {
-  double d = OUT_OF_RANGE;
+  TCoord d = OUT_OF_RANGE;
   for (TFigureModel::iterator p = gadgets.begin();
        p != gadgets.end();
        ++p)
   {
-    double td;
+    TCoord td;
     if ( (*p)->mat) {
-      int x, y;
+      TCoord x, y;
       TMatrix2D m(*(*p)->mat);
       m.invert();
       m.map(mx, my, &x, &y);
@@ -299,7 +299,7 @@ TFGroup::editEvent(TFigureEditEvent &ee)
 }
 
 void
-TFGroup::translate(int dx, int dy)
+TFGroup::translate(TCoord dx, TCoord dy)
 {
   if (mat) {
     mat->translate(dx, dy);

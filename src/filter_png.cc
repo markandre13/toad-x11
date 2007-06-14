@@ -159,7 +159,7 @@ TFilterPNG::load(istream &stream)
     png_read_image(png_ptr, row_pointers);
     
     unsigned x,y;
-    TRGB c;
+    TRGB24 c;
     unsigned char *ptr;
     for(y=0; y<info_ptr->height; y++) {
       ptr = row_pointers[y];
@@ -192,114 +192,6 @@ TFilterPNG::load(istream &stream)
 
 bool TFilterPNG::save(ostream &stream)
 {
-  png_structp png_ptr = png_create_write_struct(
-    PNG_LIBPNG_VER_STRING,
-    NULL,   // user error pointer
-    NULL,   // user error function
-    NULL);  // user warning function
-    
-  if (!png_ptr) {
-    setError("Couldn't create PNG write structure.");
-    return false;
-  }
-
-  png_infop info_ptr = png_create_info_struct(png_ptr);
-  if (!info_ptr) {
-    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-    setError("Couldn't create PNG info structure.");
-    return false;
-  }
-  
-  // set error handling
-  //--------------------
-  if (setjmp(png_ptr->jmpbuf)) {
-    // Free all of the memory associated with the png_ptr and info_ptr
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    setError("Caught an error while writing PNG file.");
-    return false;
-  }
-
-  png_set_write_fn(png_ptr, 
-                   &stream, 
-                   &user_write_data,
-                   &user_flush_write);
-
-  int palette_size;
-  if (convertToIndexed(&palette_size)) {
-    png_set_IHDR(png_ptr, 
-                 info_ptr,
-                 w,h,8,
-                 PNG_COLOR_TYPE_PALETTE,
-                 PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_BASE,
-                 PNG_FILTER_TYPE_BASE);
-
-    png_colorp palette = (png_colorp)png_malloc(png_ptr, 
-                                                palette_size*sizeof(png_color));
-    TRGB c;
-    for(int i=0;i<palette_size;i++) {
-      getIndexColor(i,&c);
-      palette[i].red  = c.r;
-      palette[i].green= c.g;
-      palette[i].blue = c.b;
-    }
-
-    png_set_PLTE(png_ptr, info_ptr, palette, palette_size);
-
-    png_write_info(png_ptr, info_ptr);
-    
-    png_bytep row_pointers[info_ptr->height];
-    for (unsigned row = 0; row < info_ptr->height; row++) {
-      png_bytep ptr = row_pointers[row] = (png_bytep)malloc(info_ptr->rowbytes);
-      for(int x=0; x<w; x++) {
-        *ptr = getIndexPixel(x,row); ptr++;
-      }
-    }
-    
-    png_write_image(png_ptr, row_pointers);
-    
-    for (unsigned row = 0; row < info_ptr->height; row++)
-      free(row_pointers[row]);
-
-    png_write_end(png_ptr, info_ptr);
-    
-    free(palette);
-    
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    return true;
-  } else {
-    png_set_IHDR(png_ptr, 
-                 info_ptr,
-                 w,h,8,
-                 PNG_COLOR_TYPE_RGB,
-                 PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_BASE,
-                 PNG_FILTER_TYPE_BASE);
-
-    png_write_info(png_ptr, info_ptr);
-    
-    png_bytep row_pointers[info_ptr->height];
-    TRGB c;
-    for (unsigned row = 0; row < info_ptr->height; row++) {
-      png_bytep ptr = row_pointers[row] = (png_bytep)malloc(info_ptr->rowbytes);
-      for(int x=0; x<w; x++) {
-        getColorPixel(x,row,&c);
-        *ptr = c.r; ptr++;
-        *ptr = c.g; ptr++;
-        *ptr = c.b; ptr++;
-      }
-    }
-    
-    png_write_image(png_ptr, row_pointers);
-    
-    for (unsigned row = 0; row < info_ptr->height; row++)
-      free(row_pointers[row]);
-
-    png_write_end(png_ptr, info_ptr);
-    
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    return true;
-  }
   return false;
 }
 

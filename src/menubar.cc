@@ -22,8 +22,6 @@
 
 #include <toad/menubar.hh>
 #include <toad/toad.hh>
-#include <toad/form.hh>
-#include <toad/mdiwindow.hh>
 #include <toad/pushbutton.hh>
 #include <toad/textfield.hh>
 #include <toad/action.hh>
@@ -239,7 +237,7 @@ class TMenuBar::TMyKeyFilter:
     protected:
       TMenuBar *menubar;
       bool keyEvent(TKeyEvent &ke) {
-        unsigned m = ke.getModifier();
+        unsigned m = ke.modifier();
         unsigned orig = m;
         unsigned modifier = 0;
         if (m & MK_CONTROL)
@@ -250,8 +248,8 @@ class TMenuBar::TMyKeyFilter:
           modifier|=MK_ALT;
         m &= ~(MK_SHIFT|MK_CONTROL|MK_ALT|MK_ALTGR);
         ke.setModifier(m);
-        string str = ke.getString();
-        bool result = iterate(&menubar->root, str, ke.getKey(), modifier);
+        string str = ke.str();
+        bool result = iterate(&menubar->root, str, ke.key(), modifier);
         ke.setModifier(orig);
         return result;
       }

@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TFatCheckButton
-#define TFatCheckButton TFatCheckButton
+#ifndef _TOAD_FATCHECKBUTTON_HH
+#define _TOAD_FATCHECKBUTTON_HH 1
 
 #include <toad/toad.hh>
 #include <toad/buttonbase.hh>
@@ -49,8 +49,8 @@ class TFatCheckButton:
     
   protected:
     void valueChanged();
-    void mouseLDown(int,int,unsigned);
-    void keyDown(TKey, char*, unsigned);
+    void mouseLDown(const TMouseEvent&);
+    void keyDown(const TKeyEvent&);
     void paint();
     void _init(TBoolModel*);
 };

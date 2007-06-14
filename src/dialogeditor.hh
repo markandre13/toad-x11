@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TDialogEditor
-#define TDialogEditor TDialogEditor
+#ifndef _TOAD_DIALOGEDITOR_HH
+#define _TOAD_DIALOGEDITOR_HH 1
 
 #include <toad/toad.hh>
 #include <toad/dialog.hh>

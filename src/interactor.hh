@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TInteractor
-#define TInteractor TInteractor
+#ifndef _TOAD_INTERACTOR_HH
+#define _TOAD_INTERACTOR_HH 1
 
 #include <toad/types.hh>
 
@@ -59,23 +59,23 @@ class TInteractor
     bool bNoFocus:1;
     bool before_create:1;
 
-    virtual void windowEvent(TWindowEvent&);
-    virtual void mouseEvent(TMouseEvent&);
-    virtual void keyEvent(TKeyEvent&);
+    virtual void windowEvent(const TWindowEvent&);
+    virtual void mouseEvent(const TMouseEvent&);
+    virtual void keyEvent(const TKeyEvent&);
     
     virtual bool isRealized() const;
     virtual bool setFocus();
-    virtual void setPosition(int x,int y);
-    virtual void setSize(int x,int y);
-    virtual void setShape(int,int,int,int);
+    virtual void setPosition(TCoord x,TCoord y);
+    virtual void setSize(TCoord x,TCoord y);
+    virtual void setShape(TCoord,TCoord,TCoord,TCoord);
     void setShape(const TRectangle &r){setShape(r.x,r.y,r.w,r.h);}
     void setShape(const TRectangle *r){setShape(r->x,r->y,r->w,r->h);}
     virtual void getShape(TRectangle*) const;
     virtual void setSuppressMessages(bool);
-    virtual int getXPos() const;
-    virtual int getYPos() const;
-    virtual int getWidth() const;
-    virtual int getHeight() const;
+    virtual TCoord getXPos() const;
+    virtual TCoord getYPos() const;
+    virtual TCoord getWidth() const;
+    virtual TCoord getHeight() const;
 
 //  protected:
 

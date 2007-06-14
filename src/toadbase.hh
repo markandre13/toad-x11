@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TOADBase
-#define TOADBase TOADBase
+#ifndef _TOAD_TOADBASE_HH
+#define _TOAD_TOADBASE_HH 1
 
 // TOAD version codes
 //-----------------------------------------------
@@ -35,33 +35,25 @@
 
 // hiding X11 types (better to be generated from the X11 headers!)
 //-----------------------------------------------
-#ifdef _TOAD_PRIVATE
 
 #ifdef __X11__
-  #include <X11/Xlib.h>
-  #include <X11/Xutil.h>
-  namespace toad {
-    typedef GC _TOAD_GC;
-    typedef Drawable _TOAD_DRAWABLE;
-    typedef Window _TOAD_WINDOW;
-    typedef XFontStruct* _TOAD_FONTSTRUCT;
-    typedef Font _TOAD_FONT;
-    typedef Cursor _TOAD_CURSOR;
-    typedef Region _TOAD_REGION;
-  } // namespace toad
-#endif
-  
 
-#else
-  namespace toad {
-    typedef void* _TOAD_GC;
-    typedef unsigned long _TOAD_DRAWABLE;
-    typedef unsigned long _TOAD_WINDOW;
-    typedef void* _TOAD_FONTSTRUCT;
-    typedef unsigned long _TOAD_FONT;
-    typedef unsigned long _TOAD_CURSOR;
-    typedef struct _XRegion* _TOAD_REGION;
-  } // namespace toad
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+
+namespace toad {
+  typedef GC _TOAD_GC;
+  typedef Drawable _TOAD_DRAWABLE;
+  typedef Window _TOAD_WINDOW;
+  typedef XFontStruct* _TOAD_FONTSTRUCT;
+  typedef Font _TOAD_FONT;
+  typedef Cursor _TOAD_CURSOR;
+  typedef Region _TOAD_REGION;
+} // namespace toad
+#endif
+
+#ifdef __XCB__
+  #include <xcb/xcb.h>
 #endif
 
 #ifdef __WIN32__
@@ -146,8 +138,6 @@ class TEventFilter
     virtual bool windowEvent(TWindowEvent&);
     virtual bool mouseEvent(TMouseEvent&);
     virtual bool keyEvent(TKeyEvent&);
-//    virtual bool keyDown(TKey key, char *string, unsigned modifier);
-//    virtual bool keyUp(TKey key, char *string, unsigned modifier);
 //  private:
     TEventFilter *next;
     EEventFilterPos pos;
@@ -183,6 +173,11 @@ extern XContext nClassContext;
 extern Atom xaWMSaveYourself;
 extern Atom xaWMDeleteWindow;
 extern Atom xaWMMotifHints;
+#endif
+
+#ifdef __XCB__
+extern xcb_connection_t *xcbConnection;
+extern xcb_screen_t     *xcbScreen;
 #endif
 
 #ifdef __WIN32__
@@ -322,6 +317,7 @@ inline int getScreenHeight() { return TOADBase::getScreenHeight(); }
 inline void getMousePos(int *x, int *y) { return TOADBase::getMousePos(x, y); }
 inline void setMousePos(int x,int y) { return TOADBase::setMousePos(x, y); }
 inline void startDrag(TDnDObject *obj, unsigned modifier = 0) { TOADBase::startDrag(obj, modifier); }
+inline TFont& getDefaultFont() { return TOADBase::getDefaultFont(); }
 
 } // namespace toad
 

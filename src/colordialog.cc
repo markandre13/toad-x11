@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 #include <toad/pushbutton.hh>
 #include <toad/textfield.hh>
 #include <toad/gauge.hh>
+#include <toad/bitmap.hh>
 #include <cmath>
 
 // missing in mingw
@@ -58,16 +59,16 @@ TColorDialog::~TColorDialog()
 }
 
 static void
-hsv2rgb(double h, double s, double v, int *red, int *green, int *blue)
+hsv2rgb(TCoord h, TCoord s, TCoord v, TCoord *red, TCoord *green, TCoord *blue)
 {
-  int w = static_cast<int>(v) * 255;
+  TCoord w(v);
   if (s == 0) {
     *red = w;
     *green = w;
     *blue = w;
   } else {
-    double f;
-    int p, q, r;
+    TCoord f;
+    TCoord p, q, r;
     while(h<0.0)
       h+=360.0;
     while(h>360.0)
@@ -75,9 +76,9 @@ hsv2rgb(double h, double s, double v, int *red, int *green, int *blue)
     h = h / 60.0;
     int i = (int) h;
     f = h - i;
-    p = static_cast<int>(v * (1.0 - s) * 255.0);
-    q = static_cast<int>(v * (1.0 - s * f) * 255.0);
-    r = static_cast<int>(v * (1.0 - s * (1.0 - f)) * 255.0);
+    p = v * (1.0 - s);
+    q = v * (1.0 - s * f);
+    r = v * (1.0 - s * (1.0 - f));
     switch (i) {
       case 0: *red = w; *green = r; *blue = p; break;
       case 1: *red = q; *green = w; *blue = p; break;
@@ -100,7 +101,6 @@ TColorDialog::_init()
   setLayout(0);
   apply = false; // set to 'false' in case of closeWindow
   setSize(478+16, 8+256+8+25+8);
-  setMouseMoveMessages(TMMM_LBUTTON); // only mouseMove when left button down
   if (color) {
     origcolor = *color;
   } else {
@@ -115,7 +115,7 @@ TColorDialog::_init()
   rgb = origcolor;
   rgb2hsv();
 
-  int x,y,w,h,hmax=0,d=8;
+  TCoord x,y,w,h,hmax=0,d=8;
   x=8+256+8+16+8+12; y=8+32+8; w=128; h=17; 
   
   TScrollBar *sb;
@@ -132,27 +132,27 @@ TColorDialog::_init()
       case 1:  
         sb = new TScrollBar(this, "sb.saturation", &saturation);
         tf = new TTextField(this, "tf.saturation", &saturation);
-        gg = new TGauge(this, "gg.saturation", &saturation);
+//        gg = new TGauge(this, "gg.saturation", &saturation);
         break;
       case 2:
         sb = new TScrollBar(this, "sb.value", &value);
         tf = new TTextField(this, "tf.value", &value);
-        gg = new TGauge(this, "gg.value", &value);
+//        gg = new TGauge(this, "gg.value", &value);
         break;
       case 3:  
         sb = new TScrollBar(this, "sb.red", &rgb.r);
         tf = new TTextField(this, "tf.red", &rgb.r);
-        gg = new TGauge(this, "gg.red", &rgb.r);
+//        gg = new TGauge(this, "gg.red", &rgb.r);
         break;
       case 4:  
         sb = new TScrollBar(this, "sb.green", &rgb.g);
         tf = new TTextField(this, "tf.green", &rgb.g);
-        gg = new TGauge(this, "gg.green", &rgb.g);
+//        gg = new TGauge(this, "gg.green", &rgb.g);
         break;
       case 5:
         sb = new TScrollBar(this, "sb.blue", &rgb.b);
         tf = new TTextField(this, "tf.blue", &rgb.b);
-        gg = new TGauge(this, "gg.blue", &rgb.b);
+//        gg = new TGauge(this, "gg.blue", &rgb.b);
         break;
     }
     if (i<3) {
@@ -207,13 +207,13 @@ TColorDialog::createBitmaps()
     return;
 
   bmp1 = new TBitmap(256, 256, TBITMAP_TRUECOLOR);
-  int iy, ix;
+  TCoord iy, ix;
   double x, y;
   for(iy=0, y=-1.0; iy<256; ++iy, y+=2.0/255.0) {
     for(ix=0, x=-1.0; ix<256; ++ix, x+=2.0/255.0) {
       double s = hypot(x, y);
       if (s<=1.0) {
-        int r, g, b;
+        TCoord r, g, b;
         ::hsv2rgb( (atan2(y, x) + M_PI) / (2.0*M_PI) * 360.0, s, 1.0,
                    &r, &g, &b);
         bmp1->setPixel(ix,iy,r,g,b);
@@ -223,21 +223,22 @@ TColorDialog::createBitmaps()
 
   bmp2 = new TBitmap(16,256, TBITMAP_TRUECOLOR);
   for(unsigned y=0; y<256; ++y) {
+    TCoord v = (256.0-y)/255.0;
+cout << y << " " << v << endl;
     for(unsigned x=0; x<16; ++x) {
-      unsigned v = 256-y;
       bmp2->setPixel(x,y,v,v,v);
     }
   }
 }
 
 void
-TColorDialog::mouseLDown(int mx, int my, unsigned)
+TColorDialog::mouseLDown(const TMouseEvent &me)
 {
-  if (mx>=8 && mx<=8+256 &&
-      my>=8 && my<=8+256) 
+  if (me.x>=8 && me.x<=8+256 &&
+      me.y>=8 && me.y<=8+256) 
   {
-    double x = (double)mx - 8.0 - 128.0;
-    double y = (double)my - 8.0 - 128.0;
+    double x = (double)me.x - 8.0 - 128.0;
+    double y = (double)me.y - 8.0 - 128.0;
     double s = hypot(x, y);
     if (s>128.0)
       s=128.0;
@@ -249,27 +250,27 @@ TColorDialog::mouseLDown(int mx, int my, unsigned)
     hsv2rgb();
   } else
   
-  if (mx>=8+256+8 && mx<=8+256+8+16 &&
-      my>=8 && my<=8+256)
+  if (me.x>=8+256+8 && me.x<=8+256+8+16 &&
+      me.y>=8 && me.y<=8+256)
   {
-    value = (8 + 256 - my) * 100 / 255;
+    value = (8 + 256 - me.y) * 100 / 255;
   }
 }
 
 void
-TColorDialog::mouseMove(int x, int y, unsigned m)
+TColorDialog::mouseMove(const TMouseEvent &me)
 {
-  mouseLDown(x, y, m);
+  mouseLDown(me);
 }
 
 
 void
-TColorDialog::mouseMDown(int x, int y, unsigned modifier)
+TColorDialog::mouseMDown(const TMouseEvent &me)
 {
-  if (ORIGCOLOR_X+64 <= x && x <= ORIGCOLOR_X+64 + ORIGCOLOR_W &&
-      ORIGCOLOR_Y    <= y && y <= ORIGCOLOR_Y + ORIGCOLOR_H )
+  if (ORIGCOLOR_X+64 <= me.x && me.x <= ORIGCOLOR_X+64 + ORIGCOLOR_W &&
+      ORIGCOLOR_Y    <= me.y && me.y <= ORIGCOLOR_Y + ORIGCOLOR_H )
   {
-    startDrag(new TDnDColor(rgb), modifier);
+    startDrag(new TDnDColor(rgb), me.modifier());
   }
 }
 
@@ -302,7 +303,7 @@ TColorDialog::paint()
   pen.fillRectanglePC(x-2, y-2, 5,5);
   pen.fillRectanglePC(8+256+8,z-2,16,5);
 
-  pen.setColor(255,255,255);
+  pen.setColor(1,1,1);
   pen.fillRectanglePC(x-1, y-1, 3,3);
   pen.fillRectanglePC(8+256+8+1,z-1,14,3);
   

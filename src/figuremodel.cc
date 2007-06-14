@@ -391,9 +391,9 @@ class TUndoTranslate:
 {
     TFigureModel *model;
     TFigureSet figures;
-    int dx, dy;
+    TCoord dx, dy;
   public:
-    TUndoTranslate(TFigureModel *model, const TFigureSet &set, int dx, int dy) {
+    TUndoTranslate(TFigureModel *model, const TFigureSet &set, TCoord dx, TCoord dy) {
       this->model = model;
       this->figures.insert(set.begin(), set.end());
       this->dx = dx;
@@ -420,10 +420,10 @@ class TUndoTranslateHandle:
     TFigureModel *model;
     TFigure* figure;
     unsigned handle;
-    int dx, dy;
+    TCoord dx, dy;
     unsigned m;
   public:
-    TUndoTranslateHandle(TFigureModel *model, TFigure *figure, unsigned handle, int dx, int dy, unsigned m) {
+    TUndoTranslateHandle(TFigureModel *model, TFigure *figure, unsigned handle, TCoord dx, TCoord dy, unsigned m) {
       this->model = model;
       this->figure = figure;
       this->handle = handle;
@@ -460,7 +460,7 @@ class TUndoTranslateHandle:
  *   vertical translation to be added to the figures position
  */
 void
-TFigureModel::translate(const TFigureSet &set, int dx, int dy)
+TFigureModel::translate(const TFigureSet &set, TCoord dx, TCoord dy)
 {
   if (set.empty())
     return;
@@ -524,7 +524,7 @@ TFigureModel::translate(const TFigureSet &set, int dx, int dy)
  *   vertical position of the figures handle
  */
 void
-TFigureModel::translateHandle(TFigure *figure, unsigned handle, int x, int y, unsigned m)
+TFigureModel::translateHandle(TFigure *figure, unsigned handle, TCoord x, TCoord y, unsigned m)
 {
   if (x==0 && y==0)
     return;

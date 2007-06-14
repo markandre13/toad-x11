@@ -49,7 +49,7 @@ TFPolygon::paint(TPenBase &pen, EPaintType)
 }
 
 double 
-TFPolygon::distance(int mx, int my)
+TFPolygon::distance(TCoord mx, TCoord my)
 {
   if (filled && polygon.isInside(mx, my))
     return INSIDE;
@@ -78,7 +78,7 @@ TFPolygon::distance(int mx, int my)
 }
 
 void 
-TFPolygon::translate(int dx, int dy)
+TFPolygon::translate(TCoord dx, TCoord dy)
 {
   TPolygon::iterator p(polygon.begin()), e(polygon.end());
   while(p!=e) {
@@ -98,7 +98,7 @@ TFPolygon::getHandle(unsigned handle, TPoint *p)
 }
 
 void
-TFPolygon::translateHandle(unsigned handle, int x, int y, unsigned m)
+TFPolygon::translateHandle(unsigned handle, TCoord x, TCoord y, unsigned m)
 {
   TPoint p(x, y);
   polygon[handle]=p;
@@ -107,24 +107,24 @@ TFPolygon::translateHandle(unsigned handle, int x, int y, unsigned m)
 // polygon creation
 //---------------------------------------------------------------------------
 unsigned 
-TFPolygon::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
+TFPolygon::mouseLDown(TFigureEditor *editor, const TMouseEvent &me)
 {
   switch(editor->state) {
     case TFigureEditor::STATE_START_CREATE:
-      polygon.addPoint(mx, my);
-      polygon.addPoint(mx, my);
-      editor->setMouseMoveMessages(TWindow::TMMM_ALL);
+      polygon.addPoint(me.x, me.y);
+      polygon.addPoint(me.x, me.y);
+      editor->setAllMouseMoveEvents(true);
       break;
     case TFigureEditor::STATE_CREATE: {
-      if (m & MK_DOUBLE) {
+      if (me.dblClick) {
         if (polygon.size()<4)
           return STOP|DELETE;
         polygon.erase(--polygon.end());
         return STOP;
       }
       TPolygon::iterator p(polygon.end()-2);
-      if (p->x != mx || p->y != my) {
-        polygon.addPoint(mx, my);
+      if (p->x != me.x || p->y != me.y) {
+        polygon.addPoint(me.x, me.y);
         editor->invalidateFigure(this);
       }
     } break;
@@ -135,20 +135,20 @@ TFPolygon::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned m)
 }
 
 unsigned 
-TFPolygon::mouseMove(TFigureEditor *editor, int mx, int my, unsigned)
+TFPolygon::mouseMove(TFigureEditor *editor, const TMouseEvent &me)
 {
   TPolygon::iterator p(--polygon.end());
   editor->invalidateFigure(this);
-  p->set(mx, my);
+  p->set(me.x, me.y);
   editor->invalidateFigure(this);
   return CONTINUE;
 }
 
 unsigned 
-TFPolygon::keyDown(TFigureEditor *editor, TKey key, char *str, unsigned)
+TFPolygon::keyDown(TFigureEditor *editor, const TKeyEvent &ke)
 {
   editor->invalidateFigure(this);
-  switch(key) {
+  switch(ke.key()) {
     case TK_BACKSPACE:
     case TK_DELETE:
       if (polygon.size()<=1)
@@ -186,7 +186,7 @@ class TMyPopupMenu:
 };
 
 unsigned
-TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
+TFPolygon::mouseRDown(TFigureEditor *editor, const TMouseEvent &me)
 {
   if (editor->state != TFigureEditor::STATE_NONE) {
     return NOTHING;
@@ -198,8 +198,8 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
       p!=polygon.end();
       ++p, ++i)
   {
-    if (p->x-editor->fuzziness<=x && x<=p->x+editor->fuzziness && 
-        p->y-editor->fuzziness<=y && y<=p->y+editor->fuzziness) 
+    if (p->x-editor->fuzziness<=me.x && me.x<=p->x+editor->fuzziness && 
+        p->y-editor->fuzziness<=me.y && me.y<=p->y+editor->fuzziness) 
     {
       // cerr << "found handle " << i << endl;
       found = true;
@@ -216,8 +216,8 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
       action->sigClicked,
       figure, this,
       edit, editor,
-      _x, x,
-      _y, y,
+      _x, me.x,
+      _y, me.y,
       edit->invalidateFigure(figure);
       figure->insertPointNear(_x, _y);
       edit->invalidateFigure(figure);
@@ -242,21 +242,21 @@ TFPolygon::mouseRDown(TFigureEditor *editor, int x, int y, unsigned modifier)
   menu = new TMyPopupMenu(editor, "popup");
   menu->tree = dummy;
   menu->setScopeInteractor(dummy);
-  menu->open(x, y, modifier);
+  menu->open(me.x, me.y, me.modifier());
   return NOTHING;
 }
 
 void
-TFPolygon::insertPointNear(int x, int y)
+TFPolygon::insertPointNear(TCoord x, TCoord y)
 {
   _insertPointNear(x, y, true);
 }
 
 void
-TFPolygon::_insertPointNear(int x, int y, bool filled)
+TFPolygon::_insertPointNear(TCoord x, TCoord y, bool filled)
 {
   unsigned i=0;
-  double min;
+  TCoord min;
 
   for(unsigned j=0; j < polygon.size(); j++) {
     double d;
@@ -316,8 +316,8 @@ bool
 TFPolygon::restore(TInObjectStream &in)
 {
   static bool flag;
-  static int x;
-  int y;
+  static TCoord x;
+  TCoord y;
 
   if (in.what == ATV_START)
     flag = false;

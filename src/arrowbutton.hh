@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_ARROWBUTTON_HH
-#define _TOAD_ARROWBUTTON_HH
+#define _TOAD_ARROWBUTTON_HH 1
 
 #include <toad/pushbutton.hh>
 #include <toad/simpletimer.hh>
@@ -39,8 +39,8 @@ class TArrowButton:
     void setType(EArrowType type) { direction = type; }
       
   protected:
-    void mouseLDown(int,int,unsigned);
-    void mouseLUp(int,int,unsigned);
+    void mouseLDown(const TMouseEvent&);
+    void mouseLUp(const TMouseEvent&);
     void tick();
     void paint();
 

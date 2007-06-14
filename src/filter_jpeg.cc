@@ -48,7 +48,7 @@ static jmp_buf setjmp_buffer;
 static void 
 read_image(TFilterJPEG *fltr, struct jpeg_decompress_struct* cinfo)
 {
-  TRGB rgb;
+  TRGB24 rgb;
   int row_stride = cinfo->output_width * cinfo->output_components;
   JSAMPARRAY buffer = (*cinfo->mem->alloc_sarray) ((j_common_ptr) cinfo, JPOOL_IMAGE, row_stride, 1);
   while (cinfo->output_scanline < cinfo->output_height) {

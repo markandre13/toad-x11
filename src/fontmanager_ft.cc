@@ -272,9 +272,9 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
   y+=ft->xftfont->ascent;
 
   XftColor color;
-  color.color.red   = (pen->o_color.r << 8) | pen->o_color.r;
-  color.color.green = (pen->o_color.g << 8) | pen->o_color.g;
-  color.color.blue  = (pen->o_color.b << 8) | pen->o_color.b;
+  color.color.red   = pen->o_color.r * 0xFFFF;
+  color.color.green = pen->o_color.g * 0xFFFF;
+  color.color.blue  = pen->o_color.b * 0xFFFF;
   color.color.alpha = 0xffff;
 
   if (!pen->xftdraw) {

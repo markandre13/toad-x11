@@ -170,35 +170,35 @@ TRadioButtonBase::_setDown(bool down)
 }
 
 void
-TRadioButtonBase::mouseLDown(int x, int y, unsigned m)
+TRadioButtonBase::mouseLDown(const TMouseEvent &me)
 {
-  super::mouseLDown(x, y, m);
+  super::mouseLDown(me);
   if (_state)
     _state->setTemporary(this);
 }
 
 void
-TRadioButtonBase::mouseLeave(int x, int y, unsigned m)
+TRadioButtonBase::mouseLeave(const TMouseEvent &mc)
 {
   if (_state && bDown)
     _state->setTemporary(NULL);
-  super::mouseLeave(x, y, m);
+  super::mouseLeave(mc);
 }
 
 void
-TRadioButtonBase::mouseEnter(int x, int y, unsigned m)
+TRadioButtonBase::mouseEnter(const TMouseEvent &mc)
 {
   if (_state && bDown)
     _state->setTemporary(this);
-  super::mouseEnter(x, y, m);
+  super::mouseEnter(mc);
 }
 
 void
-TRadioButtonBase::mouseLUp(int x, int y, unsigned m)
+TRadioButtonBase::mouseLUp(const TMouseEvent &me)
 {
   if (_state)
     _state->setTemporary(NULL);
-  super::mouseLUp(x, y, m);
+  super::mouseLUp(me);
 }
 
 bool

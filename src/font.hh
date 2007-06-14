@@ -103,12 +103,21 @@ class TFontManagerFT:
     static bool buildFontList(FcConfig *config);
 };
 
+class TFont;
+typedef GSmartPointer<TFont> PFont;
+extern PFont default_font;
+extern PFont bold_font;
+
 class TFont:
   public TSmartObject
 {
   public:
     TFont() {
-      font = FcPatternDuplicate(default_font.font);
+      if (default_font) {
+        font = FcPatternDuplicate(default_font->font);
+      } else {
+        font = 0;
+      }
       fontmanager = TFontManager::getDefault();
       corefont = 0;
     }
@@ -153,14 +162,7 @@ class TFont:
     int getTextWidth(const string &text) {
       return fontmanager->getTextWidth(this, text.c_str(), text.size());
     }
-    
-    static TFont default_font;
 };
-
-typedef GSmartPointer<TFont> PFont;
-
-extern PFont default_font;
-extern PFont bold_font;
 
 
 #ifndef FC_WEIGHT_BOOK                       

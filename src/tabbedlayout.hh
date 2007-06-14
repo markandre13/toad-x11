@@ -19,7 +19,7 @@
  */
 
 #ifndef _TOAD_TABBEDLAYOUT_HH
-#define _TOAD_TABBEDLAYOUT_HH
+#define _TOAD_TABBEDLAYOUT_HH 1
 
 #include <toad/layout.hh>
 

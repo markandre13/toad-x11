@@ -159,9 +159,6 @@ TBitmap::TBitmap()
   modified = false;
 
   mode = TBITMAP_SHOW;
-#ifdef __X11__
-  dither = TColor::_shouldNotDither() ? TBITMAP_SUBSTITUTE : TBITMAP_FLOYD_STEINBERG;
-#endif
   
   pixmap = 0;
   mask   = 0;
@@ -178,11 +175,11 @@ TBitmap::TBitmap(int w,int h, EBitmapType type)
 
   switch(type) {
     case TBITMAP_INDEXED:
-      color = new TRGB[256];
+      color = new TRGB24[256];
       index = new unsigned char[w*h];
       break;
     case TBITMAP_TRUECOLOR:
-      color = new TRGB[w*h];
+      color = new TRGB24[w*h];
       index = NULL;
       break;
     case TBITMAP_SERVER:
@@ -199,9 +196,6 @@ TBitmap::TBitmap(int w,int h, EBitmapType type)
   }
   modified = false;
   mode = TBITMAP_SHOW;
-#ifdef __X11__
-  dither = TColor::_shouldNotDither() ? TBITMAP_SUBSTITUTE : TBITMAP_FLOYD_STEINBERG;
-#endif
 }
 
 TBitmap::~TBitmap()
@@ -326,7 +320,7 @@ bool TBitmapMask::getPixel(int x, int y) const
 
 // pGetColor
 //---------------------------------------------------------------------------- 
-TRGB& TBitmap::pGetColor(int x,int y)
+TRGB24& TBitmap::pGetColor(int x,int y)
 {
   assert(color);
   assert(x>=0 && x<width && y>=0 && y<height);
@@ -336,7 +330,7 @@ TRGB& TBitmap::pGetColor(int x,int y)
     return color[x+y*width];
 }
 
-TRGB& TBitmap::pGetColor(int adr)
+TRGB24& TBitmap::pGetColor(int adr)
 {
   assert(color);
   assert(adr>=0 && adr<width*height);
@@ -399,124 +393,12 @@ void TBitmap::copy_bitmap_to_pixmap_and_delete_it()
   
   img->data = new char[img->bytes_per_line * height * zoom];
   
-  // copy bitmap to image (zoom==1)
-  //-------------------------------
-  switch(dither) {
-    case TBITMAP_SUBSTITUTE:
-      for(int y=0; y<height; y++) {
-        for(int x=0; x<width; x++) {
-          XPutPixel(img,x,y,TColor::_getPixel(pGetColor(x,y)));
-        }
-      }
-      break;
-    case TBITMAP_ORDERED:
-      for(int y=0; y<height; y++) {
-        for(int x=0; x<width; x++) {
-          XPutPixel(img,x,y,TColor::_getPixelAt(pGetColor(x,y),x,y));
-        }
-      }
-      break;
-    case TBITMAP_FLOYD_STEINBERG:
-      {
-        TRGB c;
-        struct TRGB {int r,g,b;};
-        int e,f,x,p,i,line,j,y,direction;
-        TRGB ae[width+2][2],ne;
-        line=0;
-        direction=1;
-        for(j=0; j<width+2; j++)
-        {
-          ae[j][0].r = 0;
-          ae[j][0].g = 0;
-          ae[j][0].b = 0;
-          ae[j][1].r = 0;
-          ae[j][1].g = 0;
-          ae[j][1].b = 0;
-        }
-        x=1;
-        for(y=0; y<height; y++)
-        {
-          ne.r=0; ne.g=0; ne.b=0;
-          line ^= 1;
-          p = x-1 + y*width;
-          for(j=0; j<width; j++)
-          {
-/*
-            #define CALC_FSC(color)\
-              f = pGetColor(p).color + (ae[x][line^1].color+ne.color)/16;\
-              ae[x][line^1].color = 0;\
-              i = (f+32)&(~63); if (i>0) i--;\
-              if (f<0) f=0; else if (f>255) f=255;\
-              c.color = f;\
-              e = f - i;\
-              i = e * 2;\
-              ae[x+direction][line].color += e;\
-              e+=i;\
-              ae[x-direction][line].color += e;\
-              e+=i;\
-              ae[x][line].color           += e;\
-              e+=i;\
-              ne.color =                     e;
-            CALC_FSC(r);
-            CALC_FSC(g);
-            CALC_FSC(b);
-            #undef CALC_FSC
-*/
-              f = pGetColor(p).r + (ae[x][line^1].r+ne.r)/16;\
-              ae[x][line^1].r = 0;\
-              i = (f+32)&(~63); if (i>0) i--;\
-              if (f<0) f=0; else if (f>255) f=255;\
-              c.r = f;\
-              e = f - i;\
-              i = e * 2;\
-              ae[x+direction][line].r += e;\
-              e+=i;\
-              ae[x-direction][line].r += e;\
-              e+=i;\
-              ae[x][line].r           += e;\
-              e+=i;\
-              ne.r =                     e;
-
-              f = pGetColor(p).g + (ae[x][line^1].g+ne.g)/16;\
-              ae[x][line^1].g = 0;\
-              i = (f+32)&(~63); if (i>0) i--;\
-              if (f<0) f=0; else if (f>255) f=255;\
-              c.g = f;\
-              e = f - i;\
-              i = e * 2;\
-              ae[x+direction][line].g += e;\
-              e+=i;\
-              ae[x-direction][line].g += e;\
-              e+=i;\
-              ae[x][line].g           += e;\
-              e+=i;\
-              ne.g =                     e;
-
-              f = pGetColor(p).b + (ae[x][line^1].b+ne.b)/16;\
-              ae[x][line^1].b = 0;\
-              i = (f+32)&(~63); if (i>0) i--;\
-              if (f<0) f=0; else if (f>255) f=255;\
-              c.b = f;\
-              e = f - i;\
-              i = e * 2;\
-              ae[x+direction][line].b += e;\
-              e+=i;\
-              ae[x-direction][line].b += e;\
-              e+=i;\
-              ae[x][line].b           += e;\
-              e+=i;\
-              ne.b =                     e;
-            XPutPixel(img,x-1,y,TColor::_getPixel(c));
-            x+=direction;
-            p+=direction;
-          }
-          x-=direction;
-          direction = direction>0 ? -1 : 1;
-        }
-      }
-      break;
+  for(int y=0; y<height; y++) {
+    for(int x=0; x<width; x++) {
+      XPutPixel(img,x,y,TColor::_getPixel(pGetColor(x,y)));
+    }
   }
-  
+
   XPutImage(x11display,pixmap,DefaultGC(x11display, DefaultScreen(x11display)),img,
     0,0,
     0,0,
@@ -648,7 +530,7 @@ void TBitmap::drawBitmap(const TPen *pen, int x,int y) const
         long n = 0;
         while(rgn.getRect(n++,&r)) {
           for (int y=r.y; y<r.y+r.h; y++) {
-            int line_buffer[r.w];
+            int line_buffer[static_cast<size_t>(r.w)];
             t->pCopyToLine(r.x, r.x+r.w-1, y, line_buffer);
             for(int i=0; i<r.w; i++)
               XPutPixel(img,i,0,line_buffer[i]);
@@ -711,15 +593,6 @@ void TBitmap::setZoom(int z)
   zoom=z;
 }
 
-// SetDither
-//----------------------------------------------------------------------------
-void TBitmap::setDither(EBitmapDither d)
-{
-#ifdef __X11__
-  dither=TColor::_shouldNotDither() ? TBITMAP_SUBSTITUTE : d;
-#endif
-}
-
 /**
  * Copy a single line from the bitmap to an 1d-array of pixels.
  */
@@ -727,40 +600,18 @@ void TBitmap::pCopyToLine(int x1,int x2,int y,int *line)
 {
 #ifdef __X11__
   if (zoom==1) {
-    switch(dither) {
-      case TBITMAP_SUBSTITUTE:
-        for(int x=x1; x<=x2; x++) {
-          line[x-x1]=TColor::_getPixel(pGetColor(x,y));
-        }
-        break;
-
-      case TBITMAP_ORDERED:
-      case TBITMAP_FLOYD_STEINBERG:
-        for(int x=x1; x<=x2; x++) {
-          line[x-x1]=TColor::_getPixelAt(pGetColor(x,y),x,y);
-        }
-        break;
+    for(int x=x1; x<=x2; x++) {
+      line[x-x1]=TColor::_getPixel(pGetColor(x,y));
     }
   } else {
-    switch(dither) {
-      case TBITMAP_SUBSTITUTE:
-        for(int x=x1; x<=x2; x++) {
-          line[x-x1]=TColor::_getPixel(pGetColor(x/zoom,y/zoom));
-        }
-        break;
-
-      case TBITMAP_FLOYD_STEINBERG:
-      case TBITMAP_ORDERED:
-        for(int x=x1; x<=x2; x++) {
-          line[x-x1]=TColor::_getPixelAt(pGetColor(x/zoom,y/zoom),x,y);
-        }
-        break;
+    for(int x=x1; x<=x2; x++) {
+      line[x-x1]=TColor::_getPixel(pGetColor(x/zoom,y/zoom));
     }
   }
 #endif
 }
 
-void TBitmap::setPixel(int x,int y,short r,short g,short b)
+void TBitmap::setPixel(int x,int y,TCoord r,TCoord g,TCoord b)
 {
   if (!color) return;
   if (index) {
@@ -771,21 +622,21 @@ void TBitmap::setPixel(int x,int y,short r,short g,short b)
   if (x<0 || x>=width || y<0 || y>=height)
     return;
 
-  TRGB *p = color + x+y*width;
-  p->r=r;
-  p->g=g;
-  p->b=b;
+  TRGB24 *p = color + x+y*width;
+  p->r=r * 255.0;
+  p->g=g * 255.0;
+  p->b=b * 255.0;
   modified = true;
 }
 
-bool TBitmap::getPixel(int x,int y,short* r,short *g,short *b)
+bool TBitmap::getPixel(int x,int y,TCoord *r,TCoord *g,TCoord *b)
 {
   if (!color || x<0 || x>=width || y<0 || y>=height) 
     return false;
-  TRGB &p = pGetColor(x,y);
-  *r=p.r;
-  *g=p.g;
-  *b=p.b;
+  TRGB24 &p = pGetColor(x,y);
+  *r=p.r/255.0;
+  *g=p.g/255.0;
+  *b=p.b/255.0;
   return true;
 }
 
@@ -793,7 +644,10 @@ bool TBitmap::getPixel(int x,int y,TRGB *c)
 {
   if (!color || x<0 || x>=width || y<0 || y>=height) 
     return false;
-  *c = pGetColor(x,y);
+  TRGB24 &rgb24 = pGetColor(x,y);
+  c->r = rgb24.r * 255.0;
+  c->g = rgb24.g * 255.0;
+  c->b = rgb24.b * 255.0;
   return true;
 }
 
@@ -817,7 +671,7 @@ TBitmap::load(const string& url)
     cerr << "toad: no filter available for bitmap \"" << url << "\".\n";
     return false;
   }
-
+  
   // read file into istrstream
   //----------------------------
   iurlstream is(url);
@@ -896,8 +750,8 @@ TBitmap::load(istream &ds)
 
       if (mode==TBITMAP_EDIT && index) {
         unsigned size=width*height;
-        TRGB *tc, *p;
-        tc = p = new TRGB[size];
+        TRGB24 *tc, *p;
+        tc = p = new TRGB24[size];
         unsigned char *ic = index;
         for(unsigned i=0; i<size; i++)
           *(tc++)=color[*(ic++)];

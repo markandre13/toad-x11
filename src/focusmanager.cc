@@ -604,7 +604,7 @@ printf("keyDown for %08x\n", current_domain->focus_window);
   static TKeyEvent keyevent;
   keyevent.type = TKeyEvent::DOWN;
 new_key_eventhack=true;
-key = keyevent.getKey();
+key = keyevent.key();
 
   if (key==TK_F12) {
     cout << "DEBUG: Window & Keyboard Focus Tree" << endl;

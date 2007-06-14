@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TTextField
-#define TTextField TTextField
+#ifndef _TOAD_TEXTFIELD_HH
+#define _TOAD_TEXTFIELD_HH 1
 
 #include <toad/textarea.hh>
 
@@ -57,7 +57,7 @@ class TTextField:
       setSize(320, preferences->font.getHeight()+4);
     }
   protected:
-    void mouseEvent(TMouseEvent&);
+    void mouseEvent(const TMouseEvent&);
 };
 
 } // namespace toad

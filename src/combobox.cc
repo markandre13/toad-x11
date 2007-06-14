@@ -37,10 +37,10 @@ class TComboBox::TComboButton:
 
   protected:
     void paint();
-    void mouseLDown(int,int,unsigned);
-    void mouseLUp(int,int,unsigned);
-    void mouseEnter(int,int,unsigned);
-    void mouseLeave(int,int,unsigned);
+    void mouseLDown(const TMouseEvent &);
+    void mouseLUp(const TMouseEvent &);
+    void mouseEnter(const TMouseEvent&);
+    void mouseLeave(const TMouseEvent&);
 };   
 
 TComboBox::TComboBox(TWindow * parent, const string &title):
@@ -157,7 +157,7 @@ TComboBox::button()
 }
 
 void
-TComboBox::mouseEvent(TMouseEvent &me)
+TComboBox::mouseEvent(const TMouseEvent &me)
 {
   switch(me.type) {
     case TMouseEvent::LDOWN:
@@ -165,14 +165,14 @@ TComboBox::mouseEvent(TMouseEvent &me)
       setFocus();
       break;
     case TMouseEvent::ROLL_UP:
-      table->keyDown(TK_UP, const_cast<char*>(""), 0);
-      table->keyUp(TK_UP, const_cast<char*>(""), 0);
+      table->keyEvent(TKeyEvent(TKeyEvent::DOWN, me.window, TK_UP));
+      table->keyEvent(TKeyEvent(TKeyEvent::UP, me.window, TK_UP));
       invalidateWindow();
       sigSelection();
       break;
     case TMouseEvent::ROLL_DOWN:
-      table->keyDown(TK_DOWN, const_cast<char*>(""), 0);
-      table->keyUp(TK_DOWN, const_cast<char*>(""), 0);
+      table->keyEvent(TKeyEvent(TKeyEvent::DOWN, me.window, TK_DOWN));
+      table->keyEvent(TKeyEvent(TKeyEvent::UP, me.window, TK_DOWN));
       invalidateWindow();
       sigSelection();
       break;
@@ -180,8 +180,9 @@ TComboBox::mouseEvent(TMouseEvent &me)
 }
 
 void
-TComboBox::keyDown(TKey key, char *string, unsigned modifier)
+TComboBox::keyDown(const TKeyEvent &ke)
 {
+  TKey key = ke.key();
   // in case the combobox is open and the table popup window
   // is mapped (visible), delegate all keyboard events to the
   // table
@@ -195,7 +196,7 @@ TComboBox::keyDown(TKey key, char *string, unsigned modifier)
       btn->setDown(false);
       return;
     }
-    table->keyDown(key, string, modifier);
+    table->keyDown(ke);
     return;
   }
 
@@ -205,12 +206,14 @@ TComboBox::keyDown(TKey key, char *string, unsigned modifier)
       btn->setDown(true);
       break;
     case TK_DOWN:
-    case TK_UP:
-      table->keyDown(key, string, modifier);
-      table->keyDown(TK_RETURN, string, modifier);
+    case TK_UP: {
+      TKeyEvent ke2(ke);
+      ke2.setKey(TK_RETURN);
+      table->keyDown(ke);
+      table->keyDown(ke2);
       // table->selectAtCursor();
       invalidateWindow();
-      break;
+    } break;
   }
 }
 
@@ -252,8 +255,8 @@ TComboBox::TComboButton::paint()
   drawShadow(pen, bDown, true);
 
   int n=bDown?1:0;
-  int cx = (getWidth() >> 1)+n;
-  int cy = (getHeight() >> 1)+n - 1;
+  int cx = (getWidth() / 2)+n;
+  int cy = (getHeight() / 2)+n - 1;
 
   TPoint p[3];
   p[0].set(cx-4,cy-2);
@@ -267,7 +270,7 @@ TComboBox::TComboButton::paint()
 }
 
 void
-TComboBox::TComboButton::mouseLDown(int,int,unsigned)
+TComboBox::TComboButton::mouseLDown(const TMouseEvent&)
 {
   setDown(!isDown());
 #if 0
@@ -280,16 +283,16 @@ TComboBox::TComboButton::mouseLDown(int,int,unsigned)
 }
 
 void
-TComboBox::TComboButton::mouseLUp(int,int,unsigned)
+TComboBox::TComboButton::mouseLUp(const TMouseEvent&)
 {
 }
 
 void
-TComboBox::TComboButton::mouseEnter(int,int,unsigned)
+TComboBox::TComboButton::mouseEnter(const TMouseEvent&)
 {
 }
 
 void
-TComboBox::TComboButton::mouseLeave(int,int,unsigned)
+TComboBox::TComboButton::mouseLeave(const TMouseEvent&)
 {
 }

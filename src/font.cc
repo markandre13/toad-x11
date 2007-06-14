@@ -78,12 +78,12 @@ TFontManager::setDefaultByName(const string &engine)
   return true;
 }
 
-TFontManager* TFontManager::getDefault()
+TFontManager*
+TFontManager::getDefault()
 {
   return fontmanager;
 }
 
-TFont TFont::default_font("arial,helvetica,sans-serif:size=12");
 
 TFont::~TFont()
 {

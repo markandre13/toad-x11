@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,33 +41,52 @@ using namespace toad;
  * TPen.SetColor(red,green,blue) how to use colors.
  */
 
-TColor sysrgb[TColor::MAX]=
+static TRGB sysrgb[TColor::MAX]=
 {
-  TColor(  0,  0,  0),  // BTNTEXT
-  TColor(150,150,150),  // BTNSHADOW
-  TColor(215,215,215),  // BTNFACE
-  TColor(255,255,255),  // BTNLIGHT
-  TColor(215,215,215),  // MENU
-  TColor(  0,  0,  0),  // MENUTEXT
-  TColor(255,255,255),  // TEXTEDIT
-  TColor(128,  0,  0),  // MDIAREA
-  TColor(  0,  0,128),  // CAPTION
-  TColor(255,255,255),  // CAPTIONTEXT
-  TColor(215,215,215),  // INACTIVECAPTION
-  TColor(  0,  0,  0),  // INACTIVECAPTIONTEXT
-  TColor(215,215,215),  // DIALOG
-  TColor(  0,  0,  0),  // DIALOGTEXT
-  TColor(127,127,191),  // SLIDER_FACE
-  TColor( 63, 63,127),  // SLIDER_SHADOW
-  TColor(191,191,255),  // SLIDER_LIGHT
-  TColor(137,137,215),  // SELECTED
-  TColor(127,127,191),  // SELECTED_2
-  TColor(  0,  0,  0),  // SELECTED_TEXT
-  TColor(222,222,222),  // SELECTED_GRAY
-  TColor(215,215,215),  // SELECTED_GRAY_2
-  TColor(255,255,255),  // TABLE_CELL
-  TColor(231,231,255),  // TABLE_CELL_2
-  TColor( 79,128,255),  // FIGURE_SELECTION
+                                  // IBM PC CGA     Amstrad CPC   HTML
+  TRGB(  0/255.0,  0/255.0,  0/255.0),  //  0 black       0             Black  
+  TRGB(128/255.0,  0/255.0,  0/255.0),  //  1 red         3             Maroon
+  TRGB(  0/255.0,128/255.0,  0/255.0),  //  2 green       9             Green 
+  TRGB(128/255.0,128/255.0,  0/255.0),  //  3 yellow      12            Olive 
+  TRGB(  0/255.0,  0/255.0,128/255.0),  //  4 blue        1             Navy  
+  TRGB(128/255.0,  0/255.0,128/255.0),  //  5 violett     4             Purple
+  TRGB(  0/255.0,128/255.0,128/255.0),  //  6 cyan        10            Teal  
+  TRGB(128/255.0,128/255.0,128/255.0),  //  7 gray        13            Gray  
+  TRGB(192/255.0,192/255.0,192/255.0),  //  8 lightgray                 Silver
+  TRGB(255/255.0,  0/255.0,  0/255.0),  //  9 lightred    6             Red   
+  TRGB(  0/255.0,255/255.0,  0/255.0),  // 10 lightgreen  18            Lime  
+  TRGB(255/255.0,255/255.0,  0/255.0),  // 11 yellow      24            Yellow
+  TRGB(  0/255.0,  0/255.0,255/255.0),  // 12 lightblue   2             Blue   
+  TRGB(255/255.0,  0/255.0,255/255.0),  // 13 magenta     8             Fuchsia
+  TRGB(  0/255.0,255/255.0,255/255.0),  // 14 lightcyan   20            Aqua   
+  TRGB(255/255.0,255/255.0,255/255.0),  // 15 white       26            White  
+
+  // SystemColors
+  TRGB(  0/255.0,  0/255.0,  0/255.0),  // BTNTEXT
+  TRGB(150/255.0,150/255.0,150/255.0),  // BTNSHADOW
+  TRGB(215/255.0,215/255.0,215/255.0),  // BTNFACE
+  TRGB(255/255.0,255/255.0,255/255.0),  // BTNLIGHT
+  TRGB(215/255.0,215/255.0,215/255.0),  // MENU
+  TRGB(  0/255.0,  0/255.0,  0/255.0),  // MENUTEXT
+  TRGB(255/255.0,255/255.0,255/255.0),  // TEXTEDIT
+  TRGB(128/255.0,  0/255.0,  0/255.0),  // MDIAREA
+  TRGB(  0/255.0,  0/255.0,128/255.0),  // CAPTION
+  TRGB(255/255.0,255/255.0,255/255.0),  // CAPTIONTEXT
+  TRGB(215/255.0,215/255.0,215/255.0),  // INACTIVECAPTION
+  TRGB(  0/255.0,  0/255.0,  0/255.0),  // INACTIVECAPTIONTEXT
+  TRGB(215/255.0,215/255.0,215/255.0),  // DIALOG
+  TRGB(  0/255.0,  0/255.0,  0/255.0),  // DIALOGTEXT
+  TRGB(127/255.0,127/255.0,191/255.0),  // SLIDER_FACE
+  TRGB( 63/255.0, 63/255.0,127/255.0),  // SLIDER_SHADOW
+  TRGB(191/255.0,191/255.0,255/255.0),  // SLIDER_LIGHT
+  TRGB(137/255.0,137/255.0,215/255.0),  // SELECTED
+  TRGB(127/255.0,127/255.0,191/255.0),  // SELECTED_2
+  TRGB(  0/255.0,  0/255.0,  0/255.0),  // SELECTED_TEXT
+  TRGB(222/255.0,222/255.0,222/255.0),  // SELECTED_GRAY
+  TRGB(215/255.0,215/255.0,215/255.0),  // SELECTED_GRAY_2
+  TRGB(255/255.0,255/255.0,255/255.0),  // TABLE_CELL
+  TRGB(231/255.0,231/255.0,255/255.0),  // TABLE_CELL_2
+  TRGB( 79/255.0,128/255.0,255/255.0)   // FIGURE_SELECTION
 };
 
 TColor::TColor()
@@ -76,23 +95,16 @@ TColor::TColor()
   r = g = b = 0;
 }
 
-TColor::TColor(byte rn, byte gn, byte bn)
+TColor::TColor(TCoord rn, TCoord gn, TCoord bn)
 {
   _Init();
   r = rn; g = gn; b = bn;
 }
 
-TColor::TColor(TColor::EColor16 c16)
+TColor::TColor(EColor ec)
 {
   _Init();
-  const TColor &c = _palette(c16);
-  r = c.r; g = c.g; b = c.b;
-}
-
-TColor::TColor(ESystemColor sc)
-{
-  _Init();
-  const TColor &c = sysrgb[sc];
+  const TRGB &c = sysrgb[ec];
   r = c.r; g = c.g; b = c.b;
 }
 
@@ -104,25 +116,18 @@ TColor::~TColor()
 {
 }
 
-void TColor::set(TColor::EColor16 c16)
+const TRGB*
+TColor::lookup(EColor n)
 {
-  const TColor &c = _palette(c16);
-  r = c.r; g = c.g; b = c.b;
-#ifdef __X11__
-  _data = NULL;
-#endif
-#ifdef __WIN32__
-  colorref = RGB(r, g, b);
-#endif
+  if (n>=MAX)
+    n = BLACK;
+  return &sysrgb[n];
 }
-
-void TColor::set(ESystemColor sc)
+        
+void TColor::set(EColor ec)
 {
-  const TColor &c = sysrgb[sc];
+  const TRGB &c = sysrgb[ec];
   r = c.r; g = c.g; b = c.b;
-#ifdef __X11__
-  _data = NULL;
-#endif
 #ifdef __WIN32__
   colorref = RGB(r, g, b);
 #endif
@@ -173,20 +178,29 @@ restore(atv::TInObjectStream &p, const char *name, TRGB **value)
 void
 TSerializableRGB::store(TOutObjectStream &out) const
 {
-  ::store(out, r);
-  ::store(out, g);
-  ::store(out, b);
+  byte br(r*255.0), bg(g*255.0), bb(b*255.0);
+  ::store(out, br);
+  ::store(out, bg);
+  ::store(out, bb);
 }
 
 bool 
 TSerializableRGB::restore(TInObjectStream &in)
 {
-  if (
-    ::restore(in, 0, &r) ||
-    ::restore(in, 1, &g) ||
-    ::restore(in, 2, &b) ||
-    super::restore(in)
-    ) return true;
+  if (::restore(in, 0, &r)) {
+    r /= 255.0;
+    return true;
+  }
+  if (::restore(in, 1, &g)) {
+    g /= 255.0;
+    return true;
+  }
+  if (::restore(in, 2, &b)) {
+    b /= 255.0;
+    return true;
+  }
+  if (super::restore(in))
+    return true;
   ATV_FAILED(in)
   return false;
 }

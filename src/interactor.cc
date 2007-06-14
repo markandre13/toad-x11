@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -108,9 +108,9 @@ if (!parent->child) {
   }
 }
 
-void TInteractor::windowEvent(TWindowEvent&) {}
-void TInteractor::mouseEvent(TMouseEvent&) {}
-void TInteractor::keyEvent(TKeyEvent&) {}
+void TInteractor::windowEvent(const TWindowEvent&) {}
+void TInteractor::mouseEvent(const TMouseEvent&) {}
+void TInteractor::keyEvent(const TKeyEvent&) {}
 
 /**
  * This method was added for TMDIWindow and allows the window to define a
@@ -216,17 +216,17 @@ TInteractor::getPrevSibling(const TInteractor *ptr)
 
 bool TInteractor::isRealized() const {return true;}
 bool TInteractor::setFocus() {return false;}
-void TInteractor::setPosition(int x,int y) {}
-void TInteractor::setSize(int x,int y) {}
-void TInteractor::setShape(int,int,int,int) {}
+void TInteractor::setPosition(TCoord x,TCoord y) {}
+void TInteractor::setSize(TCoord x,TCoord y) {}
+void TInteractor::setShape(TCoord,TCoord,TCoord,TCoord) {}
 //void TInteractor::SetShape(const TRectangle &r){SetShape(r.x,r.y,r.w,r.h);}
 //void TInteractor::SetShape(const TRectangle *r){SetShape(r->x,r->y,r->w,r->h);}
 void TInteractor::getShape(TRectangle*) const {}
 void TInteractor::setSuppressMessages(bool) {}
-int TInteractor::getXPos() const {return 0;}
-int TInteractor::getYPos() const {return 0;}
-int TInteractor::getWidth() const {return 0;}
-int TInteractor::getHeight() const {return 0;}
+TCoord TInteractor::getXPos() const {return 0;}
+TCoord TInteractor::getYPos() const {return 0;}
+TCoord TInteractor::getWidth() const {return 0;}
+TCoord TInteractor::getHeight() const {return 0;}
 
 bool TEventFilter::windowEvent(TWindowEvent&) { return false; }
 bool TEventFilter::mouseEvent(TMouseEvent&) { return false; }

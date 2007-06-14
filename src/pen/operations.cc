@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,6 +77,7 @@
 #include <toad/matrix2d.hh>
 #include <toad/window.hh>
 #include <toad/region.hh>
+#include <toad/bitmap.hh>
 #include <iostream>
 
 #ifdef HAVE_LIBXFT
@@ -220,7 +221,7 @@ TPen::identity()
 }
 
 void
-TPen::translate(double dx, double dy)
+TPen::translate(TCoord dx, TCoord dy)
 {
   if (!mat) {
     if (dx==0.0 && dy==0.0)
@@ -239,7 +240,7 @@ TPen::rotate(double degree)
 }
 
 void
-TPen::scale(double xfactor, double yfactor)
+TPen::scale(TCoord xfactor, TCoord yfactor)
 {
   if (!mat)
     mat = new TMatrix2D();
@@ -247,10 +248,12 @@ TPen::scale(double xfactor, double yfactor)
   _setLineAttributes();
 }
 
+#if 0
 void
 TPen::shear(double, double)
 {
 }
+#endif
 
 void
 TPen::multiply(const TMatrix2D *m)
@@ -265,7 +268,7 @@ TPen::multiply(const TMatrix2D *m)
 }
 
 void
-TPen::setMatrix(double a11, double a21, double a12, double a22, double tx, double ty)
+TPen::setMatrix(TCoord a11, TCoord a21, TCoord a12, TCoord a22, TCoord tx, TCoord ty)
 {
   if (!mat)
     mat = new TMatrix2D();
@@ -313,7 +316,7 @@ TPen::popAll()
 // point
 //----------------------------------------------------------------------------
 void
-TPen::drawPoint(int x, int y)
+TPen::drawPoint(TCoord x, TCoord y)
 {
 #ifdef __X11__
   if (!mat) {
@@ -340,42 +343,23 @@ TPen::drawPoint(int x, int y)
 // line
 //----------------------------------------------------------------------------
 void
-TPen::vdrawLine(int x1, int y1, int x2, int y2)
-{
-#ifdef __X11__
-  if (!mat) {
-    XDrawLine(x11display, x11drawable, o_gc, x1,y1, x2, y2);
-  } else {
-    short sx1, sy1, sx2, sy2;
-    mat->map(x1, y1, &sx1, &sy1);
-    mat->map(x2, y2, &sx2, &sy2);
-    XDrawLine(x11display, x11drawable, o_gc, sx1,sy1, sx2, sy2);
-  }
-#endif
-
-#ifdef __WIN32__
-  activateW32();
-  if (!mat) {
-    ::MoveToEx(w32hdc, x1, y1, NULL);
-    ::LineTo(w32hdc, x2, y2);
-  } else {
-    int sx1, sy1, sx2, sy2;
-    mat->map(x1, y1, &sx1, &sy1);
-    mat->map(x2, y2, &sx2, &sy2);
-    ::MoveToEx(w32hdc, sx1, sy1, NULL);
-    ::LineTo(w32hdc, sx2, sy2);
-  }
-#endif
-}
-
-void
-TPen::drawLines(const TPoint *s, int n)
+TPen::drawLines(const TPoint *s, size_t n)
 {
 #ifdef __X11__
   XPoint xp[n];
   tpoint2xpoint(s, xp, n, mat);
   PIXMAP_FIX_001(xp, n)
   XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
+#endif
+
+#ifdef __COCOA__
+  if (n<2)
+    return;
+  NSBezierPath *path = [NSBezierPath bezierPath];
+  [path moveToPoint: NSMakePoint(p[0].x+0.5, p[0].y+0.5)];
+  for(size_t i=1; i<n; ++i)
+    [path lineToPoint: NSMakePoint(p[i].x+0.5, p[i].y+0.5)];
+  [path stroke];
 #endif
 
 #ifdef __WIN32__
@@ -406,6 +390,16 @@ TPen::drawLines(const TPolygon &polygon)
   XDrawLines(x11display, x11drawable, o_gc, xp, n, CoordModeOrigin);
 #endif
 
+#ifdef __COCOA__
+  if (p.size()<2)
+    return;
+  NSBezierPath *path = [NSBezierPath bezierPath];
+  [path moveToPoint: NSMakePoint(p[0].x, p[0].y)];
+  for(size_t i=1; i<p.size(); ++i)
+    [path lineToPoint: NSMakePoint(p[i].x, p[i].y)];
+  [path stroke];
+#endif
+
 #ifdef __WIN32__
   activateW32();
   size_t n = polygon.size();
@@ -421,7 +415,7 @@ TPen::drawLines(const TPolygon &polygon)
 // rectangle
 //----------------------------------------------------------------------------
 void
-TPen::vdrawRectangle(int x, int y, int w, int h)
+TPen::vdrawRectangle(TCoord x, TCoord y, TCoord w, TCoord h)
 {
 #ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
@@ -443,6 +437,11 @@ TPen::vdrawRectangle(int x, int y, int w, int h)
     PIXMAP_FIX_001(xp, 5)
     XDrawLines(x11display, x11drawable, o_gc, xp, 5, CoordModeOrigin);
   }
+#endif
+
+#ifdef __COCOA__
+  NSRect r = NSMakeRect(x+0.5,y+0.5,w,h);
+  [NSBezierPath strokeRect: r];
 #endif
 
 #ifdef __WIN32__
@@ -478,7 +477,7 @@ TPen::vdrawRectangle(int x, int y, int w, int h)
 }
 
 void
-TPen::vfillRectangle(int x, int y, int w, int h)
+TPen::vfillRectangle(TCoord x, TCoord y, TCoord w, TCoord h)
 {
   XDRAW_RASTER_COORD(w,h)
 #ifdef __X11__
@@ -511,6 +510,11 @@ TPen::vfillRectangle(int x, int y, int w, int h)
   }
 #endif
 
+#ifdef __COCOA__
+  NSRect r = NSMakeRect(x+0.5,y+0.5,w,h);
+  [NSBezierPath fillRect: r];
+#endif
+
 #ifdef __WIN32__
   activateW32();
   if (!mat) {
@@ -527,20 +531,6 @@ TPen::vfillRectangle(int x, int y, int w, int h)
     ::Polygon(w32hdc, pts, 5);
   }
 #endif
-}
-
-void
-TPenBase::drawRectanglePC(int x, int y, int w, int h)
-{
-  XDRAW_PIXEL_COORD(w,h);
-  drawRectangle(x,y,w,h);
-}
-
-void
-TPenBase::fillRectanglePC(int x, int y, int w, int h)
-{
-  XDRAW_PIXEL_COORD(w,h)
-  fillRectangle(x, y, w, h);
 }
 
 // circle
@@ -629,7 +619,7 @@ qtr_elips(const TPen *pen, XPoint *p, long xP, long yP, long xQ, long yQ, long x
 #endif
 
 void
-TPen::vdrawCircle(int x, int y, int w, int h)
+TPen::vdrawCircle(TCoord x, TCoord y, TCoord w, TCoord h)
 {
 #ifdef __X11__
   if (!mat) {
@@ -641,7 +631,7 @@ TPen::vdrawCircle(int x, int y, int w, int h)
     // hmm, seem my X server ignores w,h>=800...
     XDrawArc(x11display, x11drawable, o_gc, x,y,w,h, 0,360*64);
   } else {
-    double dw, dh;
+    TCoord dw, dh;
     mat->map(w,h, &dw, &dh);
     unsigned long m = lround(pow(max(dw, dh), 0.25));
     ++m;
@@ -659,10 +649,16 @@ TPen::vdrawCircle(int x, int y, int w, int h)
     XDrawLines(x11display, x11drawable, o_gc, pts, n, CoordModeOrigin);
   }
 #endif
+
+#ifdef __COCOA__
+  NSRect r = NSMakeRect(x+0.5,y+0.5,w,h);
+  NSBezierPath *path = [NSBezierPath bezierPathWithOvalInRect: r];
+  [path stroke];
+#endif
 }
 
 void
-TPen::vfillCircle(int x, int y, int w, int h)
+TPen::vfillCircle(TCoord x, TCoord y, TCoord w, TCoord h)
 {
 #ifdef __X11__
   XDRAW_PIXEL_COORD(w,h)
@@ -692,30 +688,18 @@ TPen::vfillCircle(int x, int y, int w, int h)
     XDrawLines(x11display, x11drawable, o_gc, pts, n, CoordModeOrigin);
   }
 #endif
-}
 
-void
-TPenBase::drawCirclePC(int x, int y, int w, int h)
-{
-#ifdef __X11__
-  XDRAW_PIXEL_COORD(w,h)
-  drawCircle(x, y, w, h);
-#endif
-}
-
-void
-TPenBase::fillCirclePC(int x, int y, int w, int h)
-{
-#ifdef __X11__
-  XDRAW_PIXEL_COORD(w,h)
-  fillCircle(x, y, w, h);
+#ifdef __COCOA__
+  NSRect r = NSMakeRect(x+0.5,y+0.5,w,h);
+  NSBezierPath *path = [NSBezierPath bezierPathWithOvalInRect: r];
+  [path fill];
 #endif
 }
 
 // arc
 //----------------------------------------------------------------------------
 void
-TPen::vdrawArc(int x, int y, int w, int h, double r1, double r2)
+TPen::vdrawArc(TCoord x, TCoord y, TCoord w, TCoord h, TCoord r1, TCoord r2)
 {
 #ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
@@ -728,7 +712,7 @@ TPen::vdrawArc(int x, int y, int w, int h, double r1, double r2)
 }
 
 void
-TPen::vfillArc(int x, int y, int w, int h, double r1, double r2)
+TPen::vfillArc(TCoord x, TCoord y, TCoord w, TCoord h, TCoord r1, TCoord r2)
 {
 #ifdef __X11__
   XDRAW_RASTER_COORD(w,h)
@@ -742,6 +726,7 @@ TPen::vfillArc(int x, int y, int w, int h, double r1, double r2)
 #endif
 }
 
+#if 0
 void
 TPenBase::drawArcPC(int x, int y, int w, int h, double r1, double r2)
 {
@@ -759,11 +744,12 @@ TPenBase::fillArcPC(int x, int y, int w, int h, double r1, double r2)
   fillArc(x, y, w, h, r1, r2);
 #endif
 }
+#endif
 
 // polygon
 //----------------------------------------------------------------------------
 void
-TPen::drawPolygon(const TPoint points[], int n)
+TPen::drawPolygon(const TPoint points[], size_t n)
 {
 #ifdef __X11__
   XPoint pts[n+1];
@@ -774,6 +760,17 @@ TPen::drawPolygon(const TPoint points[], int n)
   XDrawLines(x11display, x11drawable, o_gc, pts, n+1, CoordModeOrigin);
 #endif
 
+#ifdef __COCOA__
+  if (n<2)
+    return;
+  NSBezierPath *path = [NSBezierPath bezierPath];
+  [path moveToPoint: NSMakePoint(p[0].x+0.5, p[0].y+0.5)];
+  for(size_t i=1; i<n; ++i)
+    [path lineToPoint: NSMakePoint(p[i].x+0.5, p[i].y+0.5)];
+  [path closePath];
+  [path stroke];   
+#endif
+
 #ifdef __WIN32__
   POINT pts[n+1];
   tpoint2wpoint(points, pts, n, mat);
@@ -781,14 +778,14 @@ TPen::drawPolygon(const TPoint points[], int n)
   pts[n].y=pts[0].y;
 //  ::Polyline(w32hdc, pts, n+1);
   ::MoveToEx(w32hdc, pts[0].x, pts[0].y, NULL);
-  for(int i=1; i<=n; ++i)
+  for(size_t i=1; i<=n; ++i)
     ::LineTo(w32hdc, pts[i].x, pts[i].y);
   ::LineTo(w32hdc, pts[n-1].x+1, pts[n-1].y);
 #endif
 }
 
 void
-TPen::fillPolygon(const TPoint s[], int n)
+TPen::fillPolygon(const TPoint s[], size_t n)
 {
 #ifdef __X11__
   XPoint d[n];
@@ -805,6 +802,17 @@ TPen::fillPolygon(const TPoint s[], int n)
   PIXMAP_FIX_001(d, n)
   XDrawLines(x11display, x11drawable, o_gc, 
       d, n, CoordModeOrigin);
+#endif
+
+#ifdef __COCOA__
+  if (n<2)
+    return;
+  NSBezierPath *path = [NSBezierPath bezierPath];
+  [path moveToPoint: NSMakePoint(p[0].x+0.5, p[0].y+0.5)];
+  for(size_t i=1; i<n; ++i)
+    [path lineToPoint: NSMakePoint(p[i].x+0.5, p[i].y+0.5)];
+  [path closePath];
+  [path fill];
 #endif
 
 #ifdef __WIN32__
@@ -829,6 +837,24 @@ TPen::drawPolygon(const TPolygon &polygon)
     d, n, CoordModeOrigin);
 #endif
 
+#ifdef __COCOA__
+  if (polygon.size()<2)
+    return;
+  NSBezierPath *path = [NSBezierPath bezierPath];
+  NSPoint np[polygon.size()];
+  NSPoint *q = np;
+  for(TPolygon::const_iterator p = polygon.begin();
+      p != polygon.end();
+      ++p, ++q)
+  {
+    q->x = p->x;
+    q->y = p->y;
+  }
+  [path appendBezierPathWithPoints: np count:polygon.size()];
+  [path closePath];
+  [path stroke];
+#endif
+
 #ifdef __WIN32__
   size_t n = polygon.size();
   POINT pts[n+1];
@@ -837,7 +863,7 @@ TPen::drawPolygon(const TPolygon &polygon)
   pts[n].y=pts[0].y;
   // ::Polyline(w32hdc, pts, n+1);
   ::MoveToEx(w32hdc, pts[0].x, pts[0].y, NULL);
-  for(int i=1; i<=n; ++i)
+  for(size_t i=1; i<=n; ++i)
     ::LineTo(w32hdc, pts[i].x, pts[i].y);
   ::LineTo(w32hdc, pts[n-1].x+1, pts[n-1].y);
 #endif
@@ -863,6 +889,24 @@ TPen::fillPolygon(const TPolygon &polygon)
     d, n, CoordModeOrigin);
 #endif
 
+#ifdef __COCOA__
+  if (polygon.size()<2)
+    return;
+  NSBezierPath *path = [NSBezierPath bezierPath];
+  NSPoint np[polygon.size()];
+  NSPoint *q = np;
+  for(TPolygon::const_iterator p = polygon.begin();
+      p != polygon.end();
+      ++p, ++q)
+  {
+    q->x = p->x;
+    q->y = p->y;
+  }
+  [path appendBezierPathWithPoints: np count:polygon.size()];
+  [path closePath];
+  [path fill];
+#endif
+
 #ifdef __WIN32__
   size_t n = polygon.size();
   POINT d[n];
@@ -874,171 +918,68 @@ TPen::fillPolygon(const TPolygon &polygon)
 // bitmap
 //----------------------------------------------------------------------------
 void
-TPen::drawBitmap(int x, int y, const TBitmap* bmp)
+TPen::vdrawBitmap(TCoord x, TCoord y, const TBitmap& bmp)
 {
-  if (mat) {
-    mat->map(x, y, &x, &y);
-  }
-  bmp->drawBitmap(this, x, y);
-}
-
-void
-TPen::drawBitmap(int x, int y, const TBitmap& bmp)
-{
+#ifdef __X11__
   if (mat) {
     mat->map(x, y, &x, &y);
   }
   bmp.drawBitmap(this, x, y);
-}
+#endif
 
-void
-TPen::drawBitmap(int x, int y, const TBitmap* bmp, int ax, int ay, int aw, int ah)
-{
-  if (mat) {
-    mat->map(x, y, &x, &y);
-    mat->map(ax, ay, &ax, &ay);
-  }
-  bmp->drawBitmap(this, x, y, ax,ay,aw,ah);
-}
-
-void
-TPen::drawBitmap(int x, int y, const TBitmap& bmp, int ax, int ay, int aw, int ah)
-{
-  if (mat) {
-    mat->map(x, y, &x, &y);
-    mat->map(ax, ay, &ax, &ay);
-  }
-  bmp.drawBitmap(this, x, y, ax,ay,aw,ah);
-}
-
-// 3D rectangle
-//----------------------------------------------------------------------------
-/**
- * This is a special function for widgets.
- */
-void
-TPen::vdraw3DRectangle(int x, int y, int w, int h, bool inset)
-{
-  TColor saved_color = o_color;
-  
-  ++w;
-  ++h;
-  
-  TPen *t = const_cast<TPen*>(this);
-  
-  TPoint p[3];
-  if (inset)
-    t->setColor(255,255,255);
-  else
-    t->setColor(0,0,0);
-  p[0].set(x+1  ,y+h-1);
-  p[1].set(x+w-1,y+h-1);
-  p[2].set(x+w-1,y);
-  drawLines(p,3);
-
-  if (inset)  
-    t->setColor(TColor::BTNLIGHT);
-  else
-    t->setColor(TColor::BTNSHADOW);
-  p[0].set(x+2  ,y+h-2);
-  p[1].set(x+w-2,y+h-2);
-  p[2].set(x+w-2,y+1);
-  drawLines(p,3);
-
-  if (inset)
-    t->setColor(TColor::BTNSHADOW);
-  else
-    t->setColor(TColor::BTNLIGHT);
-  p[0].set(x    ,y+h-1);
-  p[1].set(x    ,y);
-  p[2].set(x+w-1,y);
-  drawLines(p,3);
-  
-  if (inset)
-    t->setColor(0,0,0);
-  else
-    t->setColor(255,255,255);
-  p[0].set(x+1  ,y+h-2);
-  p[1].set(x+1  ,y+1);
-  p[2].set(x+w-2,y+1);
-  drawLines(p,3);
-  
-  t->setColor(saved_color);
-}
-
-void
-TPenBase::draw3DRectanglePC(int x, int y, int w, int h, bool inset)
-{
-  XDRAW_PIXEL_COORD(w,h)
-  vdraw3DRectangle(x, y, w, h, inset);
+#ifdef __COCOA__
+  if (b.img==nil)
+    return;
+  NSAffineTransform* xform = [NSAffineTransform transform];
+  [xform translateXBy: x yBy: y+b.height];
+  [xform scaleXBy: 1.0 yBy: -1.0];
+  [xform concat];
+  [b.img drawAtPoint: NSMakePoint(0, 0)];
+  [xform invert];
+  [xform concat];
+#endif
 }
 
 // text string
 //----------------------------------------------------------------------------
 
-/**
- * Width of 'str' when printed with the current font.
- */
-int
-TPen::vgetTextWidth(const char *str, size_t len) const
-{
-#ifndef __WIN32__
-  return font->getTextWidth(str,len);
-#else
-  SIZE size;
-  ::GetTextExtentPoint(w32hdc, str, len, &size);
-  return size.cx;
-#endif
-}
-
-/**
- * Ascent of the current font.
- */
-int
-TPen::getAscent() const
-{
-#ifndef __WIN32__
-  return font->getAscent();
-#else
-  TEXTMETRIC tm;
-  ::GetTextMetrics(w32hdc, &tm);
-  return tm.tmAscent;
-#endif
-}
-
-/**
- * Descent of the current font.
- */
-int
-TPen::getDescent() const
-{
-#ifndef __WIN32__
-  return font->getDescent();
-#else
-  TEXTMETRIC tm;
-  ::GetTextMetrics(w32hdc, &tm);
-  return tm.tmDescent;
-#endif
-}
-
-/**
- * Height of the current font.
- */
-int
-TPen::getHeight() const
-{
-#ifndef __WIN32__
-  return font->getHeight();
-#else
-  TEXTMETRIC tm;
-  ::GetTextMetrics(w32hdc, &tm);
-  return tm.tmAscent+tm.tmDescent;
-#endif
-}
-
 void
-TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
+TPen::vdrawString(TCoord x,TCoord y, const char *str, size_t strlen, bool transparent)
 {
+#ifdef __COCOA__
+  char *t = 0;
+  if (strlen(text)!=len) {
+    t = strdup(text);
+    t[len] = 0;
+  }
+//cerr<<"vdrawString("<<x<<","<<y<<",\""<<text<<"\","<<len<<","<<transparent<<")\n";
+  if (!transparent) {
+//cerr << "  not transparent" << endl;
+    TRGBA stroke2 = stroke, fill2 = fill;
+    setColor(fill2.r, fill2.g, fill2.b); 
+    fillRectanglePC(x,y,getTextWidth(t?t:text),getHeight());
+    setLineColor(stroke2.r, stroke2.g, stroke2.b);
+    setFillColor(fill2.r, fill2.g, fill2.b);
+  }
+  NSDictionary *textAttributes =
+    [NSDictionary
+      dictionaryWithObject:
+        [NSColor colorWithDeviceRed: stroke.r
+                              green: stroke.g
+                              blue:  stroke.b
+                              alpha: 1.0]
+      forKey: NSForegroundColorAttributeName];
+  [[NSString stringWithUTF8String: t?t:text]  
+    drawAtPoint: NSMakePoint(x+0.5, y+0.5)    
+    withAttributes: textAttributes];
+/*
+  [[NSString stringWithUTF8String: text]
+    drawAtPoint: NSMakePoint(x+0.5, y+0.5)
+    withAttributes: [[NSGraphicsContext currentContext] attributes]];
+*/
+  if (t)
+    free(t);
+#else
   if (font && font->fontmanager)
     font->fontmanager->drawString(this, x, y, str, strlen, transparent);
 #if 0
@@ -1207,150 +1148,5 @@ TPen::vdrawString(int x,int y, const char *str, int strlen, bool transparent)
 //  ::DrawText(w32hdc, str, strlen, &r, 0);
 #endif
 #endif
-}
-
-namespace {
-
-struct TWord
-{
-  const char* pos;
-  unsigned bytes; 
-  unsigned len;   
-  unsigned linefeeds;
-};
-
-void
-count_words_and_lines(const char *text, unsigned* word_count, unsigned* min_lines)
-{
-  *word_count = 0;
-  *min_lines = 1;
-  const char* ptr = text;
-  bool word_flag = false;
-  while(*ptr) {
-    if(!word_flag && *ptr!=' ' && *ptr!='\n') {
-      word_flag=true;
-      (*word_count)++;
-    } else 
-    if (word_flag && (*ptr==' ' || *ptr=='\n'))
-      word_flag=false;   
-    if (*ptr=='\n')
-      (*min_lines)++;
-    ptr++;
-  }
-}
-
-TWord*
-make_wordlist(TFont *font, const char *text, unsigned word_count)
-{
-  TWord* word = new TWord[word_count];
-
-  unsigned j,i = 0;
-  const char* ptr = text;
-  bool word_flag = false;
-  unsigned lf=0;
-  while(*ptr) {
-    if(!word_flag && *ptr!=' ' && *ptr!='\n') {
-      word[i].pos = ptr;
-      j = 0;
-      word_flag=true;
-    }
-    ptr++;
-    j++;
-    if (word_flag && (*ptr==' ' || *ptr=='\n' || *ptr==0)) {
-      word[i].bytes     = j;
-      word[i].len       = font->getTextWidth(word[i].pos,j);
-      word[i].linefeeds = lf;
-      word_flag=false;
-//      printf("word %2u, bytes=%i\n",i,j);
-      i++;
-      lf=0;
-    }
-    if(*ptr=='\n')
-      lf++;
-  }
-//  printf("word_count=%i\n",word_count);
-  return word;
-}
-
-} // namespace
-
-/**
- * Draw string 'str' in multiple lines, reduce spaces between words to one 
- * an break lines to fit width. 'str' can contain '\n'.
- */
-int
-TPen::drawTextWidth(int x,int y,const string &str, unsigned width)
-{
-  const char* text=str.c_str();
-  
-  unsigned i;
-#if 0
-  if (mat) {
-    x+=static_cast<int>(mat->tx);
-    y+=static_cast<int>(mat->ty);
-  }
 #endif
-  // 1st step: count words and lines
-  unsigned word_count, min_lines;
-  count_words_and_lines(text, &word_count, &min_lines);
-  if (!word_count) return 0;
-  
-  // 2nd step: create a word list
-  TWord* word = make_wordlist(font, text, word_count);
-  
-  // 3rd step: output
-  unsigned blank_width = getTextWidth(" ",1);
-  unsigned line_len = 0;
-  unsigned word_of_line = 1;
-  
-  for(i=0; i<word_count; i++) {
-    if ((line_len+word[i].len>width && i!=0) || word[i].linefeeds) {
-      if (word[i].linefeeds)
-        y+=getHeight()*word[i].linefeeds;
-      else
-        y+=getHeight();
-      line_len = 0;
-      word_of_line = 0;
-    }
-    drawString(x+line_len,y, word[i].pos, word[i].bytes);
-    line_len+=word[i].len+blank_width;
-    word_of_line++;
-  }
-  
-  delete[] word;
-  return y+getHeight();
-}
-
-int
-TPen::getHeightOfTextFromWidth(TFont *font, const string &text, int width)
-{
-  unsigned i, y=font->getHeight();
-
-  // 1st step: count number of words and lines
-  unsigned word_count, min_lines;
-  count_words_and_lines(text.c_str(), &word_count, &min_lines);
-  if (!word_count) return 0;
-
-  // 2nd step: collection information on each word
-  TWord* word = make_wordlist(font, text.c_str(), word_count);
-  
-  // 3rd step: output
-  unsigned blank_width = font->getTextWidth(" ",1);
-  unsigned line_len = 0;
-  unsigned word_of_line = 1;
-  
-  for(i=0; i<word_count; i++) {
-    if ((line_len+word[i].len>width && i!=0) || word[i].linefeeds) {
-      if (word[i].linefeeds)
-        y+=font->getHeight()*word[i].linefeeds;
-      else
-        y+=font->getHeight();
-      line_len = 0;
-      word_of_line = 0;
-    }
-    line_len+=word[i].len+blank_width;
-    word_of_line++;
-  }
-  delete[] word;
-  return y+font->getHeight();
 }

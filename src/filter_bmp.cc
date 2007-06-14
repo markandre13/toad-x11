@@ -80,7 +80,7 @@ TFilterBMP::load(istream &is)
 
   // load color palette 
   //--------------------
-  TRGB f;
+  TRGB24 f;
   if (bfi.bits_per_pixel!=24) {
     createBuffer(bfi.width,bfi.height,TBITMAP_INDEXED);
     file.seekRead(bfi.color_offset);
@@ -199,7 +199,7 @@ bool TFilterBMP::save(ostream &os)
   file.writeDWord(0);
 
   short c;
-  TRGB f;
+  TRGB24 f;
   for(int y=h-1; y>=0; y--) {
     c=0;
     for(int x=0; x<w; x++) {

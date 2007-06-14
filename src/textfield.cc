@@ -23,16 +23,16 @@
 using namespace toad;
 
 void
-TTextField::mouseEvent(TMouseEvent &me)
+TTextField::mouseEvent(const TMouseEvent &me)
 {
   switch(me.type) {
     case TMouseEvent::ROLL_UP:
-      keyDown(TK_UP, const_cast<char*>(""), 0);
-      keyUp(TK_UP, const_cast<char*>(""), 0);
+      keyEvent(TKeyEvent(TKeyEvent::DOWN, this, TK_UP));
+      keyEvent(TKeyEvent(TKeyEvent::UP, this, TK_UP));
       break;
     case TMouseEvent::ROLL_DOWN:
-      keyDown(TK_DOWN, const_cast<char*>(""), 0);
-      keyUp(TK_DOWN, const_cast<char*>(""), 0);
+      keyEvent(TKeyEvent(TKeyEvent::DOWN, this, TK_DOWN));
+      keyEvent(TKeyEvent(TKeyEvent::UP, this, TK_DOWN));
       break;
     default:
       super::mouseEvent(me);

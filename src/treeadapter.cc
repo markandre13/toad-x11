@@ -274,7 +274,7 @@ TTreeAdapter::dropRequest(TDnDObject &obj)
 //  cout << "local drop request" << endl;
   
   size_t fx, fy; // field
-  int mx, my;    // mouse within field
+  TCoord mx, my;    // mouse within field
   static int x, y; // last position drawn to
   static TTable *lt = 0; // last table drawn to
   if (dnd->table->mouse2field(obj.x, obj.y, &fx, &fy, &mx, &my)) {
@@ -324,7 +324,7 @@ TTreeAdapter::drop(TDnDObject &obj)
     return;
 
   size_t fx, fy; // field
-  int mx, my;    // mouse within field
+  TCoord mx, my;    // mouse within field
   if (dnd->table->mouse2field(obj.x, obj.y, &fx, &fy, &mx, &my)) {
 //    cout << "field ("<<fx<<", "<<fy<<"), mouse ("<<mx<<", "<<my<<")"<<endl;
     int lp = getLeafPos(fy);

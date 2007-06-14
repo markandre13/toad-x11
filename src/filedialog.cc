@@ -33,6 +33,7 @@
 #include <toad/combobox.hh>
 #include <toad/checkbox.hh>
 #include <toad/table.hh>
+#include <toad/bitmap.hh>
 //#include <toad/tablemodels.hh>
 #include <toad/pushbutton.hh>
 #include <toad/stl/deque.hh>
@@ -166,7 +167,7 @@ TDirectoryAdapter::tableEvent(TTableEvent &te)
               }
             }
           }
-          int x = te.w - te.pen->getTextWidth(buffer) - 1;
+          TCoord x = te.w - te.pen->getTextWidth(buffer) - 1;
           if (x<0)
             x = 1;
           te.pen->drawString( x, 1, buffer);

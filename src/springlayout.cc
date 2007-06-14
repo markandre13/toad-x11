@@ -76,9 +76,9 @@ class TSpringLayout::TFormNode
     unsigned how[4];            // how to attach
     string whichname[4];
     TWindow *which[4];          // where to attach
-    int dist[4];                // minimal distance to neighbours
-    int coord[4];               // the left,right,top & bottom during calculation
-    int w, h;                   // fixed size (when >= 0)
+    TCoord dist[4];                // minimal distance to neighbours
+    TCoord coord[4];               // the left,right,top & bottom during calculation
+    TCoord w, h;                   // fixed size (when >= 0)
     byte done;                  // flags for attached sides
     byte nflag;                 // flags for sides with undefined attachment
     TFormNode *next, *prev;     // should remove `prev'
@@ -232,7 +232,7 @@ TSpringLayout::attach(const string &window, unsigned where, EMethod how, const s
 }
 
 void
-TSpringLayout::distance(const string &window, int distance, unsigned where)
+TSpringLayout::distance(const string &window, TCoord distance, unsigned where)
 {
   TFormNode *node = _find(window);
   if (!node)
@@ -261,7 +261,7 @@ TSpringLayout::arrange()
  * arrange all children as described in the 'flist'
  */
 void
-TSpringLayout::arrange(int fx,int fy,int fw,int fh)
+TSpringLayout::arrange(TCoord fx,TCoord fy,TCoord fw,TCoord fh)
 {
 if (running) {
 //  cout << "Rekursion" << endl;
@@ -322,7 +322,7 @@ running = false;
 
   // arrange children
   //+-----------------
-  int form[4];
+  TCoord form[4];
   // form[0]=0; form[1]=Height(); form[2]=0; form[3]=Width();
   form[DTOP]=fy;
   form[DBOTTOM]=fy+fh;
@@ -435,7 +435,7 @@ running = false;
         if (ptr->nflag & RIGHT)
           ptr->coord[DRIGHT] = ptr->coord[DLEFT] + shape.w;
         #endif
-        unsigned w,h;
+        TCoord w,h;
         w = ptr->coord[DRIGHT] - ptr->coord[DLEFT];
         h = ptr->coord[DBOTTOM] - ptr->coord[DTOP];
 

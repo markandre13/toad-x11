@@ -26,27 +26,27 @@ using namespace toad;
  * Returns 'true' when the point (x, y) is within the polygon.
  */
 bool 
-TPolygon::isInside(int x, int y) const
+TPolygon::isInside(TCoord x, TCoord y) const
 {
-  int hits = 0;
-  int ySave = 0;
-  int i = 0;
-  int npoints = size();
+  size_t hits = 0;
+  TCoord ySave = 0;
+  size_t i = 0;
+  size_t npoints = size();
   while (i < npoints && (*this)[i].y == y) {
     i++;
   }
       
-  for (int n = 0; n < npoints; n++) {
-    int j = (i + 1) % npoints;
-    int x1 = (*this)[i].x, y1 = (*this)[i].y;
-    int x2 = (*this)[j].x, y2 = (*this)[j].y;
+  for(size_t n = 0; n < npoints; n++) {
+    size_t j = (i + 1) % npoints;
+    TCoord x1 = (*this)[i].x, y1 = (*this)[i].y;
+    TCoord x2 = (*this)[j].x, y2 = (*this)[j].y;
         
-    int dx = x2 - x1;
-    int dy = y2 - y1;
+    TCoord dx = x2 - x1;
+    TCoord dy = y2 - y1;
         
     if (dy != 0) {
-      int rx = x - x1;
-      int ry = y - y1;
+      TCoord rx = x - x1;
+      TCoord ry = y - y1;
       
       if (y2 == y && x2 >= x) {
         ySave = y1;
@@ -57,7 +57,7 @@ TPolygon::isInside(int x, int y) const
         }
       }
       
-      double s = (double)ry / (double)dy;
+      TCoord s = ry / dy;
       if (s >= 0.0 && s <= 1.0 && (s * dx) >= rx) {
         hits++;
       }

@@ -217,7 +217,7 @@ DBM2(cerr << "+ TMenuHelper::resize\n");
     // vertical
     //----------
     TNode *node = root.down;
-    int y=0, rw = 0;
+    TCoord y=0, rw = 0;
     while(node!=NULL) {
       if (node->isAvailable()) {
         node->createWindowAt(this);
@@ -246,7 +246,7 @@ DBM2(cerr << "  vertical setSize " << rw << ", " << y << endl;)
     // horizontal
     //------------
     TNode *node = root.down;
-    int x=0, y=0, rh = 0;
+    TCoord x=0, y=0, rh = 0;
 DBM2(
 if (root.down==0) {
   cerr << "  root.down = 0\n";
@@ -797,26 +797,26 @@ TMenuHelper::TNode::deleteWindow()
   }
 }
 
-int
-TMenuHelper::TNode::getHeight()
+TCoord
+TMenuHelper::TNode::getHeight() const
 {
   return h;
 }
 
-int
-TMenuHelper::TNode::getWidth()
+TCoord
+TMenuHelper::TNode::getWidth() const
 {
   return w;
 }
 
 bool
-TMenuHelper::TNode::isRealized()
+TMenuHelper::TNode::isRealized() const
 {
   return winarray!=NULL;
 }
 
 void
-TMenuHelper::TNode::setPosition(int x, int y)
+TMenuHelper::TNode::setPosition(TCoord x, TCoord y)
 {
   for(unsigned i=0; i<nwinarray; i++) {
     winarray[i]->setPosition(x, y);
@@ -829,7 +829,7 @@ TMenuHelper::TNode::setPosition(int x, int y)
 }
 
 void
-TMenuHelper::TNode::setSize(int w, int h)
+TMenuHelper::TNode::setSize(TCoord w, TCoord h)
 {
   for(unsigned i=0; i<nwinarray; i++) {
     winarray[i]->setSize(w, h);

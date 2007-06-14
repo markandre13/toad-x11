@@ -21,6 +21,7 @@
 #ifndef _TOAD_MATRIX2D_HH
 #define _TOAD_MATRIX2D_HH
 
+#include <toad/types.hh>
 #include <toad/io/serializable.hh>
 
 namespace toad {
@@ -40,18 +41,18 @@ class TMatrix2D:
     }
     TMatrix2D operator*(const TMatrix2D &m) const;
   
-    double a11, a12;
-    double a21, a22;
-    double tx, ty;
+    TCoord a11, a12;
+    TCoord a21, a22;
+    TCoord tx, ty;
 
     void identity();
     bool isIdentity() const { return _identity; }
-    void rotate(double radiant);
-    void rotateAt(double x, double y, double radiant);
-    void translate(double, double);
+    void rotate(TCoord radiant);
+    void rotateAt(TCoord x, TCoord y, TCoord radiant);
+    void translate(TCoord, TCoord);
 
-    void scale(double, double);
-    void shear(double, double);
+    void scale(TCoord, TCoord);
+    void shear(TCoord, TCoord);
     
     void multiply(const TMatrix2D*);
     void invert();

@@ -19,10 +19,11 @@
  */
 
 #ifndef _TOAD_SCROLLBAR_HH
-#define _TOAD_SCROLLBAR_HH
+#define _TOAD_SCROLLBAR_HH 1
 
 #include <toad/control.hh>
 #include <toad/integermodel.hh>
+#include <toad/floatmodel.hh>
 
 namespace toad {
 
@@ -41,6 +42,7 @@ class TScrollBar:
 
   public:
     TScrollBar(TWindow*, const string&, TIntegerModel *model=0);
+    TScrollBar(TWindow*, const string&, TFloatModel *model);
     
     PIntegerModel model;
     
@@ -70,7 +72,7 @@ class TScrollBar:
     void pageUp();
     void pageDown();
 
-    void mouseEvent(TMouseEvent&);
+    void mouseEvent(const TMouseEvent&);
 
   protected:
     void resize();
@@ -78,16 +80,16 @@ class TScrollBar:
     void focus(bool);
     void valueChanged();
 
-    void mouseLDown(int,int,unsigned);
-    void mouseLUp(int,int,unsigned);
-    void mouseMove(int,int,unsigned);
-    void keyDown(TKey,char*,unsigned);
+    void mouseLDown(const TMouseEvent&);
+    void mouseLUp(const TMouseEvent&);
+    void mouseMove(const TMouseEvent&);
+    void keyDown(const TKeyEvent&);
 
     void _drawSlider(TPen &pen, TRectangle &r);
     void _drawArea(TPen&);
     void _placeChildren();
     void _placeSlider();
-    void _moveSliderTo(int y);
+    void _moveSliderTo(TCoord y);
 
     TArrowButton *btn1;
     TArrowButton *btn2;

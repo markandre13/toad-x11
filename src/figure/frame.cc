@@ -70,15 +70,15 @@ TFFrame::getShape(TRectangle *r)
   r->h+=a;
 }
 
-double
-TFFrame::distance(int mx, int my)
+TCoord
+TFFrame::distance(TCoord mx, TCoord my)
 {
 //  cout << __PRETTY_FUNCTION__ << endl;
 #if 1
   if (!text.empty()) {
     PFont font = TPen::lookupFont(fontname);
-    int fh = font->getHeight();
-    int tw = font->getTextWidth(text);
+    TCoord fh = font->getHeight();
+    TCoord tw = font->getTextWidth(text);
     TRectangle r(min(p1.x,p2.x)+5-1, min(p1.y,p2.y)-fh/2, tw+2, fh);
     if (r.isInside(mx, my))
       return INSIDE;
@@ -97,8 +97,11 @@ TFFrame::stop(TFigureEditor *editor)
 }
 
 unsigned
-TFFrame::keyDown(TFigureEditor *editor, TKey key, char *txt, unsigned m)
+TFFrame::keyDown(TFigureEditor *editor, const TKeyEvent &ke)
 {
+  TKey key = ke.key();
+  string txt = ke.str();
+  unsigned m = ke.modifier();
 //  cout << __PRETTY_FUNCTION__ << endl;
   if (key==TK_RETURN)
     return STOP;
@@ -108,7 +111,7 @@ TFFrame::keyDown(TFigureEditor *editor, TKey key, char *txt, unsigned m)
 //  TRect r(x+5-1, y-fh/2, tw+2, fh);
   
   editor->invalidateFigure(this);
-  unsigned result = TFText::keyDown(editor, key, txt, m);
+  unsigned result = TFText::keyDown(editor, ke);
 //  r.w = TOADBase::DefaultFont().TextWidth(text)+2;
   editor->invalidateFigure(this);
   return result;
@@ -124,7 +127,7 @@ TFFrame::getHandle(unsigned handle, TPoint *p)
 static bool flag;
 
 unsigned 
-TFFrame::mouseLDown(TFigureEditor *e, int x, int y, unsigned m)
+TFFrame::mouseLDown(TFigureEditor *e, const TMouseEvent &me)
 {
 //  cout << __PRETTY_FUNCTION__ << endl;
 
@@ -132,14 +135,14 @@ TFFrame::mouseLDown(TFigureEditor *e, int x, int y, unsigned m)
     case TFigureEditor::STATE_START_CREATE:
 cout << "start create frame " << this << endl;
 flag = true;
-      TFRectangle::mouseLDown(e,x,y,m);
-      TFText::mouseLDown(e,x,y,m);
+      TFRectangle::mouseLDown(e,me);
+      TFText::mouseLDown(e,me);
       break;
       
     case TFigureEditor::STATE_CREATE:
     case TFigureEditor::STATE_EDIT:
 cout << "create/edit frame " << this << endl;
-      if (distance(x,y)>RANGE) {
+      if (distance(me.x,me.y)>RANGE) {
         e->invalidateFigure(this);
         cout << "stop" << endl;
         return STOP|REPEAT;
@@ -154,19 +157,19 @@ cout << "create/edit frame " << this << endl;
 }
 
 unsigned 
-TFFrame::mouseMove(TFigureEditor *e, int x, int y, unsigned m)
+TFFrame::mouseMove(TFigureEditor *e, const TMouseEvent &me)
 {
 cout << "mouse move frame " << this << endl;
   if (flag)
-    TFRectangle::mouseMove(e,x,y,m);
+    TFRectangle::mouseMove(e,me);
   return CONTINUE;
 }
 
 unsigned 
-TFFrame::mouseLUp(TFigureEditor *e, int x, int y, unsigned m)
+TFFrame::mouseLUp(TFigureEditor *e, const TMouseEvent &me)
 {
 cout << "mouse up frame " << this << endl;
-  TFRectangle::mouseLUp(e,x,y,m);
+  TFRectangle::mouseLUp(e,me);
 flag = false;
   return CONTINUE;
 }

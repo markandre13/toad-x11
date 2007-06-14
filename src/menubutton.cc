@@ -28,6 +28,7 @@
 #include <toad/menubutton.hh>
 #include <toad/popup.hh>
 #include <toad/action.hh>
+#include <toad/bitmap.hh>
 
 using namespace toad;
 
@@ -176,7 +177,7 @@ TMenuButton::paint()
   if (node->type==TMenuHelper::TNode::SEPARATOR) {
 //    pen.setColor(TColor::MENU);
 //    pen.fillRectanglePC(0,0,getWidth(), getHeight());
-    int y = getHeight()/2;
+    TCoord y = getHeight()/2;
     pen.setColor(TColor::BTNSHADOW);
     pen.drawLine(0, y, getWidth(), y);
     pen.setColor(TColor::BTNLIGHT);
@@ -228,11 +229,11 @@ TMenuButton::paint()
       )
     )
   {
-    int y=_h>>1;
+    TCoord y=getHeight()/2;
     TPoint tri[3];
-    tri[0].x=_w-7; tri[0].y=y-4;
-    tri[1].x=_w-3; tri[1].y=y;
-    tri[2].x=_w-7; tri[2].y=y+4;
+    tri[0].x=getWidth()-7; tri[0].y=getYPos()-4;
+    tri[1].x=getWidth()-3; tri[1].y=getYPos();
+    tri[2].x=getWidth()-7; tri[2].y=getYPos()+4;
     pen.fillPolygon(tri, 3);
   }
 }
@@ -271,7 +272,7 @@ namespace toad {
 bool 
 TMenuKeyFilter::keyEvent(TKeyEvent &ke)
 {
-  TKey key = ke.getKey();
+  TKey key = ke.key();
   
   if (!active) {
     if (toad::debug_menubutton) {
@@ -474,7 +475,7 @@ const char * statename(EMenuHelperState n) {
 }
 
 void 
-TMenuButton::mouseLDown(int,int,unsigned)
+TMenuButton::mouseLDown(const TMouseEvent&)
 {
   stopat = this;
   DBM(cerr << "+ mouseLDown " << this << ": state " << statename(master->state) << endl;)
@@ -499,7 +500,7 @@ TMenuButton::mouseLDown(int,int,unsigned)
 }
 
 void 
-TMenuButton::mouseLUp(int,int,unsigned)
+TMenuButton::mouseLUp(const TMouseEvent&)
 {
   stopat = 0;
   DBM(cerr << "+ mouseLUp " << this << ": state " << statename(master->state) << endl;)
@@ -572,9 +573,9 @@ else
  * the right mouse button.
  */
 void 
-TMenuButton::mouseRDown(int x, int y, unsigned m)
+TMenuButton::mouseRDown(const TMouseEvent &me)
 {
-  mouseLDown(x, y, m);
+  mouseLDown(me);
 }
 
 /**
@@ -582,13 +583,13 @@ TMenuButton::mouseRDown(int x, int y, unsigned m)
  * the right mouse button.
  */
 void 
-TMenuButton::mouseRUp(int x, int y, unsigned m)
+TMenuButton::mouseRUp(const TMouseEvent &me)
 {
-  mouseLUp(x, y, m);
+  mouseLUp(me);
 }
 
 void 
-TMenuButton::mouseLeave(int,int,unsigned m)
+TMenuButton::mouseLeave(const TMouseEvent&)
 {
   inside = 0;
   DBM(cerr << "+ mouseLeave " << this << ": state " << statename(master->state) << endl;)
@@ -609,7 +610,7 @@ TMenuButton::mouseLeave(int,int,unsigned m)
   DBM(cerr << "- mouseLeave " << this << ": state " << statename(master->state) << endl;)
 }
 
-void TMenuButton::mouseEnter(int,int,unsigned m)
+void TMenuButton::mouseEnter(const TMouseEvent &me)
 {
   inside = this;
   DBM(cerr << "+ mouseEnter " << this << ": state " << statename(master->state) << endl;)
@@ -618,7 +619,7 @@ void TMenuButton::mouseEnter(int,int,unsigned m)
     case MHS_UP_N_HOLD:
     case MHS_DOWN_N_OUTSIDE:
     case MHS_DOWN_N_HOLD:
-      if (m&(MK_LBUTTON|MK_RBUTTON) && node->isEnabled()) {
+      if (me.modifier()&(MK_LBUTTON|MK_RBUTTON) && node->isEnabled()) {
         stopat = this;
         if (master->active) {
           #warning "here is a dirty hack to avoid an unwanted close in deactivate"
@@ -662,7 +663,7 @@ TMenuButton::openPopup()
     popup = new TPopup(this, "popup");
     popup->btnmaster = this;
     popup->root.down = node->down;
-    int x,y;
+    TCoord x,y;
     getRootPos(&x, &y);
     if (master->vertical)
       popup->setPosition(x+getWidth(), y);
@@ -689,7 +690,7 @@ TMenuButton::activate()
     return;
   }
 
-  grabPopupMouse(TMMM_PREVIOUS);
+  grabPopupMouse();
   grabKeyboard();
   if (toad::debug_menubutton) {
     cout << "grabbed " << this << endl;

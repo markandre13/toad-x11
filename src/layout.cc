@@ -100,7 +100,7 @@ TLayoutEditGeneric::TLayoutEditGeneric(TWindow *parent,
                                        TWindow *forWindow)
   :TLayoutEditor(parent, title)
 {
-  int x, y;
+  TCoord x, y;
   
   this->layout = layout;
   this->window = forWindow;

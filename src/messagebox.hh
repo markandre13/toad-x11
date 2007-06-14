@@ -87,9 +87,9 @@ class TMessageBox:
     string text;
     ulong type;
     
-    int tx,ty;  // text position
-    int tw;     // text width
-    int iy;     // icon position
+    TCoord tx,ty;  // text position
+    TCoord tw;     // text width
+    TCoord iy;     // icon position
 
     void button(int id);
     TBitmap *bitmap;

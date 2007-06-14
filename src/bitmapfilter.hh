@@ -21,10 +21,11 @@
 // base filter class for import/export of TBitmap data
 //-----------------------------------------------------
 
-#ifndef TBitmapFilter
-#define TBitmapFilter TBitmapFilter
+#ifndef _TOAD_BITMAPFILTER_HH
+#define _TOAD_BITMAPFILTER_HH 1
 
 #include <toad/config.h>
+#include <toad/bitmap.hh>
 
 namespace toad {
 
@@ -55,14 +56,13 @@ class TBitmapFilter
 
     void deleteBuffer();
     void createBuffer(int w,int h,EBitmapType);
-    void setBuffer(int w,int h,TRGB*,unsigned char*);
-    void getBuffer(int *w,int *h,TRGB**,unsigned char**);
+    void setBuffer(int w,int h,TRGB24*,unsigned char*);
+    void getBuffer(int *w,int *h,TRGB24**,unsigned char**);
     bool isIndex();
-    bool convertToIndexed(int *palette_size);
     
     // index
-    void setIndexColor(int index, TRGB &c);
-    bool getIndexColor(int index, TRGB *c);
+    void setIndexColor(int index, TRGB24 &c);
+    bool getIndexColor(int index, TRGB24 *c);
     void setIndexPixel(int x,int y,int index);
     // void setIndexLine(int y, byte*);
     // void setIndexLine(int y, ushort*);
@@ -70,9 +70,9 @@ class TBitmapFilter
     int getIndexPixel(int x,int y);
     
     // true color
-    void setColorPixel(int x,int y,TRGB&);
+    void setColorPixel(int x,int y,TRGB24&);
     // void SetColorLine(int y, TRGB*);
-    bool getColorPixel(int x,int y,TRGB*);
+    bool getColorPixel(int x,int y,TRGB24*);
     
     void setError(const char *txt);
     const char *errortxt;
@@ -81,7 +81,7 @@ class TBitmapFilter
     int w,h;
 
   private:
-    TRGB *color;
+    TRGB24 *color;
     unsigned char *index;
     bool mycolor:1;
     bool myindex:1;

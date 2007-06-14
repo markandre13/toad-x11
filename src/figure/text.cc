@@ -28,14 +28,14 @@ size_t TFText::cx = 0;
 void 
 TFText::calcSize()
 {
-  int w=0, h=0;
+  TCoord w=0, h=0;
   size_t l,r;
   l = 0;
   PFont font = TPen::lookupFont(fontname);
   while(true) {
     h+=font->getHeight();
     r = text.find('\n', l);
-    int wl = font->getTextWidth(text.substr(l,r==string::npos ? r : r-l));
+    TCoord wl = font->getTextWidth(text.substr(l,r==string::npos ? r : r-l));
     if (wl>w)
       w=wl;
     if (r==string::npos)
@@ -70,13 +70,13 @@ TFText::paint(TPenBase &pen, EPaintType type)
   }
 #endif  
   size_t l, r;
-  int yp = p1.y;
+  TCoord yp = p1.y;
   l = 0;
   while(true) {
     r = text.find('\n', l);
     pen.drawString(p1.x,yp, text.substr(l,r==string::npos ? r : r-l));
     if (type==EDIT && l<=cx && cx<=r) {
-      unsigned dx = pen.getTextWidth(text.substr(l, cx-l));
+      TCoord dx = pen.getTextWidth(text.substr(l, cx-l));
       TPoint q0(p1.x+dx,yp);
       TPoint q1(p1.x+dx,yp+pen.getHeight());
       if (pen.getMatrix()) {
@@ -99,7 +99,7 @@ TFText::paint(TPenBase &pen, EPaintType type)
 }
 
 double 
-TFText::distance(int mx, int my)
+TFText::distance(TCoord mx, TCoord my)
 {
 TRectangle r(p1, p2);
 // cerr << "mouse at (" << mx << ", " << my << "), text " << r << endl;
@@ -137,10 +137,12 @@ TFText::stop(TFigureEditor*)
 }
 
 unsigned 
-TFText::keyDown(TFigureEditor *editor, TKey key, char *str, unsigned)
+TFText::keyDown(TFigureEditor *editor, const TKeyEvent &ke)
 {
   editor->invalidateFigure(this);
-  switch(key) {
+  string str = ke.str();
+  
+  switch(ke.key()) {
     case TK_LEFT:
       if (cx>0) {
         cx--;
@@ -206,7 +208,7 @@ TFText::keyDown(TFigureEditor *editor, TKey key, char *str, unsigned)
     default:
       if ((unsigned char)str[0]>=32 || str[1]!=0) {
         text.insert(cx, str);
-        cx+=strlen(str);
+        cx+=str.size();
       }
   }
   calcSize();
@@ -215,13 +217,13 @@ TFText::keyDown(TFigureEditor *editor, TKey key, char *str, unsigned)
 }
 
 unsigned 
-TFText::mouseLDown(TFigureEditor *editor, int x, int y, unsigned)
+TFText::mouseLDown(TFigureEditor *editor, const TMouseEvent &me)
 {
   switch(editor->state) {
     case TFigureEditor::STATE_START_CREATE:
       cx = 0;
-      p1.x = x;
-      p1.y = y;
+      p1.x = me.x;
+      p1.y = me.y;
       calcSize();
       editor->invalidateFigure(this);
       startInPlace();
@@ -229,7 +231,7 @@ TFText::mouseLDown(TFigureEditor *editor, int x, int y, unsigned)
       
     case TFigureEditor::STATE_CREATE:
     case TFigureEditor::STATE_EDIT:
-      if (distance(x,y)>RANGE) {
+      if (distance(me.x, me.y)>RANGE) {
         editor->invalidateFigure(this);
         if (text.empty())
           return STOP|DELETE|REPEAT;
@@ -244,13 +246,13 @@ TFText::mouseLDown(TFigureEditor *editor, int x, int y, unsigned)
 }
 
 unsigned
-TFText::mouseMove(TFigureEditor*, int x, int y, unsigned)
+TFText::mouseMove(TFigureEditor*, const TMouseEvent &me)
 {
   return CONTINUE;
 }
 
 unsigned 
-TFText::mouseLUp(TFigureEditor*, int, int, unsigned)
+TFText::mouseLUp(TFigureEditor*, const TMouseEvent &me)
 {
   return CONTINUE;
 }

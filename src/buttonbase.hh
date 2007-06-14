@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TButtonBase
-#define TButtonBase TButtonBase
+#ifndef _TOAD_BUTTONBASE_HH
+#define _TOAD_BUTTONBASE_HH 1
 
 #include <toad/labelowner.hh>
 
@@ -41,11 +41,11 @@ class TButtonBase:
     TSignal sigClicked;
     TSignal sigArm, sigDisarm;
     
-    void mouseLDown(int,int,unsigned);
-    void mouseLUp(int,int,unsigned);
-    void mouseEnter(int,int,unsigned);
-    void mouseLeave(int,int,unsigned);
-    void keyDown(TKey,char*,unsigned);
+    void mouseLDown(const TMouseEvent&);
+    void mouseLUp(const TMouseEvent&);
+    void mouseEnter(const TMouseEvent&);
+    void mouseLeave(const TMouseEvent&);
+    void keyDown(const TKeyEvent&);
 
   protected:
     TBitmap *bitmap;

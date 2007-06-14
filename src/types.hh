@@ -32,38 +32,31 @@ namespace toad {
 
 using namespace std;
 
+// typedef float TCoord; // cocoa
+typedef double TCoord; // cairo
+inline TCoord abs(toad::TCoord x) { return x<0.0 ? -x : x; }
+
 struct TPoint {
   TPoint() {x=y=0;}
-  TPoint(int a, int b):x(a),y(b){}
-  int x,y;
-  void set(int a,int b) { x=a;y=b; }
+  TPoint(TCoord a, TCoord b):x(a),y(b){}
+  TCoord x,y;
+  void set(TCoord a, TCoord b) { x=a;y=b; }
 };
 
 inline ostream& operator<<(ostream &s, const TPoint& p) {
   return s<<'('<<p.x<<','<<p.y<<')';
 }
 
-struct TDPoint {
-  TDPoint() {x=y=0;}
-  TDPoint(double a, double b):x(a),y(b){}
-  double x,y;
-  void set(double a,double b) { x=a;y=b; }
-};
-
-inline ostream& operator<<(ostream &s, const TDPoint& p) {
-  return s<<'('<<p.x<<','<<p.y<<')';
-}
-
 struct TRectangle {
-  int x,y,w,h;
+  TCoord x, y, w, h;
   TRectangle(){set(0,0,0,0);};
-  TRectangle(int x,int y,int w,int h){ set(x,y,w,h); }
+  TRectangle(TCoord x,TCoord y,TCoord w,TCoord h){ set(x,y,w,h); }
   TRectangle(const TPoint &p1, const TPoint &p2){ set(p1,p2); }
-  void set(int a,int b,int c,int d);
+  void set(TCoord a,TCoord b,TCoord c,TCoord d);
   void set(const TPoint&, const TPoint&);
   void operator =(const TRectangle &r){ x=r.x;y=r.y;w=r.w;h=r.h; }
   void operator =(const TRectangle *r){ x=r->x;y=r->y;w=r->w;h=r->h; }
-  bool isInside(int px,int py) const {
+  bool isInside(TCoord px, TCoord py) const {
     return (x<=px && px<=x+w && y<=py && py<=y+h);
   }
   bool intersects(const TRectangle &r) const;
@@ -78,17 +71,9 @@ class TPolygon:
 {
   public:
     void addPoint(const TPoint &p) { push_back(p); }
-    void addPoint(int x, int y) { push_back(TPoint(x,y)); }
-    bool isInside(int x, int y) const;
+    void addPoint(TCoord x, TCoord y) { push_back(TPoint(x,y)); }
+    bool isInside(TCoord x, TCoord y) const;
     bool getShape(TRectangle *r) const;
-};
-
-class TDPolygon: 
-  public std::vector<TDPoint>
-{
-  public:
-    void addPoint(const TDPoint &p) { push_back(p); }
-    void addPoint(double x, double y) { push_back(TDPoint(x,y)); }
 };
 
 } // namespace toad

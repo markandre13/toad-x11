@@ -75,6 +75,7 @@ in this Software without prior written authorization from The Open Group.
 
 #include <toad/toad.hh>
 #include <toad/dragndrop.hh>
+#include <toad/bitmap.hh>
 
 #include <map>
 #include <vector>

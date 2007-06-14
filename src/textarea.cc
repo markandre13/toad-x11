@@ -177,10 +177,14 @@ TTextArea::~TTextArea()
 }
 
 void
-TTextArea::keyDown(TKey key, char* str, unsigned modifier)
+TTextArea::keyDown(const TKeyEvent &ke)
 {
   if (!isEnabled())
     return;
+    
+  TKey key = ke.key();
+  string str = ke.str();
+  unsigned modifier = ke.modifier();
 
 DBM(cout << "ENTER keyDown '" << str << "'" << endl;
     cout << "  _cx, _cy        : " << _cx << ", " << _cy << endl;
@@ -400,22 +404,22 @@ DBM(cout << "LEAVE keyDown" << endl;
 }
 
 void
-TTextArea::mouseLDown(int x, int y, unsigned)
+TTextArea::mouseLDown(const TMouseEvent &me)
 {
   if (!isEnabled())
     return;
-  _goto_pixel(x, y);
+  _goto_pixel(me.x, me.y);
   _bos = _eos = _pos;
   blink.visible=true;
   setFocus();
 }
 
 void
-TTextArea::mouseMove(int x, int y, unsigned)
+TTextArea::mouseMove(const TMouseEvent &me)
 {
   if (!isEnabled())
     return;
-  _goto_pixel(x, y);
+  _goto_pixel(me.x, me.y);
   if (_eos != _pos) {
     _eos = _pos;
     invalidateWindow(true);
@@ -424,7 +428,7 @@ TTextArea::mouseMove(int x, int y, unsigned)
 }
 
 void
-TTextArea::mouseLUp(int x, int y, unsigned)
+TTextArea::mouseLUp(const TMouseEvent&)
 {
 }
 
@@ -1258,7 +1262,7 @@ TTextArea::_delete_current_line()
 }
 
 void
-TTextArea::mouseMDown(int,int,unsigned)
+TTextArea::mouseMDown(const TMouseEvent&)
 {
   if (!isEnabled())
     return;

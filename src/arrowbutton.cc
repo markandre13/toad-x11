@@ -37,24 +37,24 @@ TArrowButton::paint()
   switch(direction)
   {
     case ARROW_DOWN:
-      p[0].set(n+(_w>>1), n+_h-d-2);
-      p[1].set(n+_w-d   , n+d-1+2);
-      p[2].set(n+d-1        , n+d-1+2);
+      p[0].set(n+w/2   , n+h-d-2);
+      p[1].set(n+w-d   , n+d-1+2);
+      p[2].set(n+d-1   , n+d-1+2);
       break;
     case ARROW_UP:
-      p[2].set(n+_w-d   , n+_h-d-2);
-      p[1].set(n+d-1        , n+_h-d-2);
-      p[0].set(n+(_w>>1), n+d-1+2);
+      p[2].set(n+w-d   , n+h-d-2);
+      p[1].set(n+d-1   , n+h-d-2);
+      p[0].set(n+w/2   , n+d-1+2);
       break;
     case ARROW_LEFT:
-      p[0].set(n+d-1+2      , n+(_h)>>1);
-      p[1].set(n+_w-d-2 , n+d-1);
-      p[2].set(n+_w-d-2 , n+_h-d);
+      p[0].set(n+d-1+2 , n+h/2);
+      p[1].set(n+w-d-2 , n+d-1);
+      p[2].set(n+w-d-2 , n+h-d);
       break;
     case ARROW_RIGHT:
-      p[0].set(n+d-1+2      , n+d-1);
-      p[1].set(n+_w-d-2 , n+(_h)>>1);
-      p[2].set(n+d-1+2      , n+_h-d);
+      p[0].set(n+d-1+2 , n+d-1);
+      p[1].set(n+w-d-2 , n+h/2);
+      p[2].set(n+d-1+2 , n+h-d);
       break;
   }
   if (isEnabled()) {
@@ -66,7 +66,7 @@ TArrowButton::paint()
 }
 
 void
-TArrowButton::mouseLDown(int,int,unsigned)
+TArrowButton::mouseLDown(const TMouseEvent&)
 {
   if (!isEnabled())
     return;
@@ -79,7 +79,7 @@ TArrowButton::mouseLDown(int,int,unsigned)
 }
 
 void
-TArrowButton::mouseLUp(int,int,unsigned)
+TArrowButton::mouseLUp(const TMouseEvent&)
 {
   if (!bDown)
     return;

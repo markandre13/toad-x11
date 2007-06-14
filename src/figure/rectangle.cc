@@ -61,14 +61,14 @@ TFRectangle::paint(TPenBase &pen, EPaintType)
   pen.setAlpha(255);
 }
 
-double 
-TFRectangle::distance(int mx, int my)
+TCoord 
+TFRectangle::distance(TCoord mx, TCoord my)
 {
   if (filled && TRectangle(p1, p2).isInside(mx, my))
     return INSIDE;
 
-  int x1,y1,x2,y2;
-  double min = OUT_OF_RANGE, d;
+  TCoord x1,y1,x2,y2;
+  TCoord min = OUT_OF_RANGE, d;
   
   for(int i=0; i<4; i++) {
     switch(i) {
@@ -93,7 +93,7 @@ TFRectangle::distance(int mx, int my)
 }
 
 void 
-TFRectangle::translate(int dx, int dy)
+TFRectangle::translate(TCoord dx, TCoord dy)
 {
   p1.x+=dx;
   p1.y+=dy;
@@ -129,7 +129,7 @@ TFRectangle::getHandle(unsigned handle, TPoint *p)
 }
 
 void 
-TFRectangle::translateHandle(unsigned handle, int x, int y, unsigned)
+TFRectangle::translateHandle(unsigned handle, TCoord x, TCoord y, unsigned)
 {
   switch(handle) {
     case 0:
@@ -152,12 +152,12 @@ TFRectangle::translateHandle(unsigned handle, int x, int y, unsigned)
 }
 
 unsigned 
-TFRectangle::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned)
+TFRectangle::mouseLDown(TFigureEditor *editor, const TMouseEvent &me)
 {
   switch(editor->state) {
     case TFigureEditor::STATE_START_CREATE:
-      p1.x = p2.x = mx;
-      p1.y = p2.y = my;
+      p1.x = p2.x = me.x;
+      p1.y = p2.y = me.y;
       editor->invalidateFigure(this);
       break;
     default:
@@ -167,13 +167,13 @@ TFRectangle::mouseLDown(TFigureEditor *editor, int mx, int my, unsigned)
 }
 
 unsigned 
-TFRectangle::mouseMove(TFigureEditor *editor, int mx, int my, unsigned)
+TFRectangle::mouseMove(TFigureEditor *editor, const TMouseEvent &me)
 {
   switch(editor->state) {
     case TFigureEditor::STATE_CREATE:
       editor->invalidateFigure(this);
-      p2.x = mx;
-      p2.y = my;
+      p2.x = me.x;
+      p2.y = me.y;
       editor->invalidateFigure(this);
       break;
     default:
@@ -183,11 +183,11 @@ TFRectangle::mouseMove(TFigureEditor *editor, int mx, int my, unsigned)
 }
 
 unsigned 
-TFRectangle::mouseLUp(TFigureEditor *editor, int mx, int my, unsigned)
+TFRectangle::mouseLUp(TFigureEditor *editor, const TMouseEvent &me)
 {
   switch(editor->state) {
     case TFigureEditor::STATE_CREATE:
-      mouseMove(editor,mx,my,0);
+      mouseMove(editor, me);
       if (p1.x==p2.x && p1.y==p2.y)
         return STOP|DELETE;
       return STOP;
