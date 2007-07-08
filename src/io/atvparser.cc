@@ -180,6 +180,12 @@ TATVParser::parse()
         --depth;
         break;
     }
+  } else {
+    if (depth!=0) {
+      what = ATV_START;
+      value.clear();
+      interpreter->interpret(*this);
+    }
   }
 //cout << "(parse started in state " << state << ", unknown='" << unknown << "')";
 
@@ -193,10 +199,10 @@ TATVParser::parse()
 #if 0
       switch(t) {
         case TKN_STRING:
-          printf("state=%i depth=%i ['%s']\n", state, depth, yytext.c_str() );
+          printf("state=%i depth=%i startdepth=%i ['%s']\n", state, depth, startdepth, yytext.c_str() );
           break;
         default:
-          printf("state=%i depth=%i ['%c']\n", state, depth, t);
+          printf("state=%i depth=%i startdepth=%i ['%c']\n", state, depth, startdepth, t);
       }
 #endif
     }
@@ -221,6 +227,15 @@ TATVParser::parse()
             state = 0;
             if (!endGroup()) {
               return false;
+            }
+            if (interpreter && depth==startdepth) {
+              what = ATV_FINISHED;
+              attribute.clear();
+              type.clear();
+              value.clear();
+              state = 12;
+              ++depth;
+              return true;
             }
             break;
           case EOF:
@@ -257,6 +272,21 @@ TATVParser::parse()
             state = 10;
             if (!single()) {
               return false;
+            }
+            if (interpreter && depth==startdepth) {
+              if (interpreter) {
+                if (!interpreter->interpret(*this)) {
+                  semanticError();
+                  return false;
+                }
+              }
+              what = ATV_FINISHED;
+              attribute.clear();
+              type.clear();
+              value.clear();
+              state = 12;
+              ++depth;
+              return true;
             }
             break;
           case TKN_STRING:
@@ -328,6 +358,25 @@ TATVParser::parse()
             if (!single()) {
               return false;
             }
+            if (interpreter && depth==startdepth) {
+              what = ATV_FINISHED;
+              attribute.clear();
+              type.clear();
+              value.clear();
+              if (interpreter) {
+                if (!interpreter->interpret(*this)) {
+                  semanticError();
+                  return false;
+                }
+              }
+              state = 12;
+              ++depth;
+              return true;
+            }
+            if (!interpreter) {
+              what = ATV_VALUE;
+              return true;
+            }
             break;
           case EOF:
             value = unknown;
@@ -358,6 +407,14 @@ TATVParser::parse()
         value.clear();
         state=0;
         return false;
+      case 12:
+        what = ATV_FINISHED;
+        attribute.clear();
+        type.clear();
+        value.clear();
+        state=0;
+        depth++;
+        return true;
     }
     if (t==EOF)
       break;

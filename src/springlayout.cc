@@ -641,30 +641,19 @@ TSpringLayout::restore(TInObjectStream &in)
 {
   if (in.what==ATV_START || in.what==ATV_FINISHED)
     return true;
-  unsigned depth=0;
   in.setInterpreter(0);
   TFormNode *node = 0;
   unsigned pos = 0;
 
   do {
 #if 0
-    cout << "(" << depth << ") ";
-    switch(in.what) {
-      case ATV_START:
-        cout << "ATV_START"; break;
-      case ATV_VALUE:
-        cout << "ATV_VALUE"; break;
-      case ATV_GROUP:
-        cout << "ATV_GROUP"; 
-        break;
-      case ATV_FINISHED:
-        cout << "ATV_FINISHED"; 
-        break;
-    }
-    cout << ": (\""<< in.attribute << "\", \"" << in.type << "\", \"" << in.value << "\")\n";
+    cout << "(" << in.getDepth() << ") " 
+         << in.getWhatName()
+         << ": (\""<< in.attribute << "\", \"" << in.type << "\", \"" << in.value << "\")\n";
 #endif
-    switch(depth) {
-      case 0:
+    switch(in.getDepth()) {
+      // case 0: toad::TSpringLayout
+      case 1:
         if (in.what == ATV_GROUP &&
             !in.attribute.empty() &&
             in.type.empty())
@@ -679,7 +668,8 @@ TSpringLayout::restore(TInObjectStream &in)
           node = 0;
         }
         break;
-      case 1:
+
+      case 2:
         if (!node) {
           cerr << "TSpringLayout: no node" << endl;
           return false;
@@ -709,7 +699,8 @@ TSpringLayout::restore(TInObjectStream &in)
           }
         }
         break;
-      case 2:
+        
+      case 3:
         if (in.what == ATV_VALUE &&
             in.attribute == "how" &&
             in.type.empty())
@@ -733,15 +724,6 @@ TSpringLayout::restore(TInObjectStream &in)
         {
           node->dist[pos]=atoi(in.value.c_str());
         }
-    }
-    if (in.what==ATV_GROUP) {
-      ++depth;
-    } else if (in.what==ATV_FINISHED) {
-      if (!depth) {
-        in.putback('}');
-        break;
-      }
-      --depth;
     }
   } while(in.parse());
   in.setInterpreter(this);

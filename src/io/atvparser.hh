@@ -124,7 +124,9 @@ class TATVParser
     /**
      * Return the nesting level of groups.
      */
-    unsigned getDepth() const { return depth; }
+    unsigned getDepth() const {
+      return (interpreter || what!=ATV_FINISHED) ? depth : depth-1;
+    }
     
     unsigned getLine() const { return line; }
     
