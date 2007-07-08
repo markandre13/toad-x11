@@ -1,0 +1,26 @@
+// this is a generated file
+
+toad::TDialogLayout {
+  width=137
+  height=62
+  drawfocus=false
+  toad::TGadgetModel {
+    toad::TGWindow {
+      x=32
+      y=32
+      w=73
+      h=25
+      title="ok"
+      label="Ok"
+      taborder=0
+    }
+    toad::TGWindow {
+      x=88
+      y=8
+      w=41
+      h=17
+      title="zoom"
+      taborder=0
+    }
+  }
+}

@@ -1,0 +1,109 @@
+// this is a generated file
+
+toad::TDialogLayout{
+  width = 640
+  height = 400
+  drawfocus = false
+  toad::TFigureModel {
+    toad::TFWindow {
+      x = 12
+      y = 24
+      w = 141
+      h = 17
+      title = "colheader"
+      label = "Use column header"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 12
+      y = 40
+      w = 221
+      h = 17
+      title = "nocursor"
+      label = "Don't draw a Cursor (noCursor)"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 12
+      y = 56
+      w = 221
+      h = 17
+      title = "rowheader"
+      label = "Use row header"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 12
+      y = 72
+      w = 221
+      h = 29
+      title = "selectionfollowsmouse"
+      label = "Cursor/mouse position is always selected (selectionFollowsMouse)"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 12
+      y = 100
+      w = 221
+      h = 17
+      title = "selectionmodel"
+      label = "Use a selection model"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 12
+      y = 132
+      w = 221
+      h = 29
+      title = "stretchlastcolumn"
+      label = "Stretch last column (stretchLastColumn)"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 300
+      y = 20
+      w = 309
+      h = 145
+      title = "table"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 12
+      y = 116
+      w = 221
+      h = 17
+      title = "tablemodel"
+      label = "Use a table model"
+      taborder = 0
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 12
+      w = 241
+      h = 157
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Table Options"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 180
+      w = 241
+      h = 149
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Selection Model Options"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 312
+      y = 244
+      w = 299
+      h = 44
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "This program demonstrates the various flags and
+operational modes for the TTable class, which is also
+use for TListBox and TComboBox."
+    }
+  }
+}

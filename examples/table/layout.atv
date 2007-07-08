@@ -1,0 +1,151 @@
+// this is a generated file
+
+toad::TDialogLayout{
+  width = 517
+  height = 480
+  drawfocus = false
+  toad::TFigureModel {
+    toad::TFWindow {
+      x = 144
+      y = 216
+      w = 85
+      h = 13
+      title = "colheader"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 144
+      y = 232
+      w = 85
+      h = 13
+      title = "rowheader"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 336
+      w = 113
+      h = 13
+      title = "any"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 224
+      w = 117
+      h = 13
+      title = "none"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 288
+      w = 113
+      h = 13
+      title = "rectangle"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 240
+      w = 113
+      h = 13
+      title = "single"
+      label = ""
+      taborder = 0
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 8
+      y = 216
+      w = 129
+      h = 173
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Selection Model"
+    }
+    toad::TFWindow {
+      x = 16
+      y = 368
+      w = 113
+      h = 13
+      title = "any_col"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 352
+      w = 113
+      h = 13
+      title = "any_row"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 320
+      w = 113
+      h = 13
+      title = "rectangle_col"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 304
+      w = 113
+      h = 13
+      title = "rectangle_row"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 272
+      w = 113
+      h = 13
+      title = "single_col"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 16
+      y = 256
+      w = 113
+      h = 13
+      title = "single_row"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 144
+      y = 264
+      w = 117
+      h = 13
+      title = "selcur"
+      label = "Select at Cursor"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 4
+      y = 4
+      w = 253
+      h = 201
+      title = "table1"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 260
+      y = 4
+      w = 253
+      h = 201
+      title = "table2"
+      taborder = 0
+    }
+  }
+}

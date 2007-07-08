@@ -1,0 +1,134 @@
+// this is a generated file
+
+toad::TDialogLayout {
+  width = 320
+  height = 200
+  drawfocus = true
+  toad::TFigureModel  {
+    
+    toad::TFWindow  {
+      x = 84
+      y = 24
+      w = 45
+      h = 17
+      title = "tabwidth"
+      taborder = 0
+    }
+    
+    toad::TFText  {
+      
+      linecolor = { 0 0 0 }
+      filled = false
+      x = 16
+      y = 24
+      w = 52
+      h = 16
+      text = "Tabwidth"
+    }
+    
+    toad::TFWindow  {
+      x = 84
+      y = 84
+      w = 17
+      h = 13
+      title = "autoindent"
+      label = "Autoindent"
+      taborder = 0
+    }
+    
+    toad::TFWindow  {
+      x = 84
+      y = 44
+      w = 17
+      h = 13
+      title = "notabs"
+      label = "No Tabs"
+      taborder = 0
+    }
+    
+    toad::TFWindow  {
+      x = 84
+      y = 64
+      w = 17
+      h = 13
+      title = "viewtabs"
+      label = "View Tabs"
+      taborder = 0
+    }
+    
+    toad::TFText  {
+      
+      linecolor = { 0 0 0 }
+      filled = false
+      x = 16
+      y = 44
+      w = 49
+      h = 16
+      text = "No Tabs"
+    }
+    
+    toad::TFText  {
+      
+      linecolor = { 0 0 0 }
+      filled = false
+      x = 16
+      y = 64
+      w = 61
+      h = 16
+      text = "View Tabs"
+    }
+    
+    toad::TFText  {
+      
+      linecolor = { 0 0 0 }
+      filled = false
+      x = 16
+      y = 84
+      w = 62
+      h = 16
+      text = "Autoindent"
+    }
+    
+    toad::TFFrame  {
+      
+      linecolor = { 0 0 0 }
+      filled = false
+      x = 5
+      y = 12
+      w = 137
+      h = 97
+      text = "General"
+    }
+    
+    toad::TFWindow  {
+      x = 16
+      y = 136
+      w = 93
+      h = 13
+      title = "mode.normal"
+      label = "Normal"
+      taborder = 0
+    }
+    
+    toad::TFWindow  {
+      x = 16
+      y = 152
+      w = 105
+      h = 13
+      title = "mode.wordstar"
+      label = "Wordstar"
+      taborder = 0
+    }
+    
+    toad::TFFrame  {
+      
+      linecolor = { 0 0 0 }
+      filled = false
+      x = 4
+      y = 124
+      w = 137
+      h = 49
+      text = "Input Behaviour"
+    }
+  }
+}

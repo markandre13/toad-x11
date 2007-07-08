@@ -1,0 +1,15 @@
++ check for the real current track in NextTrack and PrevTrack before using
+  the value because the player might be somewhere else
++ the pause flag logic belong to TCDPlayer instead of TMainWindow
++ display "#-- --:--" when there's no disc, the total number of
+  tracks and length in minutes and seconds when there's a disc which
+  isn't playing
+- the index is missing
+- can't handle non audio discs
+- doesn't detect disc change
++ doesn't detect a running disc on startup
+- doesn't use CDDB informations
+- total running time is still missing in `stopped' mode
++ bitmaps should be stored as PNG files
++ bitmaps should be stored in TOAD memory file system
++ TOADs memory file system must be implemented

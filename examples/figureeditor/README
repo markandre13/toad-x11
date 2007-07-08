@@ -1,0 +1,208 @@
+
+                                  Fischland
+
+ 'Fischland' is derived from my experiences with Corel Draw 3.0 more than a
+decade ago, Xfig and Adobe Illustrator introductions on the WWW.
+
+ The name 'Fischland' is an area at the baltic sea, where I made the photo
+that can be seen in the 'About' dialog. I think that the mamon gras and
+sand dunes have much in common with vector graphics but I failed to come
+with a short name illustrating this relation. So it's "Fischland", which
+I guess will be strange enough to make it unique in our worlds limited
+namespace.
+
+o Ctrl: temporarily select the last used selection tool
+  (selection, direct selection, group selection)
+o Ctrl: toggle selection tool
+o Shift+Click: Add to/Remove from selection
+
+o Normally Illustrator styles a new object with the style of the last
+  selected object
+
+
+Other Free 2D Vector Graphics Programs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+o xfig
+o skencil  http://www.nongnu.org/skencil/
+o karbon   http://www.koffice.org/karbon/
+o inkscape http://www.inkscape.org/
+o sopodi   http://www.sodipodi.com/
+o kontour  http://www.koffice.org/kontour/
+
+Scaling factor
+^^^^^^^^^^^^^^
+Vector coordinates are stored as integers, so a decision about the maximal
+resolution has to be made. Other programs seem to use:
+
+xfig       : 1200 dpi
+illustrator: 9600 dpi
+
+These numbers relate to common printer resolutions, ie. 75, 150, 300, 600,
+1200, 2400, 4800 or 9600.
+
+Papersize
+^^^^^^^^^^^^^^
+1cm = 0.394in
+2.54cm = 1in 
+
+NTSC: 525 - 43 retrace lines = 482 lines
+VHS: 240
+Terrestical: 330
+Laserdisc: 425
+DVD: 480
+Satellite: 500
+
+
+2.55:1
+2.37:1
+2.35:1 CinemaScope
+1.85:1 = North America Movies, Academy Flat
+1.78:1 = 16:9 = Widescreen TV and HDTV (1920x1080px)
+1.66:1 Europe
+1.33:1 = 4:3 = Academy Standard (Edision)
+
+Papersizes from the Ghostscript manual page:
+
+       PAPERSIZE    X inches   Y inches   X cm      Y cm
+       -----------------------------------------------------
+       a0           33.0556    46.7778    83.9611   118.816
+       a1           23.3889    33.0556    59.4078   83.9611
+       a2           16.5278    23.3889    41.9806   59.4078
+       a3           11.6944    16.5278    29.7039   41.9806
+       a4           8.26389    11.6944    20.9903   29.7039
+       a5           5.84722    8.26389    14.8519   20.9903
+       a6           4.125      5.84722    10.4775   14.8519
+       a7           2.91667    4.125      7.40833   10.4775
+       a8           2.05556    2.91667    5.22111   7.40833
+       a9           1.45833    2.05556    3.70417   5.22111
+       a10          1.02778    1.45833    2.61056   3.70417
+       b0           39.3889    55.6667    100.048   141.393
+       b1           27.8333    39.3889    70.6967   100.048
+       b2           19.6944    27.8333    50.0239   70.6967
+       b3           13.9167    19.6944    35.3483   50.0239
+       b4           9.84722    13.9167    25.0119   35.3483
+       b5           6.95833    9.84722    17.6742   25.0119
+       archA        9          12         22.86     30.48
+       archB        12         18         30.48     45.72
+       archC        18         24         45.72     60.96
+       archD        24         36         60.96     91.44
+       archE        36         48         91.44     121.92
+       flsa         8.5        13         21.59     33.02
+       flse         8.5        13         21.59     33.02
+       halfletter   5.5        8.5        13.97     21.59
+       note         7.5        10         19.05     25.4
+       letter       8.5        11         21.59     27.94
+       legal        8.5        14         21.59     35.56
+       11x17        11         17         27.94     43.18
+       ledger       17         11         43.18     27.94
+
+Color Specification
+^^^^^^^^^^^^^^^^^^^
+RGB
+CMYK (europa, amerika, japan)
+sRGB (standard rgb, von hp)
+CIE
+HSV
+Pantone
+HKS
+.Too Copic Marker
+etc.
+
+PDF
+CS stroking color
+cs non-stroking color
+
+
+
+color for selections #4f80ff
+
+
+
+
+(to move an object: one click to select it, another click on the selected
+object to move it)
+
+illustrator toolbox
+
+Selection | Direct Selection
+----------+-----------------
+Lasso     | Direct-select lasso
+----------+--------------------
+----------+--------------------
+Pen       | Type
+----------+--------------------
+Ellipse   | Rectangle
+----------+--------------------
+Brush     | Pencil
+----------+--------------------
+----------+--------------------
+Rotate    | Scale
+----------+--------------------
+Reflect   | Free Transform
+----------+--------------------
+----------+--------------------
+Blend     | Column Graph
+
+
+selection tools
+
+black arrow: selection
+  select object as a whole (bounding box), move, rotate, scale
+  - with alt: creates a copy and moves that
+white arrow: direct selection
+  select objects for manipulation of object points and paths
+  - grabbing straight line segment moves line segment
+  - grabbing bezier changes size but not angel so that the line
+    intersects with the mouse
+white arrow with +: group selection
+  select an object within a group
+lasso with black arrow: lasso
+lasso with white arrow: direct lasso
+CTRL+Click (Mac), Right Click (Windows)
+  this one opens a popmenu, with
+  Regroup
+  Redo
+  -------
+  Zoom In
+  Zoom Out
+  --------
+  Hide Rulers
+  Show Grid
+  Hide Guides
+  Lock Guides
+  ------
+  Select
+  ------
+  Outline
+  
+  where Select opens:
+  
+  First Object Above
+  Next Object Above
+  First Object Below
+  Next Object Below
+  
+  The entry Object in the menubar:
+  
+  Transform
+  Arrange
+  --------
+  Group
+  Ungroup
+  Lock
+  Unlock All
+  Hide Selection
+  Show All
+  --------
+  ...
+  
+  o Lock will make the currently selected object unselectables
+  o Shift-Option-Command-2 (Mac), Shift-Option-Ctrl-2 (Win) 
+    will lock all objects but the currently selected one
+  o Hide will make an object invisible and unselectable
+  
+  
+
+selected objects turn blue
+ttp://online.caup.washington.edu/courses/larcwi01/larc440/
+http://howto.lycos.com/lycos/series/1,,10+55+140+23930,00.html

@@ -1,0 +1,199 @@
+// this is a generated file
+
+toad::TDialogLayout{
+  width = 440
+  height = 200
+  drawfocus = false
+  toad::TFigureModel {
+    toad::TFWindow {
+      x = 228
+      y = 172
+      w = 61
+      h = 21
+      title = "Apply"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 360
+      y = 172
+      w = 73
+      h = 21
+      title = "Print"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 292
+      y = 172
+      w = 65
+      h = 21
+      title = "Reset"
+      label = ""
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 8
+      y = 60
+      w = 57
+      h = 17
+      title = "data2"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 4
+      y = 4
+      w = 161
+      h = 17
+      title = "data5"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 8
+      y = 80
+      w = 57
+      h = 17
+      title = "data6"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 108
+      y = 60
+      w = 69
+      h = 17
+      title = "data4"
+      label = ""
+      taborder = 0
+    }
+    toad::TFGroup {
+      toad::TFGroup {
+        toad::TFWindow {
+          x = 216
+          y = 32
+          w = 69
+          h = 17
+          title = "option1"
+          label = ""
+          taborder = 0
+        }
+        toad::TFWindow {
+          x = 216
+          y = 48
+          w = 69
+          h = 17
+          title = "option2"
+          label = ""
+          taborder = 0
+        }
+        toad::TFWindow {
+          x = 216
+          y = 64
+          w = 69
+          h = 17
+          title = "option3"
+          label = ""
+          taborder = 0
+        }
+      }
+      toad::TFFrame {
+        linecolor ={ 0 0 0 }
+        x = 204
+        y = 20
+        w = 89
+        h = 73
+        fontname = "arial,helvetica,sans-serif:size=12"
+        text = "TRadioButton"
+      }
+    }
+    toad::TFGroup {
+      toad::TFWindow {
+        x = 304
+        y = 28
+        w = 101
+        h = 17
+        title = "data7b"
+        taborder = 0
+      }
+      toad::TFWindow {
+        x = 408
+        y = 48
+        w = 17
+        h = 101
+        title = "sb2.data7b"
+        taborder = 0
+      }
+      toad::TFWindow {
+        x = 328
+        y = 88
+        w = 57
+        h = 17
+        title = "tf.data7b"
+        taborder = 0
+      }
+      toad::TFFrame {
+        linecolor ={ 0 0 0 }
+        x = 296
+        y = 16
+        w = 137
+        h = 141
+        fontname = "arial,helvetica,sans-serif:size=12"
+        text = "TScrollBar"
+      }
+    }
+    toad::TFGroup {
+      toad::TFWindow {
+        x = 92
+        y = 24
+        w = 89
+        h = 25
+        title = "Interface"
+        label = "Toggle Model"
+        taborder = 0
+      }
+      toad::TFWindow {
+        x = 4
+        y = 28
+        w = 81
+        h = 17
+        title = "data1"
+        taborder = 0
+      }
+    }
+    toad::TFGroup {
+      toad::TFWindow {
+        x = 60
+        y = 120
+        w = 149
+        h = 17
+        title = "data7a"
+        taborder = 0
+      }
+      toad::TFWindow {
+        x = 16
+        y = 120
+        w = 41
+        h = 17
+        title = "tf.data7a"
+        taborder = 0
+      }
+      toad::TFFrame {
+        linecolor ={ 0 0 0 }
+        x = 8
+        y = 112
+        w = 209
+        h = 49
+        fontname = "arial,helvetica,sans-serif:size=12"
+        text = "TBoundedRangeModel"
+      }
+      toad::TFText {
+        linecolor ={ 0 0 0 }
+        x = 20
+        y = 140
+        w = 176
+        h = 15
+        fontname = "arial,helvetica,sans-serif:size=12"
+        text = "Rangle 0-10 with an extent of 2."
+      }
+    }
+  }
+}
