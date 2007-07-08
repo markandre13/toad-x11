@@ -251,13 +251,6 @@ TFLine::store(TOutObjectStream &out) const
 bool
 TFLine::restore(TInObjectStream &in)
 {
-  static bool flag;
-  static TCoord x;
-  TCoord y;
-
-  if (in.what == ATV_START)
-    flag = false;
-
   string s;
 
   if (::restore(in, "arrowmode", &s)) {
