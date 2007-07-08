@@ -68,7 +68,7 @@ class TDirectory:
     size_t getRows() const { return entries.size(); }
     size_t getCols() const { return 1; }
   
-    void load(const string &directory, const TFileFilter *filter=0, bool hidden=false);
+    bool load(const string &directory, const TFileFilter *filter=0, bool hidden=false);
   
     struct TDirectoryEntry {
       string name;

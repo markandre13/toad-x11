@@ -731,10 +731,12 @@ void
 TFileDialog::loadDirectory()
 {
 //  entries.load(cwd, 0, show_hidden);
-  entries.load(cwd, getFileFilter(), show_hidden);
+  if (!entries.load(cwd, getFileFilter(), show_hidden)) {
+    entries.load(".", getFileFilter(), show_hidden);
+  }
 }
 
-void
+bool
 TDirectory::load(const string &cwd, const TFileFilter *filter, bool hidden)
 {
   dirent *de;
@@ -743,7 +745,7 @@ TDirectory::load(const string &cwd, const TFileFilter *filter, bool hidden)
   dd = opendir(cwd.c_str());
   if (!dd) {
     perror("opendir");
-    return;
+    return false;
   }
 
 //  entries.sigChanged.lock();
@@ -782,4 +784,5 @@ TDirectory::load(const string &cwd, const TFileFilter *filter, bool hidden)
 //  entries.unlock();
   sigChanged();  
   closedir(dd);
+  return true;
 }
