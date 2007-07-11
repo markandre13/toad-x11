@@ -1402,14 +1402,14 @@ TFigureEditor::mouseEvent(const TMouseEvent &me)
         row_header_renderer->mouseEvent(me0);
       } else {
         if (!tool) {
-          super::mouseEvent(me);
+          TWindow::mouseEvent(me);
           return;
         }
       }
       break;
     default:
       if (!tool) {
-        super::mouseEvent(me);
+        TWindow::mouseEvent(me);
         return;
       }
   }
