@@ -116,9 +116,7 @@ typedef GSmartPointer<TWindow> PWindow;
 #define CHECK_REALIZED(txt)
 #endif
 
-#include <limits.h>
-#define TPOS_PREVIOUS INT_MIN
-#define TSIZE_PREVIOUS INT_MIN
+#define TSIZE_PREVIOUS 0.0
 
 // TRowColumn
 #define TS_HORIZONTAL 0

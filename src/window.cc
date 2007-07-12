@@ -2435,15 +2435,11 @@ TWindow::setShape(TCoord x, TCoord y, TCoord w, TCoord h)
   assert(this!=NULL);
 
   TCoord x2=x, y2=y, w2=w, h2=h;
-  if (x==TPOS_PREVIOUS) x=0;
-  if (y==TPOS_PREVIOUS) y=0;
   if (w==TSIZE_PREVIOUS) w=0;
   if (h==TSIZE_PREVIOUS) h=0;
   TRectangle r(x,y,w,h);
   r.w -= (_b<<1);
   r.h -= (_b<<1);
-  if (x2==TPOS_PREVIOUS) r.x=this->x;
-  if (y2==TPOS_PREVIOUS) r.y=this->y;
   if (w2==TSIZE_PREVIOUS) r.w=this->w;
   if (h2==TSIZE_PREVIOUS) r.h=this->h;
 #ifndef __COCOA__

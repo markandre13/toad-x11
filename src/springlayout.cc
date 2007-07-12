@@ -440,7 +440,10 @@ running = false;
         h = ptr->coord[DBOTTOM] - ptr->coord[DTOP];
 
         //ptr->it->SetSize(w,h);
-        ptr->it(window)->setShape(TPOS_PREVIOUS, TPOS_PREVIOUS, w,h);
+        ptr->it(window)->setShape(
+          ptr->it(window)->x,
+          ptr->it(window)->y,
+          w,h);
 
         // adjust top and/or left after SetSize
         ptr->getShape(window, &shape);
