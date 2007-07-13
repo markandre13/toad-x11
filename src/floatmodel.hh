@@ -21,58 +21,23 @@
 #ifndef _TOAD_FLOATMODEL_HH
 #define _TOAD_FLOATMODEL_HH 1
 
+#include <toad/numbermodel.hh>
 #include <toad/textmodel.hh>
 #include <iostream>
+#include <cfloat>
 
 namespace toad {
 
 using namespace std;
 
 class TFloatModel:
-  public TModel
+  public GNumberModel<double>
 {
-  protected:
-    double minimum;
-    double maximum;
-    double value;
-    double extent;
-    
-    bool adjusting;
-
-    /** true, when the last setValue call had an out of range value */    
-    bool out_of_range;
-
-    virtual void changed();
-
   public:
-    TFloatModel();
-    
-    double getExtent() const { return extent; }
-    double getMaximum() const { return maximum; }
-    double getMinimum() const { return minimum; }
-    double getValue() const { return value; }
-    // name inconsistence: isAdjusting() const would be right
-    bool getValueIsAdjusting() const { return adjusting; }
-    
-    void setExtent(double extent);
-    void setMaximum(double max);
-    void setMinimum(double min);
-    void setRangeProperties(double value, double extent, double min, double max, bool adjusting=false);
-    void setValue(double value);
-    void setValueIsAdjusting(bool b);
-    
-    bool wasOutOfRange() const { return out_of_range; }
-    
-    TFloatModel& operator=(const TFloatModel &m) {
-      setValue(m.value);
-      return *this;
-    }
+    TFloatModel():GNumberModel<double>(-DBL_MAX, DBL_MAX, 0.0, 1.0) {}
     TFloatModel& operator=(double v) {
       setValue(v);
       return *this;
-    }
-    operator double() const {
-      return value;
     }
 };
 

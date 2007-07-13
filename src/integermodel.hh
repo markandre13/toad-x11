@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,60 +19,25 @@
  */
 
 #ifndef _TOAD_INTEGERMODEL_HH
-#define _TOAD_INTEGERMODEL_HH
+#define _TOAD_INTEGERMODEL_HH 1
 
+#include <toad/numbermodel.hh>
 #include <toad/textmodel.hh>
 #include <iostream>
+#include <limits.h>
 
 namespace toad {
 
 using namespace std;
 
 class TIntegerModel:
-  public TModel
+  public GNumberModel<int>
 {
-  protected:
-    int minimum;
-    int maximum;
-    int value;
-    int extent;
-    
-    bool adjusting;
-
-    /** true, when the last setValue call had an out of range value */    
-    bool out_of_range;
-
-    virtual void changed();
-
   public:
-    TIntegerModel();
-    
-    int getExtent() const { return extent; }
-    int getMaximum() const { return maximum; }
-    int getMinimum() const { return minimum; }
-    int getValue() const { return value; }
-    // name inconsistence: isAdjusting() const would be right
-    bool getValueIsAdjusting() const { return adjusting; }
-    
-    void setExtent(int extent);
-    void setMaximum(int max);
-    void setMinimum(int min);
-    void setRangeProperties(int value, int extent, int min, int max, bool adjusting=false);
-    void setValue(int value);
-    void setValueIsAdjusting(bool b);
-    
-    bool wasOutOfRange() const { return out_of_range; }
-    
-    TIntegerModel& operator=(const TIntegerModel &m) {
-      setValue(m.value);
-      return *this;
-    }
+    TIntegerModel():GNumberModel<int>(INT_MIN, INT_MAX, 0, 1) {}
     TIntegerModel& operator=(int v) {
       setValue(v);
       return *this;
-    }
-    operator int() const {
-      return value;
     }
 };
 
