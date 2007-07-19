@@ -1814,11 +1814,11 @@ TKeyEvent::str() const
       ::key = XLookupKeysym(&x11event.xkey, 0);
 
     if (status==XLookupNone)
-      return 0;
+      return "";
     if (status==XBufferOverflow) {
       cerr << "TOAD keyboard buffer overflow" << endl;
       XmbResetIC(xic_current);
-      return 0;
+      return "";
     }
   } else {
     static XComposeStatus compose_status = {NULL, 0};
