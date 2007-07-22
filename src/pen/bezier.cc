@@ -47,6 +47,7 @@
 
 using namespace toad;
 
+#ifdef __X11__
 struct TXPoints
 {
   private:
@@ -75,11 +76,10 @@ struct TXPoints
     unsigned size() const { return n; }
     XPoint* ptr() const { return p; }
 };
-
-static void curve(TPolygon&,double,double,double,double,double,double,double,double);
 static void xcurve(TXPoints&,double,double,double,double,double,double,double,double);
-
 static TXPoints lst;
+static void curve(TPolygon&,double,double,double,double,double,double,double,double);
+#endif
 
 void
 TPen::drawBezier(TCoord x1, TCoord y1, 
@@ -87,6 +87,7 @@ TPen::drawBezier(TCoord x1, TCoord y1,
                  TCoord x3, TCoord y3, 
                  TCoord x4, TCoord y4)
 {
+#ifdef __X11__
   lst.clear();
 
   if (mat) {
@@ -100,8 +101,14 @@ TPen::drawBezier(TCoord x1, TCoord y1,
   xcurve(lst, x1,y1, x2,y2, x3,y3, x4,y4);
   PIXMAP_FIX_001(lst.ptr(), lst.size())
   XDrawLines(x11display, x11drawable, o_gc, lst.ptr(), lst.size(), CoordModeOrigin);
+#endif
+
+#ifdef __COCOA__
+  assert(false);
+#endif
 }
 
+#ifdef __X11__
 static bool
 points2list(TMatrix2D *mat, const TPoint *p, size_t n)
 {
@@ -142,6 +149,7 @@ points2list(TMatrix2D *mat, const TPoint *p, size_t n)
   }
   return true;
 }
+#endif
 
 void
 TPen::drawBezier(const TPoint *p, size_t n)
@@ -172,14 +180,14 @@ TPen::drawBezier(const TPoint *p, size_t n)
 }
 
 void
-TPen::fillBezier(const TPoint *p, size_t np)
+TPen::fillBezier(const TPoint *p, size_t n)
 {
 #ifdef __X11__
-  if (!points2list(mat, p, np))
+  if (!points2list(mat, p, n))
     return;
 
   XPoint *d = lst.ptr();
-  size_t n = lst.size();
+  n = lst.size();
   if (!outline) {
     XFillPolygon(x11display, x11drawable, two_colors? f_gc : o_gc,
       d, n, Nonconvex, CoordModeOrigin);
@@ -211,6 +219,7 @@ TPen::fillBezier(const TPoint *p, size_t np)
 #endif
 }
 
+#ifdef __X11__
 static bool
 polygon2list(TMatrix2D *mat, const TPolygon &polygon)
 {
@@ -253,6 +262,7 @@ polygon2list(TMatrix2D *mat, const TPolygon &polygon)
   }
   return true;
 }
+#endif
 
 void
 TPen::drawBezier(const TPolygon &polygon)
@@ -337,6 +347,7 @@ TPen::fillBezier(const TPolygon &polygon)
 #endif
 }
 
+#ifdef __X11__
 inline double
 mid(double a, double b)
 {
@@ -436,3 +447,4 @@ static void curve(
     curve(poly, cx, cy, x21, y21, x22, y22, x3, y3);
   }
 }
+#endif

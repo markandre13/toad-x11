@@ -446,7 +446,7 @@ bool TSignal::delayedTrigger()
 #ifdef TOAD_SECURE
   delayedtrigger++;
 #endif
-  TOADBase::sendMessage(new TCommandDelayedTrigger(this));
+  sendMessage(new TCommandDelayedTrigger(this));
 }
 
 #endif

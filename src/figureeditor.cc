@@ -517,7 +517,7 @@ TFigureEditor::paintGrid(TPenBase &pen)
   if (!preferences)
     return;
   if (preferences->drawgrid && preferences->gridsize) {
-    const TColor &background_color = window->getBackground();
+    const TRGB &background_color = window->getBackground();
     pen.setColor(
       background_color.r > 128 ? background_color.r-64 : background_color.r+64,
       background_color.g > 128 ? background_color.g-64 : background_color.g+64,

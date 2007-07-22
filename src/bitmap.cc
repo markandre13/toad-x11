@@ -159,15 +159,26 @@ TBitmap::TBitmap()
   modified = false;
 
   mode = TBITMAP_SHOW;
-  
+#ifdef __X11__  
   pixmap = 0;
   mask   = 0;
+#endif
+
+#ifdef __COCOA__
+  img = nil;
+#endif
 }
 
 TBitmap::TBitmap(int w,int h, EBitmapType type)
 {
+#ifdef __X11__
   pixmap = 0;
   mask   = 0;
+#endif
+
+#ifdef __COCOA__
+  img = nil;
+#endif
   pix_width = pix_height = 0;
   width = w;
   height = h;
@@ -667,6 +678,7 @@ struct TFree
 bool
 TBitmap::load(const string& url)
 {
+#ifdef __X11__
   if (!filter_list) {
     cerr << "toad: no filter available for bitmap \"" << url << "\".\n";
     return false;
@@ -706,11 +718,33 @@ TBitmap::load(const string& url)
     return false;
   }
   return true;
+#endif
+
+#ifdef __COCOA__
+  NSError *err = nil;
+  NSData *data = [NSData dataWithContentsOfFile: [NSString stringWithUTF8String: url.c_str()]
+                         options: 0
+                         error: &err];
+  if (data==nil) {
+    cerr << "failed to load file" << endl;
+    cerr << [[err localizedDescription] UTF8String] << endl;
+    return false;
+  }
+  img = [NSBitmapImageRep imageRepWithData: data];
+  if (img == nil) {
+    cerr << "failed to decode image data" << endl;
+    return false;
+  }
+  width = [img pixelsWide];
+  height = [img pixelsHigh];
+  return true;
+#endif
 }
 
 bool
 TBitmap::load(istream &ds)
 {
+#ifdef __X11__
   TBitmapFilter *filter, *last_filter;
   filter = filter_list;
     
@@ -773,6 +807,30 @@ TBitmap::load(istream &ds)
   }
   cerr << "toad: No filter available for bitmap graphic.\n";
   return false;
+#endif
+
+#ifdef __COCOA__
+  assert(false);
+  void *ptr;
+  size_t l;
+
+  NSError *err = nil;
+  NSData *data = [NSData dataWithBytesNoCopy: ptr length: l];
+  if (data==nil) {
+    cerr << "failed to load file" << endl;
+    cerr << [[err localizedDescription] UTF8String] << endl;
+    return false;
+  }
+  img = [NSBitmapImageRep imageRepWithData: data];
+  [data release];
+  if (img == nil) {
+    cerr << "failed to decode image data" << endl;
+    return false;
+  }
+  width = [img pixelsWide];
+  height = [img pixelsHigh];
+  return true;
+#endif
 }
 
 // Save

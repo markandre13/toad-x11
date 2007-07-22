@@ -112,7 +112,13 @@ class TBitmap:
   protected:
     EBitmapMode mode;
   public:
+#ifdef __X11__
     unsigned long pixmap;   // server side pixmap
+#endif
+
+#ifdef __COCOA__
+    NSBitmapImageRep *img;
+#endif
   protected:
     unsigned long mask;     // server side mask
     int pix_width, pix_height;

@@ -103,13 +103,13 @@ iterate(TMenuBar::TNode *node, const string &str, TKey key, unsigned modifier, u
             strcasecmp(pattern.c_str(), "bildhoch")==0)
         {
 //cout << "verify pgup: key="<<key<<", TK_PAGE_UP="<<TK_PAGE_UP<<endl;
-          if (key!=TK_PAGE_UP)
+          if (key!=TK_PAGEUP)
             match = false;
         } else
         if (strcasecmp(pattern.c_str(), "pgdown")==0 ||
             strcasecmp(pattern.c_str(), "bildrunter")==0)
         {
-          if (key!=TK_PAGE_DOWN)
+          if (key!=TK_PAGEDOWN)
             match = false;
         } else
         if (strcasecmp(pattern.c_str(), "esc")==0) {

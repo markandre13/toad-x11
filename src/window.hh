@@ -30,70 +30,13 @@
 #include <toad/pointer.hh>
 #include <toad/command.hh>
 
-#ifdef _TOAD_PRIVATE
-
 #ifdef __COCOA__
 @class NSEvent, NSView, toadWindow, toadView;
-
-// see /Developer/SDKs/MacOSX10.3.9.sdk/Developer/Headers/CFMCarbon/Events.h
-
-#define MK_SHIFT     (1 << 9)
-#define MK_LOCK      (1 << 10)
-#define MK_CONTROL   (1 << 12)
-#define MK_ALT       (1 << 11)
-#define MK_APPLE     (1 << 8) 
-
-#define MK_ALTGR   0   
-#define MK_LBUTTON 1   
-#define MK_MBUTTON 2   
-#define MK_RBUTTON 4
-#define MK_DOUBLE  8
-
-#define TK_SHIFT_L 56   
-#define TK_SHIFT_R 56   
-
-#define TK_RETURN    36
-#define TK_KP_RETURN 0xffff
-#define TK_TAB       48
-#define TK_LEFT_TAB  0xffff
-#define TK_INSERT    0xffff
-#define TK_SPACE     49
-#define TK_BACKSPACE 51
-#define TK_ESCAPE    53
-#define TK_SHIFT     56
-#define TK_CONTROL_L   0xffff
-#define TK_CONTROL_R   0xffff
-#define TK_HOME      115
-#define TK_PAGEUP    116
-#define TK_DELETE    117
-#define TK_END       119
-#define TK_PAGEDOWN  121
-#define TK_LEFT      123
-#define TK_RIGHT     124
-#define TK_DOWN      125
-#define TK_UP        126
-#define TK_F1        122
-#define TK_F2        120
-#define TK_F3        99 
-#define TK_F4        118
-#define TK_F5        96 
-#define TK_F6        97 
-#define TK_F7        98 
-#define TK_F8        100
-#define TK_F9        101
-#define TK_F10       109
-#define TK_F11       103
-#define TK_F12       111
-#define TK_F13       0xffff
-#define TK_F14       0xffff
-#define TK_F15       0xffff
-#define TK_F16       0xffff
-#define TK_F17       0xffff
-#define TK_F18       0xffff
-#define TK_F19       0xffff
-#define TK_F20       0xffff
-
+#include <toad/cocoa/keyboard.hh>
 #endif
+
+#ifdef _TOAD_PRIVATE
+
 
 #ifdef __X11__
 #include <toad/X11/x11window.hh>
@@ -140,8 +83,7 @@ class TMouseEvent {
 #ifdef __COCOA__
     NSEvent *nsevent;
     TMouseEvent(NSEvent *ne, NSView *view, TWindow *window);
-    void _down(TMouseEvent::EType type, NSEvent *theEvent);
-    void _up(TMouseEvent::EType type, NSEvent *theEvent);
+    static unsigned globalModifier;
 #endif
     TMouseEvent(TWindow *aWindow=0, TCoord anX=0.0, TCoord anY=0.0, unsigned aModifier=0):
       window(aWindow), x(anX), y(anY), _modifier(aModifier) {dblClick=false;}
@@ -152,7 +94,6 @@ class TMouseEvent {
     TCoord pressure() { return 0; }
     TCoord rotation() { return 0; }
     TCoord tilt() { return 0; }
-    
     unsigned _modifier;
 };
 
@@ -161,20 +102,24 @@ class TKeyEvent {
     enum EType {
       DOWN, UP
     } type;
-    TKeyEvent(EType aType=DOWN, TWindow *aWindow=0, TKey aKey=0): window(aWindow), type(aType), _key(aKey) {}
+    TKeyEvent(EType aType=DOWN, TWindow *aWindow=0, TKey aKey=0, unsigned aModifier=0):
+      window(aWindow), type(aType), _key(aKey), _modifier(aModifier) {}
 #ifdef __COCOA__
     TKeyEvent(NSEvent *ns) {
       nsevent = ns;
+      _modifier = [nsevent modifierFlags];
+      _key = [nsevent keyCode];
     }
     NSEvent *nsevent;
 #endif
     TWindow *window;
     string str() const;
-    TKey key() const;
+    TKey key() const { return _key; }
     void setKey(TKey key) { _key = key; }
-    unsigned modifier() const;
-    void setModifier(unsigned);
+    unsigned modifier() const { return _modifier; }
+    void setModifier(unsigned modifier) { _modifier = modifier; }
     TKey _key;
+    unsigned _modifier;
 };
 
 #ifdef __WIN32__
@@ -230,7 +175,7 @@ class TWindow:
 
     // style flags
     //-------------
-    bool bPopup:1;
+    bool flagPopup:1;
     //! don't create window when parent is created
     bool bExplicitCreate:1;
     //! suggest X11 to buffer the content of windows under this one
@@ -319,14 +264,15 @@ class TWindow:
     // void SetToolTip(TToolTip*);              // implemented in tooltip.cc
     void setToolTip(const string&);             // implemented in tooltip.cc
     
-    const TColor& getBackground() const { return background; }
+    const TRGB& getBackground() const { return _bg; }
     void setBackground(const TRGB &c);
     void setBackground(byte r,byte g,byte b) {
        setBackground(TRGB(r,g,b));
     }
     void setBackground(TColor::EColor c) {
       const TRGB *rgb = TColor::lookup(c);
-      setBackground(*rgb);
+      if (rgb)
+        setBackground(*rgb);
     }
     void setBackground(TBitmap*);
     void setHasBackground(bool);
@@ -350,7 +296,9 @@ class TWindow:
   protected:
     int _b;                   // border width
     TCoord _dx, _dy;             // origin for TPen
+#ifdef __X11__
     _TOAD_CURSOR _cursor;
+#endif
     bool _allmousemove;
     
   private:
@@ -483,12 +431,8 @@ class TWindow:
     unsigned debug_flags;
     #endif
 
-  #ifdef _TOAD_PRIVATE
   public:
-  #else
-  private:
-  #endif
-    TColor background;                      // background color
+    TRGB _bg; // background color
     class TPaintRegion;
   private:
     static bool _havePaintEvents();
@@ -513,6 +457,10 @@ class TWindow:
     #endif
     
     #ifdef __COCOA__
+    bool _inside:1; // helper to emulate mouseEnter, mouseLeave on Cocoa
+    bool _mapped:1;
+    void _down(TMouseEvent::EType type, NSEvent *theEvent);
+    void _up(TMouseEvent::EType type, NSEvent *theEvent);
     toadView *nsview;
     toadWindow *nswindow;
     #endif

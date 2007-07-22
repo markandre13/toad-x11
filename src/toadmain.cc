@@ -25,9 +25,13 @@
  * The introduction is yet to be written.
  */
 
+#include <toad/os.hh>
+
 #include <errno.h>
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 #include <cstring>
 #include <fstream>
 
@@ -55,11 +59,12 @@ void* toad::top_address;
 extern void createTOADResource();
 
 namespace {
-
+#ifdef __X11__
 #ifdef HAVE_LIBXFT
 string fontengine("freetype");
 #else
 string fontengine("x11");
+#endif
 #endif
 string fontname("arial,helvetica,sans-serif");
 
@@ -84,7 +89,9 @@ parseInitFile(const string &filename)
     switch(in.what) {
       case ATV_VALUE:
         if (in.attribute == "fontengine" && in.type.empty()) {
+#ifdef __X11__
           fontengine = in.value;
+#endif
           break;
         }
         if (in.attribute == "font" && in.type.empty()) {
@@ -92,11 +99,15 @@ parseInitFile(const string &filename)
           break;
         }
         if (in.attribute == "debug-fontengine-x11" && in.type.empty()) {
+#ifdef __X11__
           debug_fontmanager_x11 = str2bool(in.value);
+#endif
           break;
         }
         if (in.attribute == "debug-fontengine-ft" && in.type.empty()) {
+#ifdef __X11__
           debug_fontmanager_ft = str2bool(in.value);
+#endif
           break;
         }
          cerr << "unexpected entry '" << in.attribute << "' in file " << filename << endl;
@@ -156,21 +167,24 @@ toad::initialize(int argc, char **&argv, char **envv)
     if (strcmp(argv[i], "--layout-editor")==0) {
       layouteditor = true;
     } else 
+#ifdef __X11__
     if (strcmp(argv[i], "--font-engine")==0) {
       if (i+1>=argc) {
         cerr << "error: missing option for argument " << argv[i] << endl;
         exit(1);
       }
       fontengine = argv[++i];
-    } else {
+    } else
+#endif
       cerr << "unknown option " << argv[i] << endl;
-    }
   }
 
+#ifdef __X11__
   if (!TFontManager::setDefaultByName(fontengine)) {  
     cerr << "error: unknown font engine '" << fontengine << "', try x11 or freetype" << endl;
     exit(1);
   }
+#endif
   
   toad::argv = argv;
   toad::argc = argc;

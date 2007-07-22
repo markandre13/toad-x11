@@ -43,11 +43,11 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#ifdef __X11__
 #ifdef HAVE_LIBXUTF8
 #include "xutf8/Xutf8.h"
 #endif
 
-#ifdef __X11__
 #include <sys/wait.h>
 #endif
 
@@ -93,28 +93,6 @@ static bool selection_kludge_owner = false;
 
 // define this for a periodic screen update every 1/12 seconds
 #define PERIODIC_PAINT
-
-namespace {
-class TCommandDeleteWindow:
-  public TCommand
-{
-    TWindow *_window;
-  public:
-    TCommandDeleteWindow(TWindow *w) { _window = w; }
-    void execute() { delete _window; }
-};
-}
-
-/**
- * Delete a window but do it when executing the message loop.
- *
- * It's sometimes the only safe way for a window to delete itself.
- */
-void 
-TOADBase::sendMessageDeleteWindow(TWindow* w)
-{
-  sendMessage(new TCommandDeleteWindow(w));
-}
 
 namespace toad {
 #ifdef __X11__
@@ -428,76 +406,6 @@ TOADBase::flush()
 #endif
 }
 
-/*---------------------------------------------------------------------------*
- | message handling                                                          |
- *---------------------------------------------------------------------------*/
-typedef std::deque<PCommand> TMessageQueue;
-TMessageQueue _messages;
-
-#ifdef __TOAD_THREADS
-  static TThreadMutex mutexMessageQueue;
-  #if 1
-    #define THREAD_LOCK(A) A.Lock();
-    #define THREAD_UNLOCK(A) A.Unlock();
-  #else
-    #define THREAD_LOCK(A) { cout << "lock " #A << " @ " << __LINE__ << endl; A.Lock(); }
-    #define THREAD_UNLOCK(A) { A.Unlock(); cout << "unlock " #A << " @ " << __LINE__ << endl; }
-  #endif
-#else
-  #define THREAD_LOCK(A)
-  #define THREAD_UNLOCK(A)
-#endif
-
-/**  
- * Add a new message/action to the message queue.
- */
-void
-TOADBase::sendMessage(TCommand *action)
-{
-  THREAD_LOCK(mutexMessageQueue);
-  #ifdef __TOAD_THREADS
-    // wake thread running the message loop (main thread)
-    if (TThread::WhoAmI()!=NULL)
-      TThread::Kill(NULL, SIGUSR1);
-  #endif
-  _messages.push_back(action);
-  THREAD_UNLOCK(mutexMessageQueue);
-}
-
-/**  
- * Call `check(void*)' for all actions in the message queue being derived
- * from `TSignalNodeCheck'.<BR>
- * This is used to disable pending messages from `TSignal.DelayedTrigger'.
- */
-void
-TOADBase::removeMessage(void *obj)
-{
-  #warning "not implemented anymore/obsolete?"
-#if 0
-  THREAD_LOCK(mutexMessageQueue);
-  TMessageQueue::iterator p,e;
-  p = _messages.begin();
-  e = _messages.end();
-  while(p!=e) {
-    TCommand *a = *p;
-    TSignalBase::TSignalNodeCheck *snc 
-      = dynamic_cast<TSignalBase::TSignalNodeCheck*>(a);
-    if (snc)
-      snc->check(obj);
-    p++;
-  }
-  THREAD_UNLOCK(mutexMessageQueue);
-#endif
-}
-
-void
-TOADBase::removeAllIntMsg()
-{
-  THREAD_LOCK(mutexMessageQueue);
-  _messages.erase(_messages.begin(), _messages.end());
-  THREAD_UNLOCK(mutexMessageQueue);
-}
-
 /**
  * Return `true' when the message queue is not empty.
  */
@@ -506,11 +414,9 @@ bool
 TOADBase::peekMessage()
 {
   bool result;
-  THREAD_LOCK(mutexMessageQueue);
   result = (XPending(x11display)!=0 || 
             TWindow::_havePaintEvents() || 
-            _messages.size()!=0 );
-  THREAD_UNLOCK(mutexMessageQueue);
+            countAllIntMsg()!=0 );
   return result;
 }
 #endif
@@ -605,11 +511,9 @@ TOADBase::handleMessage()
 
     // test if any TOAD internal message exist
     //-----------------------------------------
-    THREAD_LOCK(mutexMessageQueue);
-    if (_messages.size()!=0 || !bAppIsRunning) {
+    if (countAllIntMsg()!=0 || !bAppIsRunning) {
       goto handle_event;                // => yes, handle event
     }
-    THREAD_UNLOCK(mutexMessageQueue);
 
     // loop while event queue is empty
     //---------------------------------
@@ -622,7 +526,6 @@ TOADBase::handleMessage()
         if (XPending(x11display)!=0)
           break;
         dispatch_paint_event = true;
-        THREAD_LOCK(mutexMessageQueue);
         goto handle_event;
       }
       
@@ -634,11 +537,9 @@ TOADBase::handleMessage()
       }
       select(); // won't return for `TIOObserver' and `TSimpleTimer' events
 
-      THREAD_LOCK(mutexMessageQueue);
-      if (_messages.size()!=0 || !bAppIsRunning) {
+      if (countAllIntMsg()!=0 || !bAppIsRunning) {
         goto handle_event;
       }
-      THREAD_UNLOCK(mutexMessageQueue);
     }
 
     // pop event from the event queue
@@ -687,7 +588,6 @@ TOADBase::handleMessage()
         }
       }
     } else {
-      THREAD_LOCK(mutexMessageQueue);
       goto handle_event;
     }
   }
@@ -696,22 +596,16 @@ handle_event:
 
 #if 0
   if (!bAppIsRunning) {
-    THREAD_UNLOCK(mutexMessageQueue);
     return false;
   }
 #endif
 
   // dispatch local messages
   //--------------------------
-  if (_messages.size()!=0)  {
-    TMessageQueue::iterator p = _messages.begin();
-    PCommand action = *p;
-    _messages.erase(p);
-    THREAD_UNLOCK(mutexMessageQueue);
-    action->execute();
+  if (countAllIntMsg()!=0)  {
+    executeMessage();
     return bAppIsRunning;
   }
-  THREAD_UNLOCK(mutexMessageQueue);
 
 #ifdef PERIODIC_PAINT
   // flush all paint events 12 times per second
@@ -1166,26 +1060,25 @@ cout << endl;
 
     // KeyPress
     //----------
-    case KeyPress:
+    case KeyPress: { 
       toolTipClose();
-#if 0
-// i guess we don't need modal break anymore, focusmanager.cc
-// should be enough
-      if (!window->isChildOf(TDialogEditor::getCtrlWindow()))
-        MODAL_BREAK;
-#endif
-      handleKeyDown(0, 0, x11event.xkey.state);
-      break;
+      TKeyEvent ke(TKeyEvent::DOWN,
+                   window,
+                   XLookupKeysym(&x11event.xkey, 0), 
+                   x11event.xkey.state);
+      handleKeyEvent(ke);
+    } break;
 
     // KeyRelease
     //------------
-    case KeyRelease:
+    case KeyRelease: {
       toolTipClose();
-#if 0
-      MODAL_BREAK;
-#endif
-      handleKeyUp(0, 0, x11event.xkey.state);
-      break;
+      TKeyEvent ke(TKeyEvent::UP,
+                   window,
+                   XLookupKeysym(&x11event.xkey, 0), 
+                   x11event.xkey.state);
+      handleKeyEvent(ke);
+    } break;
 
     // MotionNotify
     //--------------
@@ -1560,7 +1453,7 @@ TOADBase::placeWindow(TWindow *window, EWindowPlacement how, TWindow *parent)
   int sh = TOADBase::getScreenHeight();
 
   if (parent && how!=PLACE_PULLDOWN && how!=PLACE_TOOLTIP ) {
-    while(!parent->bShell && parent->getParent())
+    while(!parent->flagShell && parent->getParent())
       parent = parent->getParent();
   }
 
@@ -1683,13 +1576,14 @@ TOADBase::setSelection(const string &data)
 {
   selection_kludge_owner = true;
   selection_kludge_data = data;
-
+#ifdef __X11__
   cout << "XSetSelectionOwner " <<
   XSetSelectionOwner(
     x11display,
     XA_PRIMARY,
     TWindow::getParentless(0)->x11window,
     CurrentTime) << endl;
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -1738,61 +1632,17 @@ GetWindowProperty(Window source, Atom property, Atom type)
 // design decisions for TKeyEvent (namely TKeyEvent::setModifier
 // which will ease the implementation of TMenuBar keyboard shortcuts):
 
-namespace toad {
-bool new_key_eventhack;
-}
-static char buffer[KB_BUFFER_SIZE+1];
-static KeySym key;
-static unsigned modifier;
-
-unsigned
-TKeyEvent::modifier() const
-{
-#ifdef __X11__
-  return x11event.xkey.state;
-#endif
-
-#ifdef __COCOA__
-  return [nsevent modifierFlags];
-#endif
-}
-
-void
-TKeyEvent::setModifier(unsigned m)
-{
-  new_key_eventhack=true;
-  x11event.xkey.state = m;
-}
-
-TKey
-TKeyEvent::key() const
-{
-  if (_key)
-    return _key;
-#ifdef __X11__
-  if (new_key_eventhack) {
-    str();
-  }
-  return ::key;
-#endif
-
-#ifdef __COCOA__
-  return [nsevent keyCode];
-#endif
-}
 
 string
 TKeyEvent::str() const
 {
 #ifdef __X11__
-  if (new_key_eventhack) {
-    new_key_eventhack = false;
-
   int count;
+  static char buffer[KB_BUFFER_SIZE+1];
 
   if (xic_current) {
     Status status;
-    ::key=NoSymbol;
+    KeySym key=NoSymbol;
 #ifndef HAVE_LIBXUTF8
 #ifdef X_HAVE_UTF8_STRING
     count = Xutf8LookupString(
@@ -1805,14 +1655,16 @@ TKeyEvent::str() const
       xic_current, 
       &x11event.xkey, 
       buffer, KB_BUFFER_SIZE,
-      &::key,
+      &key,
       &status );
 
     // the above functions do fail for KeyReleased event so we look
     // up the symbol again in case they failed:
-    if (::key==NoSymbol)
-      ::key = XLookupKeysym(&x11event.xkey, 0);
-
+    if (key==NoSymbol)
+      key = XLookupKeysym(&x11event.xkey, 0);
+    if (key!=this->_key) {
+      cerr << "XUtf8LookupString key differs from XLookupKeysym" << endl;
+    }
     if (status==XLookupNone)
       return "";
     if (status==XBufferOverflow) {
@@ -1822,15 +1674,16 @@ TKeyEvent::str() const
     }
   } else {
     static XComposeStatus compose_status = {NULL, 0};
+    KeySym key;
     count = XLookupString(&x11event.xkey,
                           buffer, KB_BUFFER_SIZE, 
-                          &::key, 
+                          &key, 
                           &compose_status);
+    if (key!=this->_key) {
+      cerr << "XUtf8LookupString key differs from XLookupKeysym" << endl;
+    }
   }
   buffer[count]=0;        // add zero terminator to string
-  
-  }
-  
   return buffer;
 #endif
 

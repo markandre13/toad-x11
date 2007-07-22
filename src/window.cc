@@ -105,9 +105,6 @@
 
 using namespace toad;
 
-TCommand::TCommand() {}
-TCommand::~TCommand() {}
-
 #include <vector>
 #include <queue>
 #include <map>
@@ -150,7 +147,7 @@ static TVectorParentless parentless;
 //---------------------------------------------------------------------------
 
 #define isTopLevel(w) \
-  (w->bPopup || w->getParent()==NULL)
+  (w->flagPopup || w->getParent()==NULL)
 
 #ifdef __X11__
 
@@ -196,6 +193,9 @@ struct PropMotifWmHints {
 #endif
 
 #ifdef __COCOA__
+
+static set<TWindow*> aw;
+
 @interface toadWindow : NSWindow
 {
   @public
@@ -206,11 +206,11 @@ struct PropMotifWmHints {
 @implementation toadWindow : NSWindow
 - (void)becomeKeyWindow {
   [super becomeKeyWindow];
-  TFocusManager::domainToWindow(twindow);
+  TOADBase::domainToWindow(twindow);
 }
 - (void)resignKeyWindow {
   [super resignKeyWindow];
-  TFocusManager::domainToWindow(0);
+  TOADBase::domainToWindow(0);
 }
 @end
 
@@ -296,7 +296,7 @@ struct PropMotifWmHints {
   TKeyEvent ke(theEvent);
   ke.type = TKeyEvent::DOWN;
   //twindow->keyEvent(ke);  
-  TFocusManager::handleEvent(ke);
+  TOADBase::handleKeyEvent(ke);
   executeMessages();
 }
 - (void) keyUp:(NSEvent*)theEvent
@@ -305,7 +305,7 @@ struct PropMotifWmHints {
   TKeyEvent ke(theEvent);
   ke.type = TKeyEvent::UP;
   //twindow->keyEvent(ke);
-  TFocusManager::handleEvent(ke);
+  TOADBase::handleKeyEvent(ke);
   executeMessages();
 }
  
@@ -315,6 +315,7 @@ struct PropMotifWmHints {
   twindow->_inside = true;
   TMouseEvent me(theEvent, self, twindow);
   me.type = TMouseEvent::ENTER;
+  me._modifier = TMouseEvent::globalModifier;
   twindow->mouseEvent(me);
   executeMessages();
 }
@@ -324,23 +325,24 @@ struct PropMotifWmHints {
   twindow->_inside = false;
   TMouseEvent me(theEvent, self, twindow);
   me.type = TMouseEvent::LEAVE;
+  me._modifier = TMouseEvent::globalModifier;
   twindow->mouseEvent(me);
   executeMessages();
 }
- 
+
 - (void) mouseDown:(NSEvent*)theEvent
 {
-  TMouseEvent::_modifier |= MK_LBUTTON;
+  TMouseEvent::globalModifier |= MK_LBUTTON;
   twindow->_down(TMouseEvent::LDOWN, theEvent);
 }
 - (void) rightMouseDown:(NSEvent*)theEvent
 {
-  TMouseEvent::_modifier |= MK_RBUTTON;
+  TMouseEvent::globalModifier |= MK_RBUTTON;
   twindow->_down(TMouseEvent::RDOWN, theEvent);
 }
 - (void) otherMouseDown:(NSEvent*)theEvent
 {
-  TMouseEvent::_modifier |= MK_MBUTTON;
+  TMouseEvent::globalModifier |= MK_MBUTTON;
   twindow->_down(TMouseEvent::MDOWN, theEvent);
 }
 void
@@ -353,9 +355,11 @@ TWindow::_down(TMouseEvent::EType type, NSEvent *theEvent)
     _inside = true;
     TMouseEvent me(theEvent, nsview, this);
     me.type = TMouseEvent::ENTER;
+    me._modifier = TMouseEvent::globalModifier;
     mouseEvent(me);
   }
   me.type = type;
+  me._modifier = TMouseEvent::globalModifier;
   me.dblClick = [theEvent clickCount]==2;
   _inside = true;
   mouseEvent(me);
@@ -364,17 +368,17 @@ TWindow::_down(TMouseEvent::EType type, NSEvent *theEvent)
  
 - (void) mouseUp:(NSEvent*)theEvent
 {
-  TMouseEvent::_modifier &= ~MK_LBUTTON;
+  TMouseEvent::globalModifier &= ~MK_LBUTTON;
   twindow->_up(TMouseEvent::LUP, theEvent);
 }
 - (void) rightMouseUp:(NSEvent*)theEvent
 {
-  TMouseEvent::_modifier &= ~MK_RBUTTON;
+  TMouseEvent::globalModifier &= ~MK_RBUTTON;
   twindow->_up(TMouseEvent::RUP, theEvent);
 }
 - (void) otherMouseUp:(NSEvent*)theEvent
 {
-  TMouseEvent::_modifier &= ~MK_MBUTTON;
+  TMouseEvent::globalModifier &= ~MK_MBUTTON;
   twindow->_up(TMouseEvent::MUP, theEvent);
 }
 void
@@ -387,9 +391,11 @@ TWindow::_up(TMouseEvent::EType type, NSEvent *theEvent)
     _inside = false;
     TMouseEvent me(theEvent, nsview, this);
     me.type = TMouseEvent::LEAVE;
+    me._modifier = TMouseEvent::globalModifier;
     mouseEvent(me);
   }
   me.type = type;
+  me._modifier = TMouseEvent::globalModifier;
   mouseEvent(me);
   executeMessages();
 }
@@ -511,8 +517,15 @@ TWindow::TWindow(TWindow *p, const string &title)
   paintstruct = 0;
   #endif
   
+  #ifdef __COCOA__
+  nsview = nil;
+  nswindow = nil;
+  _inside = false;
+  _mapped = false;
+  #endif
+  
   // public flags
-  bShell = bPopup = bExplicitCreate = bSaveUnder = bStaticFrame =
+  flagShell = flagPopup = bExplicitCreate = bSaveUnder = bStaticFrame =
   bBackingStore = bNoBackground = bX11GC = bFocusManager = bNoFocus = 
   bNoMenu = bTabKey = bDialogEditRequest = bDoubleBuffer = 
   bParentlessAssistant = false;
@@ -532,10 +545,12 @@ TWindow::TWindow(TWindow *p, const string &title)
   h  = 200;
   _b  = 1;
   _dx = _dy = 0;  // origin for TPen
+#ifdef __X11__
   _cursor = 0;
+#endif
   setCursor(TCursor::DEFAULT);
   paint_rgn = NULL;
-  background.set(1.0,1.0,1.0);
+  _bg.set(1.0,1.0,1.0);
   layout = NULL;
   
   // private flags
@@ -829,10 +844,10 @@ TWindow::_interactor_create()
 
   _childNotify(TCHILD_BEFORE_CREATE);
 
-  // set bShell flag for all top level windows
+  // set flagShell flag for all top level windows
   //-------------------------------------------
-  if (isTopLevel(this)) // parent == NULL || bPopup
-    bShell=true;
+  if (isTopLevel(this)) // parent == NULL || flagPopup
+    flagShell=true;
 
   // each window handling keyboard events may get the focus
   //--------------------------------------------------------
@@ -856,7 +871,7 @@ TWindow::_interactor_create()
     attr.background_pixmap = (*p).second->pixmap;
   } else if (!bNoBackground && !bDoubleBuffer) {
     mask|=CWBackPixel;
-    attr.background_pixel = background._getPixel();
+    attr.background_pixel = TColor::_getPixel(_bg);
   }
 
   mask|=CWSaveUnder;
@@ -876,7 +891,7 @@ TWindow::_interactor_create()
     attr.cursor = _cursor;
   }
   
-  if (bPopup) {
+  if (flagPopup) {
     mask|=CWOverrideRedirect;
     attr.override_redirect = true;
     // the override redirect option results in a 'X' cursor but we 
@@ -889,7 +904,7 @@ TWindow::_interactor_create()
   // 'createX11Window' messsage is needed for things like OpenGL support
   static TX11CreateWindow x11;
   x11.display   = x11display;
-  x11.parent    = ( getParent() && !bShell ) ? getParent()->x11window : DefaultRootWindow(x11display);
+  x11.parent    = ( getParent() && !flagShell ) ? getParent()->x11window : DefaultRootWindow(x11display);
   x11.x         = (int)x;
   x11.y         = (int)y;
   x11.width     = (unsigned)w;
@@ -952,7 +967,7 @@ TWindow::_interactor_create()
     xcbConnection,
     XCB_COPY_FROM_PARENT, // depth
     xcbWindow,
-    (getParent()&&!bShell) ? getParent()->xcbWindow : screen->root,
+    (getParent()&&!flagShell) ? getParent()->xcbWindow : screen->root,
     x, y, w, h, _b,
     XCB_WINDOW_CLASS_INPUT_OUTPUT,
     mask,
@@ -993,7 +1008,7 @@ TWindow::_interactor_create()
 #endif
 
 #ifdef __WIN32__
-  DWORD style = ( getParent() && !bShell ) ? 
+  DWORD style = ( getParent() && !flagShell ) ? 
     (WS_CHILD|WS_BORDER|WS_VISIBLE) : 
     WS_OVERLAPPEDWINDOW;
     
@@ -1002,7 +1017,7 @@ TWindow::_interactor_create()
   rect.top  = y;
   rect.right = x+w-1 + _b*2;
   rect.bottom = y+h-1 + _b*2;
-  if ( !getParent() || bShell ) {
+  if ( !getParent() || flagShell ) {
     ::AdjustWindowRect(&rect, style, false);
   }
 #if 0
@@ -1014,9 +1029,9 @@ cerr << "w32createwindow: " << getTitle() << " " << x << "," << y << "," << w <<
     "TOAD:BASE",
     getTitle().c_str(),
     style,
-    ( getParent() && !bShell ) ? x : CW_USEDEFAULT , y,
+    ( getParent() && !flagShell ) ? x : CW_USEDEFAULT , y,
     rect.right - rect.left + 1, rect.bottom - rect.top + 1,
-    ( getParent() && !bShell ) ? getParent()->w32window : 0,
+    ( getParent() && !flagShell ) ? getParent()->w32window : 0,
     NULL,
     w32instance,
     NULL
@@ -1038,7 +1053,7 @@ cerr << "w32createwindow: " << getTitle() << " " << x << "," << y << "," << w <<
 #ifdef __X11__
   // set additional WM parameters for top level windows
   //----------------------------------------------------
-  if (bShell) {
+  if (flagShell) {
     XSizeHints xsizehints;
     xsizehints.flags = 0;
 
@@ -1129,7 +1144,7 @@ cerr << "w32createwindow: " << getTitle() << " " << x << "," << y << "," << w <<
 
     if (xsizehints.flags!=0)
       XSetWMSizeHints(x11display, x11window, &xsizehints, XA_WM_NORMAL_HINTS);
-  } // end of `if (bShell)'
+  } // end of `if (flagShell)'
 #endif
 
   // create children
@@ -1153,7 +1168,7 @@ cerr << "w32createwindow: " << getTitle() << " " << x << "," << y << "," << w <<
     // adjust position for some window managers (ie. for fvwm2: the difference
     // between the, upper-left frame corner and the upper-left corner of our
     // window)
-    if (bShell && !flag_position_undefined)
+    if (flagShell && !flag_position_undefined)
        XMoveWindow(x11display, x11window, (int)x, (int)y);
 #endif
 
@@ -2143,7 +2158,7 @@ TWindow::setSize(TCoord w, TCoord h)
   if (w32window) {
     ::InvalidateRect(w32window, NULL, TRUE);
 
-  DWORD style = ( getParent() && !bShell ) ? 
+  DWORD style = ( getParent() && !flagShell ) ? 
     (WS_CHILD|WS_BORDER|WS_VISIBLE) : 
     WS_OVERLAPPEDWINDOW;
     
@@ -2289,7 +2304,7 @@ void TWindow::setTitle(const string &title)
 
 #ifdef __X11__
   if (x11window) {
-    if (bShell) {
+    if (flagShell) {
       XTextProperty tp;
       const char *p1 = title.c_str();
       const char **p2 = &p1;
@@ -2456,10 +2471,13 @@ TWindow::setShape(TCoord x, TCoord y, TCoord w, TCoord h)
 void 
 TWindow::setBackground(const TRGB &nc)
 {
-  background.set(nc.r,nc.g,nc.b);
+  _bg.set(nc.r,nc.g,nc.b);
 #ifdef __X11__
-  if(x11window)
-    XSetWindowBackground(x11display, x11window, background._getPixel());
+  if(x11window) {
+    XSetWindowBackground(x11display, x11window, TColor::_getPixel(_bg));
+  }
+#else
+  invalidateWindow();
 #endif
 }
 
@@ -2522,7 +2540,7 @@ TWindow::setHasBackground(bool b)
       attr.background_pixmap = (*p).second->pixmap;
     } else {
       mask|=CWBackPixel;
-      attr.background_pixel = background._getPixel();
+      attr.background_pixel = TColor::_getPixel(_bg);
     }
   }
   XChangeWindowAttributes(
@@ -2555,8 +2573,8 @@ void TWindow::getRootPos(TCoord* x, TCoord* y)
   } else {
     Window wnd;
     int ix, iy;
-    ix=*x;
-    iy=*y;
+    ix=0;
+    iy=0;
     XTranslateCoordinates(x11display,
                           x11window, 
                           DefaultRootWindow(x11display),
@@ -2713,8 +2731,14 @@ TWindow::setAllMouseMoveEvents(bool all)
     return;
   _allmousemove = all;
   flag_mmm_modified = true;
+#ifdef __X11__
   if (x11window)
     XSelectInput(x11display, x11window, _buildEventmask());
+#endif
+#ifdef __COCOA__
+//  if (nsview)
+//    [nsview setAcceptsMouseMovedEvents: b];
+#endif
 }
 
 #ifdef __X11__
@@ -2729,7 +2753,7 @@ TWindow::_buildEventmask()
     mask |= ExposureMask;
 
   // only shell windows will get key events
-  if (bShell) {
+  if (flagShell) {
     mask |= KeyPressMask;
     mask |= KeyReleaseMask;
     mask |= FocusChangeMask;

@@ -25,7 +25,7 @@ namespace toad {
 TPopup::TPopup(TWindow *p, const string& t):
   super(p, t)
 {
-  bPopup=true;
+  flagPopup=true;
   bSaveUnder=true;
 }
 

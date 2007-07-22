@@ -18,12 +18,15 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TCommand
-#define TCommand TCommand
+#ifndef __TOAD_COMMAND_HH
+#define __TOAD_COMMAND_HH 1
 
 #include <toad/pointer.hh>
+#include <stddef.h>
 
 namespace toad {
+
+class TWindow;
 
 class TCommand:
   public TSmartObject
@@ -34,6 +37,15 @@ class TCommand:
     virtual void execute() = 0;
 };
 typedef GSmartPointer<TCommand> PCommand;
+
+void sendMessage(TCommand *cmd);
+void sendMessageDeleteWindow(TWindow*);
+void removeMessage(void*);
+void removeAllIntMsg();
+size_t countAllIntMsg();
+
+void executeMessages();
+void executeMessage();
 
 } // namespace toad
 

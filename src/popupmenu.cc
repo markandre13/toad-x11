@@ -56,7 +56,7 @@ TPopupMenu::TPopupMenu(TWindow *parent, const string &title):
   flt = 0;
   vertical = true;
   bExplicitCreate = true;
-  bPopup = true;
+  flagPopup = true;
   setLayout(new TMenuLayout()); // i require a layout
 }
 

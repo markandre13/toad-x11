@@ -52,7 +52,7 @@ using namespace toad;
 TInteractor::TInteractor(TInteractor *parent, const string &title)
 {
   taborder=0;
-  bShell = bFocusManager = bFocusTraversal = false;
+  flagShell = bFocusManager = bFocusTraversal = false;
   bNoFocus = true;
   before_create = true;
   beforeAddEnabled = false;

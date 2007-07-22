@@ -18,10 +18,18 @@
  * MA  02111-1307,  USA
  */
 
-#ifndef TMessageBox
-#define TMessageBox TMessageBox
+#ifndef _TOAD_MESSAGEBOX_HH
+#define _TOAD_MESSAGEBOX_HH 1
 
+#include <toad/os.hh>
 #include <toad/window.hh>
+
+#ifdef __COCOA__
+#undef YES
+#undef NO
+static const unsigned NO = 0;
+static const unsigned YES = 1;
+#endif
 
 namespace toad {
 

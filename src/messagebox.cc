@@ -42,7 +42,7 @@ TMessageBox::TMessageBox(TWindow* p,
   :TWindow(p,t1)
 {
   setBackground(TColor::DIALOG);
-  bShell = bStaticFrame = true;
+  flagShell = bStaticFrame = true;
   bFocusManager = true;
   _placement = placement;
 

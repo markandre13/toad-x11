@@ -26,6 +26,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef check
+#undef check
+#endif
+
 using namespace toad;
 
 #define DBM(M)
@@ -1834,7 +1838,9 @@ TTable::keyDown(const TKeyEvent &ke)
       invalidateWindow();
       } break;
     case TK_SHIFT_L:
+#ifndef __COCOA__
     case TK_SHIFT_R:
+#endif
       if (selection)
         selection->sigChanged.lock();
       break;
@@ -1861,7 +1867,9 @@ TTable::keyUp(const TKeyEvent &ke)
 {
   switch(ke.key()) {
     case TK_SHIFT_L:
+#ifndef __COCOA__
     case TK_SHIFT_R:
+#endif
 //      cout << "SHIFT up" << endl;
       if (selection && selecting) {
 //        cout << "  stop selecting and set selection" << endl;

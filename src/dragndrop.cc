@@ -63,13 +63,16 @@ in this Software without prior written authorization from The Open Group.
     to fix it!)
 */
 
+#include <toad/os.hh>
+
 // #define WHERE { cout << __FILE__ << ":" << __LINE__ << endl; }
 #define WHERE
 
-
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#endif
 
 #define _TOAD_PRIVATE
 
@@ -94,6 +97,7 @@ namespace toad {
 
 #define DBM(CMD)
 
+#ifdef __X11__
 #define x11display toad::x11display
 
 static void PrepareXdndClientMessage(XEvent&, Window, Atom);
@@ -147,6 +151,7 @@ static Window x11_root_window;
  * The window the mouse pointer is in during dragging.
  */
 static Window x11_current_window;
+#endif
 
 /**
  * `true' when `x11_current_window' is willing to accept Xdnd messages and
@@ -166,6 +171,7 @@ static bool inside_local_window;
  */
 static PDnDObject drag_object;
 
+#ifdef __X11__
 /**
  * The Xdnd protocol version of the last window we've send a XdndEnter
  * message;
@@ -205,7 +211,6 @@ static void ReceivedXdndStatus(XEvent &event);
 static void SendXdndLeave();
 static void SendXdndDrop(Time time);
 
-#if 1
 static Cursor dnd_cursor[6] = { None, };
 
 static void UpdateCursor();
@@ -235,6 +240,7 @@ static TDropSite *dropsite = NULL;
 void
 TOADBase::startDrag(TDnDObject *source, unsigned modifier)
 {
+#ifdef __X11__
   PDnDObject dummy = source;
 
   BuildCursor();
@@ -361,6 +367,7 @@ DBM(cout << __FILE__ << ":" << __LINE__ << endl;)
   target_action = None;
   
   // try a handle position right here!
+#endif
 }
 
 /* 
@@ -389,6 +396,7 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef __X11__
 /*
  * Prototypes
  */
@@ -614,7 +622,8 @@ DBM(cout << __FILE__ << ":" << __LINE__ << endl;)
   }
 }
 
-void UpdateCursor()
+static void
+UpdateCursor()
 {
   // target_action: the action the target wants
   // drag_action  : the action we want
@@ -642,7 +651,8 @@ DBM(cout << "selecting cursor " << cs << endl;)
   } 
 }
 
-bool TOADBase::DnDButtonRelease(XEvent &event)
+bool
+TOADBase::DnDButtonRelease(XEvent &event)
 {
   if (event.xany.window != x11_root_window ||
       drag_object==NULL)
@@ -675,7 +685,8 @@ WHERE
   return true;
 }
 
-bool TOADBase::DnDSelectionClear(XEvent &event)
+bool
+TOADBase::DnDSelectionClear(XEvent &event)
 {
   if (event.xselectionclear.selection!=xaXdndSelection)
     return false;
@@ -693,7 +704,8 @@ WHERE
   return true;
 }
 
-void SendXdndPosition(Window wdest, int x, int y, Atom action, Time time)
+static void
+SendXdndPosition(Window wdest, int x, int y, Atom action, Time time)
 {
   XEvent event;
   PrepareXdndClientMessage(event, x11_current_window, xaXdndPosition);
@@ -715,7 +727,8 @@ void SendXdndPosition(Window wdest, int x, int y, Atom action, Time time)
   }
 }
 
-void SendXdndLeave()
+static void
+SendXdndLeave()
 {
 #if VERBOSE
   cout << "sending XdndLeave" << endl;
@@ -734,7 +747,8 @@ void SendXdndLeave()
 /**
  * Inform target that it can retreive the data.
  */
-void SendXdndDrop(Time time)
+static void
+SendXdndDrop(Time time)
 {
 #if VERBOSE
   cout << "sending XdndDrop..." << endl;
@@ -753,7 +767,8 @@ void SendXdndDrop(Time time)
 /**
  * The target wants the data.
  */
-bool TOADBase::DnDSelectionRequest(XEvent &event)
+bool
+TOADBase::DnDSelectionRequest(XEvent &event)
 {
   if (event.xselectionrequest.selection!=xaXdndSelection)
     return false;
@@ -825,7 +840,8 @@ bool TOADBase::DnDSelectionRequest(XEvent &event)
   return true;
 }
 
-void ReceivedXdndFinished(XEvent &event)
+static void
+ReceivedXdndFinished(XEvent &event)
 {
   if (!drag_object) {
     cerr << "toad: received unexpected XdndFinished message, ignoring" << endl;
@@ -841,6 +857,8 @@ WHERE
 #endif
   
 }
+
+#endif
 
 //---------------------------------------------------------------------------
 // Receiving Drop
@@ -1000,6 +1018,8 @@ TDropSite::paint()
 // drop handling (extern)
 //---------------------------------------------------------------------------
 
+#ifdef __X11__
+
 /**
  * Window that wants to drop us the data. It is not `None' between an
  * XdndEnter and XdndLeave message. When set, all other Xdnd messages
@@ -1011,6 +1031,8 @@ static Window x11_drop_source_window = None;
  * Same as `x11_drop_source_window' but this time the target.
  */
 static Window x11_drop_target_window = None;
+
+#endif
 
 /**
  * The drop request object we give to the `TDropSite::dropRequest' call.
@@ -1034,13 +1056,16 @@ SetDropSite(TDropSite *ds)
   }
 }
 
-static void ClearDropSite()
+static 
+void ClearDropSite()
 {
   if (dropsite) {
     dropsite->getParent()->invalidateWindow();
     dropsite->getParent()->paintNow();
   }
 }
+
+#ifdef __X11__
 
 /**
  * Get the next requested type from `drop_request' and call XConvertSelection
@@ -1402,6 +1427,8 @@ void HandlePosition(Window wnd,         // top-level window
   }
 }
 
+#endif
+
 // local
 void
 HandleDrop(TDnDObject *drop)
@@ -1423,6 +1450,7 @@ void TOADBase::initDnD()
 #if VERBOSE
   cout << "Initializing Drag'n Drop" << endl;
 #endif
+#ifdef __X11__
   // Xdnd v3.0 Drag And Drop
   //-------------------------------
   xaXdndAware      = XInternAtom(x11display, "XdndAware", False);
@@ -1445,8 +1473,10 @@ void TOADBase::initDnD()
   x11_message_enter.xclient.message_type= xaXdndEnter;
   x11_message_enter.xclient.format      = 32;
   x11_message_enter.xclient.send_event  = True;
+#endif
 }
 
+#ifdef __X11__
 void TOADBase::DnDNewShellWindow(TWindow *window)
 {
   static long xdnd_version = XDND_VERSION;
@@ -1455,7 +1485,9 @@ void TOADBase::DnDNewShellWindow(TWindow *window)
                   PropModeReplace,
                   (unsigned char*)&xdnd_version,1);
 }
+#endif
 
+#ifdef __X11__
 bool TOADBase::DnDClientMessage(XEvent &event)
 {
 #if VERBOSE
@@ -1899,5 +1931,7 @@ static void BuildCursor()
   XFreeGC(x11display, gc0);
   XFreeGC(x11display, gc1);
 }
+
+#endif
 
 } // namespace toad

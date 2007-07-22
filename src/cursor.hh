@@ -31,7 +31,9 @@ class TWindow;
 class TCursor
 {
     friend class TWindow;
+#ifdef __X11__
     _TOAD_CURSOR cursor;
+#endif
 
   public:
     enum EType {

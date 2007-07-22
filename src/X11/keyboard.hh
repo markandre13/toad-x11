@@ -90,9 +90,7 @@ typedef unsigned long TKey;
 #define TK_RIGHT    0xFF53
 #define TK_DOWN     0xFF54
 #define TK_PAGEUP   0xFF55
-#define TK_PAGE_UP  0xFF55
 #define TK_PAGEDOWN 0xFF56
-#define TK_PAGE_DOWN 0xFF56
 #define TK_END      0xFF57
 #define TK_BEGIN    0xFF58
 

@@ -623,10 +623,10 @@ void TMenuButton::mouseEnter(const TMouseEvent &me)
         stopat = this;
         if (master->active) {
           #warning "here is a dirty hack to avoid an unwanted close in deactivate"
-          bool hack = master->bPopup;
-          master->bPopup = false;
+          bool hack = master->flagPopup;
+          master->flagPopup = false;
           master->active->deactivate();
-          master->bPopup = hack;
+          master->flagPopup = hack;
         }
         activate();
         master->state = MHS_DOWN_N_INSIDE_AGAIN;
@@ -731,7 +731,7 @@ TMenuButton::deactivate()
   master->state = MHS_WAIT;
 
   #warning "just destroying a window because it's master is a popup is to rude"
-  if (master->bPopup) {
+  if (master->flagPopup) {
 DBM2( cerr << "*** MASTER IS A POPUP ==> DESTROY WINDOW" << endl; )
     master->destroyWindow();
   }

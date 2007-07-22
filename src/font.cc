@@ -36,6 +36,7 @@
 #include <toad/pen.hh>
 #include <toad/utf8.hh>
 
+#ifdef __X11__
 #ifdef HAVE_LIBXFT
 
 typedef struct _XftFont XftFont;
@@ -54,10 +55,11 @@ typedef struct _XftFont XftFont;
 #ifdef HAVE_LIBXUTF8
 #include "xutf8/Xutf8.h"
 #endif
-
+#endif
 
 using namespace toad;
 
+#ifdef __X11__
 static TFontManager* fontmanager = NULL;
 
 TFontManager::~TFontManager()
@@ -83,16 +85,65 @@ TFontManager::getDefault()
 {
   return fontmanager;
 }
+#endif
 
+TFont::TFont() {
+#ifdef __X11__
+  if (default_font) {
+    font = FcPatternDuplicate(default_font->font);
+  } else {
+    font = 0;
+  }
+  fontmanager = TFontManager::getDefault();
+  corefont = 0;
+#endif
+
+#ifdef __COCOA__
+  font = 0;
+  setFont("arial,helvetica,sans-serif:size=12");
+  nsfont = [NSFont fontWithName: @"Helvetica" size:12.0];
+#endif
+}
+
+TFont::TFont(const TFont &f) {
+  font = FcPatternDuplicate(f.font);
+#ifdef __X11__
+  fontmanager = f.fontmanager;
+  corefont = 0;
+#endif
+
+#ifdef __COCOA__
+  nsfont = [NSFont fontWithName: @"Helvetica" size:12.0];
+#endif
+}
+
+TFont::TFont(const string &fontname) {
+  font = 0;
+#ifdef __X11__
+  fontmanager = TFontManager::getDefault();
+  corefont = 0;
+#endif
+  setFont(fontname);
+#ifdef __COCOA__
+  nsfont = [NSFont fontWithName: @"Helvetica" size:12.0];
+#endif
+}
 
 TFont::~TFont()
 {
   if (font)
     FcPatternDestroy(font);
+#ifdef __X11__
   if (corefont) {
     assert(fontmanager!=NULL);
     fontmanager->freeCoreFont(this);
   }
+#endif
+
+#ifdef __COCOA__
+  if (nsfont)
+    [nsfont release];
+#endif
 }
 
 void

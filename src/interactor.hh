@@ -53,7 +53,7 @@ class TInteractor
     static TInteractor* getPrevSibling(const TInteractor *ptr);
     TInteractor* getPrevSibling() const { return getPrevSibling(this); }
 
-    bool bShell:1;
+    bool flagShell:1;
     bool bFocusManager:1;
     bool bFocusTraversal:1;
     bool bNoFocus:1;

@@ -305,7 +305,7 @@ running = false;
       }
     }
     if ((ptr->nflag&3)==3 || (ptr->nflag&12)==12) {
-      if(!ptr->it(window)->bShell && !ptr->it(window)->bPopup ) {
+      if(!ptr->it(window)->flagShell && !ptr->it(window)->flagPopup ) {
         fprintf(stderr, "toad: '%s' within TForm has undefined attachment\n",
                 ptr->name.c_str());
         bError = true;

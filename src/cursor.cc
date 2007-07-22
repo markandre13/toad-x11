@@ -18,9 +18,13 @@
  * MA  02111-1307,  USA
  */
 
+#include <toad/os.hh>
+
+#ifdef __X11__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
+#endif
 
 #define _TOAD_PRIVATE
 
@@ -29,6 +33,8 @@
 #include <toad/window.hh>
 
 using namespace toad;
+
+#ifdef __X11__
 
 static unsigned int xtype[TCursor::_MAX] = {
   XC_top_left_arrow,
@@ -82,21 +88,25 @@ TCursor::X11Cursor(TCursor::EType type)
   
   return ::cursor[type];
 }
+#endif
 
 void
 TWindow::setCursor(TCursor::EType type)
 {
+#ifdef __X11__
   Cursor cursor = TCursor::X11Cursor(type);
   if (cursor == _cursor)
     return;
   _cursor = cursor;
   if (x11window)
     XDefineCursor(x11display, x11window, _cursor);
+#endif
 }
 
 void
 TWindow::setCursor(const TCursor *c)
 {
+#ifdef __X11__
   if (c) {
     if (_cursor == c->cursor)
       return;
@@ -108,10 +118,12 @@ TWindow::setCursor(const TCursor *c)
   }
   if (x11window)
     XDefineCursor(x11display, x11window, _cursor);
+#endif
 }
 
 TCursor::TCursor(const char shape[32][32+1], unsigned ox, unsigned oy)
 {
+#ifdef __X11__
   XColor fc, bc;
   fc.red = fc.green = fc.blue = 0xFFFF;
   fc.flags = DoRed|DoGreen|DoBlue;
@@ -157,10 +169,13 @@ TCursor::TCursor(const char shape[32][32+1], unsigned ox, unsigned oy)
   
   XFreeGC(x11display, gc0);
   XFreeGC(x11display, gc1);
+#endif
 }
 
 TCursor::~TCursor()
 {
+#ifdef __X11__
   if (cursor)
     XFreeCursor(x11display, cursor);
+#endif
 }

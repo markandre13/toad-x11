@@ -29,8 +29,8 @@
  *  on how to distribute keyboard events to the top level window and most of
  *  its' children.
  *
- *  - every window with Parent()==NULL has bShell=true    
- *  - every window with bShell==true is a top level window
+ *  - every window with Parent()==NULL has flagShell=true    
+ *  - every window with flagShell==true is a top level window
  *  - every top level domain is stored in `top_domain_map'
  *  - every window with bFocusManager==true adds a sub domain to the top
  *    level domains' tree
@@ -61,7 +61,7 @@
  *    
  *  ATTENTION:
  *  Errors are bound to happen when the TWindow attributes `bFocusManager'
- *  and `bShell' are modified between calls to `createWindow()' and 
+ *  and `flagShell' are modified between calls to `createWindow()' and 
  *  `destroyWindow()'.
  *    
  *  STUFF TO ADD:
@@ -171,8 +171,8 @@ TOADBase::focusNewWindow(TWindow* wnd)
 {
   assert(wnd!=NULL);
   
-  if (wnd->bShell) {
-//if(wnd->bPopup) cout << "new popup: " << wnd->getTitle() << endl;
+  if (wnd->flagShell) {
+//if(wnd->flagPopup) cout << "new popup: " << wnd->getTitle() << endl;
     // create a new domain for window `wnd'
     //----------------------------------------------------------------
     assert(top_domain_map.find(wnd)==top_domain_map.end());
@@ -249,7 +249,7 @@ cout << "FocusDelWindow" << endl
 
   // remove domain
   //------------------------------------------------------------------
-  if (wnd->bShell) {
+  if (wnd->flagShell) {
     // when we remove a domain it's subdomains should be removed
     // already
     assert(domain->first_child==NULL);
@@ -346,12 +346,12 @@ TOADBase::setFocusWindow(TWindow* wnd)
   assert(wnd!=NULL);
 
 DBM(cout << "setFocusWindow " << wnd->getTitle() << endl;)
-  if (wnd->bNoFocus && !wnd->bFocusManager && !wnd->bShell) {
+  if (wnd->bNoFocus && !wnd->bFocusManager && !wnd->flagShell) {
 DBM(
     cout << "window \"" << wnd->getTitle() << "\" doesn't need focus" << endl;
     cout << "  bNoFocus     : " << (wnd->bNoFocus?"true":"false") << endl;
     cout << "  bFocusManager: " << (wnd->bFocusManager?"true":"false") << endl;
-    cout << "  bShell       : " << (wnd->bShell?"true":"false") << endl;
+    cout << "  flagShell       : " << (wnd->flagShell?"true":"false") << endl;
 )
     return;
   }
@@ -375,7 +375,7 @@ DBM(
   // when `wnd' is a window with a focus domain and it doesn't want to
   // receive keyboard events, try to take one of its children
   //------------------------------------------------------------------
-  if ( wnd->bNoFocus && (wnd->bFocusManager || wnd->bShell) )
+  if ( wnd->bNoFocus && (wnd->bFocusManager || wnd->flagShell) )
   {
     TWindow *memo = wnd;
 DBM(cout << "trying one of the cildren" << endl;)
@@ -421,7 +421,7 @@ ToggleDomain2(TInteractor *wnd, bool on)
   wnd->domainFocus(on);
   TInteractor *p = wnd->getFirstChild();
   while(p) {
-    if (!p->bFocusManager && !p->bShell)
+    if (!p->bFocusManager && !p->flagShell)
       ToggleDomain2(p, on);
     p = TInteractor::getNextSibling(p);
   }
@@ -443,7 +443,7 @@ SetPathTo(TWindow *wnd, TWindow *new_focus)
   // top of recursion: return the top level domain 
   // and set new focus window
   //-----------------------------------------------
-  if (wnd->bShell) {
+  if (wnd->flagShell) {
 DBM(cout << "top of recursion" << endl;)
     TDomainMap::iterator dp = top_domain_map.find(wnd);
     assert(dp!=top_domain_map.end());
@@ -587,24 +587,30 @@ print(TInteractor *p, unsigned d=0)
   } while(c!=NULL);
 }
 
-extern bool new_key_eventhack;
-
 // called from the message loop to distribute the `keyDown' event
 void
-TOADBase::handleKeyDown(TKey key, char* t, unsigned m)
+TOADBase::handleKeyEvent(TKeyEvent &keyevent)
 {
   if (!current_domain)    // paranoia check
     return;
+
+  if (keyevent.type == TKeyEvent::UP) {
+    if (current_domain->focus_window) {
+      keyevent.window = current_domain->focus_window;
+      current_domain->focus_window->keyEvent(keyevent);
+    }
+    return;
+  }
+
+
 #if 0
 cout << "keyDown" << endl
      << "  current_domain: " << current_domain << endl;
 printf("keyDown for %08x\n", current_domain->focus_window);
 #endif
 
-  static TKeyEvent keyevent;
-  keyevent.type = TKeyEvent::DOWN;
-new_key_eventhack=true;
-key = keyevent.key();
+TKey key = keyevent.key();
+unsigned m = keyevent.modifier();
 
   if (key==TK_F12) {
     cout << "DEBUG: Window & Keyboard Focus Tree" << endl;
@@ -695,19 +701,6 @@ key = keyevent.key();
   }
 }
 
-void
-TOADBase::handleKeyUp(TKey key, char* t, unsigned m)
-{
-  if (current_domain && current_domain->focus_window) {
-    static TKeyEvent keyevent;
-    keyevent.type = TKeyEvent::UP;
-    keyevent.window = current_domain->focus_window;
-
-new_key_eventhack=true;
-
-    current_domain->focus_window->keyEvent(keyevent);
-  }
-}
 
 
 //---------------------------------------------------------------------------
@@ -744,7 +737,7 @@ DelSubDomain(TWindow *wnd)
   assert(domain!=NULL);
 #if 0
 cout << "domain->owner:" << domain->owner->getTitle() << endl;
-cout << "popup?       :" << domain->owner->bPopup << endl;
+cout << "popup?       :" << domain->owner->flagPopup << endl;
 cout << "domain for   :" << wnd->getTitle() << endl;
 #endif
   assert(domain->owner==wnd);   // window isn't a focus manager
@@ -791,7 +784,7 @@ GetDomain(TWindow *wnd)
   // this method is called recursive and the recursion stops when we've
   // reached the top level window 
   //-------------------------------------------------------------------
-  if (wnd->bShell) {
+  if (wnd->flagShell) {
     TDomainMap::iterator p = top_domain_map.find(wnd);
     if (p==top_domain_map.end()) {
       cerr << "window '" << wnd->getTitle() << "' has no top domain\n";
@@ -824,7 +817,7 @@ GetTopDomain(TWindow *wnd)
 {
   assert(wnd!=NULL);
   
-  while(wnd->getParent() && !wnd->bShell)
+  while(wnd->getParent() && !wnd->flagShell)
     wnd = wnd->getParent();
   TDomainMap::iterator dp = top_domain_map.find(wnd);
   if (dp==top_domain_map.end())
@@ -848,12 +841,12 @@ Walk(TWindow *top, TWindow *focus, bool bNext)
   do {
     DBM(cerr << "walk...\n";)
     if ( ptr->getFirstChild() &&      // go down when `ptr' has a child
-         !(ptr->bShell&&ptr!=top) &&  // but skip alien focus domains
+         !(ptr->flagShell&&ptr!=top) &&  // but skip alien focus domains
          ptr->bFocusTraversal &&      // and windows that don't want to be part of the focus traversal
          ptr->isRealized() &&         // and when the window is mapped
          ( ptr->bNoFocus              // and only go down when window rejects focus
            || ptr->bFocusManager      //   or when it's a focusmanager
-           || ptr->bShell             //   or a shell window
+           || ptr->flagShell             //   or a shell window
         ))
     {
       DBM(cerr << "  go one step down\n";)
@@ -905,7 +898,7 @@ Walk(TWindow *top, TWindow *focus, bool bNext)
       cerr << "found ptr = '" << ptr->getTitle() << "'\n";
       if (ptr!=top) {
         cerr << "  it's not the top window\n";
-        if (ptr->bShell)
+        if (ptr->flagShell)
           cerr << "  but it's a shell window => continue loop\n";
       }
       if (ptr->bNoFocus)
@@ -916,7 +909,7 @@ Walk(TWindow *top, TWindow *focus, bool bNext)
   } while(
       ptr->bNoFocus ||          // continue when window doesn't want the focus
       !ptr->isRealized() ||     // or isn't mapped
-      (ptr!=top && ptr->bShell) // continue when window belongs to another domain
+      (ptr!=top && ptr->flagShell) // continue when window belongs to another domain
   );
     
   return dynamic_cast<TWindow*>(ptr);

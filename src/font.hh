@@ -19,7 +19,11 @@
  */
 
 #ifndef __TOAD_FONT_HH
-#define __TOAD_FONT_HH
+#define __TOAD_FONT_HH 1
+
+#ifdef __COCOA__
+#import <Cocoa/Cocoa.h>
+#endif
 
 #include <string>
 #include <cstring>
@@ -33,6 +37,8 @@ using namespace std;
 class TPenBase;
 class TFont;
 class TMatrix2D;
+
+#ifdef __X11__
 
 class TFontManager
 {
@@ -103,6 +109,8 @@ class TFontManagerFT:
     static bool buildFontList(FcConfig *config);
 };
 
+#endif
+
 class TFont;
 typedef GSmartPointer<TFont> PFont;
 extern PFont default_font;
@@ -112,26 +120,9 @@ class TFont:
   public TSmartObject
 {
   public:
-    TFont() {
-      if (default_font) {
-        font = FcPatternDuplicate(default_font->font);
-      } else {
-        font = 0;
-      }
-      fontmanager = TFontManager::getDefault();
-      corefont = 0;
-    }
-    TFont(const TFont &f) {
-      font = FcPatternDuplicate(f.font);
-      fontmanager = f.fontmanager;
-      corefont = 0;
-    }
-    TFont(const string &fontname) {
-      font = 0;
-      fontmanager = TFontManager::getDefault();
-      setFont(fontname);
-      corefont = 0;
-    }
+    TFont();
+    TFont(const TFont &f);
+    TFont(const string &fontname);
     virtual ~TFont();
     
     void setFont(const string &fontname);
@@ -147,9 +138,9 @@ class TFont:
     int getSlant() const;
 
     FcPattern *font;
+#ifdef __X11__
     TFontManager *fontmanager;
     void *corefont;
-
     int getHeight() { return fontmanager->getHeight(this); }
     int getAscent() { return fontmanager->getAscent(this); }
     int getDescent() { return fontmanager->getDescent(this); }
@@ -162,6 +153,36 @@ class TFont:
     int getTextWidth(const string &text) {
       return fontmanager->getTextWidth(this, text.c_str(), text.size());
     }
+#endif
+
+#ifdef __COCOA__
+    NSFont *nsfont;
+
+    int getHeight() {
+      return [nsfont ascender] - [nsfont descender];
+    }
+    int getAscent() { return [nsfont ascender]; }
+    int getDescent() { return -[nsfont descender]; }
+    int getTextWidth(const char *text) {
+      return [nsfont widthOfString: [NSString stringWithUTF8String: text]];
+    }
+    int getTextWidth(const char *text, size_t n) {
+      int w;
+      char *t = 0;
+      if (strlen(text)!=n) {
+        t = strdup(text);
+        t[n] = 0;
+        w = getTextWidth(t);
+        free(t);   
+      } else {
+        w = getTextWidth(text);
+      }
+      return w;
+    }
+    int getTextWidth(const string &text) {
+      return getTextWidth(text.c_str());
+    }
+#endif
 };
 
 

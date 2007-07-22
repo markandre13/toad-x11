@@ -84,6 +84,10 @@ namespace toad {
 #include <toad/w32/keyboard.hh>
 #endif
 
+#ifdef __COCOA__
+#include <toad/cocoa/keyboard.hh>
+#endif
+
 #include <toad/connect.hh>
 
 namespace toad {
@@ -110,6 +114,10 @@ class TDialog;
 class TDialogEditor;
 
 #ifdef __X11__
+void initialize(int argc, char **&argv, char **envv);
+#endif
+
+#ifdef __COCOA__
 void initialize(int argc, char **&argv, char **envv);
 #endif
 
@@ -216,13 +224,12 @@ class TOADBase
 
     // focus management
     //------------------
-  private:
+  public:
     static void focusNewWindow(TWindow* wnd);
     static void focusDelWindow(TWindow* wnd);
     static void domainToWindow(TWindow *wnd);
-    static void handleKeyDown(TKey key, char* t, unsigned m);
-    static void handleKeyUp(TKey key, char* t, unsigned m);
-  public:
+    static void handleKeyEvent(TKeyEvent &keyevent);
+
     static TWindow* getFocusWindow();
     static void setFocusWindow(TWindow* wnd);
     
@@ -241,14 +248,6 @@ class TOADBase
     static const string& getExecutableName();
 
     static void bell(int volume = 0, int frequency=-1);
-
-    // message handling
-    //------------------
-    static void sendMessage(TCommand*);
-    static void removeMessage(void*);
-    static void removeAllIntMsg();
-    
-    static void sendMessageDeleteWindow(TWindow*);
 
 #ifdef __X11__
     static bool peekMessage();
@@ -308,10 +307,6 @@ inline void flush() { TOADBase::flush(); }
 inline const string& getExecutablePath() { return TOADBase::getExecutablePath(); }
 inline const string& getExecutableName() { return TOADBase::getExecutableName(); }
 inline void bell(int volume = 0, int frequency=-1) { TOADBase::bell(volume, frequency); }
-inline void sendMessage(TCommand *cmd) { TOADBase::sendMessage(cmd); }
-inline void removeMessage(void *cmd) { TOADBase::removeMessage(cmd); }
-inline void removeAllIntMsg() { TOADBase::removeAllIntMsg(); }
-inline void sendMessageDeleteWindow(TWindow *w) { TOADBase::sendMessageDeleteWindow(w); }
 inline int getScreenWidth() { return TOADBase::getScreenWidth(); }
 inline int getScreenHeight() { return TOADBase::getScreenHeight(); }
 inline void getMousePos(int *x, int *y) { return TOADBase::getMousePos(x, y); }

@@ -18,15 +18,15 @@
  * MA  02111-1307,  USA
  */
 
+
 #include <toad/os.hh>
-#include <toad/config.h>
 
 #ifdef __X11__
 
+#include <toad/config.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
-#endif
 
 #define _TOAD_PRIVATE
 
@@ -435,3 +435,5 @@ d2s(double d)
 
   return s;
 }
+
+#endif

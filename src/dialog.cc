@@ -99,7 +99,7 @@ TDialog::TDialog(TWindow* parent, const string &title):
   super(parent, title)
 {
   setBackground(TColor::DIALOG);
-  bShell = bStaticFrame = true;
+  flagShell = bStaticFrame = true;
   bFocusManager = true;
   bDrawFocus = false;
   if (getParent())

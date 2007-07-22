@@ -59,7 +59,7 @@ TComboBox::TComboBox(TWindow * parent, const string &title):
   connect(table->sigDoubleClicked, this, &TComboBox::selected);
 
   table->bExplicitCreate = true;
-  table->bPopup = true;
+  table->flagPopup = true;
   table->bSaveUnder = true;
   // table->_faked_focus = true;
 }
@@ -201,7 +201,7 @@ TComboBox::keyDown(const TKeyEvent &ke)
   }
 
   switch(key) {
-    case TK_PAGE_DOWN:
+    case TK_PAGEDOWN:
     case TK_SPACE:
       btn->setDown(true);
       break;

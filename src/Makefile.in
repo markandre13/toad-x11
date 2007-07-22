@@ -81,7 +81,7 @@ XUTF8           = xutf8/utf8Input.cc xutf8/utf8Utils.cc xutf8/utf8Wrap.cc \
                   xutf8/is_spacing.cc xutf8/is_right2left.cc \
                   xutf8/keysym2Ucs.cc
 
-SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc \
+SRCS		= filedialog.cc menuhelper.cc menubar.cc menubutton.cc command.cc \
 		popupmenu.cc layout.cc springlayout.cc tabbedlayout.cc popup.cc action.cc \
 		window.cc focusmanager.cc interactor.cc dialog.cc \
 		$(DND) toadbase.cc connect.cc toadmain.cc cursor.cc \

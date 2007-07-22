@@ -24,6 +24,10 @@
 #include <toad/penbase.hh>
 #include <toad/config.h>
 
+#ifdef __COCOA__
+#import <Cocoa/Cocoa.h>
+#endif
+
 #ifdef HAVE_LIBXFT
 typedef struct _XftDraw XftDraw;
 #endif

@@ -294,7 +294,7 @@ void
 TMenuHelper::closeRequest()
 {
 DBM2(cerr << "TMenuHelper received closeRequest" << endl;)
-  if (bPopup) {
+  if (flagPopup) {
     DBM2(cerr << "  it's a popup, closing it\n" << endl;)
     destroyWindow();
   }
@@ -991,7 +991,7 @@ DBM2(cerr << "TMenuLayout::arrange '" << menu->getTitle() << "'\n";)
   
 DBM2(cerr << "  find top level window of window '" << window->getTitle() << "'\n";)
   TWindow *toplvl = window;
-  while((toplvl->bPopup || !toplvl->bShell) && toplvl->getParent()) {
+  while((toplvl->flagPopup || !toplvl->flagShell) && toplvl->getParent()) {
     toplvl = toplvl->getParent();
   }
 DBM2(cerr << "  okay, it's '" << toplvl->getTitle() << "'\n";)
@@ -1016,7 +1016,7 @@ DBM2(cerr << "    toplevel menubar, check that action is a child\n";)
 DBM2(cerr << "      create node\n";)
               node = insert_node((*p)->getTitle(), &menu->root.down, &menu->root);
 DBM2(cerr << "      found window '" << w->getTitle() << "'\n";)
-              if (w->bShell || !w->getParent()) {
+              if (w->flagShell || !w->getParent()) {
 DBM2(cerr << "       it's a shell window or has no other parent\n";)
                 if (toplvl == w) {
 DBM2(cerr << "         and it's the top level window\n";)

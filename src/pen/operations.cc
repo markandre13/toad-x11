@@ -80,6 +80,7 @@
 #include <toad/bitmap.hh>
 #include <iostream>
 
+#ifdef __X11__
 #ifdef HAVE_LIBXFT
 
 #ifdef _XFT_NO_COMPAT_
@@ -87,10 +88,12 @@
 #endif
 
 #include <X11/Xft/Xft.h>
+
 #ifdef FC_VERSION
 #define HAVE_FONTCONFIG
 #endif
 
+#endif
 #endif
 
 using namespace toad;
@@ -214,38 +217,80 @@ polygon2wpoint(const TPolygon &in, POINT *out, const TMatrix2D *mat) {
 void
 TPen::identity()
 {
+#ifdef __X11__
   if (mat) {
     mat->identity();
     _setLineAttributes();
   }
+#endif
+
+#ifdef __COCOA__
+  NSAffineTransform* xform = [NSAffineTransform transform];
+  for(mstack_t::const_iterator p = mstack.begin();
+      p != mstack.end();
+      ++p)
+  {
+    [xform appendTransform: *p];
+  }
+  [xform invert];
+  [xform concat];
+  [mstack.back() appendTransform: xform];
+#endif
 }
 
 void
 TPen::translate(TCoord dx, TCoord dy)
 {
+#ifdef __X11__
   if (!mat) {
     if (dx==0.0 && dy==0.0)
       return;
     mat = new TMatrix2D();
   }
   mat->translate(dx, dy);
+#endif
+
+#ifdef __COCOA__
+  NSAffineTransform* xform = [NSAffineTransform transform];
+  [xform translateXBy: dx yBy: dy];
+  [xform concat];
+  [mstack.back() appendTransform: xform];
+#endif
 }
 
 void
-TPen::rotate(double degree)
+TPen::rotate(double radians)
 {
+#ifdef __X11__
   if (!mat)
     mat = new TMatrix2D();
-  mat->rotate(degree);
+  mat->rotate(radians);
+#endif
+
+#ifdef __COCOA__
+  NSAffineTransform* xform = [NSAffineTransform transform];
+  [xform rotateByRadians: radians];
+  [xform concat];
+  [mstack.back() appendTransform: xform];
+#endif
 }
 
 void
-TPen::scale(TCoord xfactor, TCoord yfactor)
+TPen::scale(TCoord sx, TCoord sy)
 {
+#ifdef __X11__
   if (!mat)
     mat = new TMatrix2D();
-  mat->scale(xfactor, yfactor);
+  mat->scale(sx, sy);
   _setLineAttributes();
+#endif
+
+#ifdef __COCOA__
+  NSAffineTransform* xform = [NSAffineTransform transform];
+  [xform scaleXBy: sx yBy: sy];
+  [xform concat];
+  [mstack.back() appendTransform: xform];
+#endif
 }
 
 #if 0
@@ -258,6 +303,7 @@ TPen::shear(double, double)
 void
 TPen::multiply(const TMatrix2D *m)
 {
+#ifdef __X11__
   assert(m!=0);
   if (!mat) {
     mat = new TMatrix2D(*m);
@@ -265,15 +311,47 @@ TPen::multiply(const TMatrix2D *m)
     mat->multiply(m);
     _setLineAttributes();
   }
+#endif
+
+#ifdef __COCOA__
+  NSAffineTransform* xform = [NSAffineTransform transform];
+  NSAffineTransformStruct m0;
+  m0.m11 = m->a11;
+  m0.m12 = m->a12;
+  m0.m21 = m->a21;
+  m0.m22 = m->a22;
+  m0.tX  = m->tx; 
+  m0.tY  = m->ty; 
+  [xform setTransformStruct: m0];
+  [xform concat];
+  [mstack.back() appendTransform: xform];
+#endif
 }
 
 void
 TPen::setMatrix(TCoord a11, TCoord a21, TCoord a12, TCoord a22, TCoord tx, TCoord ty)
 {
+#ifdef __X11__
   if (!mat)
     mat = new TMatrix2D();
   mat->set(a11, a21, a12, a22, tx, ty);
   _setLineAttributes();
+#endif
+
+#ifdef __COCOA__
+  identity();
+  NSAffineTransform* xform = [NSAffineTransform transform];
+  NSAffineTransformStruct m0;
+  m0.m11 = a11;
+  m0.m12 = a12;
+  m0.m21 = a21;
+  m0.m22 = a22;
+  m0.tX  = tx; 
+  m0.tY  = ty; 
+  [xform setTransformStruct: m0];
+  [xform concat];
+  [mstack.back() appendTransform: xform];
+#endif
 }
 
 #warning "TPen push and pop use a list..."
@@ -281,28 +359,43 @@ TPen::setMatrix(TCoord a11, TCoord a21, TCoord a12, TCoord a22, TCoord tx, TCoor
 void
 TPen::push()
 {
+#ifdef __X11__
   if (mat) {
     TMatrix2D *mnew;
     mnew = new TMatrix2D(*mat);
     mnew->next = mat;
     mat = mnew;
   }
+#endif
+
+#ifdef __COCOA__
+  mstack.push_back([NSAffineTransform transform]);
+#endif
 }
 
 void
 TPen::pop()
 {
+#ifdef __X11__
   if (mat) {
     TMatrix2D *mold = mat;
     mat = mat->next;
     delete mold;
     _setLineAttributes();
   }
+#endif
+
+#ifdef __COCOA__
+  [mstack.back() invert];
+  [mstack.back() concat];
+  mstack.pop_back();
+#endif
 }
 
 void
 TPen::popAll()
 {
+#ifdef __X11__
   if (!mat)
     return;
   while(mat) {
@@ -311,6 +404,11 @@ TPen::popAll()
     delete mold;
   }
   _setLineAttributes();
+#endif
+
+#ifdef __COCOA__
+  assert(false);
+#endif
 }
 
 // point
@@ -356,9 +454,9 @@ TPen::drawLines(const TPoint *s, size_t n)
   if (n<2)
     return;
   NSBezierPath *path = [NSBezierPath bezierPath];
-  [path moveToPoint: NSMakePoint(p[0].x+0.5, p[0].y+0.5)];
+  [path moveToPoint: NSMakePoint(s[0].x+0.5, s[0].y+0.5)];
   for(size_t i=1; i<n; ++i)
-    [path lineToPoint: NSMakePoint(p[i].x+0.5, p[i].y+0.5)];
+    [path lineToPoint: NSMakePoint(s[i].x+0.5, s[i].y+0.5)];
   [path stroke];
 #endif
 
@@ -391,12 +489,12 @@ TPen::drawLines(const TPolygon &polygon)
 #endif
 
 #ifdef __COCOA__
-  if (p.size()<2)
+  if (polygon.size()<2)
     return;
   NSBezierPath *path = [NSBezierPath bezierPath];
-  [path moveToPoint: NSMakePoint(p[0].x, p[0].y)];
-  for(size_t i=1; i<p.size(); ++i)
-    [path lineToPoint: NSMakePoint(p[i].x, p[i].y)];
+  [path moveToPoint: NSMakePoint(polygon[0].x, polygon[0].y)];
+  for(size_t i=1; i<polygon.size(); ++i)
+    [path lineToPoint: NSMakePoint(polygon[i].x, polygon[i].y)];
   [path stroke];
 #endif
 
@@ -764,9 +862,9 @@ TPen::drawPolygon(const TPoint points[], size_t n)
   if (n<2)
     return;
   NSBezierPath *path = [NSBezierPath bezierPath];
-  [path moveToPoint: NSMakePoint(p[0].x+0.5, p[0].y+0.5)];
+  [path moveToPoint: NSMakePoint(points[0].x+0.5, points[0].y+0.5)];
   for(size_t i=1; i<n; ++i)
-    [path lineToPoint: NSMakePoint(p[i].x+0.5, p[i].y+0.5)];
+    [path lineToPoint: NSMakePoint(points[i].x+0.5, points[i].y+0.5)];
   [path closePath];
   [path stroke];   
 #endif
@@ -808,9 +906,9 @@ TPen::fillPolygon(const TPoint s[], size_t n)
   if (n<2)
     return;
   NSBezierPath *path = [NSBezierPath bezierPath];
-  [path moveToPoint: NSMakePoint(p[0].x+0.5, p[0].y+0.5)];
+  [path moveToPoint: NSMakePoint(s[0].x+0.5, s[0].y+0.5)];
   for(size_t i=1; i<n; ++i)
-    [path lineToPoint: NSMakePoint(p[i].x+0.5, p[i].y+0.5)];
+    [path lineToPoint: NSMakePoint(s[i].x+0.5, s[i].y+0.5)];
   [path closePath];
   [path fill];
 #endif
@@ -928,13 +1026,13 @@ TPen::vdrawBitmap(TCoord x, TCoord y, const TBitmap& bmp)
 #endif
 
 #ifdef __COCOA__
-  if (b.img==nil)
+  if (bmp.img==nil)
     return;
   NSAffineTransform* xform = [NSAffineTransform transform];
-  [xform translateXBy: x yBy: y+b.height];
+  [xform translateXBy: x yBy: y+bmp.height];
   [xform scaleXBy: 1.0 yBy: -1.0];
   [xform concat];
-  [b.img drawAtPoint: NSMakePoint(0, 0)];
+  [bmp.img drawAtPoint: NSMakePoint(0, 0)];
   [xform invert];
   [xform concat];
 #endif
@@ -944,7 +1042,7 @@ TPen::vdrawBitmap(TCoord x, TCoord y, const TBitmap& bmp)
 //----------------------------------------------------------------------------
 
 void
-TPen::vdrawString(TCoord x,TCoord y, const char *str, size_t strlen, bool transparent)
+TPen::vdrawString(TCoord x, TCoord y, const char *text, size_t len, bool transparent)
 {
 #ifdef __COCOA__
   char *t = 0;
@@ -955,7 +1053,7 @@ TPen::vdrawString(TCoord x,TCoord y, const char *str, size_t strlen, bool transp
 //cerr<<"vdrawString("<<x<<","<<y<<",\""<<text<<"\","<<len<<","<<transparent<<")\n";
   if (!transparent) {
 //cerr << "  not transparent" << endl;
-    TRGBA stroke2 = stroke, fill2 = fill;
+    TRGB stroke2 = stroke, fill2 = fill;
     setColor(fill2.r, fill2.g, fill2.b); 
     fillRectanglePC(x,y,getTextWidth(t?t:text),getHeight());
     setLineColor(stroke2.r, stroke2.g, stroke2.b);
@@ -979,153 +1077,11 @@ TPen::vdrawString(TCoord x,TCoord y, const char *str, size_t strlen, bool transp
 */
   if (t)
     free(t);
-#else
-  if (font && font->fontmanager)
-    font->fontmanager->drawString(this, x, y, str, strlen, transparent);
-#if 0
-  if (strlen==-1)
-    strlen = ::strlen(str);
+#endif
 
 #ifdef __X11__
-  assert(font!=NULL);
-  font->createFont(mat);
-
-#ifdef HAVE_LIBXFT
-  XftColor color;
-#endif
-
-  switch(font->getRenderType()) {
-    case TFont::RENDER_X11:
-#ifdef TOAD_OLD_FONTCODE
-      if (!font->getX11Font()) {
-        cout << "no X11 font found" << endl;
-        return;
-      }
-      XSetFont(x11display, o_gc, font->getX11Font());
-#endif
-      if (!transparent && using_bitmap) {
-        XSetFillStyle(x11display, o_gc, FillSolid);
-      }
-      break;
-    case TFont::RENDER_FREETYPE:
-#ifdef HAVE_LIBXFT
-      if (!transparent) {
-        bool b = two_colors; 
-        GC gc;
-        if (b) {
-          two_colors = false;
-          gc = o_gc; o_gc = f_gc;
-        }
-        fillRectanglePC(x,y,getTextWidth(str,strlen),getHeight());
-        if (b) {
-          two_colors = true;
-          o_gc = gc;
-        }
-      }
-      color.color.red   = (o_color.r << 8) | o_color.r;
-      color.color.green = (o_color.g << 8) | o_color.g;
-      color.color.blue  = (o_color.b << 8) | o_color.b;
-      color.color.alpha = 0xffff;
-      if (!xftdraw) {
-        *(const_cast<XftDraw**>(&xftdraw)) = XftDrawCreate(x11display, x11drawable, x11visual, x11colormap);
-      }
-      if (region)
-        XftDrawSetClip(xftdraw, region->x11region);
-      else if (wnd && wnd->getUpdateRegion())
-        XftDrawSetClip(xftdraw, wnd->getUpdateRegion()->x11region);
-      break;
-#else
-      return;
-#endif
-  }
-
-  y+=font->getAscent();
-
-  if (!mat || mat->isIdentity()) {
-    if (mat)
-      mat->map(x, y, &x, &y);
-    switch(font->getRenderType()) {
-      case TFont::RENDER_X11:
-#ifdef TOAD_OLD_FONTCODE
-        if (transparent)
-          XDrawString(x11display, x11drawable, o_gc, x,y, str, strlen);
-        else
-          XDrawImageString(x11display, x11drawable, o_gc, x,y, str, strlen);
-#endif
-#ifdef HAVE_LIBXUTF8
-        if (transparent)
-          XUtf8DrawString(x11display, x11drawable, font->xutf8font, o_gc, x, y, str, strlen);
-        else
-          XUtf8DrawImageString(x11display, x11drawable, font->xutf8font, o_gc, x, y, str, strlen);
-#endif
-        break;
-      case TFont::RENDER_FREETYPE:
-#ifdef HAVE_LIBXFT
-        XftDrawStringUtf8(xftdraw, &color, font->getXftFont(), x,y, (XftChar8*)str, strlen);
-#endif
-        break;
-    }
-  } else {
-    // Draw rotated and downscaled font char by char, using the horizontal
-    // unscaled font as a reference. This is much slower than a single
-    // X*DrawString call but the precision is required, even for horizontal
-    // and just scaled fonts.
-    int x2, y2;
-    const char *p = str;
-    int len=0;
-    while(*p && len<strlen) {
-      char buffer[5];
-      unsigned clen=1;
-      buffer[0]=*p;
-      ++p;
-      ++len;
-  
-      while( ((unsigned char)*p & 0xC0) == 0x80) {
-        buffer[clen]=*p;
-        ++len;
-        ++p;
-        ++clen;
-      }
-  
-      int direction, fasc, fdesc;
-  
-      mat->map(x, y, &x2, &y2);
-      switch(font->getRenderType()) {
-        case TFont::RENDER_X11:
-#ifdef TOAD_OLD_FONTCODE
-          if (transparent)
-            XDrawString(x11display, x11drawable, o_gc, x2,y2, buffer, 1);
-          else
-            XDrawImageString(x11display, x11drawable, o_gc, x2,y2, buffer, 1);
-          XCharStruct xcs1;
-          XTextExtents(font->x11fs, buffer, 1, &direction, &fasc, &fdesc, &xcs1);
-          x+=font->x11scale * xcs1.width;
-#endif
-#ifdef HAVE_LIBXUTF8
-          if (transparent)
-            XUtf8DrawString(x11display, x11drawable, font->xutf8font_r, o_gc, x2, y2, buffer, clen);
-          else
-            XUtf8DrawImageString(x11display, x11drawable, font->xutf8font_r, o_gc, x2, y2, buffer, clen);
-          x+=font->getTextWidth(buffer, clen);
-#endif
-          break;
-        case TFont::RENDER_FREETYPE:
-#ifdef HAVE_LIBXFT
-          XftDrawStringUtf8(xftdraw, &color, font->xftfont_r, x2,y2, (XftChar8*)buffer, clen);
-          x+=font->getTextWidth(buffer, clen);
-#endif
-          break;
-      }
-    }
-  }
-
-  switch(font->getRenderType()) {
-    case TFont::RENDER_X11:  
-      if (!transparent && using_bitmap) {
-        XSetFillStyle(x11display, o_gc, FillTiled);
-      }
-      break;
-  }
+  if (font && font->fontmanager)
+    font->fontmanager->drawString(this, x, y, text, len, transparent);
 #endif
 
 #ifdef __WIN32__
@@ -1138,7 +1094,7 @@ TPen::vdrawString(TCoord x,TCoord y, const char *str, size_t strlen, bool transp
   } else {
     ::SetBkMode(w32hdc, OPAQUE);
   }
-  ::TextOut(w32hdc, x,y, str, strlen);
+  ::TextOut(w32hdc, x,y, text, len);
 //  ::ExtTextOut(w32hdc, x, y, 0, 0, str, strlen, 0);
 //  RECT r;
 //  r.left = x;
@@ -1146,7 +1102,5 @@ TPen::vdrawString(TCoord x,TCoord y, const char *str, size_t strlen, bool transp
 //  r.right = 320;
 //  r.bottom = 200;
 //  ::DrawText(w32hdc, str, strlen, &r, 0);
-#endif
-#endif
 #endif
 }

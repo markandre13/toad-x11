@@ -58,11 +58,14 @@ Colormap x11colormap;
 //---------------------------------------------------------------------------
 void TOADBase::initColor()
 {
+#ifdef __X11__
   determine_color_mode();
+#endif
 }
 
 // _SetPen
 //---------------------------------------------------------------------------
+#ifdef __X11__
 void
 TColor::_setPen(TPen *pen, _TOAD_GC &gc)
 {
@@ -194,6 +197,7 @@ determine_color_mode()
 
 //  PrintVisualInfo(visual);
 }
+#endif
 
 } // namespace toad
 

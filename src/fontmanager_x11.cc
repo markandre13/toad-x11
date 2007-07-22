@@ -19,18 +19,17 @@
  */
 
 #include <toad/os.hh>
-#include <toad/debug.hh>
-#include <toad/config.h>
 
 #ifdef __X11__
+
+#include <toad/debug.hh>
+#include <toad/config.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
 #ifdef HAVE_LIBXUTF8
 #include "xutf8/Xutf8.h"
-#endif
-
 #endif
 
 #define _TOAD_PRIVATE
@@ -918,3 +917,4 @@ d2s(double d)
 
   return s;
 }
+#endif

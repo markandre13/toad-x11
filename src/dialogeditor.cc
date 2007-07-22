@@ -157,7 +157,7 @@ TDialogEditor::TFilter::keyEvent(TKeyEvent &ke)
   // copied from TMenuLayout::arrange, should make this one a method
   // of TWindow  
   TWindow *toplvl = ke.window;
-  while((toplvl->bPopup || !toplvl->bShell) && toplvl->getParent()) {
+  while((toplvl->flagPopup || !toplvl->flagShell) && toplvl->getParent()) {
     toplvl = toplvl->getParent();
   }
 

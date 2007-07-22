@@ -41,6 +41,7 @@
 #include <iostream>
 #include <map>
 
+#ifdef __X11__
 #ifdef HAVE_LIBXFT
 
 #ifdef _XFT_NO_COMPAT_
@@ -48,10 +49,12 @@
 #endif
 
 #include <X11/Xft/Xft.h>
+
 #ifdef FC_VERSION
 #define HAVE_FONTCONFIG
 #endif
 
+#endif
 #endif
 
 using namespace toad;
@@ -148,7 +151,7 @@ TPen::TPen(TWindow *wnd)
 
 #ifdef __X11__
   if (wnd->bDoubleBuffer) {
-    setColor(wnd->background);
+    setColor(wnd->_bg);
     fillRectangle(0,0,wnd->getWidth(), wnd->getHeight());
     setColor(0,0,0);
   }
@@ -534,7 +537,7 @@ void TPen::setLineWidth(TCoord n)
 #endif
 
 #ifdef __COCOA__
-  [NSBezierPath setDefaultLineWidth: w];
+  [NSBezierPath setDefaultLineWidth: width];
 #endif
 
 #ifdef __WIN32__
