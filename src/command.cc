@@ -56,10 +56,7 @@ toad::executeMessage()
   if (cmds.begin() == cmds.end())
     return;
   PCommand cmd = cmds.front();
-size_t n = cmds.size();
   cmds.erase(cmds.begin());
-cerr << "cmds.size()=="<<cmds.size()<<", n=="<<n<<endl;
-assert(cmds.size()==n-1);
   cmd->execute();
 }
 
