@@ -55,6 +55,7 @@ class TFigureTool
     virtual void setAttributes(TFigureAttributes *p);
     virtual void paintSelection(TFigureEditor *fe, TPenBase &pen);
     virtual void modelChanged(TFigureEditor *fe);
+    virtual TWindow* createEditor(TWindow *inWindow);
 };
 
 /**
@@ -287,6 +288,7 @@ class TFigureEditor:
       setTool(new TFCreateTool(figure));
     }
     void setTool(TFigureTool*);
+    virtual void toolChanged(TFigureTool*);
     
     // not all these methods work now, but the first 4 should do
     void identity();

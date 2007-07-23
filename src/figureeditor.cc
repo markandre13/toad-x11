@@ -1171,6 +1171,7 @@ TFigureEditor::setOperation(unsigned op)
     window->setFocus();
   operation = op;
   tool = 0;
+  setTool(0);
 }
 
 void
@@ -1178,9 +1179,17 @@ TFigureEditor::setTool(TFigureTool *aTool)
 {
   stopOperation();
   clearSelection();
-  tool = aTool;
+  if (tool!=aTool) {
+    tool = aTool;
+    toolChanged(aTool);
+  }
   if (window)
     window->setFocus();
+}
+
+void
+TFigureEditor::toolChanged(TFigureTool*)
+{
 }
 
 void
@@ -1446,8 +1455,8 @@ TFigureEditor::sheet2grid(TCoord sx, TCoord sy, TCoord *gx, TCoord *gy)
   }
   if (state!=STATE_ROTATE && state!=STATE_MOVE_ROTATE) {
     TCoord g = preferences->gridsize;
-    *gx = ((sx+g/2)/g)*g;
-    *gy = ((sy+g/2)/g)*g;
+    *gx = round(sx/g)*g;
+    *gy = round(sy/g)*g;
   } else {
     *gx = sx;
     *gy = sy;
@@ -2411,6 +2420,16 @@ TFigureTool::paintSelection(TFigureEditor *fe, TPenBase &)
 void
 TFigureTool::modelChanged(TFigureEditor *fe)
 {
+}
+
+/**
+ * Create a window to configure additional tool options while the tool is
+ * active.
+ */
+TWindow*
+TFigureTool::createEditor(TWindow *inWindow)
+{
+  return 0;
 }
 
 void
