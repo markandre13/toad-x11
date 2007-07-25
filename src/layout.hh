@@ -76,6 +76,7 @@ class TLayout:
      */
     void setModified(bool b) { modified = b; }
     bool isModified() const { return modified; }
+    TWindow * getWindow() const { return window; }
 
   protected:    
     /**
