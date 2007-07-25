@@ -106,7 +106,9 @@ TWidgetList widgetlist;
 TModelLayoutEditor::TModelLayoutEditor(TWindow *p, const string &t, TModelLayout *l, TWindow *fw):
   TLayoutEditor(p, t), mymousefilter(this), layout(l), forWindow(fw)
 {
-  setSize(506, 480);
+  layout->editor = this;
+  
+  setSize(240, 688);
   setBorder(0);
   setBackground(TColor::DIALOG);
 
@@ -117,18 +119,18 @@ TModelLayoutEditor::TModelLayoutEditor(TWindow *p, const string &t, TModelLayout
   tmodel = new TTable(this, "models");
   tmodel->selectionFollowsMouse = true;
   tmodel->setAdapter(new TModelListAdapter(&layout->modellist));
-  tmodel->setShape(0,240,240,200);
+  tmodel->setShape(0,246,240,200);
   CONNECT(tmodel->sigSelection, this, modelSelected);
   
   twidget = new TTable(this, "widgets");
   twidget->selectionFollowsMouse = true;
-  twidget->setShape(245,240,240,200);
+  twidget->setShape(0,466,240,200);
   
   twidget->setAdapter(new A(&widgets));
   
   TPushButton *pb;
-  pb = new TPushButton(this, "+");
-  pb->setShape(490,0,16,16);
+  pb = new TPushButton(this, "Add Widget");
+  pb->setShape(0,668,80,20);
   CONNECT(pb->sigClicked, this, addWidget);
 
   labelowner = 0;
@@ -231,14 +233,13 @@ TModelLayoutEditor::TModelLayoutEditor(TWindow *p, const string &t, TModelLayout
   TTextField *tf;
 
   tf = new TTextField(this, "label", &label);
-  tf->setShape(x+40, y, 145,18);
+  tf->setShape(40, 158+20, 145,18);
   connect(label.sigChanged, this, &TModelLayoutEditor::labelChanged);
 
-  y+=30;
   tf = new TTextField(this, "width", &width);
-  tf->setShape(x+40, y, 40,18);
+  tf->setShape(40, 158+50, 40,18);
   tf = new TTextField(this, "height", &height);
-  tf->setShape(x+40+40+10, y, 40,18);
+  tf->setShape(40+40+10, 158+50, 40,18);
 
   width = layout->width;
   height = layout->height;
@@ -272,11 +273,15 @@ TModelLayoutEditor::paint()
 {
   TPen pen(this);
   
-  pen.drawString(128+15+40, 63, selectionname);
-  pen.drawString(128+15, 63, "Title:");
-  pen.drawString(128+15, 63+20, "Label:");
-  pen.drawString(128+15, 63+50, "Size:"); 
-  pen.drawString(128+15+82, 63+50, "x");  
+  int y = 158;
+  pen.drawString( 0, y, "Title:");
+  pen.drawString(40, y, selectionname);
+  pen.drawString( 0, y+22, "Label:");
+  pen.drawString( 0, y+52, "Size:"); 
+  pen.drawString(80, y+50, "x");  
+
+  pen.drawString(  0,230, "Models:");
+  pen.drawString(  0,450, "Widgets:");
 }
 
 TEventFilter *
