@@ -70,6 +70,13 @@ class GModelOwner
     GSmartPointer<T> model;
   public:
     GModelOwner() {}
+    GModelOwner(T *m) {
+      model = m;
+      if (model) {
+        connect(model->sigChanged, this, &GModelOwner<T>::modelChanged, false);
+        connect(model->sigMeta   , this, &GModelOwner<T>::modelMeta);
+      }
+    }
     virtual ~GModelOwner() {
       if(model) {
         disconnect(model->sigChanged, this, &GModelOwner<T>::modelChanged);
