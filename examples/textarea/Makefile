@@ -1,6 +1,6 @@
 #
 # TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
-# Copyright (C) 1996-2004 by Mark-André Hopf <mhopf@mark13.de>
+# Copyright (C) 1996-2004 by Mark-AndrÃ© Hopf <mhopf@mark13.org>
 #
 
 PRGFILE		= toe

@@ -1,6 +1,6 @@
 /*
   toe -- TOAD's Own Editor
-  Copyright (C) 1999-2004 by Mark-André Hopf <mhopf@mark13.org>
+  Copyright (C) 1999-2007 by Mark-André Hopf <mhopf@mark13.org>
 
   - the keypad isn't available in TTextArea
   - Some of the stuff in TMainWindow should be moved into a special class.
@@ -14,7 +14,7 @@
 */
 
 #include <toad/toad.hh>
-#include <toad/form.hh>
+#include <toad/springlayout.hh>
 #include <toad/menubar.hh>
 #include <toad/undomanager.hh>
 #include <toad/action.hh>
@@ -24,7 +24,9 @@
 #include <toad/textfield.hh>
 #include <toad/checkbox.hh>
 #include <toad/radiobutton.hh>
+#include <toad/bitmap.hh>
 #include <toad/io/binstream.hh>
+#include <toad/bitmap.hh>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -55,7 +57,7 @@ class TStatusBar:
     TStatusBar(TWindow *, const string&, TMainWindow*, TTextArea*);
     
     void paint();
-    void mouseLDown(int,int,unsigned);
+    void mouseLDown(const TMouseEvent&);
     
     void update();
     void rowChanged();
@@ -72,9 +74,9 @@ class TStatusBar:
 };
 
 class TMainWindow:
-  public TForm
+  public TWindow
 {
-    typedef TForm super;
+    typedef TWindow super;
   public:
     TMainWindow(TWindow *parent, const string &title);
     TMainWindow(TWindow *parent, const string &title, const string &filename);
@@ -242,12 +244,14 @@ TMainWindow::init(TTextModel *tm)
 
   TStatusBar *sb = new TStatusBar(this, "statusbar", this, ta);
   CONNECT(ta->sigStatus, sb, update);
-  
-  attach(mb, TOP | LEFT | RIGHT);
-  attach(ta, TOP, mb);
-  attach(ta, LEFT | RIGHT);
-  attach(ta, BOTTOM, sb);
-  attach(sb, LEFT | RIGHT | BOTTOM);
+
+  TSpringLayout *layout = new TSpringLayout;
+  layout->attach("menubar", TSpringLayout::TOP | TSpringLayout::LEFT | TSpringLayout::RIGHT);
+  layout->attach("textarea", TSpringLayout::TOP, "menubar");
+  layout->attach("textarea", TSpringLayout::LEFT | TSpringLayout::RIGHT);
+  layout->attach("textarea", TSpringLayout::BOTTOM, "statusbar");
+  layout->attach("statusbar", TSpringLayout::LEFT | TSpringLayout::RIGHT | TSpringLayout::BOTTOM);
+  setLayout(layout);
 }
 
 TMainWindow::~TMainWindow()
@@ -647,7 +651,7 @@ TStatusBar::TStatusBar(TWindow *p,
   // editor = new TEditorControl(ta);
   setBackground(TColor::DIALOG);
   setSize(1,24);
-  ypos = (getHeight()-getDefaultFont().getHeight())>>1;
+  ypos = (getHeight()-getDefaultFont().getHeight())/2.0;
   xpos_row = getHeight()+5;
   line = 1;
   txt_row = new TTextField(this, "row", &line);
@@ -715,10 +719,10 @@ TStatusBar::rowChanged()
   }
 }
 
-void TStatusBar::mouseLDown(int x, int y, unsigned)
+void TStatusBar::mouseLDown(const TMouseEvent &me)
 {
   TRectangle rect(4,4,getHeight()-8, getHeight()-8);
-  if (ta->isModified() && rect.isInside(x,y)) {
+  if (ta->isModified() && rect.isInside(me.x,me.y)) {
     main->menuSave();
   }
 }
