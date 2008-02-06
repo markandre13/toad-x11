@@ -514,6 +514,7 @@ class TFWindow:
     typedef TFRectangle super;
   public:
     TFWindow();
+    ~TFWindow();
 
     void paint(TPenBase&, EPaintType);
     double distance(TCoord x, TCoord y);
@@ -527,6 +528,9 @@ class TFWindow:
     
     string title;
     string label;
+    string tooltip;
+    string widget;
+    string model;
     unsigned taborder;
     TWindow *window;
 };

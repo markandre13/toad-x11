@@ -407,7 +407,7 @@ TPen::popAll()
 #endif
 
 #ifdef __COCOA__
-  assert(false);
+  cerr << "TPen::popAll is not implemented\n";
 #endif
 }
 

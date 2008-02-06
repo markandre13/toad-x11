@@ -759,7 +759,7 @@ TPen::vsetColor(TCoord r, TCoord g, TCoord b)
   stroke.r = fill.r = r;
   stroke.g = fill.g = g;
   stroke.b = fill.b = b;
-  [[NSColor colorWithDeviceRed: r green: g blue: b alpha: stroke.a] set];
+  [[NSColor colorWithDeviceRed: r green: g blue: b alpha: 1.0 - stroke.a] set];
 #endif
 }
 

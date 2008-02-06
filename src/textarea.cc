@@ -1159,7 +1159,12 @@ cerr << "  selection: " << bos << " - " << eos << endl;
 //string l2 = line.substr(0, utf8bytecount(line, 0, sx));
 //cerr << "'" << l2 << "'\n";
         if (_cxpx<0) {
+#if 1
+          TFont *font = TPen::lookupFont(preferences->getFont());
+          _cxpx = font->getTextWidth(line.substr(0,utf8bytecount(line, 0, sx)));
+#else
           _cxpx = pen.getTextWidth(line.substr(0, utf8bytecount(line, 0, sx)));
+#endif
         }
         pen.setMode(TPen::INVERT);
         pen.drawLine(_cxpx-_tx,y,_cxpx-_tx,y+pen.getHeight()-1);

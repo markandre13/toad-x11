@@ -303,7 +303,6 @@ TIOObserver::TIOObserver(int fd)
 #endif
 }
 
-#ifdef __X11__
 /**
  * Assign a file descriptor to the io observer.
  *
@@ -315,6 +314,7 @@ TIOObserver::TIOObserver(int fd)
 void
 TIOObserver::setFD(int fd)
 {
+#ifdef __X11__
   if (debug_select)
     cerr << "select: new fd " << fd << endl;
 
@@ -350,8 +350,8 @@ TIOObserver::setFD(int fd)
     fd_list.push_back(this);
     fd_new.push_back(this);
   }
-}
 #endif
+}
 
 void TIOObserver::_check(int &r)
 {

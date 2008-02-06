@@ -264,7 +264,7 @@ static set<TWindow*> aw;
    
   {
   TPen pen(twindow);
-  pen.setColor(twindow->_bg.r/255.0, twindow->_bg.g/255.0, twindow->_bg.b/255.0);
+  pen.setColor(twindow->_bg.r, twindow->_bg.g, twindow->_bg.b);
   pen.fillRectangle(0,0,twindow->w,twindow->h);
   }
   twindow->paint();
@@ -434,6 +434,8 @@ TWindow::_up(TMouseEvent::EType type, NSEvent *theEvent)
 }
 @end
 
+unsigned TMouseEvent::globalModifier;
+
 TMouseEvent::TMouseEvent(NSEvent *ne, NSView *view, TWindow *w) {
   nsevent = ne;
   NSPoint pt = [view convertPoint:[ne locationInWindow] fromView:nil];
@@ -518,6 +520,8 @@ TWindow::TWindow(TWindow *p, const string &title)
   #endif
   
   #ifdef __COCOA__
+  aw.insert(this);
+
   nsview = nil;
   nswindow = nil;
   _inside = false;
@@ -601,15 +605,11 @@ TWindow::~TWindow()
     paint_rgn->wnd = NULL;
   THREAD_UNLOCK(mutexPaintQueue);
 
-  #ifdef __X11__
-  if (x11window)
+  if (isRealized())
     destroyWindow();
-  #endif
-  
-  #ifdef __WIN32__
-  assert(paintstruct==0);
-  if (w32window)
-    destroyWindow();
+
+  #ifdef __COCOA__
+  aw.erase(aw.find(this));
   #endif
 
   _childNotify(TCHILD_REMOVE);
@@ -740,6 +740,25 @@ TWindow::createWindow()
   flag_create = false;
   #endif
 
+  #ifdef __COCOA__
+  if (nsview || flag_create)
+    return;
+
+  flag_create = true; // avoid recursion (for TMDIWindow)
+
+  if (getParent() && !getParent()->nsview ) {
+#warning "disabled stupid hack for TMDIWindow without fixing TMDIWindow"
+//    getParent()->createWindow(); // create parent (for TMDIWindow)
+  } else if (!nsview) {
+    flag_explicit_create = true; // ???
+    _interactor_init();      // call create top-down
+    _interactor_adjustW2C(); // call adjust bottom-up
+    _interactor_create();    // now create windows top-down
+    flag_explicit_create = false; // ???
+  }
+  flag_create = false;
+  #endif
+
   #ifdef __WIN32__
   if (w32window || flag_create)
     return;
@@ -758,7 +777,6 @@ TWindow::createWindow()
   }
   flag_create = false;
   #endif
-    
 }
 
 void 
@@ -976,6 +994,8 @@ TWindow::_interactor_create()
 #endif
 
 #ifdef __COCOA__
+cout << "create cocoa window '" << getTitle() << "'\n";
+cout << "NSMakeRect("<<x<<", "<<y<<", "<<w<<", "<<h<<")\n";
   nsview = [[toadView alloc] initWithFrame: NSMakeRect(x,y,w,h)];
   nsview->twindow = this;
   if (getParent() && !flagShell && !flagPopup) {
@@ -1146,6 +1166,9 @@ cerr << "w32createwindow: " << getTitle() << " " << x << "," << y << "," << w <<
       XSetWMSizeHints(x11display, x11window, &xsizehints, XA_WM_NORMAL_HINTS);
   } // end of `if (flagShell)'
 #endif
+
+  if (layout)
+    layout->arrange();
 
   // create children
   //-----------------
@@ -2393,6 +2416,8 @@ TWindow::setLayout(TLayout *l)
       layout->setFilename(oldfilename);
     }
     layout->window = this;
+  }
+  if (isRealized()) {
     layout->arrange();
   }
 }
@@ -2447,6 +2472,7 @@ TWindow::getShape(TRectangle *r) const
 void 
 TWindow::setShape(TCoord x, TCoord y, TCoord w, TCoord h)
 {
+//cout << getTitle() << ": setShape("<<x<<", "<<y<<", "<<w<<", "<<h<<")\n";
   assert(this!=NULL);
 
   TCoord x2=x, y2=y, w2=w, h2=h;
@@ -2461,6 +2487,10 @@ TWindow::setShape(TCoord x, TCoord y, TCoord w, TCoord h)
   setPosition(r.x, r.y);
   setSize(r.w, r.h);
 #else
+  this->x = r.x;
+  this->y = r.y;
+  this->w = r.w;
+  this->h = r.h;
   if (nsview) {
     NSRect nr = NSMakeRect(x, y, w, h);
     [nsview setFrame: nr];

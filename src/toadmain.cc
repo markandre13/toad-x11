@@ -58,7 +58,66 @@ void* toad::top_address;
 
 extern void createTOADResource();
 
+#ifdef __COCOA__
+static NSAutoreleasePool *pool;
+
+@interface MyDelegate : NSObject
+{
+}
+- (void) createWindow;
+- (void) createMenu;  
+- (void) applicationWillFinishLaunching:(NSNotification *)notification;
+- (void) applicationDidFinishLaunching:(NSNotification *)notification;
+@end
+
+@implementation MyDelegate : NSObject
+- (void) dealloc
+{
+  [super dealloc];
+  // RELEASE (myWindow);
+}
+ 
+- (void) createWindow
+{
+  printf("create windows\n");
+  TWindow::createParentless();
+}
+ 
+// this one creates a simple custom menu without NIB files
+- (void) createMenu
+{
+  printf("create menu\n");
+  NSMenu *m0, *m1;
+
+  // menu = AUTORELEASE ([NSMenu new]);
+  // m0 = [NSApp mainMenu];
+  m0 = [NSMenu new];
+
+  m1 = [NSMenu new];
+  [m1 setTitle: @"myMenu"];
+  [m1 setAutoenablesItems:YES];
+
+  [m0 addItemWithTitle: @"myMenu" action: NULL keyEquivalent: @""];
+  [m0 setSubmenu: m1 forItem: [m0 itemWithTitle: @"myMenu"]];
+      
+  [m1 addItemWithTitle: @"Quit" action: @selector (terminate:) keyEquivalent: @"q"];
+
+  [NSApp setMainMenu: m0];
+}
+ 
+- (void)applicationWillFinishLaunching:(NSNotification *)notification;
+{
+  [self createWindow];
+}
+- (void) applicationDidFinishLaunching: (NSNotification *)notification;
+{
+  [self createMenu];
+}
+@end
+#endif
+
 namespace {
+
 #ifdef __X11__
 #ifdef HAVE_LIBXFT
 string fontengine("freetype");
@@ -135,6 +194,10 @@ parseInitFile(const string &filename)
 void
 toad::initialize(int argc, char **&argv, char **envv)
 {
+#ifdef __COCOA__
+  pool = [NSAutoreleasePool new];
+#endif
+
   bool layouteditor = false;
 
   parseInitFile("/etc/toadrc");
@@ -209,7 +272,19 @@ toad::initialize(int argc, char **&argv, char **envv)
 int
 toad::mainLoop()
 {
+#ifdef __X11__
   return TOADBase::mainLoop();
+#endif
+
+#ifdef __COCOA__
+  // setup NSApp
+  [NSApplication sharedApplication];
+  
+  // add a delegate to NSApp to customize the application
+  [NSApp setDelegate: [MyDelegate new]];
+
+  return NSApplicationMain(argc, (const char **) argv);
+#endif
 }
 
 /**
@@ -222,6 +297,10 @@ toad::mainLoop()
 void
 toad::terminate()
 {
+#ifdef __COCOA__
+  [pool release];
+#endif
+
   TOADBase::terminate();
   TUndoManager::terminate();
 

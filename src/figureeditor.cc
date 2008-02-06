@@ -2267,6 +2267,13 @@ TFigureEditor::adjustPane()
 }
 
 void
+TFigureEditor::minimalAreaSize(TCoord *x1, TCoord *y1, TCoord *x2, TCoord *y2)
+{
+  *x1 = *y1 = INT_MAX;
+  *x2 = *y2 = INT_MIN;
+}
+
+void
 TFigureEditor::updateScrollbars()
 {
   if (!window || !use_scrollbars)
@@ -2277,39 +2284,62 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
   //-----------------------------------------------------------------
   TCoord x1, y1; // upper, left corner
   TCoord x2, y2; // lower, right corner
-
-  x1 = y1 = INT_MAX;
-  x2 = y2 = INT_MIN;
+  
+  minimalAreaSize(&x1, &y1, &x2, &y2);
 
   if (model) {
-
-  TRectangle r;
-  for(TFigureModel::iterator p = model->begin();
-      p != model->end();
-      ++p)
-  {
-    TCoord ax1, ay1, ax2, ay2;
-    (*p)->getShape(&r);
-    ax1=r.x;
-    ay1=r.y;
-    ax2=r.x+r.w-1;
-    ay2=r.y+r.h-1;
+    TRectangle r;
+    for(TFigureModel::iterator p = model->begin();
+        p != model->end();
+        ++p)
+    {
+      TCoord ax1, ay1, ax2, ay2;
+      (*p)->getShape(&r);
+      ax1=r.x;
+      ay1=r.y;
+      ax2=r.x+r.w-1;
+      ay2=r.y+r.h-1;
     
-    if ( (*p)->mat) {
-      (*p)->mat->map(ax1, ay2, &ax1, &ay1);
-      (*p)->mat->map(ax2, r.y, &ax2, &ay2);
+      if ((*p)->mat) {
+        (*p)->mat->map(ax1, ay2, &ax1, &ay1);
+        (*p)->mat->map(ax2, r.y, &ax2, &ay2);
 
 //printf("lower left  (%i, %i)\n"
 //       "upper right (%i, %i)\n", ax1, ay1, ax2, ay2);
       
-      if (ax1>ax2) {
-        TCoord a = ax1; ax1 = ax2; ax2 = a;
-      }
-      if (ay1>ay2) {
-        TCoord a = ay1; ay1 = ay2; ay2 = a;
+        if (ax1>ax2) {
+          TCoord a = ax1; ax1 = ax2; ax2 = a;
+        }
+        if (ay1>ay2) {
+          TCoord a = ay1; ay1 = ay2; ay2 = a;
+        }
+      
+        if (ax1<x1)
+          x1=ax1;
+        if (ax2>x2)
+          x2=ax2;
+        if (ay1<y1)
+          y1=ay1;
+        if (ay2>y2)
+          y2=ay2;
+
+        ax1=r.x;
+        ay1=r.y;
+        ax2=r.x+r.w-1;
+        ay2=r.y+r.h-1;
+
+        (*p)->mat->map(ax1, ay1, &ax1, &ay1);
+        (*p)->mat->map(ax2, ay2, &ax2, &ay2);
+        //printf("upper left  (%i, %i)\n"
+        //       "lower right (%i, %i)\n\n", ax1, ay1, ax2, ay2);
+        if (ax1>ax2) {
+          TCoord a = ax1; ax1 = ax2; ax2 = a;
+        }
+        if (ay1>ay2) {
+          TCoord a = ay1; ay1 = ay2; ay2 = a;
+        }
       }
 
-      
       if (ax1<x1)
         x1=ax1;
       if (ax2>x2)
@@ -2318,34 +2348,8 @@ DBM(cout << __PRETTY_FUNCTION__ << ": entry" << endl;)
         y1=ay1;
       if (ay2>y2)
         y2=ay2;
-
-      ax1=r.x;
-      ay1=r.y;
-      ax2=r.x+r.w-1;
-      ay2=r.y+r.h-1;
-
-      (*p)->mat->map(ax1, ay1, &ax1, &ay1);
-      (*p)->mat->map(ax2, ay2, &ax2, &ay2);
-//printf("upper left  (%i, %i)\n"
-//       "lower right (%i, %i)\n\n", ax1, ay1, ax2, ay2);
-      if (ax1>ax2) {
-        TCoord a = ax1; ax1 = ax2; ax2 = a;
-      }
-      if (ay1>ay2) {
-        TCoord a = ay1; ay1 = ay2; ay2 = a;
-      }
+      //cout << "area size: (" << x1 << ", " << y1 << ") - (" << x2 << ", " << y2 << ")\n";
     }
-
-    if (ax1<x1)
-      x1=ax1;
-    if (ax2>x2)
-      x2=ax2;
-    if (ay1<y1)
-      y1=ay1;
-    if (ay2>y2)
-      y2=ay2;
-//cout << "area size: (" << x1 << ", " << y1 << ") - (" << x2 << ", " << y2 << ")\n";
-  }
 
   }
   

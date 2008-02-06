@@ -54,10 +54,13 @@ class TFigureModel:
   public:
     typedef TStorage::iterator iterator;
     typedef TStorage::const_iterator const_iterator;
+    typedef TStorage::size_type size_type;
     iterator begin() { return storage.begin(); }
     iterator end() { return storage.end(); }
     const_iterator begin() const { return storage.begin(); }
     const_iterator end() const { return storage.end(); }
+    size_type size() const { return storage.size(); }
+    bool empty() const { return storage.empty(); }
   
     /**
      * Kind of modification that took place.
@@ -92,8 +95,6 @@ class TFigureModel:
     void erase(TFigure*);
     void add(TFigureVector&);
     virtual void erase(TFigureSet&);
-    size_t size() const { return storage.size(); }
-    bool empty() const { return storage.empty(); }
     
     
     void insert(TFigureAtDepthList &store);

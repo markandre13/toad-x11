@@ -217,6 +217,10 @@ class TWindow:
     #ifdef __XCB__
     bool isRealized() const {return xcbWindow!=0;}
     #endif
+
+    #ifdef __COCOA__
+    bool isRealized() const {return nsview!=0;}
+    #endif
     
     #ifdef __WIN32__
     bool isRealized() const {return w32window!=0;}

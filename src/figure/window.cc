@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,12 @@ TFWindow::TFWindow()
   window = NULL;
   taborder = 0;
   removeable = false;
+}
+
+TFWindow::~TFWindow()
+{
+  if (!widget.empty())
+    delete window;
 }
 
 void 
@@ -95,6 +101,12 @@ TFWindow::store(TOutObjectStream &out) const
   }
   
   ::store(out, "taborder", taborder);
+  if (!tooltip.empty())
+    ::store(out, "tooltip", tooltip);
+  if (!widget.empty())
+    ::store(out, "widget", widget);
+  if (!model.empty())
+    ::store(out, "model", model);
 }
 
 /**
@@ -120,6 +132,9 @@ TFWindow::restore(TInObjectStream &in)
     ::restore(in, "h", &r.h) ||
     ::restore(in, "title", &title) ||
     ::restore(in, "label", &label) ||
+    ::restore(in, "tooltip", &tooltip) ||
+    ::restore(in, "widget", &widget) ||
+    ::restore(in, "model", &model) ||
     ::restore(in, "taborder", &taborder) ||
     super::restore(in)
   ) return true;

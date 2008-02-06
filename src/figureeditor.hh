@@ -408,6 +408,7 @@ class TFigureEditor:
 
     virtual void mouse2sheet(TCoord mx, TCoord my, TCoord *sx, TCoord *sy);
     virtual void sheet2grid(TCoord sx, TCoord sy, TCoord *gx, TCoord *gy);
+    virtual void minimalAreaSize(TCoord *x1, TCoord *y1, TCoord *x2, TCoord *y2);
     
     bool restore(TInObjectStream&);
     void store(TOutObjectStream&) const;
