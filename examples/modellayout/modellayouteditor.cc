@@ -68,6 +68,8 @@ TModelLayoutEditor::TModelListAdapter::tableEvent(TTableEvent &te)
   }
 }
 
+namespace {
+
 struct TWidget
 {
   TWidget(const string &aWidgetClass, const type_info &aModel):
@@ -77,6 +79,20 @@ struct TWidget
 };
 typedef vector<TWidget> TWidgetList;
 TWidgetList widgetlist;
+
+} // namespace
+
+/**
+ * Register a widget class and the model it supports.
+ *
+ * It is used by the TModelLayout editor to present a list of available
+ * widgets for a given model.
+ */
+void
+TModelLayout::registerWidget(const string &widget, const type_info &model)
+{
+  widgetlist.push_back(TWidget(widget, model));
+}
 
 // gcc 4.0.1 does not like this one within a function
   // ARGH! This sucks... SIMPLIFY!!!
@@ -246,21 +262,6 @@ TModelLayoutEditor::TModelLayoutEditor(TWindow *p, const string &t, TModelLayout
 
   connect(width.sigChanged, this, &TModelLayoutEditor::sizeChanged);
   connect(height.sigChanged, this, &TModelLayoutEditor::sizeChanged);
-  
-  if (widgetlist.empty()) {
-    widgetlist.push_back(TWidget("toad::TCheckBox",       typeid(TBoolModel)));
-    widgetlist.push_back(TWidget("toad::TTextArea",       typeid(TTextModel)));
-    widgetlist.push_back(TWidget("toad::TTextField",      typeid(TTextModel)));
-    widgetlist.push_back(TWidget("toad::TTextField",      typeid(TIntegerModel)));
-    widgetlist.push_back(TWidget("toad::TTextField",      typeid(TFloatModel)));
-    widgetlist.push_back(TWidget("toad::TScrollBar",      typeid(TIntegerModel)));
-    widgetlist.push_back(TWidget("toad::TScrollBar",      typeid(TFloatModel)));
-    widgetlist.push_back(TWidget("toad::TGauge",          typeid(TIntegerModel)));
-    widgetlist.push_back(TWidget("toad::TGauge",          typeid(TFloatModel)));
-    widgetlist.push_back(TWidget("toad::TRadioButton",    typeid(TRadioStateModel)));
-    widgetlist.push_back(TWidget("toad::TFatRadioButton", typeid(TRadioStateModel)));
-    widgetlist.push_back(TWidget("toad::TPushButton",     typeid(TAction)));
-  }
 }
 
 TModelLayoutEditor::~TModelLayoutEditor()
@@ -371,65 +372,24 @@ TModelLayoutEditor::addWidget()
        << "' for model "
        << model
        << endl;
-  TWindow *win = 0;
-  if (widget == "toad::TCheckBox") {
-    TCheckBox *w = new TCheckBox(layout->getWindow(),
-                                  widget + "@" + layout->modellist[tmodel->getSelectionModel()->getRow()].name);
-    win = w;
-    TBoolModel *m1 = dynamic_cast<TBoolModel*>(model);
-    if (m1)
-      w->setModel(m1);
-  } else
-  if (widget == "toad::TScrollBar") {
-    TScrollBar *w = new TScrollBar(layout->getWindow(),
-                                  widget + "@" + layout->modellist[tmodel->getSelectionModel()->getRow()].name);
-    win = w;
-    TIntegerModel *m1 = dynamic_cast<TIntegerModel*>(model);
-    if (m1)
-      w->setModel(m1);
-  } else
-  if (widget == "toad::TGauge") {
-    TGauge *w = new TGauge(layout->getWindow(),
-                           widget + "@" + layout->modellist[tmodel->getSelectionModel()->getRow()].name);
-    win = w;
-    TIntegerModel *m1 = dynamic_cast<TIntegerModel*>(model);
-    if (m1)
-      w->setModel(m1);
-  } else
-  if (widget == "toad::TTextArea") {
-    TTextArea *w = new TTextArea(layout->getWindow(),
-                                 widget + "@" + layout->modellist[tmodel->getSelectionModel()->getRow()].name);
-    win = w;
-    TTextModel *m0 = dynamic_cast<TTextModel*>(model);
-    if (m0) {
-      w->setModel(m0);
-    } else {
-      TIntegerModel *m1 = dynamic_cast<TIntegerModel*>(model);
-      if (m1)
-        w->setModel(m1);
-    }
-  } else
-  if (widget == "toad::TTextField") {
-    TTextField *w = new TTextField(layout->getWindow(),
-                                   widget + "@" + layout->modellist[tmodel->getSelectionModel()->getRow()].name);
-    win = w;
-    TTextModel *m0 = dynamic_cast<TTextModel*>(model);
-    if (m0) {
-      w->setModel(m0);
-    } else {
-      TIntegerModel *m1 = dynamic_cast<TIntegerModel*>(model);
-      if (m1)
-        w->setModel(m1);
-    }
-  }
+
+  TWindow *win = layout->TModelLayout::createWidget(
+    widgets[twidget->getSelectionModel()->getRow()],               // class name
+    layout->modellist[tmodel->getSelectionModel()->getRow()].name, // model name
+    layout->modellist[tmodel->getSelectionModel()->getRow()].model // model
+  );
+  
   if (win) {
     TFWindow *gw = new TFWindow();
     gw->title  = win->getTitle();
     gw->window = win;
+    gw->widget = widget;
+    gw->model  = layout->modellist[tmodel->getSelectionModel()->getRow()].name;
     gw->setShape(win->x, win->y, win->w, win->h);
     layout->gadgets->add(gw);
     win->createWindow();
+  } else {
+    cout << "nothin created" << endl;
   }
-  cout << "nothin created" << endl;
 }
 

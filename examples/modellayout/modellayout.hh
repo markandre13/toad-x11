@@ -12,14 +12,15 @@ class TModelLayoutEditor;
 class TModelLayout:
   public TLayout
 {
+    typedef TLayout super;
+    void init();
   public:
-    TModelLayout() {
-      editor = 0;
-      height = 200;
-      width  = 320;
-      drawfocus = false;
-      gadgets = new TFigureModel();
-    }
+    TModelLayout();
+    TModelLayout(const string &filename);
+
+    static void registerWidget(const string &widget, const type_info &model);
+    TWindow* createWidget(const string &widget, const string &modelname, TModel *model=0);
+
     PFigureModel gadgets;
     unsigned height;
     unsigned width;
@@ -42,6 +43,7 @@ class TModelLayout:
     
     void addModel(TModel *model, const string &name);
     TLayoutEditor* createEditor(TWindow *inWindow, TWindow *forWindow);
+
     SERIALIZABLE_INTERFACE(toad::, TModelLayout)
 };
 
