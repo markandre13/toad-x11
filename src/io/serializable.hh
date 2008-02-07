@@ -319,7 +319,6 @@ bool restore(atv::TInObjectStream &in, const char *attribute, T value) {
 template <class T>
 bool restorePtr(atv::TInObjectStream &in, T *value) {
   if (in.what != atv::ATV_GROUP) {
-    in.err << "expected group\n";
     return false;
   }
   if (in.type == "NULL") {
