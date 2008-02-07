@@ -528,9 +528,9 @@ class TFWindow:
     
     string title;
     string label;
-    string tooltip;
-    string widget;
-    string model;
+    string tooltip; // the widgets tooltip
+    string widget;  // class to manage the model (ie. toad::TTextField)
+    string model;   // name of the model to be managed
     unsigned taborder;
     TWindow *window;
 };
