@@ -168,7 +168,6 @@ public:
     ELineStyle style;
     TWindow *wnd;
     TBitmap *bmp;
-    PFont font;
   public:
 //#warning "'TRegion *region' is public"
     TRegion *region;
