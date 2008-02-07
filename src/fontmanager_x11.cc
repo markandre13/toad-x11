@@ -617,7 +617,7 @@ cout << "allocate font of size " << x11->id << endl;
 }
 
 void
-TFontManagerX11::drawString(TPenBase *penbase, int x, int y, const char *str, size_t strlen, bool transparent)
+TFontManagerX11::drawString(TPenBase *penbase, TCoord x, TCoord y, const char *str, size_t strlen, bool transparent)
 {
   TPen *pen = dynamic_cast<TPen*>(penbase);
   assert(pen);
@@ -695,7 +695,7 @@ TFontManagerX11::drawString(TPenBase *penbase, int x, int y, const char *str, si
   }
 }
 
-int 
+TCoord 
 TFontManagerX11::getHeight(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
@@ -709,7 +709,7 @@ TFontManagerX11::getHeight(TFont *font)
   return 0;
 }
 
-int 
+TCoord
 TFontManagerX11::getAscent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
@@ -723,7 +723,7 @@ TFontManagerX11::getAscent(TFont *font)
   return 0;
 }
 
-int 
+TCoord
 TFontManagerX11::getDescent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
@@ -737,7 +737,7 @@ TFontManagerX11::getDescent(TFont *font)
   return 0;
 }
 
-int
+TCoord
 TFontManagerX11::getTextWidth(TFont *font, const char *text, size_t n)
 {
   if (n==0)

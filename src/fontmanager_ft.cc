@@ -242,7 +242,7 @@ TFontManagerFT::allocate(TFont *font, const TMatrix2D *mat)
 }
 
 void
-TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, size_t strlen, bool transparent)
+TFontManagerFT::drawString(TPenBase *penbase, TCoord x, TCoord y, const char *str, size_t strlen, bool transparent)
 {
 //cout << __PRETTY_FUNCTION__ << endl;
   TPen *pen = dynamic_cast<TPen*>(penbase);
@@ -297,7 +297,7 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
     // unscaled font as a reference. This is much slower than a single
     // X*DrawString call but the precision is required, even for horizontal
     // and just scaled fonts.
-    int x2, y2;
+    TCoord x2, y2;
     const char *p = str;
     int len=0;
     while(*p && len<strlen) {
@@ -324,7 +324,7 @@ TFontManagerFT::drawString(TPenBase *penbase, int x, int y, const char *str, siz
   }
 }
 
-int 
+TCoord 
 TFontManagerFT::getHeight(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
@@ -336,7 +336,7 @@ TFontManagerFT::getHeight(TFont *font)
   return 0;
 }
 
-int 
+TCoord
 TFontManagerFT::getAscent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
@@ -348,7 +348,7 @@ TFontManagerFT::getAscent(TFont *font)
   return 0;
 }
 
-int 
+TCoord
 TFontManagerFT::getDescent(TFont *font)
 {
   if (!font->corefont && !allocate(font, 0))
@@ -360,7 +360,7 @@ TFontManagerFT::getDescent(TFont *font)
   return 0;
 }
 
-int
+TCoord
 TFontManagerFT::getTextWidth(TFont *font, const char *str, size_t len)
 {
   if (len==0)

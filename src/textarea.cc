@@ -1047,6 +1047,7 @@ TTextArea::paint()
 
   pen.translate(2,2);
   pen.setFont(preferences->getFont());
+cout << "paint: pen.getHeight()="<< pen.getHeight() << endl;
 
   const string &data = model->getValue();
   
@@ -1054,7 +1055,7 @@ TTextArea::paint()
   //^^^^^^^^^^^^^^^^^
   size_t bol = 0;
   size_t eol;
-  int y=-_ty * pen.getHeight();
+  TCoord y=-(_ty * pen.getHeight());
   int sy, sx;
   sy = -_ty;
   
@@ -1185,6 +1186,7 @@ void
 TTextArea::_invalidate_line(unsigned y, bool statusChanged)
 {
   int h = TPen::lookupFont(preferences->getFont())->getHeight();
+cout << "invalidate_line: h=" << h << endl;
   invalidateWindow(visible.x, visible.y+y * h, visible.w, h);
   if (statusChanged)
     sigStatus();

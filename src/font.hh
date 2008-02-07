@@ -28,6 +28,7 @@
 #include <string>
 #include <cstring>
 #include <toad/pointer.hh>
+#include <toad/types.hh>
 #include <fontconfig/fontconfig.h>
 
 namespace toad {
@@ -44,16 +45,16 @@ class TFontManager
 {
   public:
     virtual ~TFontManager();
-    virtual void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent) = 0;
-    virtual int getHeight(TFont *font) = 0;
-    virtual int getAscent(TFont *font) = 0;
-    virtual int getDescent(TFont *font) = 0;
-    virtual int getTextWidth(TFont *font, const char *text, size_t n) = 0;
+    virtual void drawString(TPenBase *pen, TCoord x, TCoord y, const char *str, size_t len, bool transparent) = 0;
+    virtual TCoord getHeight(TFont *font) = 0;
+    virtual TCoord getAscent(TFont *font) = 0;
+    virtual TCoord getDescent(TFont *font) = 0;
+    virtual TCoord getTextWidth(TFont *font, const char *text, size_t n) = 0;
 
-    int getTextWidth(TFont *font, const char *text) {
+    TCoord getTextWidth(TFont *font, const char *text) {
       return getTextWidth(font, text, strlen(text));
     }
-    int getTextWidth(TFont *font, const string &text) {
+    TCoord getTextWidth(TFont *font, const string &text) {
       return getTextWidth(font, text.c_str(), text.size());
     }
     
@@ -72,11 +73,11 @@ class TFontManagerX11:
 {
   public:
     void init() const;
-    void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent);
-    int getHeight(TFont *font);
-    int getAscent(TFont *font);
-    int getDescent(TFont *font);
-    int getTextWidth(TFont *font, const char *text, size_t n);
+    void drawString(TPenBase *pen, TCoord x, TCoord y, const char *str, size_t len, bool transparent);
+    TCoord getHeight(TFont *font);
+    TCoord getAscent(TFont *font);
+    TCoord getDescent(TFont *font);
+    TCoord getTextWidth(TFont *font, const char *text, size_t n);
 
     string getName() const { return "x11"; }
     FcConfig* getFcConfig();
@@ -93,11 +94,11 @@ class TFontManagerFT:
 {
   public:
     void init() const;
-    void drawString(TPenBase *pen, int x, int y, const char *str, size_t len, bool transparent);
-    int getHeight(TFont *font);
-    int getAscent(TFont *font);
-    int getDescent(TFont *font);
-    int getTextWidth(TFont *font, const char *text, size_t n);
+    void drawString(TPenBase *pen, TCoord x, TCoord y, const char *str, size_t len, bool transparent);
+    TCoord getHeight(TFont *font);
+    TCoord getAscent(TFont *font);
+    TCoord getDescent(TFont *font);
+    TCoord getTextWidth(TFont *font, const char *text, size_t n);
 
     string getName() const { return "freetype"; }
     FcConfig* getFcConfig();
@@ -141,16 +142,16 @@ class TFont:
 #ifdef __X11__
     TFontManager *fontmanager;
     void *corefont;
-    int getHeight() { return fontmanager->getHeight(this); }
-    int getAscent() { return fontmanager->getAscent(this); }
-    int getDescent() { return fontmanager->getDescent(this); }
-    int getTextWidth(const char *text) {
+    TCoord getHeight() { return fontmanager->getHeight(this); }
+    TCoord getAscent() { return fontmanager->getAscent(this); }
+    TCoord getDescent() { return fontmanager->getDescent(this); }
+    TCoord getTextWidth(const char *text) {
       return fontmanager->getTextWidth(this, text, strlen(text));
     }
-    int getTextWidth(const char *text, size_t n) {
+    TCoord getTextWidth(const char *text, size_t n) {
       return fontmanager->getTextWidth(this, text, n);
     }
-    int getTextWidth(const string &text) {
+    TCoord getTextWidth(const string &text) {
       return fontmanager->getTextWidth(this, text.c_str(), text.size());
     }
 #endif
@@ -158,15 +159,15 @@ class TFont:
 #ifdef __COCOA__
     NSFont *nsfont;
 
-    int getHeight() {
+    TCoord getHeight() {
       return [nsfont ascender] - [nsfont descender];
     }
-    int getAscent() { return [nsfont ascender]; }
-    int getDescent() { return -[nsfont descender]; }
-    int getTextWidth(const char *text) {
+    TCoord getAscent() { return [nsfont ascender]; }
+    TCoord getDescent() { return -[nsfont descender]; }
+    TCoord getTextWidth(const char *text) {
       return [nsfont widthOfString: [NSString stringWithUTF8String: text]];
     }
-    int getTextWidth(const char *text, size_t n) {
+    TCoord getTextWidth(const char *text, size_t n) {
       int w;
       char *t = 0;
       if (strlen(text)!=n) {
@@ -179,7 +180,7 @@ class TFont:
       }
       return w;
     }
-    int getTextWidth(const string &text) {
+    TCoord getTextWidth(const string &text) {
       return getTextWidth(text.c_str());
     }
 #endif

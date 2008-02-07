@@ -91,7 +91,7 @@ namespace toad {
 class TDirectoryAdapter:
   public TTableAdapter, public GModelOwner<TDirectory>
 {
-    int w, h;
+    TCoord w, h;
   public:
     TDirectoryAdapter(TDirectory *directory) {
       setModel(directory);
@@ -181,7 +181,7 @@ TDirectoryAdapter::tableEvent(TTableEvent &te)
 class TFilterListAdapter:
   public TTableAdapter, GModelOwner<TFilterList>
 {
-    int w, h;
+    TCoord w, h;
   public:
     TFilterListAdapter(TFilterList *m) { setModel(m); }
     ~TFilterListAdapter() { setModel(0); }
@@ -227,7 +227,7 @@ TFilterListAdapter::tableEvent(TTableEvent &te)
 class TDequeStringAdapter:
   public TTableAdapter, GModelOwner< GDeque<string> >
 {
-    int w, h;
+    TCoord w, h;
   public:
     TDequeStringAdapter(GDeque<string> *m) { setModel(m); }
     ~TDequeStringAdapter() { setModel(0); }
