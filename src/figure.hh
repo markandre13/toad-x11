@@ -340,7 +340,7 @@ class TFLine:
     double distance(TCoord x, TCoord y);
 
     static void drawArrow(TPenBase &pen,
-                          const TPoint &p1, const TPoint &p1, 
+                          const TPoint &p0, const TPoint &p1, 
                           const TRGB &line, const TRGB &fill,
                           TCoord w, TCoord h,
                           EArrowType type);

@@ -22,7 +22,8 @@
 
 #include <toad/io/binstream.hh>
 #include <toad/debug.hh>
-#include <stdio.h>
+#include <cstdio>
+#include <cstring>
 
 // #include "binstream.hh"
 

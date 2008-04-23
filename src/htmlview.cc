@@ -416,7 +416,7 @@ if (pen) {
       TRGB color;
       EAlignment align;
     };
-    stack<state_t*> stack;
+    std::stack<state_t*> stack;
     
     void pushState() {
       state_t *s = new state_t;

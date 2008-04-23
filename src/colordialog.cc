@@ -383,7 +383,6 @@ TColorDialog::rgb2hsv()
 
   float h=0,s=1.0,v=1.0;
   float max_v,min_v,diff,r_dist,g_dist,b_dist;
-  float undefined = 0.0;
 
   float r = (float)rgb.r / 255.0;
   float g = (float)rgb.g / 255.0;

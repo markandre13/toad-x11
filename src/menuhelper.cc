@@ -193,7 +193,6 @@ DBM2(cerr << "+ TMenuHelper::resize\n");
 
   menu_width_icon = menu_width_text = menu_width_short = menu_width_sub = 0;
   TInteractor *i;
-  TWindowEvent we;
 
 #if 1
   i = getFirstChild();
@@ -204,6 +203,7 @@ DBM2(cerr << "+ TMenuHelper::resize\n");
     i = i->getNextSibling();
   }
 #else
+  TWindowEvent we;
   we.window = 0;
   we.type   = TWindowEvent::ADJUST;
   i = getFirstChild();

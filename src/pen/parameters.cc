@@ -297,7 +297,6 @@ TPen::setFont(TFont *newfont)
 {
 #ifdef __X11__
   assert(newfont!=0);
-  TFont *oldfont = font;
   font = newfont;
 //  XSetFont(x11display, o_gc, font->fs->fid);
 #endif

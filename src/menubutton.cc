@@ -229,7 +229,6 @@ TMenuButton::paint()
       )
     )
   {
-    TCoord y=getHeight()/2;
     TPoint tri[3];
     tri[0].x=getWidth()-7; tri[0].y=getYPos()-4;
     tri[1].x=getWidth()-3; tri[1].y=getYPos();
@@ -305,7 +304,6 @@ TMenuKeyFilter::keyEvent(TKeyEvent &ke)
   }
 
   TMenuButton *i=NULL;
-  TMenuButton *m;
   TMenuHelper::TNode *ptr;
   
   switch(key) {

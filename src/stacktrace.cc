@@ -173,7 +173,7 @@ TStackTrace::print() const
   
   printf("stacktrace:\n");
   for(unsigned i=0; i<size; i++) {
-    sprintf(buffer+p, "%08x ", addr[i]);
+    sprintf(buffer+p, "%p ", addr[i]);
     p+=9;
     if (p>4096-20)
       break;

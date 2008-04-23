@@ -146,9 +146,6 @@ TTabbedLayout::paint()
     
   TPen pen(window);
 
-  TCoord h = pen.getHeight();
-  static const int left = 5;
-
   int n = 0;
   int idxcurrent = -1;
   int colcurrent;

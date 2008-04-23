@@ -333,7 +333,7 @@ TSelectionModel::iterator::iterator(TRegion *r, bool begin)
   rgn = r;
   n = rgn->getNumRects();
   if (n==0) {
-    n==EMPTY;
+    n=EMPTY;
     x = y = 0;
     return;
   }

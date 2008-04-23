@@ -103,7 +103,7 @@ class TKeyEvent {
       DOWN, UP
     } type;
     TKeyEvent(EType aType=DOWN, TWindow *aWindow=0, TKey aKey=0, unsigned aModifier=0):
-      window(aWindow), type(aType), _key(aKey), _modifier(aModifier) {}
+      type(aType), window(aWindow), _key(aKey), _modifier(aModifier) {}
 #ifdef __COCOA__
     TKeyEvent(NSEvent *ns) {
       nsevent = ns;

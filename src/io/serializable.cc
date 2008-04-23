@@ -32,6 +32,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <cstdlib>
 
 using namespace std;
 using namespace atv;

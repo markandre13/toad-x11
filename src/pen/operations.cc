@@ -676,7 +676,7 @@ map2(const TMatrix2D *m, long &x, long &y)
 XPoint *
 qtr_elips(const TPen *pen, XPoint *p, long xP, long yP, long xQ, long yQ, long xK, long yK, int m)
 {
-  int i, x, y;
+  int i;
   FIX vx, ux, vy, uy, w, xJ, yJ;
   if (pen->mat) {
     map2(pen->mat, xP, yP);

@@ -21,6 +21,8 @@
 #include <toad/io/urlstream.hh>
 
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <cassert>
 
 #ifndef OLDLIBSTD

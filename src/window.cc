@@ -2475,7 +2475,7 @@ TWindow::setShape(TCoord x, TCoord y, TCoord w, TCoord h)
 //cout << getTitle() << ": setShape("<<x<<", "<<y<<", "<<w<<", "<<h<<")\n";
   assert(this!=NULL);
 
-  TCoord x2=x, y2=y, w2=w, h2=h;
+  TCoord w2=w, h2=h;
   if (w==TSIZE_PREVIOUS) w=0;
   if (h==TSIZE_PREVIOUS) h=0;
   TRectangle r(x,y,w,h);

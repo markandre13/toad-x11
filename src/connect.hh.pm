@@ -164,7 +164,7 @@ sub onode
        ", class T1, class T2",
        "T *o, ",
        ", _o(o)",
-	"T2 *co=o; s.remove( (void*)o, (TSignalLink::TMethod)m);");
+	"s.remove( (void*)o, (TSignalLink::TMethod)m);");
 }
 
 

@@ -172,9 +172,10 @@ TOADBase::select()
       p = _sorted_list.begin();
       e = _sorted_list.end();
 
-      while(p!=e && 
+      while(p!=e && (
              (*p)->_next.tv_sec  < crnt_time.tv_sec ||
-            ((*p)->_next.tv_usec < crnt_time.tv_usec && (*p)->_next.tv_sec==crnt_time.tv_sec))
+            ((*p)->_next.tv_usec < crnt_time.tv_usec && (*p)->_next.tv_sec==crnt_time.tv_sec)
+            ))
       {
         TSimpleTimer *t = *p;
 

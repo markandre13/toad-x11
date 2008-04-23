@@ -45,7 +45,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-
+#include <algorithm>
 
 #define FINAL_FILEDIALOG
 //#define RESOURCE(file) "file://resource/" file
