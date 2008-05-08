@@ -1417,10 +1417,13 @@ TTable::mouseLDown(const TMouseEvent &me)
   // invoke adapter mouseEvent (ie. for tree widgets, check boxes, etc.)
   if (adapter) {
     TTableEvent te;
+    
     te.mouse.window = this;
     te.mouse.x = fx;
     te.mouse.y = fy;
     te.mouse._modifier = me.modifier();
+    te.mouse.type = me.type;
+    te.mouse.dblClick = me.dblClick;
     // this should also contain a pointer to this adapter, in case
     // mouseEvent makes modifications?
     int size = col_info[x].size;

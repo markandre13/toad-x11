@@ -227,6 +227,28 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
       }
       renderCursor(te);
       break;
+    case TTableEvent::MOUSE:
+      if (edit && 
+          te.mouse.type == TMouseEvent::LDOWN &&
+          ( te.col != col || te.row != row ))
+      {
+        edit = 0;
+      }
+      if (edit!=this &&
+          te.mouse.type == TMouseEvent::LDOWN &&
+          te.mouse.dblClick)
+      {
+            if (edit!=0) {
+              edit->reason = TTableModel::CONTENT;
+              edit->sigChanged();
+            }
+            edit = this;
+            cx = 0;
+            row = te.row;
+            col = te.col;
+            te.flag = true;
+      }
+      break;
     case TTableEvent::KEY:
 //cout << "keyEvent" << endl;
       if (te.key->type == TKeyEvent::DOWN) {
