@@ -96,14 +96,9 @@ using namespace std; // use std within namesapce toad
 
 class TCommand;
 
-void debug_mem_start();
-void debug_mem_end();
-  
 extern char ** argv;
 extern int argc;
 extern char ** envv;
-
-extern void* top_address;
 
 class TWindow;
 class TBitmap;

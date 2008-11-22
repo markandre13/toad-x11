@@ -19,9 +19,7 @@
  */
 
 #ifndef _TOAD_EXCEPTION_HH
-#define _TOAD_EXCEPTION_HH
-
-#include <toad/stacktrace.hh>
+#define _TOAD_EXCEPTION_HH 1
 
 #include <exception>
 #include <string>
@@ -33,12 +31,11 @@ class TException:
   public exception
 {
       std::string msg;
-      TStackTrace stack;
     public:
       explicit TException(const std::string &what):exception(), msg(what) {}
       virtual ~TException() throw() { }
 
-      void printStackTrace() const { stack.print(); }
+      void printStackTrace() const { }
       void print() const {
         cerr << msg << endl;
         stack.print();

@@ -38,8 +38,6 @@
 #include <toad/pushbutton.hh>
 #include <toad/stl/deque.hh>
 
-// #include <toad/stacktrace.hh>
-
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>

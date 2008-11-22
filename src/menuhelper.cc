@@ -23,7 +23,6 @@
 #include <toad/toad.hh>
 #include <toad/io/urlstream.hh>
 #include <toad/action.hh>
-#include <toad/stacktrace.hh>
 #include <fstream>
 
 #include <stack>
@@ -39,7 +38,7 @@ using namespace toad;
 
 #define TOAD_WARN(MSG) \
   cout << "toad warning (file \"" << __FILE__ << "\", line " << __LINE__ << ')' << endl \
-       << MSG << endl; toad::printStackTrace();
+       << MSG << endl;
 
 /**
  * \class toad::TMenuHelper

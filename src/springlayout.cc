@@ -19,7 +19,6 @@
  */
 
 #include <toad/springlayout.hh>
-#include <toad/stacktrace.hh>
 
 #include <algorithm>
 

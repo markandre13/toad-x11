@@ -47,14 +47,11 @@ using namespace toad;
 
 namespace toad {
   extern char** argv;
-  extern void* top_address;
 }
 
 char** toad::argv;
 int toad::argc;
 char** toad::envv;
-
-void* toad::top_address;
 
 extern void createTOADResource();
 
@@ -207,25 +204,11 @@ toad::initialize(int argc, char **&argv, char **envv)
   parseInitFile(ini);
 
   for(int i=1; i<argc; i++) {
-    if (strcmp(argv[i], "--toad-debug-memory")==0) {
-#ifdef DEBUG_MEMORY
-      toad::debug_mem_start();
-#else
-      cerr << argv[i] << "isn't enabled in library" << endl;
-#endif
-    } else 
     if (strcmp(argv[i], "--toad-info")==0) {
       cout<< "TOAD C++ GUI Library " 
           << __TOAD_MAJOR__ << "."
           << __TOAD_MINOR__ << "."
           << __TOAD_SUBLVL__ << endl;
-      cerr << "Enabled features:" << endl;
-#ifdef DEBUG_MEMORY
-      cerr << "  DEBUG_MEMORY" << endl;
-#endif
-#ifdef LIKE_ELECTRIC_FENCE
-      cerr << "  LIKE_ELECTRIC_FENCE" << endl;
-#endif
     } else
     if (strcmp(argv[i], "--layout-editor")==0) {
       layouteditor = true;
@@ -252,9 +235,6 @@ toad::initialize(int argc, char **&argv, char **envv)
   toad::argv = argv;
   toad::argc = argc;
   toad::envv = envv;
-
-  // initialize stacktrace.cc
-  toad::top_address = __builtin_return_address(1);
 
   // register memory files from the resource directory
   createTOADResource();
@@ -303,8 +283,4 @@ toad::terminate()
 
   TOADBase::terminate();
   TUndoManager::terminate();
-
-#ifdef DEBUG_MEMORY
-  toad::debug_mem_end();
-#endif
 }

@@ -60,7 +60,7 @@ OS_GUI          =
 OS_SYS          =
 GRAPHIC		= penbase.cc pen/parameters.cc pen/operations.cc pen/bezier.cc matrix2d.cc
 
-NEW_CHECKER	= new.cc
+NEW_CHECKER	= 
 
 FILTER		= filter_png.cc filter_bmp.cc filter_jpeg.cc filter_gif.cc
 
@@ -75,7 +75,7 @@ GADGET		= figure.cc figuremodel.cc figurewindow.cc \
 		  figure/polygon.cc figure/line.cc figure/window.cc figure/image.cc \
 		  figureeditor.cc colorselector.cc
 
-DEBUG		= debug.cc stacktrace.cc
+DEBUG		= debug.cc
 
 XUTF8           = xutf8/utf8Input.cc xutf8/utf8Utils.cc xutf8/utf8Wrap.cc \
                   xutf8/is_spacing.cc xutf8/is_right2left.cc \
