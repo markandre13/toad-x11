@@ -150,7 +150,7 @@ class TATVParser
 
     unsigned stacksize() const { return stack.size(); }
     
-    int get() { in->get(); }
+    int get() { return in->get(); }
     void putback(char c) { in->putback(c); }
 
     bool getCode(std::string*);
