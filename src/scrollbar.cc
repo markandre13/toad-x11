@@ -42,13 +42,68 @@ using namespace toad;
 #define DEFAULT_FIXED_SIZE 15
 #define DEFAULT_FIXED_BORDER 1
 
-TScrollBar::TScrollBar(TWindow *parent, const string &title, TFloatModel*):
+class TFloat2IntegerModel:
+  public TIntegerModel
+{
+    TFloatModel *model;
+    bool lock;
+  public:
+    TFloat2IntegerModel(TFloatModel*);
+    ~TFloat2IntegerModel();
+  private:
+    void masterChanged();
+    void slaveChanged();
+};
+
+TFloat2IntegerModel::TFloat2IntegerModel(TFloatModel *m)
+{
+  model = m;
+  lock = false;
+  
+  if (model) {
+    setRangeProperties(model->getValue(),
+                       model->getExtent(),
+                       model->getMinimum(),
+                       model->getMaximum(),
+                       false);
+    connect(model->sigChanged, this, &TFloat2IntegerModel::slaveChanged);
+    slaveChanged();
+  }
+  connect(this->sigChanged, this, &TFloat2IntegerModel::masterChanged);
+}
+
+TFloat2IntegerModel::~TFloat2IntegerModel()
+{
+  if (model)
+    disconnect(model->sigChanged, this);
+}
+
+void
+TFloat2IntegerModel::masterChanged()
+{
+  if (lock) return;
+  lock = true;
+  model->setValue(getValue());
+  lock = false;
+}
+
+void
+TFloat2IntegerModel::slaveChanged()
+{
+  if (lock) return;
+  lock=true;
+  setValue(model->getValue());
+  lock=false;
+}
+
+
+TScrollBar::TScrollBar(TWindow *parent, const string &title, TFloatModel *model):
   TControl(parent, title)
 {
   _b = DEFAULT_FIXED_BORDER;
 //  flagNoBackground = true;
   bNoBackground = true;
-  model = new TIntegerModel();
+  this->model = new TFloat2IntegerModel(model);
   CONNECT(model->sigChanged, this, modelChanged);
   
   bVertical   = true;
