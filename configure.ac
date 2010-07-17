@@ -34,6 +34,31 @@ AC_LANG(C)
 
 # Checks for libraries.
 AC_PATH_XTRA
+
+#
+# AC_PATH_XTRA fails on MacOS X 10.6, so do it manually... sigh:
+#
+if test -z "$X_LIBS$X_CFLAGS" ; then
+  if test -d /usr/X11/lib ; then
+    X_LIBS="-L/usr/X11/lib"
+  fi
+  if test -d /usr/X11/include ; then
+    X_CFLAGS="-I/usr/X11/include"
+  fi
+  if test -d /usr/X11/include/X11/Xft ; then
+    XFT_CFLAGS="-DHAVE_LIBXFT"
+    XFT_LIBS="-lXft"
+  fi
+  if test -d /usr/X11/include/fontconfig ; then
+    FONTCONFIG_CFLAGS="-DHAVE_FONTCONFIG"
+    FONTCONFIG_LIBS="-lfontconfig"
+  fi
+  if test -d /usr/X11/include/freetype2 ; then
+    FREETYPE_CFLAGS="-I/usr/X11/include/freetype2 -DHAVE_FREETYPE"
+    FREETYPE_LIBS="-lfreetype"
+  fi
+fi
+
 XLIBS="${X_LIBS} ${X_EXTRA_LIBS}"
 
 AC_CHECK_LIB(m, sqrt)
@@ -49,11 +74,18 @@ AC_CHECK_LIB(X11, XOpenDisplay,,AC_MSG_ERROR([Could not link with X11]), $XLIBS)
 # AC_CHECK_LIB([Xmu], [XmuClientWindow],,AC_MSG_ERROR([Could not link with Xmu]),$XLIBS)
 # AC_CHECK_LIB(Xutf8, XUtf8DrawString,,, $XLIBS)
 
+if test -z "$FONTCONFIG_CFLAGS$XFT_CFLAGS" ; then
+
 PKG_CHECK_MODULES(FONTCONFIG, fontconfig)
 # PKG_CHECK_MODULES(FREETYPE, freetype2)
 PKG_CHECK_MODULES(XFT, xft, AC_DEFINE(HAVE_LIBXFT, 1))
 
+# uhg, failed for some reason...
+if test ! -z "$XFT_LIBS" ; then
+  XFT_CFLAGS="${XFT_CFLAGS} -DHAVE_LIBXFT"
+fi
 
+fi
 
 #
 # merge all found compiler and linker flags and remove duplicates
