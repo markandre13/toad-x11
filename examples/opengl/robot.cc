@@ -91,7 +91,7 @@ void TMainWindow::create()
 
   // create menubar
   //----------------
-  TMenuBar *mb=new TMenuBar(this, "menubar");
+  TMenuBar *mb=new TMenuBar(this, "mb");
   
   TAction *action;
   action = new TAction(this, "file|quit");
@@ -142,6 +142,7 @@ void TMainWindow::create()
   layout->attach("gl", TSpringLayout::LEFT | TSpringLayout::BOTTOM);
   layout->attach("gl", TSpringLayout::RIGHT, TSpringLayout::WINDOW, sb[maxbar-1]->getTitle());
   layout->distance("gl", 10);
+  setLayout(layout);
 }
 
 void
