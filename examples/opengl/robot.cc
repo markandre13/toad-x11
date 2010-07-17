@@ -1,6 +1,6 @@
 /*
  * robot -- a demonstration of the TOAD TGLWindow
- * Copyright (C) 1997-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1997-2010 by Mark-Andre Hopf <mhopf@mark13.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
  */
 
 #include <toad/toad.hh>
-#include <toad/form.hh>
+#include <toad/springlayout.hh>
 #include <toad/menubar.hh>
 #include <toad/action.hh>
 #include <toad/scrollbar.hh>
@@ -57,11 +57,11 @@ class TViewer:
 };
 
 class TMainWindow:
-  public TForm
+  public TWindow
 {
   public:
     TMainWindow(TWindow *p,const string &t)
-    :TForm(p,t){};
+    :TWindow(p,t){};
   protected:
     TViewer *gl;
     void create();
@@ -105,7 +105,7 @@ void TMainWindow::create()
 
   // create viewer
   //---------------
-  gl = new TViewer(this,"OpenGL Window");
+  gl = new TViewer(this,"gl");
 
   // create scrollbars
   //-------------------
@@ -114,7 +114,9 @@ void TMainWindow::create()
   TScrollBar *sb[maxbar];
   int i;
   for(i=0; i<maxbar; i++) {
-    sb[i] = new TScrollBar(this,"");
+    char buffer[10];
+    sprintf(buffer, "sb%i", i);
+    sb[i] = new TScrollBar(this, buffer);
     sb[i]->setRangeProperties(0, 1, -180, 180);
     // CONNECT(sb[i]->sigValueChanged, this, actScrollBar, sb[i], i);
     CONNECT(sb[i]->getModel()->sigChanged, this, actScrollBar, sb[i], i);
@@ -122,22 +124,24 @@ void TMainWindow::create()
 
   // set up form definition
   //------------------------
-  attach(mb, SIDE_TOP | SIDE_LEFT | SIDE_RIGHT, ATTACH_FORM);
+  TSpringLayout *layout = new TSpringLayout();
+  
+  layout->attach("mb", TSpringLayout::TOP | TSpringLayout::LEFT | TSpringLayout::RIGHT);
 
   for(i=0; i<maxbar; i++) {
-    attach(sb[i], SIDE_TOP, ATTACH_WINDOW, mb);
-    attach(sb[i], SIDE_BOTTOM, ATTACH_FORM);
+    layout->attach(sb[i]->getTitle(), TSpringLayout::TOP, TSpringLayout::WINDOW, "mb");
+    layout->attach(sb[i]->getTitle(), TSpringLayout::BOTTOM);
     if (i==0)
-      attach(sb[0], SIDE_RIGHT, ATTACH_FORM);
+      layout->attach(sb[0]->getTitle(), TSpringLayout::RIGHT);
     else
-      attach(sb[i], SIDE_RIGHT, ATTACH_WINDOW, sb[i-1]);
-    distance(sb[i],10);
+      layout->attach(sb[i]->getTitle(), TSpringLayout::RIGHT, TSpringLayout::WINDOW, sb[i-1]->getTitle());
+    layout->distance(sb[i]->getTitle(),10);
   }
   
-  attach(gl, SIDE_TOP, ATTACH_WINDOW, mb);
-  attach(gl, SIDE_LEFT | SIDE_BOTTOM, ATTACH_FORM);
-  attach(gl, SIDE_RIGHT, ATTACH_WINDOW, sb[maxbar-1]);
-  distance(gl, 10);
+  layout->attach("gl", TSpringLayout::TOP, TSpringLayout::WINDOW, "mb");
+  layout->attach("gl", TSpringLayout::LEFT | TSpringLayout::BOTTOM);
+  layout->attach("gl", TSpringLayout::RIGHT, TSpringLayout::WINDOW, sb[maxbar-1]->getTitle());
+  layout->distance("gl", 10);
 }
 
 void

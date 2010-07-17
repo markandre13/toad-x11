@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerfull C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -53,6 +53,9 @@ TGLWindow::createX11Window(TX11CreateWindow *px11)
     None 
   };
   XVisualInfo *vi = glXChooseVisual(dpy, DefaultScreen(dpy), attributeList);
+  if (!vi) {
+    exit(1);
+  }
 
   GLXContext cx = glXCreateContext(dpy, vi, 0, GL_TRUE);
   glContext = cx;
