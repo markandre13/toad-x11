@@ -901,10 +901,12 @@ handle_event:
           break;
       }
 
+      me.dblClick = false;
+      if (me.type!=TMouseEvent::ROLL_UP &&
+          me.type!=TMouseEvent::ROLL_DOWN)
       {
         static Time last_click_time = 0;
         static Window last_click_window = 0;
-        me.dblClick = false;
         if (x11event.xbutton.time-last_click_time<250 &&
             last_click_window == x11event.xbutton.window )
         {
