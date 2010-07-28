@@ -46,7 +46,7 @@
 
 using namespace toad;
 
-static void drawSegment(GLfloat len);
+static void drawSegment(GLfloat len, GLfloat radius);
 
 double trandom(double v)
 {
@@ -128,12 +128,12 @@ struct TTree
     double ratiopower;
     double attractionup;
   // trunk radius
-    // ratio
-    // flare
-    // lobes
-    // lobedepth
-    // scale
-    // scalev
+    double ratio;
+    double flare;
+    double lobes;
+    double lobedepth;
+    double scale0;
+    double scale0v;
   // leaves
     // leaves
     // leafshape
@@ -159,9 +159,15 @@ void
 render(const TTree &tree,
        unsigned lvl=0,
        double length_parent=0.0,
+       double radius_parent=0.0,
        double offset_child=0.0)
 {
-  double length_child_max = tree.stem[lvl+1].length + trandom(tree.stem[lvl+1].lengthv);
+  cout << "lvl="<<lvl<<", stem.size()="<<tree.stem.size()<<endl;
+
+  double length_child_max=0.0;
+
+    
+  length_child_max = tree.stem[lvl].length + trandom(tree.stem[lvl].lengthv);
 
   // double stemLength()
   double length;
@@ -175,6 +181,14 @@ render(const TTree &tree,
                                     (length_parent-length_base) );
   } else {
     length = length_child_max * (length_parent - 0.6 * offset_child);          // 122.1
+  }
+
+  // stem radius
+  double radius;
+  if (lvl==0) {
+    radius = length * tree.ratio * tree.scale0;					// 122.
+  } else {
+    radius = pow(radius_parent * (length / length_parent ), tree.ratiopower);	// 122.
   }
 
   // void prepareSubstemParams()
@@ -205,8 +219,6 @@ render(const TTree &tree,
   
   double r=0.0;
 
-unsigned cntr=0;
-
   for(double segment=0.0; segment<length; segment+=segmentLength) {
 
     double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
@@ -217,7 +229,7 @@ unsigned cntr=0;
     else
       d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
     glRotatef(d, 1.0, 0.0, 0.0);
-    drawSegment(segmentLength);
+    drawSegment(segmentLength, radius);
 
     if (children==0.0)
       goto skipChildren;
@@ -268,8 +280,7 @@ unsigned cntr=0;
       }
 
 //      drawSegment(length_child);
-++cntr;
-      render(tree, lvl+1, length, offsetChild);
+      render(tree, lvl+1, length, radius, offsetChild);
       glPopMatrix();
     }
 
@@ -279,9 +290,6 @@ unsigned cntr=0;
 skipChildren:
     glTranslated(0.0, segmentLength, 0.0);
   }
-
-if (lvl==0)
-  cout << "drew " << cntr << " children, wanted " << children << endl;
 
 }
 
@@ -366,6 +374,13 @@ TTree::TTree()
   ratiopower = 1.2;
   attractionup = 0.5;
 
+  ratio = 0.015;
+  flare = 0.6;
+  lobes = 5;
+  lobedepth = 0.07;
+  scale0 = 1.0;
+  scale0v = 0.2;
+
   stem.push_back(TStem());
   stem.push_back(TStem());
   stem.push_back(TStem());
@@ -416,7 +431,7 @@ TTree::TTree()
   stem[2].splitanglev = 0.0;
   stem[2].downangle = 45.0;
   stem[2].downanglev = 10.0;
-  stem[2].rotate = 0.0;
+  stem[2].rotate = 140.0;
   stem[2].rotatev = 0.0;
   stem[2].branches = 30.0;
   stem[2].branchesdist = 1.0;
@@ -633,10 +648,10 @@ TMainWindow::menuCopyright()
 // TViewer
 //--------------------------------------------------------------------
 void 
-drawSegment(GLfloat l)
+drawSegment(GLfloat l, GLfloat r)
 {
-  GLfloat r0 = 0.02;
-  GLfloat r1 = 0.02;
+  GLfloat r0 = r;
+  GLfloat r1 = r;
 
   unsigned n = 8;
   GLfloat sh = M_PI / n; // half step
