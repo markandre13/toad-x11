@@ -135,25 +135,72 @@ struct TTree
     double scale0;
     double scale0v;
   // leaves
-    // leaves
-    // leafshape
-    // leafscale
-    // leafscalex
-    // leafbend
-    // leafstemlen
-    // leafdistrib
+    double leaves;
+    double leafshape;
+    double leafscale;
+    double leafscalex;
+    double leafbend;
+    double leafstemlen;
+    double leafdistrib;
   // pruning
-    // prune ratio
-    // prune width
-    // prune width peak
-    // prune power low
-    // prune power high
+    double prune_ratio;
+    double prune_width;
+    double prune_width_peak;
+    double prune_power_low;
+    double prune_power_high;
   // quality
-    // leafquality
-    // smooth
+    double leafquality;
+    double smooth;
 
   GVector<TStem> stem;
 };
+
+double
+taper(double taper, double radius, double segment, double length)
+{
+  double unit_taper = 0.0;
+  if (0.0 <= taper && taper < 1.0) {
+    unit_taper = taper;
+  } else
+  if (1.0 <= taper && taper < 2.0) {
+    unit_taper = 2.0 - taper;
+  } else
+  if (2.0 <= taper && taper < 3.0) {
+    unit_taper = 0.0;
+  }
+
+  double taper_z;
+  double z = segment / length;
+  taper_z = radius * ( 1.0 - unit_taper * z );
+
+  double radius_z;
+  if (0.0 <= taper && taper <= 1.0) {
+    radius_z = taper_z;
+  } else
+  if (0.0 <= taper && taper <= 3.0) {
+    double z2 = ( 1.0 - z ) * length;
+    double depth;
+    if (taper <= 2.0 || z2 < taper_z ) {
+      depth = 1.0;
+    } else {
+      depth = taper - 2.0;
+    }
+    double z3;
+    if ( taper < 2.0 ) {
+      z3 = z2;
+    } else {
+      z3 = z2 - 2.0 * taper_z * fabs(z2 / ( 2.0 * taper_z) + 0.5 );
+      if (z3 < 0.0)
+        z3 = -z3;
+    }
+    if (taper < 2.0 && z3 >= taper_z) {
+      radius_z = taper_z;
+    } else {
+      radius_z = (1-depth)*taper_z+depth*sqrt(pow(taper_z, 2.0)-pow(z3-taper_z, 2.0));
+    }
+  }
+  return radius_z;
+}
 
 void
 render(const TTree &tree,
@@ -165,7 +212,6 @@ render(const TTree &tree,
   cout << "lvl="<<lvl<<", stem.size()="<<tree.stem.size()<<endl;
 
   double length_child_max=0.0;
-
     
   length_child_max = tree.stem[lvl].length + trandom(tree.stem[lvl].lengthv);
 
@@ -190,6 +236,7 @@ render(const TTree &tree,
   } else {
     radius = pow(radius_parent * (length / length_parent ), tree.ratiopower);	// 122.
   }
+
 
   // void prepareSubstemParams()
   double children=0; // substem_cnt
@@ -229,7 +276,9 @@ render(const TTree &tree,
     else
       d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
     glRotatef(d, 1.0, 0.0, 0.0);
-    drawSegment(segmentLength, radius);
+
+    double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
+    drawSegment(segmentLength, radius_z);
 
     if (children==0.0)
       goto skipChildren;
@@ -380,6 +429,23 @@ TTree::TTree()
   lobedepth = 0.07;
   scale0 = 1.0;
   scale0v = 0.2;
+
+  leaves = 25;
+  leafshape = 0;
+  leafscale = 0.17;
+  leafscalex = 1.0;
+  leafbend = 0.3;
+  leafstemlen = 0.5;
+  leafdistrib = 4;
+  
+  prune_ratio = 0.0;
+  prune_width = 0.5;
+  prune_width_peak = 0.5;
+  prune_power_low = 0.5;
+  prune_power_high = 0.5;
+  
+  leafquality = 1.0;
+  smooth = 0.5;
 
   stem.push_back(TStem());
   stem.push_back(TStem());
