@@ -46,8 +46,10 @@
 
 using namespace toad;
 
+class TTree;
+
 static void drawSegment(GLfloat len, GLfloat radius);
-static void drawLeaf();
+static void drawLeaf(const TTree &tree);
 
 double trandom(double v)
 {
@@ -362,7 +364,7 @@ render(const TTree &tree,
         }
         glRotated(downangle_child, 1.0, 0.0, 0.0);
         
-        drawLeaf();
+        drawLeaf(tree);
         
         glPopMatrix();
       }
@@ -372,6 +374,75 @@ render(const TTree &tree,
   }
 
 }
+
+void 
+drawSegment(GLfloat l, GLfloat r)
+{
+  glColor3f(1.0, 0.0, 0.0);
+
+  GLfloat r0 = r;
+  GLfloat r1 = r;
+
+  unsigned n = 8;
+  GLfloat sh = M_PI / n; // half step
+  GLfloat s = 2.0 * sh;  // full step
+
+  GLfloat s0, s1=0.0;
+
+  for(unsigned i=0; i<n; ++i) {
+    s0 = s1;
+    s1 += s;
+    GLfloat sn = s0 + sh;
+    glBegin(GL_POLYGON);
+ 
+    Vector v[4];
+    v[0][0] = sin(s1)*r0;
+    v[0][1] = 0.0;
+    v[0][2] = cos(s1)*r1;
+    v[1][0] = sin(s1)*r0;
+    v[1][1] = l;
+    v[1][2] = cos(s1)*r1;
+    v[2][0] = sin(s0)*r0;
+    v[2][1] = l;
+    v[2][2] = cos(s0)*r1;
+    v[3][0] = sin(s0)*r0;
+    v[3][1] = 0.0;
+    v[3][2] = cos(s0)*r1;
+    
+    Vector n = planeNormal(v[0], v[1], v[2]);
+    n.normalize();
+    n.glNormal();
+    
+    for(unsigned j=0; j<4; ++j)
+      v[j].glVertex();
+
+    glEnd();
+  }
+}
+
+void
+drawLeaf(const TTree &tree)
+{
+  double f = sqrt(tree.leafquality);
+  double sy=0.04 * tree.leafscale / f;
+  double sx=sy * tree.leafscalex;
+  glColor3f(0.0, 1.0, 0.0);
+
+  glDisable(GL_CULL_FACE);
+  glBegin(GL_POLYGON);
+  glVertex3f(    0.0,    0.0, 0.0);
+  glVertex3f( sx*1.0, sy*1.0, 0.0);
+  glVertex3f( sx*1.0, sy*2.0, 0.0);
+  glVertex3f( sx*0.5, sy*3.0, 0.0);
+  glVertex3f(    0.0, sy*3.2, 0.0);
+  glVertex3f(-sx*0.5, sy*3.0, 0.0);
+  glVertex3f(-sx*1.0, sy*2.0, 0.0);
+  glVertex3f(-sx*1.0, sy*1.0, 0.0);
+  glNormal3f(0.0, 0.0, -1.0);
+  glEnd();
+  glDisable(GL_CULL_FACE);
+}
+
 
 TTree tree;
 
@@ -677,71 +748,6 @@ TMainWindow::menuCopyright()
 
 // TViewer
 //--------------------------------------------------------------------
-void 
-drawSegment(GLfloat l, GLfloat r)
-{
-  glColor3f(1.0, 0.0, 0.0);
-
-  GLfloat r0 = r;
-  GLfloat r1 = r;
-
-  unsigned n = 8;
-  GLfloat sh = M_PI / n; // half step
-  GLfloat s = 2.0 * sh;  // full step
-
-  GLfloat s0, s1=0.0;
-
-  for(unsigned i=0; i<n; ++i) {
-    s0 = s1;
-    s1 += s;
-    GLfloat sn = s0 + sh;
-    glBegin(GL_POLYGON);
- 
-    Vector v[4];
-    v[0][0] = sin(s1)*r0;
-    v[0][1] = 0.0;
-    v[0][2] = cos(s1)*r1;
-    v[1][0] = sin(s1)*r0;
-    v[1][1] = l;
-    v[1][2] = cos(s1)*r1;
-    v[2][0] = sin(s0)*r0;
-    v[2][1] = l;
-    v[2][2] = cos(s0)*r1;
-    v[3][0] = sin(s0)*r0;
-    v[3][1] = 0.0;
-    v[3][2] = cos(s0)*r1;
-    
-    Vector n = planeNormal(v[0], v[1], v[2]);
-    n.normalize();
-    n.glNormal();
-    
-    for(unsigned j=0; j<4; ++j)
-      v[j].glVertex();
-
-    glEnd();
-  }
-}
-
-void
-drawLeaf()
-{
-  double s=0.005;
-  glColor3f(0.0, 1.0, 0.0);
-
-  glDisable(GL_CULL_FACE);
-  glBegin(GL_POLYGON);
-  glVertex3f(   0.0, 0.0, 0.0);
-  glVertex3f( s*1.0, s*1.0, 0.0);
-  glVertex3f( s*1.0, s*2.0, 0.0);
-  glVertex3f( s*0.5, s*3.0, 0.0);
-  glVertex3f(   0.0, s*3.2, 0.0);
-  glVertex3f(-s*0.5, s*3.0, 0.0);
-  glVertex3f(-s*1.0, s*2.0, 0.0);
-  glVertex3f(-s*1.0, s*1.0, 0.0);
-  glNormal3f(0.0, 0.0, 1.0);
-  glEnd();
-  glDisable(GL_CULL_FACE);
-}
 
 void
 TViewer::glPaint()
