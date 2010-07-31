@@ -53,7 +53,7 @@ static void drawLeaf(const TTree &tree);
 
 double trandom(double v)
 {
-  return v * ( rand() / RAND_MAX );
+  return v * ( (double)rand() / RAND_MAX );
 }
 
 enum EShape {
@@ -783,6 +783,7 @@ TViewer::glPaint()
 
   glScaled(10.0,10.0,10.0);
 
+  srand(0);
   render(tree);
 }
 
