@@ -229,9 +229,44 @@ void renderSegment(const TTree &tree,
                    double ldist,
                    double leaves_per_branch,
                    double &r,
-                   double &lr
+                   double &lr,
+                   double &segsplits_error
                    )
 {
+  if (segment>=length)
+    return;
+    
+  double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
+  if (tree.stem[lvl].curveback==0.0)
+    d += tree.stem[lvl].curve/tree.stem[lvl].curveres;
+  else if (segment<tree.stem[lvl].curveres/2)
+    d += tree.stem[lvl].curve/(tree.stem[lvl].curveres/2);
+  else
+    d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
+  glRotatef(d, 1.0, 0.0, 0.0);
+
+  unsigned segsplits_effective;
+  if (lvl==0 && segment==0.0 && tree.basesplits>0.0) {
+    segsplits_effective = tree.basesplits;
+  } else {
+    segsplits_effective = fabs(tree.stem[lvl].segsplits + segsplits_error);
+    segsplits_error -= segsplits_effective - tree.stem[lvl].segsplits;
+  }
+
+  double splitangle=0.0;
+  if (segsplits_effective!=0) {
+    splitangle = tree.stem[lvl].splitangle*segsplits_effective + 
+                 trandom(tree.stem[lvl].splitanglev*segsplits_effective);
+    splitangle /= 2.0;
+  }
+  glPushMatrix();
+  
+  glRotated(-splitangle, 1.0, 0.0, 0.0);
+  
+  for(unsigned i=0; i<=segsplits_effective; ++i) {
+
+cout << lvl << ": render split " << i << " out of " << segsplits_effective << endl;
+
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
     drawSegment(segmentLength, radius_z);
 
@@ -315,6 +350,21 @@ void renderSegment(const TTree &tree,
         glPopMatrix();
       }
     }
+
+    glPushMatrix();
+    glTranslated(0.0, segmentLength, 0.0);
+      renderSegment(
+      tree, lvl, length_parent, radius_parent, offset_child,
+      radius, length, segment+segmentLength, segmentLength, children, length_base, length_child_max,
+      dist, ldist, leaves_per_branch,
+      r, lr, segsplits_error);
+    glPopMatrix();
+
+    if (segsplits_effective!=0)
+      glRotated(tree.stem[lvl].splitangle+trandom(tree.stem[lvl].splitanglev), 1.0, 0.0, 0.0);
+  }
+
+  glPopMatrix();
 }
 
 void
@@ -387,27 +437,14 @@ render(const TTree &tree,
   
   double r=0.0;  // children rotation
   double lr=0.0; // leaf rotation
+  double segsplits_error = 0.0;
 
   glPushMatrix();
-  for(double segment=0.0; segment<length; segment+=segmentLength) {
-
-    double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
-    if (tree.stem[lvl].curveback==0.0)
-      d += tree.stem[lvl].curve/tree.stem[lvl].curveres;
-    else if (segment<tree.stem[lvl].curveres/2)
-      d += tree.stem[lvl].curve/(tree.stem[lvl].curveres/2);
-    else
-      d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
-    glRotatef(d, 1.0, 0.0, 0.0);
-
-    renderSegment(
-      tree, lvl, length_parent, radius_parent, offset_child,
-      radius, length, segment, segmentLength, children, length_base, length_child_max,
-      dist, ldist, leaves_per_branch,
-      r, lr);
-    
-    glTranslated(0.0, segmentLength, 0.0);
-  }
+  renderSegment(
+    tree, lvl, length_parent, radius_parent, offset_child,
+    radius, length, 0.0, segmentLength, children, length_base, length_child_max,
+    dist, ldist, leaves_per_branch,
+    r, lr, segsplits_error);
   glPopMatrix();
 }
 
@@ -484,7 +521,7 @@ TTree tree;
 
 TTree::TTree()
 {
-#if 0
+#if 1
   stem.push_back(TStem());
   stem.push_back(TStem());
 //  stem.push_back(TStem());
@@ -530,9 +567,9 @@ TTree::TTree()
   stem[0].curve = 0.0;
   stem[0].curvev = 20.0;
   stem[0].curveback = 0.0;
-  stem[0].segsplits = 0.5;
-  stem[0].splitangle = 40.0;
-  stem[0].splitanglev = 20.0;
+  stem[0].segsplits = 1.0;
+  stem[0].splitangle = 20.0;
+  stem[0].splitanglev = 0.0;
   stem[0].downangle = 0.0;
   stem[0].downanglev = 0.0;
   stem[0].rotate = 0.0;
