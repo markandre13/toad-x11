@@ -240,7 +240,6 @@ render(const TTree &tree,
     radius = pow(radius_parent * (length / length_parent ), tree.ratiopower);	// 122.
   }
 
-
   // void prepareSubstemParams()
   double children=0; // substem_cnt
   if (lvl==0) {
@@ -274,9 +273,10 @@ render(const TTree &tree,
     shapeRatio(SHAPE_TAPERED_CYLINDRICAL, offset_child/length_parent) * tree.leafquality;
   double ldist = length / leaves_per_branch;
   
-  double r=0.0; // children rotation
+  double r=0.0;  // children rotation
   double lr=0.0; // leaf rotation
 
+  glPushMatrix();
   for(double segment=0.0; segment<length; segment+=segmentLength) {
 
     double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
@@ -291,6 +291,7 @@ render(const TTree &tree,
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
     drawSegment(segmentLength, radius_z);
 
+    // render children
     if (children!=0.0) {
       double off0 = segment;
       double off1 = segment + segmentLength;
@@ -343,6 +344,7 @@ render(const TTree &tree,
       }
     }
     
+    // render leaves
     if (leaves_per_branch!=0.0) {
       for(double off=0.0; off<segmentLength; off+=ldist) {
         double offsetChild = off + segment;
@@ -372,7 +374,7 @@ render(const TTree &tree,
     
     glTranslated(0.0, segmentLength, 0.0);
   }
-
+  glPopMatrix();
 }
 
 void 
@@ -424,7 +426,7 @@ void
 drawLeaf(const TTree &tree)
 {
   double f = sqrt(tree.leafquality);
-  double sy=0.04 * tree.leafscale / f;
+  double sy=0.035 * tree.leafscale / f;
   double sx=sy * tree.leafscalex;
   glColor3f(0.0, 1.0, 0.0);
 
@@ -448,6 +450,11 @@ TTree tree;
 
 TTree::TTree()
 {
+#if 0
+  stem.push_back(TStem());
+  stem.push_back(TStem());
+//  stem.push_back(TStem());
+
   species = "quaking_aspen";
   shape = SHAPE_TEND_FLAME;
   levels = 3;
@@ -482,9 +489,95 @@ TTree::TTree()
   leafquality = 1.0;
   smooth = 0.5;
 
+  stem[0].length  = 1.0;
+  stem[0].lengthv = 0.0;
+  stem[0].taper   = 1.0;
+  stem[0].curveres = 3 ;
+  stem[0].curve = 0.0;
+  stem[0].curvev = 20.0;
+  stem[0].curveback = 0.0;
+  stem[0].segsplits = 0.5;
+  stem[0].splitangle = 40.0;
+  stem[0].splitanglev = 20.0;
+  stem[0].downangle = 0.0;
+  stem[0].downanglev = 0.0;
+  stem[0].rotate = 0.0;
+  stem[0].rotatev = 0.0;
+  stem[0].branches = 1.0;
+  stem[0].branchesdist = 0.0;
+/*
+  stem[1].length  = 1.0;
+  stem[1].lengthv = 0.0;
+  stem[1].taper   = 1.0;
+  stem[1].curveres = 5 ;
+  stem[1].curve = -40.0;
+  stem[1].curvev = 50.0;
+  stem[1].curveback = 0.0;
+  stem[1].segsplits = 0.0;
+  stem[1].splitangle = 0.0;
+  stem[1].splitanglev = 0.0;
+  stem[1].downangle = 60.0;
+  stem[1].downanglev = -50.0;
+  stem[1].rotate = 140.0;
+  stem[1].rotatev = 0.0;
+  stem[1].branches = 50.0;
+  stem[1].branchesdist = 1.0;
+
+  stem[2].length  = 0.6;
+  stem[2].lengthv = 0.0;
+  stem[2].taper   = 1.0;
+  stem[2].curveres = 3 ;
+  stem[2].curve = -40.0;
+  stem[2].curvev = 75.0;
+  stem[2].curveback = 0.0;
+  stem[2].segsplits = 0.0;
+  stem[2].splitangle = 0.0;
+  stem[2].splitanglev = 0.0;
+  stem[2].downangle = 45.0;
+  stem[2].downanglev = 10.0;
+  stem[2].rotate = 140.0;
+  stem[2].rotatev = 0.0;
+  stem[2].branches = 30.0;
+  stem[2].branchesdist = 1.0;
+*/
+#else
   stem.push_back(TStem());
   stem.push_back(TStem());
   stem.push_back(TStem());
+
+  species = "quaking_aspen";
+  shape = SHAPE_TEND_FLAME;
+  levels = 3;
+  scale = 13.0;
+  scalev = 3.0;
+  basesize = 0.4;
+  basesplits = 0.0;
+  ratiopower = 1.2;
+  attractionup = 0.5;
+
+  ratio = 0.015;
+  flare = 0.6;
+  lobes = 5;
+  lobedepth = 0.07;
+  scale0 = 1.0;
+  scale0v = 0.2;
+
+  leaves = 25;
+  leafshape = 0;
+  leafscale = 0.17;
+  leafscalex = 1.0;
+  leafbend = 0.3;
+  leafstemlen = 0.5;
+  leafdistrib = 4;
+  
+  prune_ratio = 0.0;
+  prune_width = 0.5;
+  prune_width_peak = 0.5;
+  prune_power_low = 0.5;
+  prune_power_high = 0.5;
+  
+  leafquality = 1.0;
+  smooth = 0.5;
 
   stem[0].length  = 1.0;
   stem[0].lengthv = 0.0;
@@ -536,6 +629,7 @@ TTree::TTree()
   stem[2].rotatev = 0.0;
   stem[2].branches = 30.0;
   stem[2].branchesdist = 1.0;
+#endif
 }
 
 class TTreeAdapter:
