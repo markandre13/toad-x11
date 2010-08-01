@@ -210,84 +210,28 @@ render(const TTree &tree,
        unsigned lvl=0,
        double length_parent=0.0,
        double radius_parent=0.0,
-       double offset_child=0.0)
+       double offset_child=0.0);
+
+void renderSegment(const TTree &tree,
+                   unsigned lvl,
+                   double length_parent,
+                   double radius_parent,
+                   double offset_child,
+                   
+                   double radius,
+                   double length,
+                   double segment,
+                   double segmentLength,
+                   double children,
+                   double length_base,
+                   double length_child_max,
+                   double dist,
+                   double ldist,
+                   double leaves_per_branch,
+                   double &r,
+                   double &lr
+                   )
 {
-//  cout << "lvl="<<lvl<<", stem.size()="<<tree.stem.size()<<endl;
-
-  double length_child_max=0.0;
-    
-  length_child_max = tree.stem[lvl].length + trandom(tree.stem[lvl].lengthv);
-
-  // double stemLength()
-  double length;
-  if (lvl==0) {
-    length = tree.stem[0].length + trandom(tree.stem[0].lengthv) * tree.scale; // 122.6
-  } else if (lvl==1) {
-    double length_base = tree.basesize * tree.scale;
-    length = length_parent *                                                   // 121.94
-             length_child_max *
-             shapeRatio(tree.shape, (length_parent - offset_child)/
-                                    (length_parent-length_base) );
-  } else {
-    length = length_child_max * (length_parent - 0.6 * offset_child);          // 122.1
-  }
-
-  // stem radius
-  double radius;
-  if (lvl==0) {
-    radius = length * tree.ratio * tree.scale0;					// 122.
-  } else {
-    radius = pow(radius_parent * (length / length_parent ), tree.ratiopower);	// 122.
-  }
-
-  // void prepareSubstemParams()
-  double children=0; // substem_cnt
-  if (lvl==0) {
-    children = tree.stem[1].branches;
-  } else
-  if (lvl==1) {
-    children = tree.stem[2].branches *                                         // 121.78
-                ( 0.2 + 0.8 * ( length / length_parent ) / length_child_max);
-  } else {
-    if (lvl+1 < tree.stem.size())
-      children = tree.stem[lvl+1].branches *                                   // 121.80
-                 ( 1.0 - 0.5 * offset_child / length_parent);
-  }
-
-  double segmentLength = length / tree.stem[lvl].curveres;
-  double length_base = 0.0;
-  if (lvl==0)
-    length_base = tree.basesize * length;
-
-  double dist;
-  if (lvl==0) {
-    dist = (length - length_base) / children;
-  } else {
-    dist = length / children;
-  }
-
-  double leaves_per_branch = 0.0;  																					 // 122.
-  if (lvl+1==tree.stem.size())
-  leaves_per_branch =
-    tree.leaves * 
-    shapeRatio(SHAPE_TAPERED_CYLINDRICAL, offset_child/length_parent) * tree.leafquality;
-  double ldist = length / leaves_per_branch;
-  
-  double r=0.0;  // children rotation
-  double lr=0.0; // leaf rotation
-
-  glPushMatrix();
-  for(double segment=0.0; segment<length; segment+=segmentLength) {
-
-    double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
-    if (tree.stem[lvl].curveback==0.0)
-      d += tree.stem[lvl].curve/tree.stem[lvl].curveres;
-    else if (segment<tree.stem[lvl].curveres/2)
-      d += tree.stem[lvl].curve/(tree.stem[lvl].curveres/2);
-    else
-      d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
-    glRotatef(d, 1.0, 0.0, 0.0);
-
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
     drawSegment(segmentLength, radius_z);
 
@@ -371,6 +315,96 @@ render(const TTree &tree,
         glPopMatrix();
       }
     }
+}
+
+void
+render(const TTree &tree,
+       unsigned lvl,
+       double length_parent,
+       double radius_parent,
+       double offset_child)
+{
+//  cout << "lvl="<<lvl<<", stem.size()="<<tree.stem.size()<<endl;
+
+  double length_child_max=0.0;
+    
+  length_child_max = tree.stem[lvl].length + trandom(tree.stem[lvl].lengthv);
+
+  // double stemLength()
+  double length;
+  if (lvl==0) {
+    length = tree.stem[0].length + trandom(tree.stem[0].lengthv) * tree.scale; // 122.6
+  } else if (lvl==1) {
+    double length_base = tree.basesize * tree.scale;
+    length = length_parent *                                                   // 121.94
+             length_child_max *
+             shapeRatio(tree.shape, (length_parent - offset_child)/
+                                    (length_parent-length_base) );
+  } else {
+    length = length_child_max * (length_parent - 0.6 * offset_child);          // 122.1
+  }
+
+  // stem radius
+  double radius;
+  if (lvl==0) {
+    radius = length * tree.ratio * tree.scale0;					// 122.
+  } else {
+    radius = pow(radius_parent * (length / length_parent ), tree.ratiopower);	// 122.
+  }
+
+  // void prepareSubstemParams()
+  double children=0; // substem_cnt
+  if (lvl==0) {
+    children = tree.stem[1].branches;
+  } else
+  if (lvl==1) {
+    children = tree.stem[2].branches *                                         // 121.78
+                ( 0.2 + 0.8 * ( length / length_parent ) / length_child_max);
+  } else {
+    if (lvl+1 < tree.stem.size())
+      children = tree.stem[lvl+1].branches *                                   // 121.80
+                 ( 1.0 - 0.5 * offset_child / length_parent);
+  }
+
+  double segmentLength = length / tree.stem[lvl].curveres;
+  double length_base = 0.0;
+  if (lvl==0)
+    length_base = tree.basesize * length;
+
+  double dist;
+  if (lvl==0) {
+    dist = (length - length_base) / children;
+  } else {
+    dist = length / children;
+  }
+
+  double leaves_per_branch = 0.0;  																					 // 122.
+  if (lvl+1==tree.stem.size())
+  leaves_per_branch =
+    tree.leaves * 
+    shapeRatio(SHAPE_TAPERED_CYLINDRICAL, offset_child/length_parent) * tree.leafquality;
+  double ldist = length / leaves_per_branch;
+  
+  double r=0.0;  // children rotation
+  double lr=0.0; // leaf rotation
+
+  glPushMatrix();
+  for(double segment=0.0; segment<length; segment+=segmentLength) {
+
+    double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
+    if (tree.stem[lvl].curveback==0.0)
+      d += tree.stem[lvl].curve/tree.stem[lvl].curveres;
+    else if (segment<tree.stem[lvl].curveres/2)
+      d += tree.stem[lvl].curve/(tree.stem[lvl].curveres/2);
+    else
+      d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
+    glRotatef(d, 1.0, 0.0, 0.0);
+
+    renderSegment(
+      tree, lvl, length_parent, radius_parent, offset_child,
+      radius, length, segment, segmentLength, children, length_base, length_child_max,
+      dist, ldist, leaves_per_branch,
+      r, lr);
     
     glTranslated(0.0, segmentLength, 0.0);
   }
