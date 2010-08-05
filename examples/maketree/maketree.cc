@@ -206,13 +206,15 @@ taper(double taper, double radius, double segment, double length)
 }
 
 void
-render(const TTree &tree,
+render(const Matrix &iob,
+       const TTree &tree,
        unsigned lvl=0,
        double length_parent=0.0,
        double radius_parent=0.0,
        double offset_child=0.0);
 
-void renderSegment(const TTree &tree,
+void renderSegment(const Matrix &iob,
+                   const TTree &tree,
                    unsigned lvl,
                    double length_parent,
                    double radius_parent,
@@ -265,7 +267,7 @@ void renderSegment(const TTree &tree,
   
   for(unsigned i=0; i<=segsplits_effective; ++i) {
 
-cout << lvl << ": render split " << i << " out of " << segsplits_effective << endl;
+//cout << lvl << ": render split " << i << " out of " << segsplits_effective << endl;
 
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
     drawSegment(segmentLength, radius_z);
@@ -317,7 +319,7 @@ cout << lvl << ": render split " << i << " out of " << segsplits_effective << en
           length_child = length_child_max * ( length /*_parent*/ - 0.6 * offset_child );
         }
 
-        render(tree, lvl+1, length, radius, offsetChild);
+        render(iob, tree, lvl+1, length, radius, offsetChild);
 
         glPopMatrix();
       }
@@ -353,7 +355,7 @@ cout << lvl << ": render split " << i << " out of " << segsplits_effective << en
 
     glPushMatrix();
     glTranslated(0.0, segmentLength, 0.0);
-      renderSegment(
+      renderSegment(iob, 
       tree, lvl, length_parent, radius_parent, offset_child,
       radius, length, segment+segmentLength, segmentLength, children, length_base, length_child_max,
       dist, ldist, leaves_per_branch,
@@ -368,7 +370,8 @@ cout << lvl << ": render split " << i << " out of " << segsplits_effective << en
 }
 
 void
-render(const TTree &tree,
+render(const Matrix &iob,
+       const TTree &tree,
        unsigned lvl,
        double length_parent,
        double radius_parent,
@@ -440,7 +443,7 @@ render(const TTree &tree,
   double segsplits_error = 0.0;
 
   glPushMatrix();
-  renderSegment(
+  renderSegment(iob,
     tree, lvl, length_parent, radius_parent, offset_child,
     radius, length, 0.0, segmentLength, children, length_base, length_child_max,
     dist, ldist, leaves_per_branch,
@@ -949,7 +952,8 @@ TViewer::glPaint()
   glScaled(10.0,10.0,10.0);
 
   srand(0);
-  render(tree);
+  Matrix o = observer.inverse();
+  render(o, tree);
 }
 
 void
