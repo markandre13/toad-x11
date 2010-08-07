@@ -232,12 +232,14 @@ void renderSegment(const Matrix &iob,
                    double leaves_per_branch,
                    double &r,
                    double &lr,
-                   double &segsplits_error
+                   double &segsplits_error,
+                   double split_angle_correction
                    )
 {
   if (segment>=length)
     return;
-    
+  
+  // curve rotation  
   double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
   if (tree.stem[lvl].curveback==0.0)
     d += tree.stem[lvl].curve/tree.stem[lvl].curveres;
@@ -245,29 +247,75 @@ void renderSegment(const Matrix &iob,
     d += tree.stem[lvl].curve/(tree.stem[lvl].curveres/2);
   else
     d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
+  d -= split_angle_correction;
   glRotatef(d, 1.0, 0.0, 0.0);
 
-  unsigned segsplits_effective;
-  if (lvl==0 && segment==0.0 && tree.basesplits>0.0) {
+  unsigned segsplits_effective = 0;
+  if (segment==0.0) {
+  } else
+  if (lvl==0 && segment==segmentLength && tree.basesplits>0.0) {
     segsplits_effective = tree.basesplits;
   } else {
     segsplits_effective = fabs(tree.stem[lvl].segsplits + segsplits_error);
     segsplits_error -= segsplits_effective - tree.stem[lvl].segsplits;
   }
 
-  double splitangle=0.0;
-  if (segsplits_effective!=0) {
-    splitangle = tree.stem[lvl].splitangle*segsplits_effective + 
-                 trandom(tree.stem[lvl].splitanglev*segsplits_effective);
-    splitangle /= 2.0;
+  GLdouble x[16];
+  glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
+  Matrix m(x);
+  m = m * iob;
+  
+  double declination;
+  {
+    Vector v0(0.0, 0.0, 0.0);
+    Vector v1(0.0, 1.0, 0.0);
+    v0 = m * v0;
+    v1 = m * v1;
+    Vector v2 = v1 - v0;
+    v2.normalize();
+    declination = acos(v2.y()) * 180.0 / M_PI;
   }
+
+  // determine global y vector
+  Vector v;
+  {
+    m = m.inverse();
+    Vector v0(0,0,0);
+    Vector v1(0,1,0);
+    v0 = m * v0;
+    v1 = m * v1;
+    v = v1 - v0;
+    v.normalize();
+  }
+
   glPushMatrix();
   
-  glRotated(-splitangle, 1.0, 0.0, 0.0);
-  
+//  glRotated(-splitangle, 1.0, 0.0, 0.0);
+  double splitangle = - (tree.stem[lvl].splitangle*segsplits_effective +
+                     trandom(tree.stem[lvl].splitanglev*segsplits_effective) -
+                                        declination) * segsplits_effective / 2.0;
+
   for(unsigned i=0; i<=segsplits_effective; ++i) {
 
 //cout << lvl << ": render split " << i << " out of " << segsplits_effective << endl;
+    glPushMatrix();
+    if (i!=0) {
+      double spread_rotation = 20 + 0.75 * 				// 121.51
+                               ( 30.0 + fabs(declination-90.0) ) * pow(trandom(1.0), 2.0);
+      if (trandom(1.0) > 0.5)						// 121.52
+        spread_rotation = -spread_rotation;
+      glRotated(spread_rotation, v.x(), v.y(), v.z());
+    }
+
+    if (segsplits_effective>0) {
+      if (i>0)
+      splitangle += tree.stem[lvl].splitangle*segsplits_effective + 
+                   trandom(tree.stem[lvl].splitanglev*segsplits_effective) -
+                   declination;
+      glRotated(splitangle, 1.0, 0.0, 0.0);
+      
+      split_angle_correction += splitangle /  ((length-segment)/segmentLength);
+    }
 
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
     drawSegment(segmentLength, radius_z);
@@ -353,17 +401,13 @@ void renderSegment(const Matrix &iob,
       }
     }
 
-    glPushMatrix();
     glTranslated(0.0, segmentLength, 0.0);
-      renderSegment(iob, 
+    renderSegment(iob, 
       tree, lvl, length_parent, radius_parent, offset_child,
       radius, length, segment+segmentLength, segmentLength, children, length_base, length_child_max,
       dist, ldist, leaves_per_branch,
-      r, lr, segsplits_error);
+      r, lr, segsplits_error, split_angle_correction);
     glPopMatrix();
-
-    if (segsplits_effective!=0)
-      glRotated(tree.stem[lvl].splitangle+trandom(tree.stem[lvl].splitanglev), 1.0, 0.0, 0.0);
   }
 
   glPopMatrix();
@@ -447,7 +491,7 @@ render(const Matrix &iob,
     tree, lvl, length_parent, radius_parent, offset_child,
     radius, length, 0.0, segmentLength, children, length_base, length_child_max,
     dist, ldist, leaves_per_branch,
-    r, lr, segsplits_error);
+    r, lr, segsplits_error, 0.0);
   glPopMatrix();
 }
 
@@ -524,7 +568,7 @@ TTree tree;
 
 TTree::TTree()
 {
-#if 1
+#if 0
   stem.push_back(TStem());
   stem.push_back(TStem());
 //  stem.push_back(TStem());
@@ -572,7 +616,7 @@ TTree::TTree()
   stem[0].curveback = 0.0;
   stem[0].segsplits = 1.0;
   stem[0].splitangle = 20.0;
-  stem[0].splitanglev = 0.0;
+  stem[0].splitanglev = 20.0;
   stem[0].downangle = 0.0;
   stem[0].downanglev = 0.0;
   stem[0].rotate = 0.0;
@@ -731,19 +775,19 @@ TTreeAdapter::tableEvent(TTableEvent &te)
         case  0: handleDouble(te, &container->stem[te.col].length); break;
         case  1: handleDouble(te, &container->stem[te.col].lengthv); break;
         case  2: handleDouble(te, &container->stem[te.col].taper); break;
-        case  3: handleDouble(te, &container->stem[te.col].curveres); break;
-        case  4: handleDouble(te, &container->stem[te.col].curve); break;
-        case  5: handleDouble(te, &container->stem[te.col].curvev); break;
-        case  6: handleDouble(te, &container->stem[te.col].curveback); break;
+        case  3: handleDouble(te, &container->stem[te.col].curveres, 0, 1); break;
+        case  4: handleDouble(te, &container->stem[te.col].curve, 0, 1); break;
+        case  5: handleDouble(te, &container->stem[te.col].curvev, 0, 1); break;
+        case  6: handleDouble(te, &container->stem[te.col].curveback, 0, 1); break;
         case  7: handleDouble(te, &container->stem[te.col].segsplits); break;
-        case  8: handleDouble(te, &container->stem[te.col].splitangle); break;
-        case  9: handleDouble(te, &container->stem[te.col].splitanglev); break;
-        case 10: handleDouble(te, &container->stem[te.col].downangle); break;
-        case 11: handleDouble(te, &container->stem[te.col].downanglev); break;
-        case 12: handleDouble(te, &container->stem[te.col].rotate); break;
-        case 13: handleDouble(te, &container->stem[te.col].rotatev); break;
-        case 14: handleDouble(te, &container->stem[te.col].branches); break;
-        case 15: handleDouble(te, &container->stem[te.col].branchesdist); break;
+        case  8: handleDouble(te, &container->stem[te.col].splitangle, 0, 1); break;
+        case  9: handleDouble(te, &container->stem[te.col].splitanglev, 0, 1); break;
+        case 10: handleDouble(te, &container->stem[te.col].downangle, 0, 1); break;
+        case 11: handleDouble(te, &container->stem[te.col].downanglev, 0, 1); break;
+        case 12: handleDouble(te, &container->stem[te.col].rotate, 0, 1); break;
+        case 13: handleDouble(te, &container->stem[te.col].rotatev, 0, 1); break;
+        case 14: handleDouble(te, &container->stem[te.col].branches, 0, 1); break;
+        case 15: handleDouble(te, &container->stem[te.col].branchesdist, 0, 1); break;
       }
   }
 }
@@ -815,7 +859,11 @@ void TMainWindow::create()
   // create stem table
   //-------------------
   TTable *tbl = new TTable(this, "tbl");
-  tbl->setAdapter(new TTreeAdapter(&tree));
+  TTableAdapter *adapter = new TTreeAdapter(&tree);
+  TCLOSURE1(adapter->sigChanged, gl, gl,
+    gl->invalidateWindow();
+  )
+  tbl->setAdapter(adapter);
   TDefaultTableHeaderRenderer *hdr = new TDefaultTableHeaderRenderer(false);
   
   static const char *names[16] = {
@@ -944,7 +992,6 @@ TViewer::glPaint()
   glEnable(GL_COLOR_MATERIAL);
   glEnable(GL_LIGHT0);
 
-
   glTranslatef(0.0, -5.0, -10.0);
 
   observer.glMultMatrix();
@@ -995,6 +1042,5 @@ TViewer::mouseEvent(const TMouseEvent &me)
       observer *= matrixTranslate(0.0, 0.0, -1.0);
       invalidateWindow();
       break;
-    
   }
 }
