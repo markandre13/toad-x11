@@ -320,7 +320,7 @@ void renderSegment(const Matrix &iob,
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
     drawSegment(segmentLength, radius_z);
 
-    // render children
+    // render children (merge this one with 'render leaves') !!!
     if (children!=0.0) {
       double off0 = segment;
       double off1 = segment + segmentLength;
@@ -344,6 +344,27 @@ void renderSegment(const Matrix &iob,
 
         // rotate < 0.0 is a special case
         r += tree.stem[lvl+1].rotate + trandom(tree.stem[lvl+1].rotatev);
+
+        // attraction up
+        if (lvl!=0 && tree.attractionup != 0.0) {
+          GLdouble x[16];
+          glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
+          Matrix m(x);
+          m = m * iob;
+
+          Vector v0(0.0, 0.0, 0.0);
+          Vector v1(0.0, 1.0, 0.0);
+          v0 = m * v0;
+          v1 = m * v1;
+          Vector v = v1 - v0;
+          v.normalize();
+          
+          double declination = acos(v.y());
+          double orientation = acos(v.z());
+          double curve_up_segment = tree.attractionup * declination * cos(orientation) / tree.stem[lvl+1].curveres;
+          r += curve_up_segment * 180.0 / M_PI;
+        }
+
         glRotated(r, 0.0, 1.0, 0.0);
 
         double downangle_child;
@@ -394,6 +415,46 @@ void renderSegment(const Matrix &iob,
               ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/(length-length_base)));
         }
         glRotated(downangle_child, 1.0, 0.0, 0.0);
+
+        // leaf orientation (should be optional because of the performance)
+        if (false && tree.leafbend!=0.0) {
+          GLdouble x[16];
+          glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
+          Matrix m(x);
+          m = m * iob;
+          
+          Vector pos(0.0, 0.0, 0.0);
+          pos = m * pos;
+          
+          Vector normal(0.0, 1.0, 0.0);
+          normal = m * pos;
+          normal -= pos;
+          normal.normalize();
+          
+          double theta_position = atan2(pos.z(), pos.x());
+          double theta_bend     = theta_position - atan2(normal.z(), normal.x());
+          double rz = tree.leafbend * theta_bend * 180.0 / M_PI;
+          m = matrixRotate(Vector(0,1,0), rz);
+          glRotated(rz, 0.0, 1.0, 0.0);
+          
+          pos = Vector(0.0, 0.0, 0.0);
+          pos = m * pos;
+          normal = Vector(0.0, 1.0, 0.0);
+          normal = m * normal;
+          normal -= pos;
+          normal.normalize();
+          
+          double phi_bend = 
+            atan2(
+              sqrt(
+                pow(normal.x(), 2.0)+pow(normal.z(), 2.0)), normal.y()
+            );
+          double orientation = acos(normal.y()) * 180.0 / M_PI;
+          
+          glRotated(-orientation, 0.0, 1.0, 0.0);
+          glRotated(tree.leafbend * phi_bend * 180.0 / M_PI, 1.0, 0.0, 0.0);
+          glRotated(orientation, 0.0, 1.0, 0.0);
+        }
         
         drawLeaf(tree);
         
