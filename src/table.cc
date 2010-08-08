@@ -535,7 +535,17 @@ TDefaultTableHeaderRenderer::getHeight()
 int
 TDefaultTableHeaderRenderer::getWidth()
 {
-  return 42;
+  int w = 38;
+  for(vector<TFigure*>::const_iterator p=figures.begin();
+      p!=figures.end();
+      ++p)
+  {
+    TRectangle r;
+    (*p)->getShape(&r);
+    if (w<r.w)
+      w = r.w;
+  }
+  return w+4;
 }
 
 void
@@ -555,8 +565,10 @@ TDefaultTableHeaderRenderer::renderItem(TPen &pen, size_t idx, int w, int h)
     y = (h - r.h)/2;
   } else
   if (numeric) {
-    snprintf(buffer, 15, "%i", idx+1);
+    snprintf(buffer, 15, "%li", idx+1);
     txt = buffer;
+    x = (w - pen.getTextWidth(txt))/2;
+    y = (h - pen.getHeight())/2;
   } else {
     do {
       char c = (idx%26)+'A';
@@ -1313,7 +1325,39 @@ TTable::mouseEvent(const TMouseEvent &me)
       me.type == TMouseEvent::ROLL_DOWN ||
       me.type == TMouseEvent::ROLL_DOWN_END)
   {
-    TScrollPane::mouseEvent(me);
+//    TScrollPane::mouseEvent(me);
+  size_t x, y;   // field
+  TCoord fx, fy; // mouse within field
+  if (adapter && mouse2field(me.x, me.y, &x, &y, &fx, &fy)) {
+    TTableEvent te;
+    
+    te.mouse.window = this;
+    te.mouse.x = fx;
+    te.mouse.y = fy;
+    te.mouse._modifier = me.modifier();
+    te.mouse.type = me.type;
+    te.mouse.dblClick = me.dblClick;
+    // this should also contain a pointer to this adapter, in case
+    // mouseEvent makes modifications?
+    int size = col_info[x].size;
+    if (stretchLastColumn && x==cols-1) {
+      int xp;
+      xp = fpx + visible.x;
+      for(int _x=ffx; _x<x; _x++) {
+        xp += col_info[_x].size;
+      }
+      if (xp+size<visible.x+visible.w)
+        size = visible.x+visible.w-xp;
+    }
+    te.col = x;
+    te.row = y;
+    te.w   = size;
+    te.h   = row_info[y].size;
+    te.type= TTableEvent::MOUSE;
+    adapter->tableEvent(te);
+  }
+
+
     return;
   }
 
@@ -2152,6 +2196,7 @@ TTable::handleNewModel()
   te.type = TTableEvent::GET_COL_SIZE;
   for(te.col=0; te.col<cols; ++te.col) {
     DBM(cout << "pane.w: " << pane.w << endl;)
+    te.w = 64;
     adapter->tableEvent(te);
     info->size = te.w;
     pane.w += te.w + border;
@@ -2160,6 +2205,11 @@ TTable::handleNewModel()
   DBM(cout << "pane.w: " << pane.w << endl;)
 
   // calculate pane.h
+  
+  // font height seems to be a nice default;
+  TFont &font(TOADBase::getDefaultFont());
+  TCoord h = font.getHeight()+4;
+  
   pane.h=0;
   info = row_info;
   te.type = TTableEvent::GET_ROW_SIZE;
@@ -2168,6 +2218,7 @@ TTable::handleNewModel()
     DBM(cout << "pane.h: " << pane.h << endl;)
     info->open = true;
     info->size = 0;
+    te.h = h;
     adapter->tableEvent(te);
     info->size = te.h;
     pane.h += te.h + border;

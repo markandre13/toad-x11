@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2007 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2010 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,6 +21,7 @@
 #include <toad/table.hh>
 #include <toad/utf8.hh>
 #include <toad/dragndrop.hh>
+#include <ctype.h>
 
 using namespace toad;
 
@@ -194,8 +195,60 @@ TTableAdapter::handleCheckBox(TTableEvent &te, bool *value)
   }
 }
 
+static void cb(string *s) {
+  cout << "value changed to " << *s << endl;
+}
+
+void
+TTableAdapter::handleDouble(TTableEvent &te, double *s, int offx, double step)
+{
+  if (te.type==TTableEvent::MOUSE) {
+    if (te.mouse.type == TMouseEvent::ROLL_UP) {
+      *s += step;
+      reason = TTableModel::CONTENT;
+      sigChanged();
+      return;
+    }
+    if (te.mouse.type == TMouseEvent::ROLL_DOWN) {
+      *s -= step;
+      reason = TTableModel::CONTENT;
+      sigChanged();
+      return;
+    }
+  }
+
+  char buffer[1024];
+  snprintf(buffer, sizeof(buffer), "%f", *s);
+  
+  char *p = buffer+strlen(buffer)-1;
+  while(*p=='0') {
+    *p=0;
+    --p;
+  }
+  if (!isdigit(*p)) {
+    ++p;
+    *p='0';
+  }
+  
+
+  string value = buffer;
+
+  string pvalue = value;
+  handleStringHelper(te, &value, offx, cb);
+  
+  if (value!=pvalue) {
+    sscanf(value.c_str(), "%lf", s);
+  }
+}
+
 void
 TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
+{
+  handleStringHelper(te, s, offx, 0);
+}
+
+void
+TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx, void (*cb)(string*))
 {
   static TTableAdapter *edit = 0;
   static size_t cx;
@@ -214,7 +267,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
     case TTableEvent::PAINT:
 // cout << "paint " << te.col << ", " << te.row << endl;
       if (te.focus && edit==this && te.col == col && te.row == row) {
-        te.pen->setColor(255,255,192);
+        te.pen->setColor(1,1, 0.75);
         te.pen->fillRectanglePC(0,0,te.w,te.h);
         te.pen->setColor(0,0,0);
         te.pen->drawString(offx+2, 2, *s);
@@ -260,6 +313,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
           {
 //            cout << "begin to edit string" << endl;
             if (edit!=0) {
+              if (cb) cb(s);
               edit->reason = TTableModel::CONTENT;
               edit->sigChanged();
             }
@@ -275,6 +329,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
             case TK_KP_RETURN:
             case TK_RETURN:
 //              cout << "end to edit string" << endl;
+              if (cb) cb(s);
               edit = 0;
               reason = TTableModel::CONTENT;
               sigChanged();
@@ -282,6 +337,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
             case TK_DOWN:
             case TK_UP:
 //              cout << "end to edit string" << endl;
+              if (cb) cb(s);
               edit = 0;
               reason = TTableModel::CONTENT;
               sigChanged();
@@ -290,6 +346,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
               if (cx>0) {
                 utf8dec(*s, &cx);
               } else {
+                if (cb) cb(s);
                 edit = 0;
                 reason = TTableModel::CONTENT;
                 sigChanged();
@@ -300,6 +357,7 @@ TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
               if (cx<s->size()) {
                 utf8inc(*s, &cx);
               } else {
+                if (cb) cb(s);
                 edit = 0;
                 reason = TTableModel::CONTENT;
                 sigChanged();

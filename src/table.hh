@@ -380,6 +380,7 @@ class TTableAdapter:
     void renderBackground(TTableEvent &te);
     void renderCursor(TTableEvent &te);
     void handleString(TTableEvent &te, string *s, int offx=0);
+    void handleDouble(TTableEvent &te, double *s, int offx=0, double step=0.01);
     void handleCheckBox(TTableEvent &te, bool *b);
 
     // to simplify implementing of modelChanged(bool) when a new class
@@ -391,6 +392,9 @@ class TTableAdapter:
     
     TTableModel::EReason reason;
     size_t where, size;
+
+  protected:
+    void handleStringHelper(TTableEvent &te, string *s, int offx, void (*cb)(string*));
 };
 
 class TSimpleTableAdapter:
