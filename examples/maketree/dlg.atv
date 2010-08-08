@@ -13,6 +13,14 @@ toad::TDialogLayout {
       title = "species"
       taborder = 0
     }
+    toad::TFWindow {
+      x = 80
+      y = 316
+      w = 69
+      h = 17
+      title = "prune_ratio"
+      taborder = 0
+    }
     toad::TFText {
       linecolor ={ 0 0 0 }
       x = 4
@@ -81,7 +89,7 @@ toad::TDialogLayout {
     }
     toad::TFWindow {
       x = 236
-      y = 280
+      y = 276
       w = 65
       h = 17
       title = "leafdistrib"
@@ -176,7 +184,7 @@ toad::TDialogLayout {
       taborder = 0
     }
     toad::TFWindow {
-      x = 220
+      x = 236
       y = 180
       w = 65
       h = 17
@@ -184,7 +192,7 @@ toad::TDialogLayout {
       taborder = 0
     }
     toad::TFWindow {
-      x = 216
+      x = 236
       y = 60
       w = 65
       h = 17
@@ -192,7 +200,7 @@ toad::TDialogLayout {
       taborder = 0
     }
     toad::TFWindow {
-      x = 224
+      x = 236
       y = 400
       w = 65
       h = 17
@@ -447,7 +455,7 @@ toad::TDialogLayout {
       x = 4
       y = 212
       w = 313
-      h = 93
+      h = 89
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Leaves"
     }
@@ -517,7 +525,7 @@ toad::TDialogLayout {
     toad::TFText {
       linecolor ={ 0 0 0 }
       x = 160
-      y = 280
+      y = 276
       w = 42
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
@@ -553,9 +561,9 @@ toad::TDialogLayout {
     toad::TFFrame {
       linecolor ={ 0 0 0 }
       x = 4
-      y = 312
-      w = 313
-      h = 69
+      y = 308
+      w = 309
+      h = 73
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Pruning"
     }
@@ -589,7 +597,7 @@ toad::TDialogLayout {
     toad::TFText {
       linecolor ={ 0 0 0 }
       x = 12
-      y = 360
+      y = 356
       w = 67
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
@@ -598,11 +606,43 @@ toad::TDialogLayout {
     toad::TFText {
       linecolor ={ 0 0 0 }
       x = 160
-      y = 340
+      y = 356
       w = 70
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "PowerHigh:"
+    }
+    toad::TFWindow {
+      x = 236
+      y = 356
+      w = 65
+      h = 17
+      title = "prune_power_high"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 356
+      w = 69
+      h = 17
+      title = "prune_power_low"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 336
+      w = 69
+      h = 17
+      title = "prune_width"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 236
+      y = 316
+      w = 65
+      h = 17
+      title = "prune_width_peak"
+      taborder = 0
     }
   }
 }
