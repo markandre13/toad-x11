@@ -104,8 +104,19 @@ DBM(cerr << "  not locked => getValue\n";)
 #ifndef __WIN32__
       snprintf(buffer, sizeof(buffer), "%f", model->getValue());
 #else
-      sprintf(buffer, "%i", model->getValue());
+      sprintf(buffer, "%f", model->getValue());
 #endif
+
+      char *p = buffer+strlen(buffer)-1;
+      while(*p=='0') {
+        *p=0;
+        --p;
+      }
+      if (!isdigit(*p)) {
+        ++p;
+        *p='0';
+      }
+
       lock = true;
       setValue(buffer);
       lock = false;
