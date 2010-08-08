@@ -1,0 +1,608 @@
+// this is a generated file
+
+toad::TDialogLayout {
+  width = 500
+  height = 429
+  drawfocus = false
+  toad::TFigureModel {
+    toad::TFWindow {
+      x = 60
+      y = 4
+      w = 257
+      h = 21
+      title = "species"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 8
+      w = 55
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Species:"
+    }
+    toad::TFWindow {
+      x = 80
+      y = 40
+      w = 41
+      h = 17
+      title = "levels"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 40
+      w = 44
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Levels:"
+    }
+    toad::TFWindow {
+      x = 236
+      y = 100
+      w = 65
+      h = 17
+      title = "attractionup"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 80
+      w = 65
+      h = 17
+      title = "basesize"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 100
+      w = 65
+      h = 17
+      title = "basesplits"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 236
+      y = 140
+      w = 65
+      h = 17
+      title = "flare"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 260
+      w = 69
+      h = 17
+      title = "leafbend"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 236
+      y = 280
+      w = 65
+      h = 17
+      title = "leafdistrib"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 400
+      w = 65
+      h = 17
+      title = "leafquality"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 240
+      w = 69
+      h = 17
+      title = "leafscale"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 236
+      y = 244
+      w = 65
+      h = 17
+      title = "leafscalex"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 328
+      y = 4
+      w = 33
+      h = 33
+      title = "leafshape"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 364
+      y = 4
+      w = 33
+      h = 33
+      title = "leafstemlen"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 220
+      w = 69
+      h = 17
+      title = "leaves"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 160
+      w = 65
+      h = 17
+      title = "lobes"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 140
+      w = 65
+      h = 17
+      title = "ratio"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 236
+      y = 80
+      w = 65
+      h = 17
+      title = "ratiopower"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 60
+      w = 65
+      h = 17
+      title = "scale"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 80
+      y = 180
+      w = 65
+      h = 17
+      title = "scale0"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 220
+      y = 180
+      w = 65
+      h = 17
+      title = "scale0v"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 216
+      y = 60
+      w = 65
+      h = 17
+      title = "scalev"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 224
+      y = 400
+      w = 65
+      h = 17
+      title = "smooth"
+      taborder = 0
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 32
+      w = 313
+      h = 93
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Tree Shape"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -396
+      y = -16
+      w = 1
+      h = 5
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -400
+      y = -8
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -392
+      y = -4
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -396
+      y = -12
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -392
+      y = -44
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 16
+      y = -36
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -436
+      y = -76
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 16
+      y = -40
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -160
+      y = 308
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 80
+      y = -24
+      w = 25
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -148
+      y = 284
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 16
+      y = -40
+      w = 1
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 16
+      y = -12
+      w = 5
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -384
+      y = -44
+      w = 1
+      h = 5
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = -404
+      y = -4
+      w = 5
+      h = 1
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = ""
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 60
+      w = 40
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Scale:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 60
+      w = 48
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "ScaleV:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 80
+      w = 65
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "BaseSize:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 100
+      w = 70
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "BaseSplits:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 80
+      w = 74
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "RatioPower:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 100
+      w = 76
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "AttractionUp:"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 128
+      w = 313
+      h = 77
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Trunk Radius"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 140
+      w = 36
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Ratio:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 140
+      w = 35
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Flare:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 180
+      w = 48
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Scale0:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 180
+      w = 56
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Scale0V:"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 212
+      w = 313
+      h = 93
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Leaves"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 160
+      w = 43
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Lobes:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 220
+      w = 49
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Leaves:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 224
+      w = 45
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Shape:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 240
+      w = 40
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Scale:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 244
+      w = 48
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "ScaleX:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 260
+      w = 37
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Bend:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 280
+      w = 58
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "StemLen:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 280
+      w = 42
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Distrib:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 8
+      y = 400
+      w = 71
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "LeafQuality:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 400
+      w = 51
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Smooth:"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 388
+      w = 313
+      h = 37
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Quality"
+    }
+    toad::TFFrame {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 312
+      w = 313
+      h = 69
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Pruning"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 320
+      w = 36
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Ratio:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 340
+      w = 38
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Width:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 320
+      w = 69
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "WidthPeak:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 12
+      y = 360
+      w = 67
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "PowerLow:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 160
+      y = 340
+      w = 70
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "PowerHigh:"
+    }
+  }
+}

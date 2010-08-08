@@ -27,6 +27,7 @@
 #include <toad/menubar.hh>
 #include <toad/action.hh>
 #include <toad/scrollbar.hh>
+#include <toad/textarea.hh>
 #include <toad/table.hh>
 #include <toad/stl/vector.hh>
 #include "glwindow.hh"
@@ -121,39 +122,39 @@ struct TTree
 {
   TTree();
   // tree shape
-    string species;
+    TTextModel species;
     EShape shape;
-    double levels;
-    double scale;
-    double scalev;
-    double basesize;
-    double basesplits;
-    double ratiopower;
-    double attractionup;
+    TIntegerModel levels;
+    TFloatModel scale;
+    TFloatModel scalev;
+    TFloatModel basesize;
+    TFloatModel basesplits;
+    TFloatModel ratiopower;
+    TFloatModel attractionup;
   // trunk radius
-    double ratio;
-    double flare;
-    double lobes;
-    double lobedepth;
-    double scale0;
-    double scale0v;
+    TFloatModel ratio;
+    TFloatModel flare;
+    TFloatModel lobes;
+    TFloatModel lobedepth;
+    TFloatModel scale0;
+    TFloatModel scale0v;
   // leaves
-    double leaves;
-    double leafshape;
-    double leafscale;
-    double leafscalex;
-    double leafbend;
-    double leafstemlen;
-    double leafdistrib;
+    TFloatModel leaves;
+    TFloatModel leafshape;
+    TFloatModel leafscale;
+    TFloatModel leafscalex;
+    TFloatModel leafbend;
+    TFloatModel leafstemlen;
+    TFloatModel leafdistrib;
   // pruning
-    double prune_ratio;
-    double prune_width;
-    double prune_width_peak;
-    double prune_power_low;
-    double prune_power_high;
+    TFloatModel prune_ratio;
+    TFloatModel prune_width;
+    TFloatModel prune_width_peak;
+    TFloatModel prune_power_low;
+    TFloatModel prune_power_high;
   // quality
-    double leafquality;
-    double smooth;
+    TFloatModel leafquality;
+    TFloatModel smooth;
 
   GVector<TStem> stem;
 };
@@ -913,6 +914,41 @@ void TMainWindow::create()
   action = new TAction(this, "help|copyright");
   CONNECT(action->sigClicked, this,menuCopyright);
 
+  // 'maketree --layout-editor'
+  TWindow *dlg = new TWindow(this, "dlg");
+  dlg->setBackground(TColor::DIALOG);
+  new TTextArea(dlg, "species", &tree.species);
+//  new TTextArea(dlg, "shape", &tree.shape);
+  new TTextArea(dlg, "levels", &tree.levels);
+  new TTextArea(dlg, "scale", &tree.scale);
+  new TTextArea(dlg, "scalev", &tree.scalev);
+  new TTextArea(dlg, "basesize", &tree.basesize);
+  new TTextArea(dlg, "basesplits", &tree.basesplits);
+  new TTextArea(dlg, "ratiopower", &tree.ratiopower);
+  new TTextArea(dlg, "attractionup", &tree.attractionup);
+  new TTextArea(dlg, "ratio", &tree.ratio);
+  new TTextArea(dlg, "flare", &tree.flare);
+  new TTextArea(dlg, "lobes", &tree.lobedepth);
+  new TTextArea(dlg, "scale0", &tree.scale0);
+  new TTextArea(dlg, "scale0v", &tree.scale0v);
+  new TTextArea(dlg, "leaves", &tree.leaves);
+  new TTextArea(dlg, "leafshape", &tree.leafshape);
+  new TTextArea(dlg, "leafscale", &tree.leafscale);
+  new TTextArea(dlg, "leafscalex", &tree.leafscalex);
+  new TTextArea(dlg, "leafbend", &tree.leafbend);
+  new TTextArea(dlg, "leafstemlen", &tree.leafstemlen);
+  new TTextArea(dlg, "leafdistrib", &tree.leafdistrib);
+/*
+  new TTextArea(dlg, "prune_ratio", &tree.prune_ratio);
+  new TTextArea(dlg, "prune_width", &tree.prune_width);
+  new TTextArea(dlg, "prune_width_peak", &tree.prune_width_peak);
+  new TTextArea(dlg, "prune_power_low", &tree.prune_power_low);
+  new TTextArea(dlg, "prune_power_high", &tree.prune_power_high);
+*/
+  new TTextArea(dlg, "leafquality", &tree.leafquality);
+  new TTextArea(dlg, "smooth", &tree.smooth);
+  dlg->loadLayout("dlg.atv");
+
   // create viewer
   //---------------
   gl = new TViewer(this, "gl");
@@ -944,14 +980,17 @@ void TMainWindow::create()
   
   layout->attach("mb", TSpringLayout::TOP | TSpringLayout::LEFT | TSpringLayout::RIGHT);
 
-  layout->attach("tbl", TSpringLayout::TOP, "mb");
+  layout->attach("dlg", TSpringLayout::TOP, "mb");
+  layout->attach("dlg", TSpringLayout::LEFT);
+
+  layout->attach("tbl", TSpringLayout::TOP, "dlg");
   layout->attach("tbl", TSpringLayout::LEFT | TSpringLayout::BOTTOM);
-  
+
   layout->attach("gl", TSpringLayout::TOP, "mb");
   layout->attach("gl", TSpringLayout::RIGHT | TSpringLayout::BOTTOM);
   layout->attach("gl", TSpringLayout::LEFT, "tbl");
   
-  layout->distance("gl", 10);
+  layout->distance("gl", 2);
 
   setLayout(layout);
 }
