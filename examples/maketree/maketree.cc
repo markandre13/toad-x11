@@ -875,6 +875,7 @@ class TMainWindow:
     :TWindow(p,t){};
   protected:
     TViewer *gl;
+    void invalidateGL();
     void create();
     void menuQuit();
     void menuInfo();
@@ -890,6 +891,11 @@ main(int argc, char **argv, char **envv)
     toad::mainLoop();
   } toad::terminate();
   return 0;
+}
+
+void TMainWindow::invalidateGL()
+{
+  gl->invalidateWindow();
 }
 
 // TMainWindow
@@ -946,6 +952,33 @@ void TMainWindow::create()
   new TTextField(dlg, "smooth", &tree.smooth);
   dlg->loadLayout("dlg.atv");
 
+  CONNECT(tree.levels.sigChanged, this, invalidateGL);
+  CONNECT(tree.scale.sigChanged, this, invalidateGL);
+  CONNECT(tree.scalev.sigChanged, this, invalidateGL);
+  CONNECT(tree.basesize.sigChanged, this, invalidateGL);
+  CONNECT(tree.basesplits.sigChanged, this, invalidateGL);
+  CONNECT(tree.ratiopower.sigChanged, this, invalidateGL);
+  CONNECT(tree.attractionup.sigChanged, this, invalidateGL);
+  CONNECT(tree.ratio.sigChanged, this, invalidateGL);
+  CONNECT(tree.flare.sigChanged, this, invalidateGL);
+  CONNECT(tree.lobes.sigChanged, this, invalidateGL);
+  CONNECT(tree.scale0.sigChanged, this, invalidateGL);
+  CONNECT(tree.scale0v.sigChanged, this, invalidateGL);
+  CONNECT(tree.leaves.sigChanged, this, invalidateGL);
+  CONNECT(tree.leafshape.sigChanged, this, invalidateGL);
+  CONNECT(tree.leafscale.sigChanged, this, invalidateGL);
+  CONNECT(tree.leafscalex.sigChanged, this, invalidateGL);
+  CONNECT(tree.leafbend.sigChanged, this, invalidateGL);
+  CONNECT(tree.leafstemlen.sigChanged, this, invalidateGL);
+  CONNECT(tree.leafdistrib.sigChanged, this, invalidateGL);
+  CONNECT(tree.prune_ratio.sigChanged, this, invalidateGL);
+  CONNECT(tree.prune_width.sigChanged, this, invalidateGL);
+  CONNECT(tree.prune_width_peak.sigChanged, this, invalidateGL);
+  CONNECT(tree.prune_power_low.sigChanged, this, invalidateGL);
+  CONNECT(tree.prune_power_high.sigChanged, this, invalidateGL);
+  CONNECT(tree.leafquality.sigChanged, this, invalidateGL);
+  CONNECT(tree.smooth.sigChanged, this, invalidateGL);
+
   // create viewer
   //---------------
   gl = new TViewer(this, "gl");
@@ -954,9 +987,7 @@ void TMainWindow::create()
   //-------------------
   TTable *tbl = new TTable(this, "tbl");
   TTableAdapter *adapter = new TTreeAdapter(&tree);
-  TCLOSURE1(adapter->sigChanged, gl, gl,
-    gl->invalidateWindow();
-  )
+  CONNECT(adapter->sigChanged, this, invalidateGL);
   tbl->setAdapter(adapter);
   TDefaultTableHeaderRenderer *hdr = new TDefaultTableHeaderRenderer(false);
   
@@ -1144,3 +1175,12 @@ TViewer::mouseEvent(const TMouseEvent &me)
       break;
   }
 }
+
+// obj: format
+// http://en.wikipedia.org/wiki/Obj
+// counter clock wise order
+// # <comment>
+// v <x> <y> <z>
+// vn <vertex> <vertex> ...
+
+// f
