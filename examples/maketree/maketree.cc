@@ -54,7 +54,7 @@ static void drawLeaf(const TTree &tree);
 
 double trandom(double v)
 {
-  return v * ( (double)rand() / RAND_MAX );
+  return 2.0 * v * ( (double)rand() / RAND_MAX ) - v;
 }
 
 enum EShape {
@@ -303,7 +303,7 @@ void renderSegment(const Matrix &iob,
     if (i!=0) {
       double spread_rotation = 20 + 0.75 * 				// 121.51
                                ( 30.0 + fabs(declination-90.0) ) * pow(trandom(1.0), 2.0);
-      if (trandom(1.0) > 0.5)						// 121.52
+      if (trandom(1.0) < 0.0)						// 121.52
         spread_rotation = -spread_rotation;
       glRotated(spread_rotation, v.x(), v.y(), v.z());
     }
@@ -536,6 +536,8 @@ render(const Matrix &iob,
   } else {
     dist = length / children;
   }
+  if (dist<0.000000001)
+    dist=0.000000001;
 
   double leaves_per_branch = 0.0;  																					 // 122.
   if (lvl+1==tree.stem.size())
