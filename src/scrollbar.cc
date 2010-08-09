@@ -167,7 +167,6 @@ TScrollBar::getFixedSize()
 void
 TScrollBar::resize()
 {
-  printf("%s\n", __FUNCTION__);
   bVertical = getWidth() < getHeight();
   _placeChildren();
   _placeSlider();
