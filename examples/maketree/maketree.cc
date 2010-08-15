@@ -25,8 +25,9 @@
 #include <toad/toad.hh>
 #include <toad/springlayout.hh>
 #include <toad/menubar.hh>
+#include <toad/filedialog.hh>
 #include <toad/action.hh>
-#include <toad/scrollbar.hh>
+#include <toad/undomanager.hh>
 #include <toad/textfield.hh>
 #include <toad/table.hh>
 #include <toad/stl/vector.hh>
@@ -39,13 +40,19 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <fcntl.h>
+#include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <libxml/xmlreader.h>
 
 #include "math/matrix4.h"
 
 #define DEBUG
 
 using namespace toad;
+
+static const string programname("MakeTree");
 
 class TTree;
 
@@ -54,7 +61,7 @@ static void drawLeaf(const TTree &tree);
 
 double trandom(double v)
 {
-  return 2.0 * v * ( (double)rand() / RAND_MAX ) - v;
+  return v * ( (double)rand() / RAND_MAX );
 }
 
 enum EShape {
@@ -95,8 +102,41 @@ shapeRatio(EShape shape, double ratio)
   return 1.0;
 }
 
+struct TIO
+{
+  TIO() {
+    name = value = 0;
+    found = false;
+    row = -1;
+    out = 0;
+  }
+  char *name;
+  char *value;
+  bool found;
+  int row;
+  ostream *out;
+};
+
 struct TStem
 {
+  TStem() {
+    length = 1.0;
+    lengthv = 0;
+    taper = 0;
+    curveres = 3;
+    curve = 0;
+    curvev = 0;
+    curveback = 0;
+    segsplits = 0;
+    splitangle = 45.0;
+    splitanglev = 0;
+    downangle = 20;
+    downanglev = 0;
+    rotate = 140.0;
+    rotatev = 0;
+    branches = 0;
+    branchesdist = 0;
+  }
   double length;
   double lengthv;
   double taper;
@@ -114,13 +154,16 @@ struct TStem
   double downanglev;
   double rotate;
   double rotatev;
-  double branches;
+  int branches;
   double branchesdist;
 };
 
 struct TTree
 {
   TTree();
+  
+  void assign(const TTree&);
+  
   // tree shape
     TTextModel species;
     EShape shape;
@@ -157,7 +200,303 @@ struct TTree
     TFloatModel smooth;
 
   GVector<TStem> stem;
+
+  bool load(const char *filename);
+  bool save(const char *filename);
+  void io1(TIO &io);
+  void io2(TIO &io, TStem &s);
 };
+
+void
+TTree::assign(const TTree &t)
+{
+  species = t.species;
+  shape = t.shape;
+  levels = t.levels;
+  scale = t.scale;
+  scalev = t.scalev;
+  basesize = t.basesize;
+  basesplits = t.basesplits;
+  ratiopower = t.ratiopower;
+  attractionup = t.attractionup;
+  
+  ratio = t.ratio;
+  flare = t.flare;
+  lobes = t.lobes;
+  lobedepth = t.lobedepth;
+  scale0 = t.scale0;
+  scale0v = t.scale0v;
+  
+  leaves = t.leaves;
+  leafshape = t.leafshape;
+  leafscale = t.leafscale;
+  leafscalex = t.leafscalex;
+  leafbend = t.leafbend;
+  leafstemlen = t.leafstemlen;
+  leafdistrib = t.leafdistrib;
+  
+  prune_ratio = t.prune_ratio;
+  prune_width = t.prune_width;
+  prune_width_peak = t.prune_width_peak;
+  prune_power_low = t.prune_power_low;
+  prune_power_high = t.prune_power_high;
+  
+  leafquality = t.leafquality;
+  smooth = t.smooth;
+  
+  stem.erase(stem.begin(), stem.end());
+  for(GVector<TStem>::const_iterator p = t.stem.begin(); p!=t.stem.end(); ++p) {
+    stem.push_back(TStem());
+    TStem &d = *(stem.end()-1);
+    const TStem &s = *p;
+    
+    d.length = s.length;
+    d.lengthv = s.lengthv;
+    d.taper = s.taper;
+    d.curveres = s.curveres;
+    d.curve = s.curve;
+    d.curvev = s.curvev;
+    d.curveback = s.curveback;
+    d.segsplits = s.segsplits;
+    d.splitangle = s.splitangle;
+    d.splitanglev = s.splitanglev;
+    d.downangle = s.downangle;
+    d.downanglev = s.downanglev;
+    d.rotate = s.rotate;
+    d.rotatev = s.rotatev;
+    d.branches = s.branches;
+    d.branchesdist = s.branchesdist;
+  }
+}
+
+void
+fetch(TIO &io, const char *name, TFloatModel *v)
+{
+  if (io.out) {
+    (*io.out) << "    <param name='";
+    if (io.row>=0) (*io.out) << io.row;
+    (*io.out)<<name<<"' value='"<<*v<<"'/>\n";
+    return;
+  }
+
+  if (io.found || strcasecmp(io.name, name)!=0) return;
+  double d;
+  sscanf(io.value, "%lf", &d);
+  *v = d;
+  io.found=true;
+}
+
+void
+fetch(TIO &io, const char *name, double *v)
+{
+  if (io.out) {
+    (*io.out) << "    <param name='";
+    if (io.row>=0) (*io.out) << io.row;
+    (*io.out)<<name<<"' value='"<<*v<<"'/>\n";
+    return;
+  }
+  if (io.found || strcasecmp(io.name, name)!=0) return;
+  sscanf(io.value, "%lf", v);
+cout << name << "=" << *v << " " << " (" << io.value << ")" << endl;
+  io.found=true;
+}
+
+void
+fetch(TIO &io, const char *name, TIntegerModel *v)
+{
+  if (io.out) {
+    (*io.out) << "    <param name='";
+    if (io.row>=0) (*io.out) << io.row;
+    (*io.out)<<name<<"' value='"<<*v<<"'/>\n";
+    return;
+  }
+  if (io.found || strcasecmp(io.name, name)!=0) return;
+  *v = atoi(io.value);
+  io.found=true;
+}
+
+void
+fetch(TIO &io, const char *name, int *v)
+{
+  if (io.out) {
+    (*io.out) << "    <param name='";
+    if (io.row>=0) (*io.out) << io.row;
+    (*io.out)<<name<<"' value='"<<*v<<"'/>\n";
+    return;
+  }
+  if (io.found || strcasecmp(io.name, name)!=0) return;
+  *v = atol(io.value);
+  io.found=true;
+}
+
+void
+fetch(TIO &io, const char *name, EShape *v)
+{
+  if (io.out) {
+    (*io.out) << "    <param name='";
+    if (io.row>=0) (*io.out) << io.row;
+    (*io.out)<<name<<"' value='"<<*v<<"'/>\n";
+    return;
+  }
+  if (io.found || strcasecmp(io.name, name)!=0) return;
+  *v = (EShape)atoi(io.value);
+  io.found=true;
+}
+
+bool
+TTree::load(const char *filename)
+{
+  xmlTextReaderPtr reader = xmlReaderForFile(filename, NULL, 0);
+  if (!reader)
+    return false;
+  bool result = true;
+  TIO io;
+  while(true) {
+    if (!xmlTextReaderRead(reader)) {
+//cout << __FILE__ << ":" << __LINE__ << endl;
+//      result = false;
+      break;
+    }
+    
+    const xmlChar *name, *value;
+    name = xmlTextReaderConstName(reader);
+    if (!name) {
+      result = false;
+cout << __FILE__ << ":" << __LINE__ << endl;
+      break;
+    }
+    int depth = xmlTextReaderDepth(reader);
+    int type  = xmlTextReaderNodeType(reader);
+
+    value = xmlTextReaderConstValue(reader);
+/*
+    cout << "depth:" << depth
+         << ", type:" << xmlTextReaderNodeType(reader)
+         << ", name:" << name
+         << ", empty:" << (xmlTextReaderIsEmptyElement(reader)?"yes":"no")
+         << ", value:" << (xmlTextReaderHasValue(reader)?"yes":"no")
+         << ", attrs:" << xmlTextReaderAttributeCount(reader)
+         << endl;
+*/
+    if (depth==1 && type==1 && name && strcmp((char*)name, "species")==0) {
+      name = xmlTextReaderGetAttribute(reader, (xmlChar*)"name");
+      if (name) {
+        species = (const char*)name;
+      }
+    } else
+    
+    if (depth==2 && type==1 && name && strcmp((char*)name, "param")==0) {
+      io.name = (char*)xmlTextReaderGetAttribute(reader, (xmlChar*)"name");
+      io.value = (char*)xmlTextReaderGetAttribute(reader, (xmlChar*)"value");
+      io.found = false;
+      if (io.name && io.value) {
+        io1(io);
+        if (io.found) continue;
+        
+        if (isdigit(*io.name)) {
+          unsigned row = 0;
+          while(isdigit(*io.name)) {
+            row *= 10;
+            row += (*io.name)-'0';
+            ++io.name;
+          }
+          while(stem.size()<=row)
+            stem.push_back(TStem());
+          io2(io, stem[row]);
+        }
+        
+        if (!io.found) {
+          cout << "unknown attribute " << io.name << " = " << io.value << endl;
+        }
+      }
+    }
+    
+  }
+  xmlFreeTextReader(reader);
+  xmlCleanupParser();
+  return result;
+}
+
+bool
+TTree::save(const char *filename)
+{
+  ofstream out(filename);
+  if (!out)
+    return false;
+  out << "<?xml version='1.0' ?>\n"
+         "<!-- created with MakeTree -->\n"
+         "<arbaro>\n"
+         "  <species name='"<<species<<"'>\n"
+         "  <!-- general params -->\n";
+  TIO io;
+  io.row = -1;
+  io.out = &out;
+  io1(io);
+cout << "we have " << stem.size() << " stems" << endl;
+  for(int i=0; i<stem.size(); ++i) {
+    out << "    <!-- level " << i << " -->\n";
+    io.row = i;
+    io2(io, stem[i]);
+  }
+  out << "  </species>\n"
+         "</arbaro>\n";
+  return true;
+}
+
+void
+TTree::io1(TIO &io)
+{
+  fetch(io, "Levels", &levels);
+  fetch(io, "Shape", &shape);
+  fetch(io, "Scale", &scale);
+  fetch(io, "ScaleV", &scalev);
+  fetch(io, "BaseSize", &basesize);
+  fetch(io, "0BaseSplits", &basesplits);
+  fetch(io, "RatioPower", &ratiopower);
+  fetch(io, "AttractionUp", &attractionup);
+  fetch(io, "Ratio", &ratio);
+  fetch(io, "Flare", &flare);
+  fetch(io, "Lobes", &lobes);
+  fetch(io, "LobeDepth", &lobedepth);
+  fetch(io, "0Scale", &scale0);
+  fetch(io, "0ScaleV", &scale0v);
+  fetch(io, "Leaves", &leaves);
+  fetch(io, "LeafShape", &leafshape);
+  fetch(io, "LeafScale", &leafscale);
+  fetch(io, "LeafScaleX", &leafscalex);
+  fetch(io, "LeafBend", &leafbend);
+  fetch(io, "LeafStemLen", &leafstemlen);
+  fetch(io, "LeafDistrib", &leafdistrib);
+  fetch(io, "PruneRatio", &prune_ratio);
+  fetch(io, "PruneWidth", &prune_width);
+  fetch(io, "PruneWidthPeak", &prune_width_peak);
+  fetch(io, "PrunePowerLow", &prune_power_low);
+  fetch(io, "PrunePowerHigh", &prune_power_high);
+  fetch(io, "LeafQuality", &leafquality);
+  fetch(io, "Smooth", &smooth);
+}        
+
+void
+TTree::io2(TIO &io, TStem &s)
+{
+  fetch(io, "Length", &s.length);
+  fetch(io, "LengthV", &s.lengthv);
+  fetch(io, "Taper", &s.taper);
+  fetch(io, "CurveRes", &s.curveres);
+  fetch(io, "Curve", &s.curve);
+  fetch(io, "CurveV", &s.curvev);
+  fetch(io, "CurveBack", &s.curveback);
+  fetch(io, "SegSplits", &s.segsplits);
+  fetch(io, "SplitAngle", &s.splitangle);
+  fetch(io, "SplitAngleV", &s.splitanglev);
+  fetch(io, "DownAngle", &s.downangle);
+  fetch(io, "DownAngleV", &s.downanglev);
+  fetch(io, "Rotate", &s.rotate);
+  fetch(io, "RotateV", &s.rotatev);
+  fetch(io, "Branches", &s.branches);
+  fetch(io, "BranchDist", &s.branchesdist);
+}
+
 
 double
 taper(double taper, double radius, double segment, double length)
@@ -225,7 +564,7 @@ void renderSegment(const Matrix &iob,
                    double length,
                    double segment,
                    double segmentLength,
-                   double children,
+                   unsigned children,
                    double length_base,
                    double length_child_max,
                    double dist,
@@ -292,15 +631,18 @@ void renderSegment(const Matrix &iob,
   glPushMatrix();
   
 //  glRotated(-splitangle, 1.0, 0.0, 0.0);
-  double splitangle = - (tree.stem[lvl].splitangle*segsplits_effective +
-                     trandom(tree.stem[lvl].splitanglev*segsplits_effective) -
+  double splitangle = - (tree.stem[lvl].splitangle*segsplits_effective /*+
+                     trandom(tree.stem[lvl].splitanglev*segsplits_effective)*/ -
                                         declination) * segsplits_effective / 2.0;
 
   for(unsigned i=0; i<=segsplits_effective; ++i) {
 
 //cout << lvl << ": render split " << i << " out of " << segsplits_effective << endl;
     glPushMatrix();
-    if (i!=0) {
+
+    if ((lvl!=0 || segment>segmentLength)  // this is not in the paper but it looks better this way
+        && i!=0)
+    {
       double spread_rotation = 20 + 0.75 * 				// 121.51
                                ( 30.0 + fabs(declination-90.0) ) * pow(trandom(1.0), 2.0);
       if (trandom(1.0) < 0.0)						// 121.52
@@ -322,7 +664,7 @@ void renderSegment(const Matrix &iob,
     drawSegment(segmentLength, radius_z);
 
     // render children (merge this one with 'render leaves') !!!
-    if (children!=0.0) {
+    if (children!=0 && tree.basesize<0.9999) {
       double off0 = segment;
       double off1 = segment + segmentLength;
       if (lvl==0) {
@@ -396,7 +738,7 @@ void renderSegment(const Matrix &iob,
     }
     
     // render leaves
-    if (leaves_per_branch!=0.0) {
+    if (leaves_per_branch>0.0) {
       for(double off=0.0; off<segmentLength; off+=ldist) {
         double offsetChild = off + segment;
         glPushMatrix();
@@ -512,39 +854,40 @@ render(const Matrix &iob,
   }
 
   // void prepareSubstemParams()
-  double children=0; // substem_cnt
+  unsigned children=0; // substem_cnt
   if (lvl==0) {
     children = tree.stem[1].branches;
   } else
   if (lvl==1) {
     children = tree.stem[2].branches *                                         // 121.78
                 ( 0.2 + 0.8 * ( length / length_parent ) / length_child_max);
-  } else {
-    if (lvl+1 < tree.stem.size())
+  } else
+  if ( (lvl+1 < tree.stem.size()) || (lvl+1 < tree.levels) ) {
       children = tree.stem[lvl+1].branches *                                   // 121.80
                  ( 1.0 - 0.5 * offset_child / length_parent);
   }
-
   double segmentLength = length / tree.stem[lvl].curveres;
   double length_base = 0.0;
   if (lvl==0)
     length_base = tree.basesize * length;
 
-  double dist;
-  if (lvl==0) {
-    dist = (length - length_base) / children;
-  } else {
-    dist = length / children;
+  double dist=0;
+  if (children!=0) {
+    if (lvl==0) {
+      dist = (length - length_base) / children;
+    } else {
+      dist = length / children;
+    }
   }
-  if (dist<0.000000001)
-    dist=0.000000001;
 
-  double leaves_per_branch = 0.0;  																					 // 122.
-  if (lvl+1==tree.stem.size())
-  leaves_per_branch =
-    tree.leaves * 
-    shapeRatio(SHAPE_TAPERED_CYLINDRICAL, offset_child/length_parent) * tree.leafquality;
-  double ldist = length / leaves_per_branch;
+  double leaves_per_branch = 0.0;				 // 122.
+  double ldist = 0.0;
+  if ( lvl+1==tree.stem.size() || lvl+1==tree.levels ) {
+    leaves_per_branch =
+      tree.leaves * 
+      shapeRatio(SHAPE_TAPERED_CYLINDRICAL, offset_child/length_parent) * tree.leafquality;
+    ldist = length / leaves_per_branch;
+  }
   
   double r=0.0;  // children rotation
   double lr=0.0; // leaf rotation
@@ -632,12 +975,17 @@ TTree tree;
 
 TTree::TTree()
 {
+  levels.setMinimum(1);
+  basesize.setMinimum(0.0);
+  basesize.setMaximum(0.9999);
 #if 0
   stem.push_back(TStem());
   stem.push_back(TStem());
-//  stem.push_back(TStem());
+  stem.push_back(TStem());
+  stem.push_back(TStem());
+  stem.push_back(TStem());
 
-  species = "quaking_aspen";
+  species = "test";
   shape = SHAPE_TEND_FLAME;
   levels = 3;
   scale = 13.0;
@@ -685,7 +1033,7 @@ TTree::TTree()
   stem[0].downanglev = 0.0;
   stem[0].rotate = 0.0;
   stem[0].rotatev = 0.0;
-  stem[0].branches = 1.0;
+  stem[0].branches = 1;
   stem[0].branchesdist = 0.0;
 /*
   stem[1].length  = 1.0;
@@ -775,7 +1123,7 @@ TTree::TTree()
   stem[0].downanglev = 0.0;
   stem[0].rotate = 0.0;
   stem[0].rotatev = 0.0;
-  stem[0].branches = 1.0;
+  stem[0].branches = 1;
   stem[0].branchesdist = 0.0;
 
   stem[1].length  = 1.0;
@@ -850,7 +1198,7 @@ TTreeAdapter::tableEvent(TTableEvent &te)
         case 11: handleDouble(te, &container->stem[te.col].downanglev, 0, 1); break;
         case 12: handleDouble(te, &container->stem[te.col].rotate, 0, 1); break;
         case 13: handleDouble(te, &container->stem[te.col].rotatev, 0, 1); break;
-        case 14: handleDouble(te, &container->stem[te.col].branches, 0, 1); break;
+        case 14: handleInteger(te, &container->stem[te.col].branches, 0, 1, 0); break;
         case 15: handleDouble(te, &container->stem[te.col].branchesdist, 0, 1); break;
       }
   }
@@ -874,15 +1222,216 @@ class TMainWindow:
 {
   public:
     TMainWindow(TWindow *p,const string &t)
-    :TWindow(p,t){};
+    :TWindow(p,t){modified=false;};
   protected:
     TViewer *gl;
     void invalidateGL();
     void create();
+
+    void menuNew();
+    void menuOpen();
+    bool menuSave();
+    void menuSaveAs();
     void menuQuit();
     void menuInfo();
     void menuCopyright();
+
+    void closeRequest();
+    string filename;
+    bool modified;
+    bool _Save(const string& title);
+    bool _Check();
 };
+
+void
+TMainWindow::menuNew()
+{
+}
+
+void
+TMainWindow::menuOpen()
+{
+  TFileDialog dlg(this, "Open..");
+  dlg.doModalLoop();
+  if (dlg.getResult()!=TMessageBox::OK)
+    return;
+
+  TTree t;
+
+  setlocale(LC_NUMERIC, "C");
+  bool b = t.load(dlg.getFilename().c_str());
+  setlocale(LC_NUMERIC, "");
+  if (b) {
+    ::tree.assign(t);
+    filename = dlg.getFilename();
+    //  setTitle(programname+ ": " + basename((char*)filename.c_str()));
+    setTitle(programname+ ": " + filename);
+    modified = false;
+  } else {
+      messageBox(NULL, 
+                 programname+": Open..",
+                 "Failed to load " + dlg.getFilename(),
+                 TMessageBox::ICON_STOP |
+                 TMessageBox::OK);
+  }
+}
+
+bool
+TMainWindow::menuSave()
+{
+  string title = "Save";
+  if (filename.size()==0) {
+    TFileDialog dlg(this, title, TFileDialog::MODE_SAVE);
+    dlg.doModalLoop();
+    if (dlg.getResult()==TMessageBox::OK) {
+      filename = dlg.getFilename();
+    } else {
+      return false;
+    }
+  }  
+  return _Save(title);
+}
+ 
+void
+TMainWindow::menuSaveAs()
+{
+  string title = "Save As..";
+
+  TFileDialog dlg(this, title, TFileDialog::MODE_SAVE);
+  dlg.setFilename(filename);
+  dlg.doModalLoop();
+  if (dlg.getResult()==TMessageBox::OK) {
+    filename = dlg.getFilename();
+    if (_Save(title))
+//      setTitle(programname+ ": " + basename((char*)filename.c_str()));
+      setTitle(programname+ ": " + filename);
+  }
+}  
+
+/**
+ * Save file and use `title' as the title for the message boxes
+ */
+bool
+TMainWindow::_Save(const string &title)
+{
+  struct stat st;
+
+  bool makebackup = false;
+    
+  // check original filename
+  //-------------------------
+  if (stat(filename.c_str(), &st)==0) {
+    if (S_ISDIR(st.st_mode)) {
+      messageBox(NULL, 
+                 title,
+                 "You've specified a directory but not a filename.",
+                 TMessageBox::ICON_STOP |
+                 TMessageBox::OK);
+      return false;
+    }
+    if (!S_ISREG(st.st_mode)) {
+      messageBox(NULL,
+                 title,
+                 "Sanity check. You haven't specified a regular file.",
+                 TMessageBox::ICON_STOP |
+                 TMessageBox::OK);
+      return false;
+    }
+    if (st.st_mode & S_IFLNK) {
+      char real[PATH_MAX];
+      if (realpath(filename.c_str(), real) == NULL) {
+        messageBox(NULL,
+                   title,
+                   "Internal error: realpath failed to resolve symlink.",
+                   TMessageBox::ICON_STOP |
+                   TMessageBox::OK);
+        return false;
+      }
+      filename=real;
+    }
+    makebackup = true;
+  }
+   
+  // check backup filename
+  //-----------------------
+  string backupfile = filename+"~";
+  if (stat(backupfile.c_str(), &st)==0) {
+    if (!S_ISREG(st.st_mode)) {
+      if (messageBox(NULL,
+                     title,
+                     "I can't create the backup file.\n\n"
+                     "Do you want to continue?",
+                     TMessageBox::ICON_QUESTION |
+                     TMessageBox::YES | TMessageBox::NO
+                    ) != TMessageBox::YES)
+      {
+        return false;
+      }
+      makebackup = false;
+    }
+  }  
+
+  if (makebackup) {
+    if (rename(filename.c_str(), backupfile.c_str())!=0) {
+      if (messageBox(NULL,
+                     title,
+                     "Failed to create the backup file.\n\n"
+                     "Do you want to continue?",
+                     TMessageBox::ICON_QUESTION |
+                     TMessageBox::YES | TMessageBox::NO |
+                     TMessageBox::BUTTON2) != TMessageBox::YES)
+      {
+        return false;
+      }
+    }  
+  }    
+  
+  setlocale(LC_NUMERIC, "C");
+  bool b = tree.save(filename.c_str());
+  setlocale(LC_NUMERIC, "");
+  if (!b) {
+    if (makebackup)
+      rename(backupfile.c_str(), filename.c_str());
+    messageBox(NULL,
+               title,
+               "Damn! I've failed to create the file.",
+               TMessageBox::ICON_EXCLAMATION | TMessageBox::OK);
+    return false;
+  }
+  modified = false;
+  return true;
+}
+
+void
+TMainWindow::closeRequest()
+{
+  if (!_Check())
+    return;
+  TWindow::closeRequest();
+  // delete this; // delete window when closed
+  sendMessageDeleteWindow(this);
+}
+
+bool
+TMainWindow::_Check()
+{ 
+//  cout << "_Check: _toad_ref_cntr=" << ta->getModel()->_toad_ref_cntr << endl;
+
+  if (modified) {
+    unsigned r = messageBox(NULL,
+                   "Buffer is modified",
+                   "Do you want to save the current file?",
+                   TMessageBox::ICON_QUESTION |
+                   TMessageBox::YES | TMessageBox::NO );
+    if (r==TMessageBox::YES) {
+      if (!menuSave())
+        return false;
+    } else if (r!=TMessageBox::NO) {
+      return false;
+    }
+  }
+  return true;
+}
 
 
 int
@@ -897,6 +1446,7 @@ main(int argc, char **argv, char **envv)
 
 void TMainWindow::invalidateGL()
 {
+  modified = true;
   gl->invalidateWindow();
 }
 
@@ -910,8 +1460,22 @@ void TMainWindow::create()
   // create menubar
   //----------------
   TMenuBar *mb=new TMenuBar(this, "mb");
-  
+  mb->loadLayout("menubar.atv");
+
+  new TUndoManager(this, "undomanager");
   TAction *action;
+  action = new TAction(this, "file|new");
+  CONNECT(action->sigClicked, this, menuNew);
+  action = new TAction(this, "file|open");
+  CONNECT(action->sigClicked, this, menuOpen);
+  action = new TAction(this, "file|save_as");
+  CONNECT(action->sigClicked, this, menuSaveAs);
+  action = new TAction(this, "file|save");
+  CONNECT(action->sigClicked, this, menuSave);
+  action = new TAction(this, "file|quit");
+  CONNECT(action->sigClicked, this, closeRequest);
+
+/*  
   action = new TAction(this, "file|quit");
   CONNECT(action->sigClicked, this,menuQuit);
 
@@ -920,7 +1484,7 @@ void TMainWindow::create()
 
   action = new TAction(this, "help|copyright");
   CONNECT(action->sigClicked, this,menuCopyright);
-
+*/
   // 'maketree --layout-editor'
   TWindow *dlg = new TWindow(this, "dlg");
   dlg->setBackground(TColor::DIALOG);
@@ -988,6 +1552,7 @@ void TMainWindow::create()
   // create stem table
   //-------------------
   TTable *tbl = new TTable(this, "tbl");
+
   TTableAdapter *adapter = new TTreeAdapter(&tree);
   CONNECT(adapter->sigChanged, this, invalidateGL);
   tbl->setAdapter(adapter);
