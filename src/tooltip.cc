@@ -134,11 +134,12 @@ TToolTipWindow::TToolTipWindow()
 {
   flagPopup = true; // no frame
   bParentlessAssistant = true; // not important enough to keep app running
-  setBackground(255,255,192);
+  setBackground(TColor::TOOLTIP);
 }
 
 void TToolTipWindow::paint()
 {
   TPen pen(this);
+  pen.setColor(TColor::TOOLTIPTEXT);
   pen.drawString(2,2, ::current_text);
 }

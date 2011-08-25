@@ -133,6 +133,8 @@ class TColor:
       INACTIVECAPTIONTEXT,
       DIALOG,               // dialog
       DIALOGTEXT,
+      TOOLTIP,		    // tooltip
+      TOOLTIPTEXT,
       SLIDER_FACE,          // scrollbar slider
       SLIDER_SHADOW,
       SLIDER_LIGHT,
