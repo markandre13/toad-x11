@@ -22,6 +22,7 @@
 #define _TOAD_TABLE_HH 1
 
 #include <cfloat>
+#include <climits>
 
 #include <toad/scrollpane.hh>
 #include <toad/model.hh>
