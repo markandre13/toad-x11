@@ -4,7 +4,7 @@
 #
 
 # add additional files for the LT_INIT macro
-libtoolize --force --copy || 
+libtoolize --force --copy --install ||
   cp autogen/config.guess \
      autogen/config.sub \
      autogen/ltmain.sh .

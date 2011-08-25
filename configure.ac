@@ -6,7 +6,7 @@
 
 
 AC_INIT(libtoad, 0.64.0, toad-bug@mark13.org)
-
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/toadbase.cc])
 AC_CONFIG_HEADER([src/config.h])
 
