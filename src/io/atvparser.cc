@@ -31,6 +31,7 @@
 #include "atvparser.hh"
 
 #include <limits.h>
+#include <cstdio>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
