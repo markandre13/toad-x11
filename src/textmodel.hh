@@ -111,6 +111,8 @@ class TTextModel:
     
     string& operator=(string &s) { setValue(s); return s; }
     const string& operator=(const string &s) { setValue(s); return s; }
+    TTextModel& operator=(TTextModel &m) { setValue(m.getValue()); return *this; }
+    const TTextModel& operator=(const TTextModel &m) { setValue(m.getValue()); return *this; }
     operator const string&() const { return _data; }
     const char * c_str() const { return _data.c_str(); }
     const char * data() const { return _data.data(); }

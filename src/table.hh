@@ -21,6 +21,8 @@
 #ifndef _TOAD_TABLE_HH
 #define _TOAD_TABLE_HH 1
 
+#include <cfloat>
+
 #include <toad/scrollpane.hh>
 #include <toad/model.hh>
 #include <toad/dragndrop.hh>
@@ -380,7 +382,8 @@ class TTableAdapter:
     void renderBackground(TTableEvent &te);
     void renderCursor(TTableEvent &te);
     void handleString(TTableEvent &te, string *s, int offx=0);
-    void handleDouble(TTableEvent &te, double *s, int offx=0, double step=0.01);
+    void handleInteger(TTableEvent &te, int *s, int offx=0, int step=1, int min=INT_MIN, int max=INT_MAX);
+    void handleDouble(TTableEvent &te, double *s, int offx=0, double step=0.01, double min=-DBL_MAX, double max=DBL_MAX);
     void handleCheckBox(TTableEvent &te, bool *b);
 
     // to simplify implementing of modelChanged(bool) when a new class
@@ -394,7 +397,7 @@ class TTableAdapter:
     size_t where, size;
 
   protected:
-    void handleStringHelper(TTableEvent &te, string *s, int offx, void (*cb)(string*));
+    void handleStringHelper(TTableEvent &te, string *s, int offx);
 };
 
 class TSimpleTableAdapter:

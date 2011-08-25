@@ -195,31 +195,83 @@ TTableAdapter::handleCheckBox(TTableEvent &te, bool *value)
   }
 }
 
-static void cb(string *s) {
-  cout << "value changed to " << *s << endl;
+void
+TTableAdapter::handleInteger(TTableEvent &te, int *s, int offx, int step, int min, int max)
+{
+  if (te.type==TTableEvent::MOUSE) {
+    int old = *s;
+    switch(te.mouse.type) {
+      case TMouseEvent::ROLL_UP:
+        *s += step;
+        break;
+      case TMouseEvent::ROLL_DOWN:
+        *s -= step;
+    }
+    if (old != *s) {
+      if (*s < min)
+        *s = min;
+      else
+      if (*s > max)
+        *s = max;
+      if (old != *s) {
+        reason = TTableModel::CONTENT;
+        sigChanged();
+      }
+      return;
+    }
+  }
+
+  char buffer[1024];
+  snprintf(buffer, sizeof(buffer), "%i", *s);
+
+  string value = buffer;
+
+  string oldvalue = value;
+  handleStringHelper(te, &value, offx);
+  
+  if (value!=oldvalue) {
+    sscanf(value.c_str(), "%i", s);
+  }
+
+  bool changed=false;
+  if (*s < min) { *s = min; changed = true; } else
+  if (*s > max) { *s = max; changed = true; }
+  if (changed) {
+    snprintf(buffer, sizeof(buffer), "%i", *s);
+    string value = buffer;
+    te.type = TTableEvent::PAINT;
+    handleStringHelper(te, &value, offx);
+  }
 }
 
 void
-TTableAdapter::handleDouble(TTableEvent &te, double *s, int offx, double step)
+TTableAdapter::handleDouble(TTableEvent &te, double *s, int offx, double step, double min, double max)
 {
   if (te.type==TTableEvent::MOUSE) {
-    if (te.mouse.type == TMouseEvent::ROLL_UP) {
-      *s += step;
-      reason = TTableModel::CONTENT;
-      sigChanged();
-      return;
+    double old = *s;
+    switch(te.mouse.type) {
+      case TMouseEvent::ROLL_UP:
+        *s += step;
+        break;
+      case TMouseEvent::ROLL_DOWN:
+        *s -= step;
     }
-    if (te.mouse.type == TMouseEvent::ROLL_DOWN) {
-      *s -= step;
-      reason = TTableModel::CONTENT;
-      sigChanged();
+    if (old != *s) {
+      if (*s < min)
+        *s = min;
+      else
+      if (*s > max)
+        *s = max;
+      if (old != *s) {
+        reason = TTableModel::CONTENT;
+        sigChanged();
+      }
       return;
     }
   }
 
   char buffer[1024];
   snprintf(buffer, sizeof(buffer), "%f", *s);
-  
   char *p = buffer+strlen(buffer)-1;
   while(*p=='0') {
     *p=0;
@@ -229,26 +281,38 @@ TTableAdapter::handleDouble(TTableEvent &te, double *s, int offx, double step)
     ++p;
     *p='0';
   }
-  
 
   string value = buffer;
 
-  string pvalue = value;
-  handleStringHelper(te, &value, offx, cb);
+  string oldvalue = value;
+  handleStringHelper(te, &value, offx);
   
-  if (value!=pvalue) {
+  if (value!=oldvalue) {
     sscanf(value.c_str(), "%lf", s);
+  }
+  
+  bool changed=false;
+  if (*s < min) { *s = min; changed = true; } else
+  if (*s > max) { *s = max; changed = true; }
+  if (changed) {
+    snprintf(buffer, sizeof(buffer), "%f", *s);
+    char *p = buffer+strlen(buffer)-1;
+    while(*p=='0') { *p=0; --p; }
+    if (!isdigit(*p)) { ++p; *p='0'; }
+    string value = buffer;
+    te.type = TTableEvent::PAINT;
+    handleStringHelper(te, &value, offx);
   }
 }
 
 void
 TTableAdapter::handleString(TTableEvent &te, string *s, int offx)
 {
-  handleStringHelper(te, s, offx, 0);
+  handleStringHelper(te, s, offx);
 }
 
 void
-TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx, void (*cb)(string*))
+TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx)
 {
   static TTableAdapter *edit = 0;
   static size_t cx;
@@ -313,7 +377,6 @@ TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx, void (*c
           {
 //            cout << "begin to edit string" << endl;
             if (edit!=0) {
-              if (cb) cb(s);
               edit->reason = TTableModel::CONTENT;
               edit->sigChanged();
             }
@@ -329,7 +392,6 @@ TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx, void (*c
             case TK_KP_RETURN:
             case TK_RETURN:
 //              cout << "end to edit string" << endl;
-              if (cb) cb(s);
               edit = 0;
               reason = TTableModel::CONTENT;
               sigChanged();
@@ -337,7 +399,6 @@ TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx, void (*c
             case TK_DOWN:
             case TK_UP:
 //              cout << "end to edit string" << endl;
-              if (cb) cb(s);
               edit = 0;
               reason = TTableModel::CONTENT;
               sigChanged();
@@ -346,7 +407,6 @@ TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx, void (*c
               if (cx>0) {
                 utf8dec(*s, &cx);
               } else {
-                if (cb) cb(s);
                 edit = 0;
                 reason = TTableModel::CONTENT;
                 sigChanged();
@@ -357,7 +417,6 @@ TTableAdapter::handleStringHelper(TTableEvent &te, string *s, int offx, void (*c
               if (cx<s->size()) {
                 utf8inc(*s, &cx);
               } else {
-                if (cb) cb(s);
                 edit = 0;
                 reason = TTableModel::CONTENT;
                 sigChanged();
