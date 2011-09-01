@@ -38,7 +38,6 @@ class TException:
       void printStackTrace() const { }
       void print() const {
         cerr << msg << endl;
-        stack.print();
       }
 
       const std::string& getMessage() const { return msg; }
