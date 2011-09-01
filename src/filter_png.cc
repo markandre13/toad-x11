@@ -108,7 +108,7 @@ TFilterPNG::load(istream &stream)
 
   // set error handling
   //--------------------
-  if (setjmp(png_ptr->jmpbuf)) {
+  if (setjmp(png_jmpbuf(png_ptr))) {
     // Free all of the memory associated with the png_ptr and info_ptr
     png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
     setError("Caught an error while reading PNG file.");
@@ -147,34 +147,37 @@ TFilterPNG::load(istream &stream)
 #endif
   bool ok = false;
 
-  if (info_ptr->bit_depth <= 8) {
+  if (png_get_bit_depth(png_ptr, info_ptr) <= 8) {
     png_set_expand(png_ptr);  // expand to 8 bit per pixel
     
     png_read_update_info(png_ptr, info_ptr);
     
-    createBuffer(info_ptr->width,info_ptr->height, TBITMAP_TRUECOLOR);
-    png_bytep row_pointers[info_ptr->height];
-    for (unsigned row = 0; row < info_ptr->height; row++)
-      row_pointers[row] = (png_bytep)malloc(info_ptr->rowbytes);
+    png_uint_32 png_width = png_get_image_width(png_ptr, info_ptr);
+    png_uint_32 png_height = png_get_image_height(png_ptr, info_ptr);
+    
+    createBuffer(png_width, png_height, TBITMAP_TRUECOLOR);
+    png_bytep row_pointers[png_height];
+    for (unsigned row = 0; row < png_height; row++)
+      row_pointers[row] = (png_bytep)malloc(png_get_rowbytes(png_ptr, info_ptr));
     png_read_image(png_ptr, row_pointers);
     
     unsigned x,y;
     TRGB24 c;
     unsigned char *ptr;
-    for(y=0; y<info_ptr->height; y++) {
+    for(y=0; y<png_height; y++) {
       ptr = row_pointers[y];
-      for(x=0; x<info_ptr->width; x++) {
+      for(x=0; x<png_width; x++) {
         c.r = *(ptr++);
         c.g = *(ptr++);
         c.b = *(ptr++);
-        if (info_ptr->color_type & PNG_COLOR_MASK_ALPHA)
+        if (png_get_color_type(png_ptr, info_ptr) & PNG_COLOR_MASK_ALPHA)
           ptr++;
         setColorPixel(x,y,c);
       }
     }
     ok = true;
     
-    for (unsigned row = 0; row < info_ptr->height; row++)
+    for (unsigned row = 0; row < png_height; row++)
       free(row_pointers[row]);
   }
   
