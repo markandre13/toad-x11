@@ -1,0 +1,23 @@
+TFPath* floodfill(TFigureModel &model, TCoord x, TCoord y)
+  this is the flood fill function
+
+  1. find a figure which is nearest to points (x, y) left side
+  1.1 calculate all intersections with a horizontal line
+  1.2 find the nearest intersection on the left
+  
+  -> TFPath *nearpath, nearx, neara
+  
+  2. find all figures which intersect with 'nearpath'
+     and which intersections are near to 'neara' on nearpath
+
+
+  
+o The intersection algorithm can not be improved, thus we do need to make
+  the fill algorithm more robust.
+
+o We need to create a database of pictures in which the fill algorithm
+  failed.
+  
+o Add a button to the GUI to generate snapshots of which can be used for
+  debugging.
+

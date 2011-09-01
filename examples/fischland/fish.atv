@@ -1,0 +1,807 @@
+// fish -- a Fischland 2D Vector Graphics file
+// Please see http://www.mark13.org/fischland/ for more details.
+
+fischland::TDocument {
+  author = ""
+  date = ""
+  description = ""
+  fischland::TSlide {
+    name = "unnamed page"
+    comment = ""
+    lock = false
+    show = true
+    print = true
+    fischland::TLayer {
+      name = "unnamed #8"
+      comment = ""
+      lock = false
+      show = true
+      print = true
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 0 76 170 }
+        linewidth = 48
+        x = 768
+        y = 384
+        w = 57601
+        h = 38401
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 206 162 109 }
+        linewidth = 48
+        768 38784
+        768 36864
+        768 30720
+        768 29568
+        3840 28800
+        9600 33408
+        16128 33408
+        27264 33408
+        28032 29568
+        36864 31872
+        45696 34176
+        49152 31872
+        51456 31872
+        54144 31872
+        56064 30720
+        58368 30336
+        58368 33024
+        58368 35712
+        58368 38784
+        54912 38784
+        34176 38784
+        768 38784
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 255 200 50 }
+        linewidth = 48
+        768 38784
+        768 37248
+        768 32640
+        768 31488
+        2688 30720
+        5376 31488
+        7296 31488
+        9216 31488
+        15360 32256
+        20352 31872
+        33792 31488
+        31872 34176
+        41088 33024
+        50304 31872
+        54912 33792
+        58368 32640
+        58368 33792
+        58368 36480
+        58368 38784
+        55680 38784
+        4608 38784
+        768 38784
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 232 197 85 }
+        linewidth = 48
+        14208 2688
+        14976 6144
+        15744 6144
+        14976 2688
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 135 105 16 }
+        fillcolor ={ 135 105 16 }
+        linewidth = 48
+        29184 38016
+        15360 37248
+        10752 36864
+        768 33408
+        768 32256
+        9600 35328
+        8064 34176
+        768 31488
+        3072 31104
+        13056 32640
+        18432 33024
+        14592 31872
+        17280 32256
+        23808 33024
+        23424 33408
+        22656 34560
+        33792 35712
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 211 157 69 }
+        linewidth = 48
+        14208 2688
+        13824 3072
+        14592 6144
+        14976 6144
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 232 197 85 }
+        linewidth = 48
+        11904 31104
+        10752 36864
+        11904 36864
+        13056 32256
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 211 157 69 }
+        linewidth = 48
+        10752 36864
+        10368 36096
+        11520 32256
+        12288 31104
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 232 197 85 }
+        linewidth = 48
+        21888 28416
+        23424 33408
+        24192 33024
+        22656 28032
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 211 157 69 }
+        linewidth = 48
+        23424 33408
+        22656 33024
+        21120 27648
+        21888 28032
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 211 157 69 }
+        linewidth = 48
+        11904 24576
+        7296 33792
+        8064 34176
+        12672 24576
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 232 197 85 }
+        linewidth = 48
+        8064 34176
+        8832 33792
+        13056 24576
+        12672 24576
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 255 219 93 }
+        linewidth = 48
+        10752 32640
+        25344 26880
+        23808 26496
+        8832 31872
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 255 255 255 }
+        linewidth = 48
+        8064 5376
+        10752 32256
+        23808 26880
+        23424 6144
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 211 157 69 }
+        linewidth = 48
+        8832 31872
+        8832 32640
+        10752 33408
+        10752 32640
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 188 77 60 }
+        linewidth = 48
+        19200 16512
+        22272 18816
+        17280 28032
+        13440 24960
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 232 197 85 }
+        linewidth = 48
+        10752 33408
+        25344 27648
+        25344 26880
+        10752 32640
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 232 123 34 }
+        linewidth = 48
+        14208 18816
+        18048 12288
+        21120 14976
+        18048 22272
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 81 133 163 }
+        linewidth = 48
+        33792 34176
+        34560 35328
+        34176 35712
+        33792 36864
+        33024 37632
+        28800 37248
+        26880 36096
+        26496 35328
+        26880 34560
+        28032 34176
+        29952 33408
+        29952 34176
+        33792 34176
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 125 206 255 }
+        linewidth = 48
+        30336 29568
+        29568 33408
+        29952 32256
+        30336 34944
+        31872 35328
+        32256 35712
+        33792 34944
+        32640 32640
+        33792 31872
+        33792 30336
+        32256 30336
+        31488 30336
+        30336 29568
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 133 194 226 }
+        linewidth = 48
+        23040 26880
+        19200 19968
+        23808 15744
+        29568 14976
+        35328 14208
+        42624 22272
+        42624 22272
+        42624 22272
+        41088 23040
+        41088 23040
+        41088 23040
+        42624 22272
+        42624 22272
+        42624 22272
+        48768 16128
+        49920 15744
+        51072 15360
+        52224 14208
+        51072 16896
+        49920 19584
+        48768 30336
+        49920 32640
+        52992 37632
+        44160 31872
+        41472 29568
+        39552 31104
+        38016 33024
+        30336 32640
+        24960 31104
+        23040 26880
+        23040 26880
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 255 255 255 }
+        linewidth = 48
+        23808 19968
+        24960 18432
+        27264 17280
+        26496 18816
+        25728 20352
+        24576 23040
+        23808 19968
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 0 0 0 }
+        linewidth = 48
+        24192 19968
+        24576 19200
+        25728 18048
+        25344 19584
+        24960 21120
+        24576 20736
+        24192 19968
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 40 58 68 }
+        linewidth = 48
+        29952 14976
+        35328 14208
+        42624 22272
+        42624 22272
+        41088 22656
+        43392 24576
+        41088 23424
+        41088 23424
+        31488 20352
+        30720 17664
+        30336 15360
+        25344 15744
+        29952 14976
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 178 230 255 }
+        linewidth = 48
+        28032 15360
+        41472 10752
+        46464 11904
+        41472 15360
+        39936 16896
+        40704 18048
+        41856 22656
+        36864 17280
+        31872 15744
+        28032 15360
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        42624 23424
+        44160 22272
+        48384 17664
+        51456 16512
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        42240 26496
+        44928 26112
+        47616 24576
+        49536 24576
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        43008 24960
+        44928 23808
+        46080 21888
+        50304 20352
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        42240 28032
+        44544 28800
+        47616 32256
+        49536 31104
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        42240 27264
+        45696 28032
+        49152 28416
+        49536 28032
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        43008 25728
+        45312 24576
+        48768 21888
+        49920 22656
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        43392 23808
+        46080 21504
+        48384 18816
+        50304 18816
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        41856 28800
+        44544 31104
+        49536 34560
+        50304 33408
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        42240 27648
+        46464 29184
+        48768 30720
+        49536 29568
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        42624 26880
+        45696 26496
+        48384 25728
+        49536 26496
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        29952 15744
+        33024 14976
+        36096 12288
+        43392 13440
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        31872 16128
+        34944 14976
+        36864 13440
+        42624 14592
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        33792 16896
+        36480 15744
+        36096 14592
+        41088 15744
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        35328 17664
+        37248 16896
+        37248 16128
+        40704 16896
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        36864 18432
+        39168 18048
+        38400 18048
+        40704 18432
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        39168 19968
+        40320 19584
+        40704 19968
+        41088 20352
+      }
+      toad::TFPolygon {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 239 239 239 }
+        linewidth = 48
+        8064 5376
+        7296 5760
+        9984 31872
+        10752 32256
+      }
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 0.941849 0.336037 -0.336037 0.941849 15527.2 -24531.8 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 255 255 255 }
+        linewidth = 48
+        x = 16128
+        y = 39552
+        w = 385
+        h = 5377
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 125 206 255 }
+        linewidth = 48
+        27648 23808
+        25728 25344
+        24960 26880
+        24192 26496
+        23424 26112
+        19584 24192
+        19584 23424
+        19584 22656
+        19584 21504
+        18816 21120
+        18048 20736
+        15744 22656
+        16128 23424
+        16512 24192
+        16896 25728
+        18432 26880
+        19968 28032
+        23424 30336
+        25344 29952
+        27264 29568
+        29952 26112
+        27648 23808
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 81 133 163 }
+        linewidth = 48
+        31872 34944
+        32640 36096
+        32256 36480
+        31872 37632
+        31104 38400
+        26880 38016
+        24960 36864
+        24576 36096
+        24960 35328
+        26112 34944
+        28032 34176
+        28032 34944
+        31872 34944
+      }
+      toad::TFBezier {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 125 206 255 }
+        linewidth = 48
+        28416 30336
+        27648 34176
+        28032 33024
+        28416 35712
+        29952 36096
+        30336 36480
+        31872 35712
+        30720 33408
+        31872 32640
+        31872 31104
+        30336 31104
+        29568 31104
+        28416 30336
+      }
+      toad::TFBezierline {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        21504 9216
+        13056 7296
+        9216 9984
+        11904 12672
+        15744 17280
+        18816 18816
+        18816 18816
+      }
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        x = 11520
+        y = 12288
+        w = 385
+        h = 385
+      }
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        x = 12672
+        y = 6912
+        w = 385
+        h = 385
+      }
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        x = 8832
+        y = 9216
+        w = 385
+        h = 385
+      }
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        x = 21120
+        y = 9216
+        w = 385
+        h = 385
+      }
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        x = 18432
+        y = 18432
+        w = 385
+        h = 385
+      }
+      toad::TFRectangle {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        x = 15361
+        y = 16896
+        w = 385
+        h = 385
+      }
+      toad::TFLine {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        21120 9216
+        13056 7296
+      }
+      toad::TFLine {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        11520 12288
+        9216 9600
+      }
+      toad::TFLine {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 203 255 }
+        linewidth = 48
+        11904 12672
+        15360 16896
+      }
+      toad::TFText {
+        trans =
+        toad::TMatrix2D { 1 0 0 1 -768 -384 }
+        linecolor ={ 0 0 0 }
+        linewidth = 48
+        x = 41856
+        y = 33792
+        w = 16359
+        h = 3605
+        fontname = "arial,helvetica,sans-serif:size=1152"
+        text = "Fischland
+A 2D Vector Graphics Editor
+Written by mhopf@mark13.org"
+      }
+      toad::TFText {
+        linecolor ={ 0 0 0 }
+        fillcolor ={ 255 255 255 }
+        linewidth = 48
+        x = 28416
+        y = 29184
+        w = 2
+        h = 1203
+        fontname = "arial,helvetica,sans-serif:size=1152"
+        text = ""
+      }
+      toad::TFBezier {
+        linecolor ={ 12 175 43 }
+        fillcolor ={ 12 175 43 }
+        linewidth = 48
+        alpha = 110
+        6144 38400
+        16512 24960
+        11904 23040
+        9216 14976
+        6528 6912
+        9984 4608
+        10368 2304
+        10752 0
+        7680 -6528
+        8832 0
+        9984 6528
+        16512 -1152
+        11904 9984
+        7296 21120
+        13440 26880
+        6144 38400
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+// this is a generated file
+
+toad::TDialogLayout {
+  width = 177
+  height = 137
+  drawfocus = false
+  toad::TFigureModel {
+    toad::TFWindow {
+      x = 4
+      y = 44
+      w = 165
+      h = 17
+      title = "edit-selected-paths"
+      label = "Edit selected paths"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 96
+      y = 64
+      w = 53
+      h = 21
+      title = "fidelity"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 4
+      y = 24
+      w = 173
+      h = 17
+      title = "fill-new-strokes"
+      label = "Fill new strokes"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 4
+      y = 4
+      w = 169
+      h = 17
+      title = "keep-selected"
+      label = "Keep selected"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 96
+      y = 88
+      w = 53
+      h = 21
+      title = "smoothness"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 96
+      y = 112
+      w = 53
+      h = 21
+      title = "within-pixels"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 6
+      y = 65
+      w = 44
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Fidility:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 3
+      y = 89
+      w = 79
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Smoothness:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 115
+      w = 83
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Within Pixels:"
+    }
+  }
+}

@@ -1,0 +1,105 @@
+// this is a generated file
+
+toad::TDialogLayout{
+  width = 512
+  height = 300
+  drawfocus = false
+  toad::TFigureModel {
+    toad::TFWindow {
+      x = 4
+      y = 20
+      w = 197
+      h = 181
+      title = "family"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 4
+      y = 4
+      w = 45
+      h = 19
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Family:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 208
+      y = 4
+      w = 36
+      h = 19
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Style:"
+    }
+    toad::TFWindow {
+      x = 208
+      y = 20
+      w = 165
+      h = 181
+      title = "style"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 376
+      y = 4
+      w = 32
+      h = 19
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Size:"
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      fillcolor ={ 255 255 255 }
+      x = 4
+      y = 204
+      w = 52
+      h = 19
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Preview:"
+    }
+    toad::TFWindow {
+      x = 4
+      y = 220
+      w = 501
+      h = 73
+      title = "example"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 380
+      y = 20
+      w = 53
+      h = 17
+      title = "size"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 380
+      y = 176
+      w = 85
+      h = 25
+      title = "abort"
+      label = "Abort"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 380
+      y = 144
+      w = 85
+      h = 25
+      title = "ok"
+      label = "OK"
+      taborder = 0
+    }
+    toad::TFWindow {
+      x = 380
+      y = 108
+      w = 85
+      h = 29
+      title = "fonttable"
+      label = "Font Table"
+      taborder = 0
+    }
+  }
+}
