@@ -27,6 +27,8 @@
 #include <toad/toad.hh>
 #include <toad/bitmap.hh>
 #include "cairo.hh"
+#include <X11/extensions/Xrender.h>
+#include <cairo/cairo-xlib.h>
 
 using namespace toad;
 
@@ -36,19 +38,46 @@ namespace {
 } // namespace
 #endif
 
+static cairo_surface_t *
+create_surface(Drawable drawable, int width, int height)
+{
+  static int has_xrender = -1;
+  
+  cairo_surface_t *cs;
+
+  if (has_xrender == -1) {
+    int e0, e1;
+    has_xrender = XRenderQueryExtension(x11display, &e0, &e1) ? 1 : 0;
+  }
+
+  if (has_xrender) {
+    cs = cairo_xlib_surface_create_with_xrender_format(
+      x11display,
+      drawable,
+      ScreenOfDisplay(x11display, x11screen),
+      XRenderFindVisualFormat(x11display, x11visual),
+      width, height
+    );
+  } else {
+    cs = cairo_xlib_surface_create(
+      x11display,
+      drawable,
+      x11visual,
+      width, height);
+  }
+  
+  return cs;
+}
+
+static int has_xrender = -1;
+
 TCairo::TCairo(TWindow *window)
 {
-//cout << __FILE__ << ':' << __LINE__ << ": " << __PRETTY_FUNCTION__ << endl;
-
-  cs = cairo_xlib_surface_create_with_xrender_format(
-    x11display,
-    window->x11window,
-    ScreenOfDisplay(x11display, x11screen),
-    XRenderFindVisualFormat(x11display, x11visual),
-    window->getWidth(), window->getHeight()
-  );
-
+  cs = create_surface(window->x11window, window->getWidth(), window->getHeight());
   cr = cairo_create(cs);
+  if (cairo_status(cr)) {
+    cerr << "cairo: " << cairo_status_to_string(cairo_status(cr)) << endl;
+  }
 
   alpha = 1.0;
   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
@@ -76,18 +105,13 @@ TCairo::TCairo(TWindow *window)
 TCairo::TCairo(TBitmap *bitmap)
 {
 //cout << __FILE__ << ':' << __LINE__ << ": " << __PRETTY_FUNCTION__ << endl;
-  
-  cs = cairo_xlib_surface_create_with_xrender_format(
-    x11display,
-    bitmap->pixmap,
-    ScreenOfDisplay(x11display, x11screen),
-    XRenderFindVisualFormat(x11display, x11visual),
-    bitmap->getWidth(), bitmap->getHeight()
-  );
-  
-  clipbox.set(0,0,bitmap->width,bitmap->height);
-
+  cs = create_surface(bitmap->pixmap, bitmap->getWidth(), bitmap->getHeight());
   cr = cairo_create(cs);
+  if (cairo_status(cr)) {
+    cerr << "cairo: " << cairo_status_to_string(cairo_status(cr)) << endl;
+  }
+
+  clipbox.set(0,0,bitmap->width,bitmap->height);
 
   alpha = 255;
   cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
