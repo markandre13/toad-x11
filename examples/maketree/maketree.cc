@@ -22,6 +22,8 @@
  * - TOAD
  */
 
+#define _TOAD_PRIVATE
+
 #include <toad/toad.hh>
 #include <toad/springlayout.hh>
 #include <toad/menubar.hh>
@@ -33,10 +35,7 @@
 #include <toad/stl/vector.hh>
 #include "glwindow.hh"
 
-// redefine 'exception' to avoid trouble between C++ and SGIs <math.h>
-#define exception mexception
-#include <math.h>
-#undef exception
+#include <cmath>
 
 #include <cstdio>
 #include <cstdlib>
@@ -54,6 +53,18 @@ using namespace toad;
 
 static const string programname("MakeTree");
 
+// rendering the tree sometimes takes a while
+// strategy was to abort in case we had a new message, but that caused the tree
+// not being rendered sometimes. more time required to fix this. so here's a
+// hack
+bool myPeekMessage()
+{
+  while(XPending(x11display)) {
+    TOADBase::handleMessage();
+  }
+  return false;
+}
+
 class TTree;
 
 static void drawSegment(GLfloat len, GLfloat radius);
@@ -62,6 +73,11 @@ static void drawLeaf(const TTree &tree);
 double trandom(double v)
 {
   return v * ( (double)rand() / RAND_MAX );
+}
+
+double trandom2(double v)
+{
+  return v * ( (double)rand() / RAND_MAX ) - (v / 2.0);
 }
 
 enum EShape {
@@ -141,7 +157,7 @@ struct TStem
   double lengthv;
   double taper;
   
-  double curveres;      // number of segments a stem is divided into
+  int curveres;      // number of segments a stem is divided into
   double curve;
   double curvev;
   double curveback;
@@ -297,7 +313,6 @@ fetch(TIO &io, const char *name, double *v)
   }
   if (io.found || strcasecmp(io.name, name)!=0) return;
   sscanf(io.value, "%lf", v);
-cout << name << "=" << *v << " " << " (" << io.value << ")" << endl;
   io.found=true;
 }
 
@@ -362,7 +377,6 @@ TTree::load(const char *filename)
     name = xmlTextReaderConstName(reader);
     if (!name) {
       result = false;
-cout << __FILE__ << ":" << __LINE__ << endl;
       break;
     }
     int depth = xmlTextReaderDepth(reader);
@@ -546,14 +560,14 @@ taper(double taper, double radius, double segment, double length)
 }
 
 void
-render(const Matrix &iob,
+render(const Matrix &m,
        const TTree &tree,
        unsigned lvl=0,
        double length_parent=0.0,
        double radius_parent=0.0,
        double offset_child=0.0);
 
-void renderSegment(const Matrix &iob,
+void renderSegment(const Matrix &m,
                    const TTree &tree,
                    unsigned lvl,
                    double length_parent,
@@ -576,19 +590,30 @@ void renderSegment(const Matrix &iob,
                    double split_angle_correction
                    )
 {
-  if (segment>=length)
+if (myPeekMessage())
+  return;
+
+  if (segment+segmentLength*0.9>=length)
     return;
-  
+//cout << "renderSegment: lvl="<<lvl<<", segment=" << segment << ", length="<<length<<", children="<<children<<", length_base="<<length_base<<endl;
+
   // curve rotation  
-  double d = trandom(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
-  if (tree.stem[lvl].curveback==0.0)
-    d += tree.stem[lvl].curve/tree.stem[lvl].curveres;
-  else if (segment<tree.stem[lvl].curveres/2)
-    d += tree.stem[lvl].curve/(tree.stem[lvl].curveres/2);
-  else
-    d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
+  double d;
+  if (tree.stem[lvl].curvev>=0.0) {
+    d = trandom2(tree.stem[lvl].curvev)/tree.stem[lvl].curveres;
+    if (tree.stem[lvl].curveback==0.0)
+      d += tree.stem[lvl].curve/tree.stem[lvl].curveres;
+    else if (segment<tree.stem[lvl].curveres/2)
+      d += tree.stem[lvl].curve/(tree.stem[lvl].curveres/2);
+    else
+      d += tree.stem[lvl].curveback/(tree.stem[lvl].curveres/2);
+  } else {
+    // the stem is a helix, with a declanation of tree.stem[lvl].curvevary
+    cout << "NOTE: curvev < 0, stem is a helix, is not implemented yet" << endl;
+  }
   d -= split_angle_correction;
-  glRotatef(d, 1.0, 0.0, 0.0);
+//  glRotatef(d, 1.0, 0.0, 0.0);
+  Matrix m1 = matrixRotate(Vector(1.0, 0.0, 0.0), d) * m;
 
   unsigned segsplits_effective = 0;
   if (segment==0.0) {
@@ -599,18 +624,18 @@ void renderSegment(const Matrix &iob,
     segsplits_effective = fabs(tree.stem[lvl].segsplits + segsplits_error);
     segsplits_error -= segsplits_effective - tree.stem[lvl].segsplits;
   }
-
+/*
   GLdouble x[16];
   glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
   Matrix m(x);
   m = m * iob;
-  
+*/  
   double declination;
   {
     Vector v0(0.0, 0.0, 0.0);
     Vector v1(0.0, 1.0, 0.0);
-    v0 = m * v0;
-    v1 = m * v1;
+    v0 = m1 * v0;
+    v1 = m1 * v1;
     Vector v2 = v1 - v0;
     v2.normalize();
     declination = acos(v2.y()) * 180.0 / M_PI;
@@ -619,7 +644,7 @@ void renderSegment(const Matrix &iob,
   // determine global y vector
   Vector v;
   {
-    m = m.inverse();
+    Matrix m = m1.inverse();
     Vector v0(0,0,0);
     Vector v1(0,1,0);
     v0 = m * v0;
@@ -628,7 +653,7 @@ void renderSegment(const Matrix &iob,
     v.normalize();
   }
 
-  glPushMatrix();
+//  glPushMatrix(); // 1
   
 //  glRotated(-splitangle, 1.0, 0.0, 0.0);
   double splitangle = - (tree.stem[lvl].splitangle*segsplits_effective /*+
@@ -638,7 +663,8 @@ void renderSegment(const Matrix &iob,
   for(unsigned i=0; i<=segsplits_effective; ++i) {
 
 //cout << lvl << ": render split " << i << " out of " << segsplits_effective << endl;
-    glPushMatrix();
+//    glPushMatrix(); // 2
+    Matrix m2 = m1;
 
     if ((lvl!=0 || segment>segmentLength)  // this is not in the paper but it looks better this way
         && i!=0)
@@ -647,7 +673,8 @@ void renderSegment(const Matrix &iob,
                                ( 30.0 + fabs(declination-90.0) ) * pow(trandom(1.0), 2.0);
       if (trandom(1.0) < 0.0)						// 121.52
         spread_rotation = -spread_rotation;
-      glRotated(spread_rotation, v.x(), v.y(), v.z());
+//      glRotated(spread_rotation, v.x(), v.y(), v.z());
+      m2 = matrixRotate(v, spread_rotation) * m2;
     }
 
     if (segsplits_effective>0) {
@@ -655,50 +682,70 @@ void renderSegment(const Matrix &iob,
       splitangle += tree.stem[lvl].splitangle*segsplits_effective + 
                    trandom(tree.stem[lvl].splitanglev*segsplits_effective) -
                    declination;
-      glRotated(splitangle, 1.0, 0.0, 0.0);
+//      glRotated(splitangle, 1.0, 0.0, 0.0);
+      m2 = matrixRotate(Vector(1.0, 0.0, 0.0), splitangle) * m2;
       
       split_angle_correction += splitangle /  ((length-segment)/segmentLength);
     }
 
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
+
+    glPushMatrix();
+    m2.glMultMatrix();
     drawSegment(segmentLength, radius_z);
+    glPopMatrix();
 
     // render children (merge this one with 'render leaves') !!!
-    if (children!=0 && tree.basesize<0.9999) {
+    if (children!=0 && dist!=0.0 && leaves_per_branch<=0.0) {
       double off0 = segment;
       double off1 = segment + segmentLength;
+
+//cout << "children: off0="<<off0<<", off1="<<off1;
+
       if (lvl==0) {
-        if (off1 <= length_base) {
-          off0 = off1;
+        if (off1 <= length_base) { // below base, draw nothing
+          off0 = off1+1.0;
         } else
-        if (off0 < length_base) {
+        if (off0 < length_base && length_base < off1) {
           off0 = length_base;
         }
       }
+//cout << " -> off0="<<off0<<", off1="<<off1<<", dist="<<dist<<", children="<<(off1-off0)/dist<<endl;
     
       off0 -= segment;
       off1 -= segment;
 
+      bool alternate = false;
       for(; off0<off1; off0+=dist) {
         double offsetChild = off0 + segment;
-        
-        glPushMatrix();
-        glTranslated(0.0, off0, 0.0);
 
-        // rotate < 0.0 is a special case
-        r += tree.stem[lvl+1].rotate + trandom(tree.stem[lvl+1].rotatev);
+//cout << "draw child at off=" << off0 << ", segment=" << segment << endl;
+        
+//        glPushMatrix(); // 3
+//        glTranslated(0.0, off0, 0.0);
+        Matrix m3 = matrixTranslate(0.0, off0, 0.0) * m2;
+//cout << __FILE__ << ":" << __LINE__ << ": translate for child " << off0 << endl;
+
+        if (tree.stem[lvl+1].rotate>=0.0) {
+          r += tree.stem[lvl+1].rotate + trandom(tree.stem[lvl+1].rotatev);
+        } else {
+          alternate = !alternate;
+          r = tree.stem[lvl+1].rotate + trandom(tree.stem[lvl+1].rotatev);
+          if (alternate)
+            r+=180.0;
+        }
 
         // attraction up
         if (lvl!=0 && tree.attractionup != 0.0) {
           GLdouble x[16];
           glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
-          Matrix m(x);
-          m = m * iob;
+//          Matrix m(x);
+//          m = m * iob;
 
           Vector v0(0.0, 0.0, 0.0);
           Vector v1(0.0, 1.0, 0.0);
-          v0 = m * v0;
-          v1 = m * v1;
+          v0 = m3 * v0;
+          v1 = m3 * v1;
           Vector v = v1 - v0;
           v.normalize();
           
@@ -708,18 +755,20 @@ void renderSegment(const Matrix &iob,
           r += curve_up_segment * 180.0 / M_PI;
         }
 
-        glRotated(r, 0.0, 1.0, 0.0);
+//        glRotated(r, 0.0, 1.0, 0.0);
+        m3 = matrixRotate(Vector(0.0, 1.0, 0.0), r) * m3;
 
         double downangle_child;
         if (tree.stem[lvl+1].downanglev >= 0.0) {
-          downangle_child = tree.stem[lvl+1].downangle + trandom(tree.stem[lvl+1].downanglev);
-          } else {
+          downangle_child = tree.stem[lvl+1].downangle + trandom2(tree.stem[lvl+1].downanglev);
+        } else {
           downangle_child = 
-            tree.stem[lvl+1].downangle + 
+            tree.stem[lvl+1].downangle + trandom2(
               tree.stem[lvl+1].downanglev *
-              ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/(length-length_base)));
+              ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/(length-(lvl==0?length_base:0.0)))) );
         }
-        glRotated(downangle_child, 1.0, 0.0, 0.0);
+//        glRotated(downangle_child, 1.0, 0.0, 0.0);
+        m3 = matrixRotate(Vector(1.0, 0.0, 0.0), downangle_child) * m3;
 
         double length_child;
         if (lvl==0) {
@@ -731,35 +780,59 @@ void renderSegment(const Matrix &iob,
           length_child = length_child_max * ( length /*_parent*/ - 0.6 * offset_child );
         }
 
-        render(iob, tree, lvl+1, length, radius, offsetChild);
+        render(m3, tree, lvl+1, length, radius_z, offsetChild);
+if (myPeekMessage())
+  return;
 
-        glPopMatrix();
+//        glPopMatrix(); // 3
       }
     }
-    
+
     // render leaves
     if (leaves_per_branch>0.0) {
+      unsigned ll = lvl+1;
+/*
+      if (ll>2)
+        ll=2;
+      if (ll+1>tree.stem.size())
+        ll=tree.stem.size()-1;
+*/    
+      bool alternate = false;
       for(double off=0.0; off<segmentLength; off+=ldist) {
         double offsetChild = off + segment;
-        glPushMatrix();
+//        glPushMatrix(); // 3-2
 
-        glTranslated(0.0, off, 0.0);
+//cout << "lvl: leaf at offset " << off << endl;
+//        glTranslated(0.0, off, 0.0);
+        Matrix m3 = matrixTranslate(Vector(0.0, off, 0.0)) * m2;
+//cout << __FILE__ << ":" << __LINE__ << ": translate for leaf" << endl;
 
-        lr += tree.stem[lvl].rotate + trandom(tree.stem[lvl].rotatev);
-        glRotated(lr, 0.0, 1.0, 0.0);
+        if (tree.stem[ll].rotate>=0.0) {
+          lr += tree.stem[ll].rotate + trandom(tree.stem[ll].rotatev);
+        } else {
+          alternate = !alternate;
+          lr = tree.stem[ll].rotate + trandom(tree.stem[ll].rotatev);
+          if (alternate)
+            lr+=180.0;
+        }
+
+//        glRotated(lr, 0.0, 1.0, 0.0);
+        m3 = matrixRotate(Vector(0.0, 1.0, 0.0), lr) * m3;
 
         double downangle_child;
-        if (tree.stem[lvl].downanglev >= 0.0) {
-          downangle_child = tree.stem[lvl].downangle + trandom(tree.stem[lvl].downanglev);
-          } else {
+        if (tree.stem[ll].downanglev >= 0.0) {
+          downangle_child = tree.stem[ll].downangle + trandom2(tree.stem[ll].downanglev);
+        } else {
           downangle_child = 
-            tree.stem[lvl].downangle + 
-              tree.stem[lvl].downanglev *
-              ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/(length-length_base)));
+            tree.stem[ll].downangle + 
+              trandom2(tree.stem[ll].downanglev *
+              ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/length)) );
         }
-        glRotated(downangle_child, 1.0, 0.0, 0.0);
+//        glRotated(downangle_child, 1.0, 0.0, 0.0);
+        m3 = matrixRotate(Vector(1.0, 0.0, 0.0), downangle_child) * m3;
 
         // leaf orientation (should be optional because of the performance)
+#if 0
         if (false && tree.leafbend!=0.0) {
           GLdouble x[16];
           glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
@@ -798,34 +871,44 @@ void renderSegment(const Matrix &iob,
           glRotated(tree.leafbend * phi_bend * 180.0 / M_PI, 1.0, 0.0, 0.0);
           glRotated(orientation, 0.0, 1.0, 0.0);
         }
-        
+#endif
+        glPushMatrix();
+        m3.glMultMatrix();
         drawLeaf(tree);
-        
         glPopMatrix();
-      }
-    }
+        
+//        glPopMatrix(); // 3-2
+      } // for(double off=0.0; off<segmentLength; off+=ldist) {
+    } // if (leaves_per_branch>0.0) {
 
-    glTranslated(0.0, segmentLength, 0.0);
-    renderSegment(iob, 
+//    glTranslated(0.0, segmentLength*1.1, 0.0);
+    m2 = matrixTranslate(Vector(0.0, segmentLength, 0.0)) * m2;
+
+    renderSegment(m2, 
       tree, lvl, length_parent, radius_parent, offset_child,
       radius, length, segment+segmentLength, segmentLength, children, length_base, length_child_max,
       dist, ldist, leaves_per_branch,
       r, lr, segsplits_error, split_angle_correction);
-    glPopMatrix();
+if (myPeekMessage())
+  return;
+//    glPopMatrix(); // 2
   }
 
-  glPopMatrix();
+//  glPopMatrix(); // 1
 }
 
 void
-render(const Matrix &iob,
+render(const Matrix &m,
        const TTree &tree,
        unsigned lvl,
        double length_parent,
        double radius_parent,
        double offset_child)
 {
-//  cout << "lvl="<<lvl<<", stem.size()="<<tree.stem.size()<<endl;
+if (myPeekMessage())
+  return;
+
+// cout << "render: lvl=" << lvl << endl;
 
   double length_child_max=0.0;
     
@@ -857,15 +940,20 @@ render(const Matrix &iob,
   unsigned children=0; // substem_cnt
   if (lvl==0) {
     children = tree.stem[1].branches;
+//cout << __FILE__ << ":" << __LINE__ << " lvl = " << lvl << " children = " << children << endl;
   } else
   if (lvl==1) {
     children = tree.stem[2].branches *                                         // 121.78
                 ( 0.2 + 0.8 * ( length / length_parent ) / length_child_max);
+//cout << __FILE__ << ":" << __LINE__ << " lvl = " << lvl << " children = " << children << endl;
   } else
   if ( (lvl+1 < tree.stem.size()) || (lvl+1 < tree.levels) ) {
       children = tree.stem[lvl+1].branches *                                   // 121.80
                  ( 1.0 - 0.5 * offset_child / length_parent);
+//cout << __FILE__ << ":" << __LINE__ << " lvl = " << lvl << " children = " << children << endl;
   }
+
+  assert(tree.stem[lvl].curveres>0);
   double segmentLength = length / tree.stem[lvl].curveres;
   double length_base = 0.0;
   if (lvl==0)
@@ -875,11 +963,14 @@ render(const Matrix &iob,
   if (children!=0) {
     if (lvl==0) {
       dist = (length - length_base) / children;
+//cout << "  1 dist = " << dist << endl;
     } else {
       dist = length / children;
+//cout << "  2 dist = " << dist << endl;
     }
+//cout << "length="<<length<<", length_base="<<length_base<<", children="<<children<<", children per segment:" << segmentLength/dist << endl;
   }
-
+  
   double leaves_per_branch = 0.0;				 // 122.
   double ldist = 0.0;
   if ( lvl+1==tree.stem.size() || lvl+1==tree.levels ) {
@@ -893,13 +984,11 @@ render(const Matrix &iob,
   double lr=0.0; // leaf rotation
   double segsplits_error = 0.0;
 
-  glPushMatrix();
-  renderSegment(iob,
+  renderSegment(m,
     tree, lvl, length_parent, radius_parent, offset_child,
     radius, length, 0.0, segmentLength, children, length_base, length_child_max,
     dist, ldist, leaves_per_branch,
     r, lr, segsplits_error, 0.0);
-  glPopMatrix();
 }
 
 void 
@@ -978,7 +1067,7 @@ TTree::TTree()
   levels.setMinimum(1);
   basesize.setMinimum(0.0);
   basesize.setMaximum(0.9999);
-#if 0
+#if 1
   stem.push_back(TStem());
   stem.push_back(TStem());
   stem.push_back(TStem());
@@ -1187,7 +1276,7 @@ TTreeAdapter::tableEvent(TTableEvent &te)
         case  0: handleDouble(te, &container->stem[te.col].length); break;
         case  1: handleDouble(te, &container->stem[te.col].lengthv); break;
         case  2: handleDouble(te, &container->stem[te.col].taper); break;
-        case  3: handleDouble(te, &container->stem[te.col].curveres, 0, 1); break;
+        case  3: handleInteger(te, &container->stem[te.col].curveres, 0, 1, 1); break;
         case  4: handleDouble(te, &container->stem[te.col].curve, 0, 1); break;
         case  5: handleDouble(te, &container->stem[te.col].curvev, 0, 1); break;
         case  6: handleDouble(te, &container->stem[te.col].curveback, 0, 1); break;
@@ -1437,6 +1526,11 @@ TMainWindow::_Check()
 int
 main(int argc, char **argv, char **envv)
 {
+/*
+  TTree t;
+  t.load("bug001.xml");
+  tree.assign(t);
+*/
   toad::initialize(argc, argv, envv); {
     TMainWindow wnd(NULL, "MakeTree");
     toad::mainLoop();
@@ -1488,6 +1582,7 @@ void TMainWindow::create()
   // 'maketree --layout-editor'
   TWindow *dlg = new TWindow(this, "dlg");
   dlg->setBackground(TColor::DIALOG);
+  TWindow *w;
   new TTextField(dlg, "species", &tree.species);
 //  new TTextField(dlg, "shape", &tree.shape);
   new TTextField(dlg, "levels", &tree.levels);
@@ -1495,7 +1590,8 @@ void TMainWindow::create()
   new TTextField(dlg, "scalev", &tree.scalev);
   new TTextField(dlg, "basesize", &tree.basesize);
   new TTextField(dlg, "basesplits", &tree.basesplits);
-  new TTextField(dlg, "ratiopower", &tree.ratiopower);
+  w = new TTextField(dlg, "ratiopower", &tree.ratiopower);
+  w->setToolTip("Ratiopower: A higher setting will cause smaller child stems.");
   new TTextField(dlg, "attractionup", &tree.attractionup);
   new TTextField(dlg, "ratio", &tree.ratio);
   new TTextField(dlg, "flare", &tree.flare);
@@ -1660,9 +1756,12 @@ TMainWindow::menuCopyright()
 // TViewer
 //--------------------------------------------------------------------
 
+double distance = 10.0;
+
 void
 TViewer::glPaint()
 {
+//cout << "-------------------------------" << endl;
   glClearColor( 0.0, 0.0, 0.5, 0.0 );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -1690,15 +1789,24 @@ TViewer::glPaint()
   glEnable(GL_COLOR_MATERIAL);
   glEnable(GL_LIGHT0);
 
-  glTranslatef(0.0, -5.0, -10.0);
+  glTranslatef(0.0, -5.0, -::distance);
 
   observer.glMultMatrix();
 
   glScaled(10.0,10.0,10.0);
+/*
+  Matrix m;
+  drawSegment(m, 0.1, 0.02);
+  m = matrixTranslate(Vector(0,0.1,0)) * m;
+  m = matrixRotate(Vector(0,0,1), 45) * m;
+  drawSegment(m, 0.1, 0.02);
+*/
 
   srand(0);
-  Matrix o = observer.inverse();
-  render(o, tree);
+//  Matrix o = observer.inverse();
+  render(Matrix(), tree);
+if (myPeekMessage())
+  invalidateWindow();
 }
 
 void
@@ -1733,11 +1841,13 @@ TViewer::mouseEvent(const TMouseEvent &me)
       }
       break;
     case TMouseEvent::ROLL_UP:
-      observer *= matrixTranslate(0.0, 0.0, 1.0);
+      ::distance += 0.2;
+//      observer *= matrixTranslate(0.0, 0.0, 1.0);
       invalidateWindow();
       break;
     case TMouseEvent::ROLL_DOWN:
-      observer *= matrixTranslate(0.0, 0.0, -1.0);
+      ::distance -= 0.2;
+//      observer *= matrixTranslate(0.0, 0.0, -1.0);
       invalidateWindow();
       break;
   }
