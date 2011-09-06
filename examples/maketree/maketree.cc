@@ -999,28 +999,35 @@ drawSegment(const Matrix &m, GLfloat l, GLfloat r)
 
   GLfloat s0, s1=0.0;
 
+  Vector v[4];
+
+  v[0][0] = sin(s0)*r0;
+  v[0][1] = l;
+  v[0][2] = cos(s0)*r1;
+
+  v[1][0] = sin(s0)*r0;
+  v[1][1] = 0.0;
+  v[1][2] = cos(s0)*r1;
+  
+  v[0] *= m;
+  v[1] *= m;
+
   for(unsigned i=0; i<n; ++i) {
     s0 = s1;
     s1 += s;
     GLfloat sn = s0 + sh;
     glBegin(GL_POLYGON);
- 
-    Vector v[4];
-    v[0][0] = sin(s1)*r0;
-    v[0][1] = 0.0;
-    v[0][2] = cos(s1)*r1;
-    v[1][0] = sin(s1)*r0;
-    v[1][1] = l;
-    v[1][2] = cos(s1)*r1;
-    v[2][0] = sin(s0)*r0;
-    v[2][1] = l;
-    v[2][2] = cos(s0)*r1;
-    v[3][0] = sin(s0)*r0;
-    v[3][1] = 0.0;
-    v[3][2] = cos(s0)*r1;
-    
-    for(unsigned j=0; j<4; ++j)
-      v[j] *= m;
+
+    v[2][0] = sin(s1)*r0;
+    v[2][1] = 0.0;
+    v[2][2] = cos(s1)*r1;
+
+    v[3][0] = sin(s1)*r0;
+    v[3][1] = l;
+    v[3][2] = cos(s1)*r1;
+
+    v[2] *= m;
+    v[3] *= m;
     
     Vector n = planeNormal(v[0], v[1], v[2]);
     n.normalize();
@@ -1030,6 +1037,9 @@ drawSegment(const Matrix &m, GLfloat l, GLfloat r)
       v[j].glVertex();
 
     glEnd();
+
+    v[0] = v[3];
+    v[1] = v[2];
   }
 }
 
