@@ -166,7 +166,13 @@ parseInitFile(const string &filename)
 #endif
           break;
         }
-         cerr << "unexpected entry '" << in.attribute << "' in file " << filename << endl;
+        if (in.attribute == "scrollwheel-slowdown" && in.type.empty()) {
+          // the Wacom mouse wheel can send multiple clicks where only
+          // one is expected, this is to slow it down for TTextField
+          scrollwheel_slowdown = atoi(in.value.c_str());
+          break;
+        }
+        cerr << "unexpected entry '" << in.attribute << "' in file " << filename << endl;
         break;
       default:
         cerr << "unexpected entry in file " << filename << endl;

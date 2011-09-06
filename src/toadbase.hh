@@ -188,6 +188,8 @@ extern HINSTANCE w32instance;
 extern int w32cmdshow;
 #endif
 
+extern unsigned scrollwheel_slowdown;
+
 #endif
 
 class TOADBase
@@ -291,7 +293,7 @@ class TOADBase
 };
 
 // wrappers for static methods inside the TOADBase class
-// this is the recommended interface
+// this is the recommended interface (and being required to do so calls for rewrite)
 inline TWindow* getFocusWindow() { return TOADBase::getFocusWindow(); }
 inline void setFocusWindow(TWindow* wnd) { TOADBase::setFocusWindow(wnd); }
 inline void insertEventFilter(TEventFilter *f, TWindow *w, EEventFilterPos p) { TOADBase::insertEventFilter(f, w, p); }
@@ -308,6 +310,7 @@ inline void getMousePos(int *x, int *y) { return TOADBase::getMousePos(x, y); }
 inline void setMousePos(int x,int y) { return TOADBase::setMousePos(x, y); }
 inline void startDrag(TDnDObject *obj, unsigned modifier = 0) { TOADBase::startDrag(obj, modifier); }
 inline TFont& getDefaultFont() { return TOADBase::getDefaultFont(); }
+inline bool peekMessage() { return TOADBase::peekMessage(); }
 
 } // namespace toad
 

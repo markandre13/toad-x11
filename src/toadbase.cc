@@ -130,6 +130,7 @@ TEventFilter * toad::global_evt_filter = 0;
 //---------------------------------------------------------------------------
 PFont    toad::default_font;
 PFont    toad::bold_font;;
+unsigned toad::scrollwheel_slowdown=1;
 
 TFont& 
 TOADBase::getDefaultFont() {
@@ -917,6 +918,11 @@ handle_event:
         }
         last_click_time = x11event.xbutton.time;
         last_click_window = x11event.xbutton.window;
+      } else {
+        static unsigned counter=0;
+        if (++counter<scrollwheel_slowdown)
+          break;
+        counter = 0;
       }
 
       TEventFilter *flt = toad::global_evt_filter;
@@ -1666,7 +1672,7 @@ TKeyEvent::str() const
     if (key==NoSymbol)
       key = XLookupKeysym(&x11event.xkey, 0);
     if (key!=this->_key) {
-      cerr << "XUtf8LookupString key differs from XLookupKeysym" << endl;
+//      cerr << "XUtf8LookupString key differs from XLookupKeysym" << endl;
     }
     if (status==XLookupNone)
       return "";
@@ -1683,7 +1689,7 @@ TKeyEvent::str() const
                           &key, 
                           &compose_status);
     if (key!=this->_key) {
-      cerr << "XUtf8LookupString key differs from XLookupKeysym" << endl;
+//      cerr << "XUtf8LookupString key differs from XLookupKeysym" << endl;
     }
   }
   buffer[count]=0;        // add zero terminator to string
