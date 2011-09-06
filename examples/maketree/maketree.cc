@@ -612,7 +612,6 @@ if (myPeekMessage())
     cout << "NOTE: curvev < 0, stem is a helix, is not implemented yet" << endl;
   }
   d -= split_angle_correction;
-//  glRotatef(d, 1.0, 0.0, 0.0);
   Matrix m1 = matrixRotate(Vector(1.0, 0.0, 0.0), d) * m;
 
   unsigned segsplits_effective = 0;
@@ -624,12 +623,7 @@ if (myPeekMessage())
     segsplits_effective = fabs(tree.stem[lvl].segsplits + segsplits_error);
     segsplits_error -= segsplits_effective - tree.stem[lvl].segsplits;
   }
-/*
-  GLdouble x[16];
-  glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
-  Matrix m(x);
-  m = m * iob;
-*/  
+
   double declination;
   {
     Vector v0(0.0, 0.0, 0.0);
@@ -653,9 +647,6 @@ if (myPeekMessage())
     v.normalize();
   }
 
-//  glPushMatrix(); // 1
-  
-//  glRotated(-splitangle, 1.0, 0.0, 0.0);
   double splitangle = - (tree.stem[lvl].splitangle*segsplits_effective /*+
                      trandom(tree.stem[lvl].splitanglev*segsplits_effective)*/ -
                                         declination) * segsplits_effective / 2.0;
@@ -663,7 +654,6 @@ if (myPeekMessage())
   for(unsigned i=0; i<=segsplits_effective; ++i) {
 
 //cout << lvl << ": render split " << i << " out of " << segsplits_effective << endl;
-//    glPushMatrix(); // 2
     Matrix m2 = m1;
 
     if ((lvl!=0 || segment>segmentLength)  // this is not in the paper but it looks better this way
@@ -673,8 +663,7 @@ if (myPeekMessage())
                                ( 30.0 + fabs(declination-90.0) ) * pow(trandom(1.0), 2.0);
       if (trandom(1.0) < 0.0)						// 121.52
         spread_rotation = -spread_rotation;
-//      glRotated(spread_rotation, v.x(), v.y(), v.z());
-      m2 = matrixRotate(v, spread_rotation) * m2;
+        m2 = matrixRotate(v, spread_rotation) * m2;
     }
 
     if (segsplits_effective>0) {
@@ -682,7 +671,6 @@ if (myPeekMessage())
       splitangle += tree.stem[lvl].splitangle*segsplits_effective + 
                    trandom(tree.stem[lvl].splitanglev*segsplits_effective) -
                    declination;
-//      glRotated(splitangle, 1.0, 0.0, 0.0);
       m2 = matrixRotate(Vector(1.0, 0.0, 0.0), splitangle) * m2;
       
       split_angle_correction += splitangle /  ((length-segment)/segmentLength);
@@ -718,8 +706,6 @@ if (myPeekMessage())
 
 //cout << "draw child at off=" << off0 << ", segment=" << segment << endl;
         
-//        glPushMatrix(); // 3
-//        glTranslated(0.0, off0, 0.0);
         Matrix m3 = matrixTranslate(0.0, off0, 0.0) * m2;
 //cout << __FILE__ << ":" << __LINE__ << ": translate for child " << off0 << endl;
 
@@ -734,11 +720,6 @@ if (myPeekMessage())
 
         // attraction up
         if (lvl!=0 && tree.attractionup != 0.0) {
-          GLdouble x[16];
-          glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
-//          Matrix m(x);
-//          m = m * iob;
-
           Vector v0(0.0, 0.0, 0.0);
           Vector v1(0.0, 1.0, 0.0);
           v0 = m3 * v0;
@@ -752,7 +733,6 @@ if (myPeekMessage())
           r += curve_up_segment * 180.0 / M_PI;
         }
 
-//        glRotated(r, 0.0, 1.0, 0.0);
         m3 = matrixRotate(Vector(0.0, 1.0, 0.0), r) * m3;
 
         double downangle_child;
@@ -764,7 +744,6 @@ if (myPeekMessage())
               tree.stem[lvl+1].downanglev *
               ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/(length-(lvl==0?length_base:0.0)))) );
         }
-//        glRotated(downangle_child, 1.0, 0.0, 0.0);
         m3 = matrixRotate(Vector(1.0, 0.0, 0.0), downangle_child) * m3;
 
         double length_child;
@@ -781,7 +760,6 @@ if (myPeekMessage())
 if (myPeekMessage())
   return;
 
-//        glPopMatrix(); // 3
       }
     }
 
@@ -797,10 +775,8 @@ if (myPeekMessage())
       bool alternate = false;
       for(double off=0.0; off<segmentLength; off+=ldist) {
         double offsetChild = off + segment;
-//        glPushMatrix(); // 3-2
 
 //cout << "lvl: leaf at offset " << off << endl;
-//        glTranslated(0.0, off, 0.0);
         Matrix m3 = matrixTranslate(Vector(0.0, off, 0.0)) * m2;
 //cout << __FILE__ << ":" << __LINE__ << ": translate for leaf" << endl;
 
@@ -813,7 +789,6 @@ if (myPeekMessage())
             lr+=180.0;
         }
 
-//        glRotated(lr, 0.0, 1.0, 0.0);
         m3 = matrixRotate(Vector(0.0, 1.0, 0.0), lr) * m3;
 
         double downangle_child;
@@ -825,7 +800,6 @@ if (myPeekMessage())
               trandom2(tree.stem[ll].downanglev *
               ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/length)) );
         }
-//        glRotated(downangle_child, 1.0, 0.0, 0.0);
         m3 = matrixRotate(Vector(1.0, 0.0, 0.0), downangle_child) * m3;
 
         // leaf orientation (should be optional because of the performance)
@@ -871,7 +845,6 @@ if (myPeekMessage())
 #endif
         drawLeaf(m3, tree);
         
-//        glPopMatrix(); // 3-2
       } // for(double off=0.0; off<segmentLength; off+=ldist) {
     } // if (leaves_per_branch>0.0) {
 
@@ -885,10 +858,7 @@ if (myPeekMessage())
       r, lr, segsplits_error, split_angle_correction);
 if (myPeekMessage())
   return;
-//    glPopMatrix(); // 2
   }
-
-//  glPopMatrix(); // 1
 }
 
 void
@@ -1001,14 +971,11 @@ drawSegment(const Matrix &m, GLfloat l, GLfloat r)
 
   Vector v[4];
 
-  v[0][0] = sin(s0)*r0;
+  v[0][0] = v[1][0] = 0.0; // sin(0.0)*r0;
   v[0][1] = l;
-  v[0][2] = cos(s0)*r1;
-
-  v[1][0] = sin(s0)*r0;
   v[1][1] = 0.0;
-  v[1][2] = cos(s0)*r1;
-  
+  v[0][2] = v[1][2] = r1;  // cos(0.0)*r1;
+
   v[0] *= m;
   v[1] *= m;
 
@@ -1018,23 +985,21 @@ drawSegment(const Matrix &m, GLfloat l, GLfloat r)
     GLfloat sn = s0 + sh;
     glBegin(GL_POLYGON);
 
-    v[2][0] = sin(s1)*r0;
+    v[2][0] = v[3][0] = sin(s1)*r0;
     v[2][1] = 0.0;
-    v[2][2] = cos(s1)*r1;
-
-    v[3][0] = sin(s1)*r0;
     v[3][1] = l;
-    v[3][2] = cos(s1)*r1;
+    v[2][2] = v[3][2] = cos(s1)*r1;
 
     v[2] *= m;
     v[3] *= m;
     
+    for(unsigned j=0; j<4; ++j)
+      v[j].glVertex();
+
     Vector n = planeNormal(v[0], v[1], v[2]);
     n.normalize();
     n.glNormal();
     
-    for(unsigned j=0; j<4; ++j)
-      v[j].glVertex();
 
     glEnd();
 
