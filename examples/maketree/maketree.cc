@@ -67,8 +67,8 @@ bool myPeekMessage()
 
 class TTree;
 
-static void drawSegment(GLfloat len, GLfloat radius);
-static void drawLeaf(const TTree &tree);
+static void drawSegment(const Matrix &m, GLfloat len, GLfloat radius);
+static void drawLeaf(const Matrix &m, const TTree &tree);
 
 double trandom(double v)
 {
@@ -690,10 +690,7 @@ if (myPeekMessage())
 
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
 
-    glPushMatrix();
-    m2.glMultMatrix();
-    drawSegment(segmentLength, radius_z);
-    glPopMatrix();
+    drawSegment(m2, segmentLength, radius_z);
 
     // render children (merge this one with 'render leaves') !!!
     if (children!=0 && dist!=0.0 && leaves_per_branch<=0.0) {
@@ -872,10 +869,7 @@ if (myPeekMessage())
           glRotated(orientation, 0.0, 1.0, 0.0);
         }
 #endif
-        glPushMatrix();
-        m3.glMultMatrix();
-        drawLeaf(tree);
-        glPopMatrix();
+        drawLeaf(m3, tree);
         
 //        glPopMatrix(); // 3-2
       } // for(double off=0.0; off<segmentLength; off+=ldist) {
@@ -992,7 +986,7 @@ if (myPeekMessage())
 }
 
 void 
-drawSegment(GLfloat l, GLfloat r)
+drawSegment(const Matrix &m, GLfloat l, GLfloat r)
 {
   glColor3f(1.0, 0.0, 0.0);
 
@@ -1025,6 +1019,9 @@ drawSegment(GLfloat l, GLfloat r)
     v[3][1] = 0.0;
     v[3][2] = cos(s0)*r1;
     
+    for(unsigned j=0; j<4; ++j)
+      v[j] *= m;
+    
     Vector n = planeNormal(v[0], v[1], v[2]);
     n.normalize();
     n.glNormal();
@@ -1037,24 +1034,33 @@ drawSegment(GLfloat l, GLfloat r)
 }
 
 void
-drawLeaf(const TTree &tree)
+drawLeaf(const Matrix &m, const TTree &tree)
 {
   double f = sqrt(tree.leafquality);
   double sy=0.035 * tree.leafscale / f;
   double sx=sy * tree.leafscalex;
-  glColor3f(0.0, 1.0, 0.0);
+
+  Vector v[9] = {
+    Vector(    0.0,    0.0, 0.0),
+    Vector( sx*1.0, sy*1.0, 0.0),
+    Vector( sx*1.0, sy*2.0, 0.0),
+    Vector( sx*0.5, sy*3.0, 0.0),
+    Vector(    0.0, sy*3.2, 0.0),
+    Vector(-sx*0.5, sy*3.0, 0.0),
+    Vector(-sx*1.0, sy*2.0, 0.0),
+    Vector(-sx*1.0, sy*1.0, 0.0),
+    Vector(0.0, 0.0, -1.0)
+  };
 
   glDisable(GL_CULL_FACE);
   glBegin(GL_POLYGON);
-  glVertex3f(    0.0,    0.0, 0.0);
-  glVertex3f( sx*1.0, sy*1.0, 0.0);
-  glVertex3f( sx*1.0, sy*2.0, 0.0);
-  glVertex3f( sx*0.5, sy*3.0, 0.0);
-  glVertex3f(    0.0, sy*3.2, 0.0);
-  glVertex3f(-sx*0.5, sy*3.0, 0.0);
-  glVertex3f(-sx*1.0, sy*2.0, 0.0);
-  glVertex3f(-sx*1.0, sy*1.0, 0.0);
-  glNormal3f(0.0, 0.0, -1.0);
+  glColor3f(0.0, 1.0, 0.0);
+  for(unsigned i=0; i<8; ++i) {
+    v[i] *= m;
+    v[i].glVertex();
+  }
+  v[8] *= m;
+  v[8].glNormal();
   glEnd();
   glDisable(GL_CULL_FACE);
 }
