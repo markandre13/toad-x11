@@ -964,8 +964,7 @@ drawSegment(const Matrix &m, GLfloat l, GLfloat r)
   GLfloat r1 = r;
 
   unsigned n = 8;
-  GLfloat sh = M_PI / n; // half step
-  GLfloat s = 2.0 * sh;  // full step
+  GLfloat s = 2.0 * M_PI / n;
 
   GLfloat s0, s1=0.0;
 
@@ -982,7 +981,6 @@ drawSegment(const Matrix &m, GLfloat l, GLfloat r)
   for(unsigned i=0; i<n; ++i) {
     s0 = s1;
     s1 += s;
-    GLfloat sn = s0 + sh;
     glBegin(GL_POLYGON);
 
     v[2][0] = v[3][0] = sin(s1)*r0;
@@ -999,7 +997,6 @@ drawSegment(const Matrix &m, GLfloat l, GLfloat r)
     Vector n = planeNormal(v[0], v[1], v[2]);
     n.normalize();
     n.glNormal();
-    
 
     glEnd();
 
