@@ -993,14 +993,15 @@ drawSegment(Vector *v0, Vector *v1, const Matrix &m, GLfloat l, GLfloat r, bool 
   
     glBegin(GL_POLYGON);
     
+    Vector n = planeNormal(v0[i], v1[i1], v1[i]);
+    n.normalize();
+    n.glNormal();
+
     v0[i1].glVertex();
     v1[i1].glVertex();
     v1[i].glVertex();
     v0[i].glVertex();
     
-    Vector n = planeNormal(v0[i], v1[i1], v1[i]);
-    n.normalize();
-    n.glNormal();
 
     glEnd();
   }
@@ -1028,12 +1029,12 @@ drawLeaf(const Matrix &m, const TTree &tree)
   glDisable(GL_CULL_FACE);
   glBegin(GL_POLYGON);
   glColor3f(0.0, 1.0, 0.0);
+  v[8] *= m;
+  v[8].glNormal();
   for(unsigned i=0; i<8; ++i) {
     v[i] *= m;
     v[i].glVertex();
   }
-  v[8] *= m;
-  v[8].glNormal();
   glEnd();
   glDisable(GL_CULL_FACE);
 }
