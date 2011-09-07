@@ -992,13 +992,13 @@ drawSegment(Vector *v0, Vector *v1, const Matrix &m, GLfloat l, GLfloat r, bool 
     unsigned i1 = (i+1) % stem_res;
   
     glBegin(GL_POLYGON);
-
-    v0[i].glVertex();
-    v1[i].glVertex();
-    v1[i1].glVertex();
+    
     v0[i1].glVertex();
-
-    Vector n = planeNormal(v0[i], v1[i], v1[i1]);
+    v1[i1].glVertex();
+    v1[i].glVertex();
+    v0[i].glVertex();
+    
+    Vector n = planeNormal(v0[i], v1[i1], v1[i]);
     n.normalize();
     n.glNormal();
 
