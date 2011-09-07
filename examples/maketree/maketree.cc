@@ -67,7 +67,7 @@ bool myPeekMessage()
 
 class TTree;
 
-static void drawSegment(const Matrix &m, GLfloat len, GLfloat radius);
+static void drawSegment(Vector *ring0, Vector *ring1, const Matrix &m, GLfloat len, GLfloat radius, bool initializeRing0);
 static void drawLeaf(const Matrix &m, const TTree &tree);
 
 double trandom(double v)
@@ -174,12 +174,14 @@ struct TStem
   double branchesdist;
 };
 
+unsigned stem_res = 8;
+
 struct TTree
 {
   TTree();
   
   void assign(const TTree&);
-  
+
   // tree shape
     TTextModel species;
     EShape shape;
@@ -567,7 +569,8 @@ render(const Matrix &m,
        double radius_parent=0.0,
        double offset_child=0.0);
 
-void renderSegment(const Matrix &m,
+void renderSegment(Vector *ring0,
+                   const Matrix &m,
                    const TTree &tree,
                    unsigned lvl,
                    double length_parent,
@@ -678,7 +681,8 @@ if (myPeekMessage())
 
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
 
-    drawSegment(m2, segmentLength, radius_z);
+    Vector ring1[stem_res];
+    drawSegment(ring0, ring1, m2, segmentLength, radius_z, i==0 && segment==0.0);
 
     // render children (merge this one with 'render leaves') !!!
     if (children!=0 && dist!=0.0 && leaves_per_branch<=0.0) {
@@ -848,10 +852,9 @@ if (myPeekMessage())
       } // for(double off=0.0; off<segmentLength; off+=ldist) {
     } // if (leaves_per_branch>0.0) {
 
-//    glTranslated(0.0, segmentLength*1.1, 0.0);
     m2 = matrixTranslate(Vector(0.0, segmentLength, 0.0)) * m2;
 
-    renderSegment(m2, 
+    renderSegment(ring1, m2, 
       tree, lvl, length_parent, radius_parent, offset_child,
       radius, length, segment+segmentLength, segmentLength, children, length_base, length_child_max,
       dist, ldist, leaves_per_branch,
@@ -948,7 +951,8 @@ if (myPeekMessage())
   double lr=0.0; // leaf rotation
   double segsplits_error = 0.0;
 
-  renderSegment(m,
+  Vector ring0[stem_res];
+  renderSegment(ring0, m,
     tree, lvl, length_parent, radius_parent, offset_child,
     radius, length, 0.0, segmentLength, children, length_base, length_child_max,
     dist, ldist, leaves_per_branch,
@@ -956,52 +960,49 @@ if (myPeekMessage())
 }
 
 void 
-drawSegment(const Matrix &m, GLfloat l, GLfloat r)
+drawSegment(Vector *v0, Vector *v1, const Matrix &m, GLfloat l, GLfloat r, bool initializeRing0)
 {
   glColor3f(1.0, 0.0, 0.0);
 
   GLfloat r0 = r;
   GLfloat r1 = r;
 
-  unsigned n = 8;
-  GLfloat s = 2.0 * M_PI / n;
+  GLfloat s = 2.0 * M_PI / stem_res;
 
   GLfloat s0, s1=0.0;
-
-  Vector v[4];
-
-  v[0][0] = v[1][0] = 0.0; // sin(0.0)*r0;
-  v[0][1] = l;
-  v[1][1] = 0.0;
-  v[0][2] = v[1][2] = r1;  // cos(0.0)*r1;
-
-  v[0] *= m;
-  v[1] *= m;
-
-  for(unsigned i=0; i<n; ++i) {
+  for(unsigned i=0; i<stem_res; ++i) {
     s0 = s1;
     s1 += s;
+
+    v1[i][0] = sin(s1)*r0;
+    v1[i][1] = l;
+    v1[i][2] = cos(s1)*r1;
+    
+    if (initializeRing0) {
+      v0[i][0] = v1[i][0];
+      v0[i][1] = 0.0;
+      v0[i][2] = v1[i][2];
+      v0[i] *= m;
+    }
+    
+    v1[i] *= m;
+  }
+  
+  for(unsigned i=0; i<stem_res; ++i) {
+    unsigned i1 = (i+1) % stem_res;
+  
     glBegin(GL_POLYGON);
 
-    v[2][0] = v[3][0] = sin(s1)*r0;
-    v[2][1] = 0.0;
-    v[3][1] = l;
-    v[2][2] = v[3][2] = cos(s1)*r1;
+    v0[i].glVertex();
+    v1[i].glVertex();
+    v1[i1].glVertex();
+    v0[i1].glVertex();
 
-    v[2] *= m;
-    v[3] *= m;
-    
-    for(unsigned j=0; j<4; ++j)
-      v[j].glVertex();
-
-    Vector n = planeNormal(v[0], v[1], v[2]);
+    Vector n = planeNormal(v0[i], v1[i], v1[i1]);
     n.normalize();
     n.glNormal();
 
     glEnd();
-
-    v[0] = v[3];
-    v[1] = v[2];
   }
 }
 
@@ -1782,6 +1783,7 @@ TViewer::glPaint()
 
   srand(0);
 //  Matrix o = observer.inverse();
+
   render(Matrix(), tree);
 if (myPeekMessage())
   invalidateWindow();
