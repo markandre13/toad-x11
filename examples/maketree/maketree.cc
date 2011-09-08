@@ -33,6 +33,7 @@
 #include <toad/textfield.hh>
 #include <toad/table.hh>
 #include <toad/stl/vector.hh>
+#include <toad/io/binstream.hh>
 #include "glwindow.hh"
 
 #include <cmath>
@@ -43,6 +44,7 @@
 #include <unistd.h>
 #include <vector>
 #include <fstream>
+#include <map>
 #include <libxml/xmlreader.h>
 
 #include "math/matrix4.h"
@@ -52,6 +54,11 @@
 using namespace toad;
 
 static const string programname("MakeTree");
+
+struct Exporter *exporter = 0;
+size_t surface_branch, surface_leaf;
+
+unsigned stem_res = 8;
 
 // rendering the tree sometimes takes a while
 // strategy was to abort in case we had a new message, but that caused the tree
@@ -63,6 +70,225 @@ bool myPeekMessage()
     TOADBase::handleMessage();
   }
   return false;
+}
+
+struct Exporter
+{
+  Exporter();
+
+  size_t createSurface(const string &name, double r, double g, double b);
+  void begin(size_t surface);
+  void vertex(float x, float y, float z);
+  void vertex(const Vector &v) {
+    vertex(v[0], v[1], v[2]);
+  }
+  void end();
+
+  virtual void write(ostream *stream) = 0;
+
+  size_t srfs_size, pols_size;
+
+  struct point {
+    point(float px, float py, float pz):
+      x(px), y(py), z(pz) {}
+    float x, y, z;
+  };
+  vector<point> points;
+  map<string, size_t> lookup;
+  
+  struct polygon {
+    vector< vector<point>::size_type > points;
+  };
+  vector<polygon> polygons;
+  
+  struct surface {
+    surface(const string &aName, double cR, double cG, double cB):
+      name(aName), r(cR*255), g(cG*255), b(cB*255) {}
+    string name;
+    vector<polygon> polygons;
+    unsigned r, g, b;
+  };
+  vector<surface> surfaces;
+  
+  polygon *current;
+};
+
+Exporter::Exporter()
+{
+  srfs_size = pols_size = 0;
+  current = NULL;
+}
+
+size_t
+Exporter::createSurface(const string &name, double r, double g, double b)
+{
+  surfaces.push_back(surface(name, r, g, b));
+  srfs_size += name.size() + 1;
+  if (!(name.size() & 1))
+    ++srfs_size;
+    
+  return surfaces.size() - 1;
+};
+
+void
+Exporter::begin(size_t surface)
+{
+  pols_size += 2 + 2;
+  surfaces[surface].polygons.push_back(polygon());
+  current = &surfaces[surface].polygons.back();
+}
+
+void
+Exporter::vertex(float x, float y, float z)
+{
+  pols_size += 2;
+  size_t index;
+
+  struct {
+    float x, y, z;
+  } pt;
+  pt.x = x;
+  pt.y = y;
+  pt.z = z;
+  string id;
+  id.assign((char*)&pt, sizeof(pt));
+  map<string, size_t>::iterator i = lookup.find(id);
+  if (i==lookup.end()) {
+    index = points.size();
+    points.push_back(point(x, y, z));
+    lookup[id] = index;
+  } else {
+    index = i->second;
+  }
+  
+#if 0
+  index = 0;
+  for(vector<point>::const_iterator p = points.begin(); p!=points.end(); ++p) {
+    if (p->x==x && p->y==y && p->z==z) {
+      break;
+    }
+    ++index;
+  }
+#else
+//  index = points.size();
+#endif
+//  if (index==points.size())
+//    points.push_back(point(x, y, z));
+  current->points.push_back(index);
+}
+
+void
+Exporter::end()
+{
+  current = NULL;
+}
+
+struct WFOF:
+  public Exporter
+{
+  void write(ostream *stream);
+};
+
+void
+WFOF::write(ostream *stream)
+{
+  ostream &out(*stream);
+
+  for(vector<point>::const_iterator p = points.begin(); p!=points.end(); ++p) {
+    out << "v " << p->x << ' ' << p->y << ' ' << p->z << endl;
+  }
+  
+  size_t cntr = 1;
+  for(vector<surface>::const_iterator p = surfaces.begin(); p != surfaces.end(); ++p) {
+    out << "usemtl " << p->name << endl;
+    for(vector<polygon>::const_iterator q = p->polygons.begin(); q != p->polygons.end(); ++q) {
+      out << 'f';
+      for(vector< vector<point>::size_type >::const_iterator r = q->points.begin(); r != q->points.end(); ++r) {
+        out << ' ' << (*r + 1);
+      }
+      out << endl;
+    }
+  }
+}
+
+// Lightwave Object Format (version 1.0, a bit too much for the trees)
+// LWO2 is introduced with LighWave 6
+struct LWOF:
+  public Exporter
+{
+  void write(ostream *stream);
+};
+
+void
+LWOF::write(ostream *stream)
+{
+  TOutBinStream out(stream);
+  out.setEndian(TOutBinStream::BIG);
+
+  size_t form_size = 8*4 + 4 + points.size() * 12 + srfs_size * 2 + pols_size + 26 * surfaces.size();
+
+  out.writeString("FORM");
+  out.writeDWord(form_size); // complete file size minus this header (8 octets)
+  
+  out.writeString("LWOB");
+  
+  // points
+  out.writeString("PNTS");
+  out.writeDWord(points.size() * 12);
+  
+  for(vector<point>::const_iterator p = points.begin(); p!=points.end(); ++p) {
+    out.writeFloat(p->x);
+    out.writeFloat(p->y);
+    out.writeFloat(p->z);
+  }
+  
+  // surfaces
+  out.writeString("SRFS");
+  out.writeDWord(srfs_size);
+  
+  for(vector<surface>::const_iterator p = surfaces.begin(); p != surfaces.end(); ++p) {
+    out.writeString(p->name);
+    out.writeByte(0);
+    if (!(p->name.size() & 1))
+      out.writeByte(0);
+  }
+  
+  // polygons
+  out.writeString("POLS");
+  out.writeDWord(pols_size);
+  
+  size_t cntr = 1;
+  for(vector<surface>::const_iterator p = surfaces.begin(); p != surfaces.end(); ++p) {
+    for(vector<polygon>::const_iterator q = p->polygons.begin(); q != p->polygons.end(); ++q) {
+      out.writeWord(q->points.size());
+      for(vector< vector<point>::size_type >::const_iterator r = q->points.begin(); r != q->points.end(); ++r) {
+        out.writeWord(*r);
+      }
+      out.writeWord(cntr++);
+    }
+  }
+
+  // more information on the surfaces
+  for(vector<surface>::const_iterator p = surfaces.begin(); p != surfaces.end(); ++p) {
+     out.writeString("SURF");
+     out.writeDWord(p->name.size() + ( (p->name.size()&1) ? 1 : 2 ) + 18);
+     
+     out.writeString(p->name);
+     out.writeByte(0);
+     if (!(p->name.size() & 1))
+       out.writeByte(0);
+     
+     out.writeString("COLR");
+     out.writeWord(4);
+     out.writeByte(p->r);
+     out.writeByte(p->g);
+     out.writeByte(p->b);
+     out.writeByte(0);
+     
+     out.writeString("FLAG");
+     out.writeWord(2);
+     out.writeWord(0);
+  }
 }
 
 class TTree;
@@ -174,7 +400,6 @@ struct TStem
   double branchesdist;
 };
 
-unsigned stem_res = 8;
 
 struct TTree
 {
@@ -990,20 +1215,24 @@ drawSegment(Vector *v0, Vector *v1, const Matrix &m, GLfloat l, GLfloat r, bool 
   
   for(unsigned i=0; i<stem_res; ++i) {
     unsigned i1 = (i+1) % stem_res;
-  
-    glBegin(GL_POLYGON);
-    
-    Vector n = planeNormal(v0[i], v1[i1], v1[i]);
-    n.normalize();
-    n.glNormal();
-
-    v0[i1].glVertex();
-    v1[i1].glVertex();
-    v1[i].glVertex();
-    v0[i].glVertex();
-    
-
-    glEnd();
+    if (exporter) {
+      exporter->begin(surface_branch);
+      exporter->vertex(v0[i1]);
+      exporter->vertex(v1[i1]);
+      exporter->vertex(v1[i]);
+      exporter->vertex(v0[i]);
+      exporter->end();
+    } else {
+      glBegin(GL_POLYGON);
+      Vector n = planeNormal(v0[i], v1[i1], v1[i]);
+      n.normalize();
+      n.glNormal();
+      v0[i1].glVertex();
+      v1[i1].glVertex();
+      v1[i].glVertex();
+      v0[i].glVertex();
+      glEnd();
+    }
   }
 }
 
@@ -1026,17 +1255,26 @@ drawLeaf(const Matrix &m, const TTree &tree)
     Vector(0.0, 0.0, -1.0)
   };
 
-  glDisable(GL_CULL_FACE);
-  glBegin(GL_POLYGON);
-  glColor3f(0.0, 1.0, 0.0);
-  v[8] *= m;
-  v[8].glNormal();
-  for(unsigned i=0; i<8; ++i) {
-    v[i] *= m;
-    v[i].glVertex();
+  if (exporter) {
+    exporter->begin(surface_leaf);
+    for(unsigned i=0; i<8; ++i) {
+      v[i] *= m;
+      exporter->vertex(v[i]);
+    }
+    exporter->end();
+  } else {
+    glDisable(GL_CULL_FACE);
+    glBegin(GL_POLYGON);
+    glColor3f(0.0, 1.0, 0.0);
+    v[8] *= m;
+    v[8].glNormal();
+    for(unsigned i=0; i<8; ++i) {
+      v[i] *= m;
+      v[i].glVertex();
+    }
+    glEnd();
+    glDisable(GL_CULL_FACE);
   }
-  glEnd();
-  glDisable(GL_CULL_FACE);
 }
 
 
@@ -1301,6 +1539,7 @@ class TMainWindow:
     void menuOpen();
     bool menuSave();
     void menuSaveAs();
+    void menuExport();
     void menuQuit();
     void menuInfo();
     void menuCopyright();
@@ -1472,6 +1711,26 @@ TMainWindow::_Save(const string &title)
 }
 
 void
+TMainWindow::menuExport()
+{
+  exporter = new LWOF();
+//  exporter = new WFOF();
+  surface_branch = exporter->createSurface("branch", 0.5, 0.0, 0.0);
+  surface_leaf   = exporter->createSurface("leaf", 0.0, 0.8, 0.0);
+  
+  srand(0);
+  render(Matrix(), tree);
+  
+  ofstream out("tree.lwo");
+  exporter->write(&out);
+
+  delete exporter;
+  exporter = 0;
+  
+  printf("export done\n");
+}
+
+void
 TMainWindow::closeRequest()
 {
   if (!_Check())
@@ -1546,6 +1805,8 @@ void TMainWindow::create()
   CONNECT(action->sigClicked, this, menuSaveAs);
   action = new TAction(this, "file|save");
   CONNECT(action->sigClicked, this, menuSave);
+  action = new TAction(this, "file|export");
+  CONNECT(action->sigClicked, this, menuExport);
   action = new TAction(this, "file|quit");
   CONNECT(action->sigClicked, this, closeRequest);
 
