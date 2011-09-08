@@ -318,32 +318,6 @@ enum EShape {
   SHAPE_ENVELOPE
 };
 
-double
-shapeRatio(EShape shape, double ratio)
-{
-  switch(shape) {
-    case SHAPE_CONICAL:
-      return 0.2 + 0.8 * ratio;
-    case SHAPE_SPHERICAL:
-      return 0.2 + 0.8 * sin(M_PI * ratio);
-    case SHAPE_HEMISPHERICAL:
-      return 0.2 + 0.8 * sin(0.5 * M_PI * ratio);
-    case SHAPE_CYLINDRICAL:
-      return 1.0;
-    case SHAPE_TAPERED_CYLINDRICAL:
-      return 0.5 + 0.5 * ratio;
-    case SHAPE_FLAME:
-      return ratio <= 0.7 ? ratio / 0.7 : (1.0 - ratio) / 0.3;
-    case SHAPE_INVERSE_CONICAL:
-      return 1.0 - 0.8 * ratio;
-    case SHAPE_TEND_FLAME:
-      return ratio <= 0.7 ? 0.5 + 0.5 * ratio / 0.7 : 0.5 + 0.5 * ( 1.0 - ratio ) / 0.3;
-    case SHAPE_ENVELOPE:
-      return 1.0; // use pruning envelope, not implemented yet;
-  }
-  return 1.0;
-}
-
 struct TIO
 {
   TIO() {
@@ -443,6 +417,8 @@ struct TTree
     TFloatModel smooth;
 
   GVector<TStem> stem;
+
+  double shapeRatio(EShape shape, double ratio) const;
 
   bool load(const char *filename);
   bool save(const char *filename);
@@ -738,6 +714,36 @@ TTree::io2(TIO &io, TStem &s)
   fetch(io, "BranchDist", &s.branchesdist);
 }
 
+double
+TTree::shapeRatio(EShape shape, double ratio) const
+{
+  switch(shape) {
+    case SHAPE_CONICAL:
+      return 0.2 + 0.8 * ratio;
+    case SHAPE_SPHERICAL:
+      return 0.2 + 0.8 * sin(M_PI * ratio);
+    case SHAPE_HEMISPHERICAL:
+      return 0.2 + 0.8 * sin(0.5 * M_PI * ratio);
+    case SHAPE_CYLINDRICAL:
+      return 1.0;
+    case SHAPE_TAPERED_CYLINDRICAL:
+      return 0.5 + 0.5 * ratio;
+    case SHAPE_FLAME:
+      return ratio <= 0.7 ? ratio / 0.7 : (1.0 - ratio) / 0.3;
+    case SHAPE_INVERSE_CONICAL:
+      return 1.0 - 0.8 * ratio;
+    case SHAPE_TEND_FLAME:
+      return ratio <= 0.7 ? 0.5 + 0.5 * ratio / 0.7 : 0.5 + 0.5 * ( 1.0 - ratio ) / 0.3;
+    case SHAPE_ENVELOPE:
+      if (ratio < (1 - prune_width_peak) && (ratio > 0.0))
+         return pow(ratio/(1 - prune_width_peak), prune_power_high);
+      if (ratio >= (1 - prune_width_peak) && ratio < 1.0)
+        return pow((1 - ratio)/prune_width_peak, prune_power_low);
+      return 0;
+  }
+  return 1.0;
+}
+
 
 double
 taper(double taper, double radius, double segment, double length)
@@ -971,7 +977,7 @@ if (myPeekMessage())
           downangle_child = 
             tree.stem[lvl+1].downangle + trandom2(
               tree.stem[lvl+1].downanglev *
-              ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/(length-(lvl==0?length_base:0.0)))) );
+              ( 1.0 - 2.0 * tree.shapeRatio(SHAPE_CONICAL, (length-offsetChild)/(length-(lvl==0?length_base:0.0)))) );
         }
         m3 = matrixRotate(Vector(1.0, 0.0, 0.0), downangle_child) * m3;
 
@@ -980,12 +986,12 @@ if (myPeekMessage())
           double length_base = tree.basesize * tree.scale;
           length_child = length *
                          length_child_max *
-                         shapeRatio(tree.shape, (length - offset_child)/(length-length_base));
+                         tree.shapeRatio(tree.shape, (length - offset_child)/(length-length_base));
         } else {
           length_child = length_child_max * ( length /*_parent*/ - 0.6 * offset_child );
         }
 
-        render(m3, tree, lvl+1, length, radius_z, offsetChild);
+        render(m3, tree, lvl+1, length, radius, offsetChild);
 if (myPeekMessage())
   return;
 
@@ -1027,7 +1033,7 @@ if (myPeekMessage())
           downangle_child = 
             tree.stem[ll].downangle + 
               trandom2(tree.stem[ll].downanglev *
-              ( 1.0 - 2.0 * shapeRatio(SHAPE_CONICAL, (length-offsetChild)/length)) );
+              ( 1.0 - 2.0 * tree.shapeRatio(SHAPE_CONICAL, (length-offsetChild)/length)) );
         }
         m3 = matrixRotate(Vector(1.0, 0.0, 0.0), downangle_child) * m3;
 
@@ -1114,8 +1120,8 @@ if (myPeekMessage())
     double length_base = tree.basesize * tree.scale;
     length = length_parent *                                                   // 121.94
              length_child_max *
-             shapeRatio(tree.shape, (length_parent - offset_child)/
-                                    (length_parent-length_base) );
+             tree.shapeRatio(tree.shape, (length_parent - offset_child)/
+                                         (length_parent-length_base) );
   } else {
     length = length_child_max * (length_parent - 0.6 * offset_child);          // 122.1
   }
@@ -1168,7 +1174,7 @@ if (myPeekMessage())
   if ( lvl+1==tree.stem.size() || lvl+1==tree.levels ) {
     leaves_per_branch =
       tree.leaves * 
-      shapeRatio(SHAPE_TAPERED_CYLINDRICAL, offset_child/length_parent) * tree.leafquality;
+      tree.shapeRatio(SHAPE_TAPERED_CYLINDRICAL, offset_child/length_parent) * tree.leafquality;
     ldist = length / leaves_per_branch;
   }
   
