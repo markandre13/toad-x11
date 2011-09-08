@@ -13,15 +13,9 @@ using namespace std;
 
 #include <GL/gl.h>
 
-#ifndef __SSE__
-#error "D-oh!"
-#endif
-
-// -mmmx  -msse  -msse2 -msse3 -mssse3 -msse4.1
-// -msse4.2 -msse4 -mavx -maes -mpclmul -msse4a -m3dnow
-
-
+#ifdef __SSE__
 #include <xmmintrin.h>
+#endif
 
 float Matrix::_identity[16] = 
 {
@@ -43,7 +37,7 @@ Matrix::Matrix(const Matrix &matrix)
 
 Matrix::Matrix(const float *matrix)
 {
-	      real  *i = _matrix;
+        real  *i = _matrix;
 	const float *j =  matrix;
 	for (int k=0; k<16; i++,j++,k++)
 		*i = *j;
@@ -51,7 +45,7 @@ Matrix::Matrix(const float *matrix)
 
 Matrix::Matrix(const double *matrix)
 {
-	      real   *i = _matrix;
+	real   *i = _matrix;
 	const double *j =  matrix;
 	for (int k=0; k<16; i++,j++,k++)
 		*i = *j;
@@ -72,61 +66,42 @@ Matrix::Matrix(const unsigned int glMatrix)
 	}
 }
 
-#if 0
-Matrix::Matrix(const string &str)
-{
-	#ifndef NDEBUG
-	const int n = 
-	#endif
-		atoc(str,atof,"+-eE.0123456789",_matrix+0,_matrix+16);
-		
-	assert(n==16);
-}
-#endif
-
 Matrix &
 Matrix::operator=(const Matrix &m)
 {
-	memcpy(_matrix,m._matrix,sizeof(_matrix));
-
-	return *this;
+  memcpy(_matrix,m._matrix,sizeof(_matrix));
+  return *this;
 }
 
 Matrix 
 Matrix::operator *(const Matrix &m) const
 {
-#if 0
-void
-mmul_sse(const float * a, const float * b, float * r)
-{
+#ifdef __SSE__
+  Matrix r;
   __m128 a_line, b_line, r_line;
   for (int i=0; i<16; i+=4) {
-    // unroll the first step of the loop to avoid having to initialize r_line to zero
-    a_line = _mm_load_ps(a);         // a_line = vec4(column(a, 0))
-    b_line = _mm_set1_ps(b[i]);      // b_line = vec4(b[i][0])
-    r_line = _mm_mul_ps(a_line, b_line); // r_line = a_line * b_line
+    a_line = _mm_load_ps(m._matrix);
+    b_line = _mm_set1_ps(_matrix[i]);
+    r_line = _mm_mul_ps(a_line, b_line);
     for (int j=1; j<4; j++) {
-      a_line = _mm_load_ps(&a[j*4]); // a_line = vec4(column(a, j))
-      b_line = _mm_set1_ps(b[i+j]);  // b_line = vec4(b[i][j])
-                                     // r_line += a_line * b_line
+      a_line = _mm_load_ps(&m._matrix[j<<2]);
+      b_line = _mm_set1_ps(_matrix[i+j]);
       r_line = _mm_add_ps(_mm_mul_ps(a_line, b_line), r_line);
     }
-    _mm_store_ps(&r[i], r_line);     // r[i] = r_line
+    _mm_store_ps(&r._matrix[i], r_line);
   }
-}
-
+  return r;
+#else
+  Matrix prod;
+  for (int c=0;c<4;c++)
+    for (int r=0;r<4;r++)
+      prod.set(c,r,
+	get(c,0)*m.get(0,r) +
+	get(c,1)*m.get(1,r) +
+	get(c,2)*m.get(2,r) +
+	get(c,3)*m.get(3,r));
+  return prod;
 #endif
-	Matrix prod;
-
-	for (int c=0;c<4;c++)
-		for (int r=0;r<4;r++)
-			prod.set(c,r,
-				get(c,0)*m.get(0,r) +
-				get(c,1)*m.get(1,r) +
-				get(c,2)*m.get(2,r) +
-				get(c,3)*m.get(3,r));
-
-	return prod;
 }
 
 Matrix &
@@ -222,51 +197,6 @@ Matrix::glLoadMatrix() const
 	glLoadMatrixf(_matrix);
 }
 
-
-#if 0
-float const *
-Matrix::row(const unsigned int row) const
-{
-	static float r[4];
-
-	for (int c=0;c<4;c++)
-		r[c] = _matrix[c*4+row];
-	
-	return r;
-}
-
-float const *
-Matrix::column(const unsigned int column) const
-{
-	return _matrix+column*4;
-}
-
-#endif
-
-#if 0
-ostream &
-Matrix::writePov(ostream &os) const
-{
-	UnMatrix um = unmatrix();
-
-	os << "scale < ";
-	  os << um[U_SCALEX] << ',';
-	  os << um[U_SCALEY] << ',';
-	  os << um[U_SCALEZ] << " > ";
-
-  	os << "rotate < ";
-	  os << um[U_ROTATEX]/M_PI_DEG << ',';
-	  os << um[U_ROTATEY]/M_PI_DEG << ',';
-	  os << um[U_ROTATEZ]/M_PI_DEG << " > ";
-
-  	os << "translate < ";
-	  os << um[U_TRANSX] << ',';
-	  os << um[U_TRANSY] << ',';
-	  os << um[U_TRANSZ] << " > ";
-
-	return os;
-}
-#endif
 
 /*! 
 	\brief		Uniform scale transformation matrix
@@ -504,16 +434,8 @@ Matrix::transpose() const
 }
 
 //
-// From Mesa-2.2\src\glu\project.c
-//
-
-//
 // Compute the inverse of a 4x4 matrix.  Contributed by scotter@lafn.org
 //
-
-void 
-Matrix::invertMatrixGeneral( const float *m, float *out )
-{
 
 /* NB. OpenGL Matrices are COLUMN major. */
 #define MAT(m,r,c) (m)[(c)*4+(r)]
@@ -536,6 +458,9 @@ Matrix::invertMatrixGeneral( const float *m, float *out )
 #define m43 MAT(m,3,2)
 #define m44 MAT(m,3,3)
 
+void 
+Matrix::invertMatrixGeneral( const float *m, float *out )
+{
    float det;
    float d12, d13, d23, d24, d34, d41;
    float tmp[16]; /* Allow out == in. */
@@ -597,24 +522,6 @@ Matrix::invertMatrixGeneral( const float *m, float *out )
 
       memcpy(out, tmp, 16*sizeof(float));
    }
-
-#undef m11
-#undef m12
-#undef m13
-#undef m14
-#undef m21
-#undef m22
-#undef m23
-#undef m24
-#undef m31
-#undef m32
-#undef m33
-#undef m34
-#undef m41
-#undef m42
-#undef m43
-#undef m44
-#undef MAT
 }
 
 
@@ -626,28 +533,7 @@ Matrix::invertMatrixGeneral( const float *m, float *out )
 void 
 Matrix::invertMatrix( const float *m, float *out )
 {
-/* NB. OpenGL Matrices are COLUMN major. */
-#define MAT(m,r,c) (m)[(c)*4+(r)]
-
-/* Here's some shorthand converting standard (row,column) to index. */
-#define m11 MAT(m,0,0)
-#define m12 MAT(m,0,1)
-#define m13 MAT(m,0,2)
-#define m14 MAT(m,0,3)
-#define m21 MAT(m,1,0)
-#define m22 MAT(m,1,1)
-#define m23 MAT(m,1,2)
-#define m24 MAT(m,1,3)
-#define m31 MAT(m,2,0)
-#define m32 MAT(m,2,1)
-#define m33 MAT(m,2,2)
-#define m34 MAT(m,2,3)
-#define m41 MAT(m,3,0)
-#define m42 MAT(m,3,1)
-#define m43 MAT(m,3,2)
-#define m44 MAT(m,3,3)
-
-   register float det;
+   float det;
    float tmp[16]; /* Allow out == in. */
 
    if( m41 != 0. || m42 != 0. || m43 != 0. || m44 != 1. ) {
@@ -711,22 +597,4 @@ Matrix::invertMatrix( const float *m, float *out )
 
       memcpy(out, tmp, 16*sizeof(float));
   }
-
-#undef m11
-#undef m12
-#undef m13
-#undef m14
-#undef m21
-#undef m22
-#undef m23
-#undef m24
-#undef m31
-#undef m32
-#undef m33
-#undef m34
-#undef m41
-#undef m42
-#undef m43
-#undef m44
-#undef MAT
 }

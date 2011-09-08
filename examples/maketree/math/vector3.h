@@ -32,6 +32,7 @@
 
 #include <iosfwd>
 #include <string>
+#include <GL/gl.h>
 
 //#include <glt/config.h>
 //#include <math/real.h>
@@ -167,13 +168,21 @@ public:
 	Vector &vmax(const Vector &v);
 
 					/// Draw OpenGL vertex
-	void glVertex() const;
+	inline void glVertex() const {
+	  glVertex3fv(_vector);
+	}
 					/// Draw OpenGL normal
-	void glNormal() const;
+	inline void glNormal() const {
+	  glNormal3fv(_vector);
+	}
 					/// Draw OpenGL color
-	void glColor() const;
+	inline void glColor() const {
+	  glColor3fv(_vector);
+	}
 					/// Draw OpenGL texture co-ordinate
-	void glTexCoord() const;
+	void glTexCoord() const {
+	  glTexCoord3fv(_vector);
+	}
 
 					/// Write vector in Povray format
 	std::ostream &writePov(std::ostream &os) const;

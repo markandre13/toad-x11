@@ -6,14 +6,6 @@
 
 #include "matrix4.h"
 
-//#include <glt/gl.h>
-//#include <glt/glu.h>
-//#include <glt/viewport.h>
-
-//#include <misc/string.h>
-
-#include <GL/gl.h>
-
 #include <cassert>
 #include <cmath>
 
@@ -336,36 +328,6 @@ Vector::vmax(const Vector &v)
 	_vector[1] = max(_vector[1],v[1]);
 	_vector[2] = max(_vector[2],v[2]);
 	return *this;
-}
-
-/////////////////////////
-//
-// OpenGL
-
-//#include <glt/gl.h>
-
-void
-Vector::glVertex() const
-{
-	glVertex3fv(_vector);
-}
-
-void
-Vector::glNormal() const
-{
-	glNormal3fv(_vector);
-}
-
-void
-Vector::glColor() const
-{
-	glColor3fv(_vector);
-}
-
-void
-Vector::glTexCoord() const
-{
-	glTexCoord3fv(_vector);
 }
 
 ////////////////////////// F R I E N D S

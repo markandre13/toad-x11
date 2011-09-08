@@ -130,8 +130,8 @@ public:
 
 private:
 
-	float _matrix[16];
-	static float _identity[16];
+	float _matrix[16] __attribute__ ((aligned (16)));
+	static float _identity[16] __attribute__ ((aligned (16)));
 
 	inline void set(const int col,const int row,const float val) 
 	{ 
