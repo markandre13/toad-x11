@@ -229,9 +229,9 @@ Vector::length() const
 bool
 Vector::project(const Matrix &model,const Matrix &proj,const GltViewport &view)
 {
-	// TODO - No need to copy from x,y,z if real is GLdouble
+	// TODO - No need to copy from x,y,z if real is GLfloat
 	
-	GLdouble x,y,z;
+	GLfloat x,y,z;
 	GLint ret = gluProject(_vector[0],_vector[1],_vector[2],model,proj,view,&x,&y,&z);
 
 	_vector[0] = x;
@@ -347,41 +347,25 @@ Vector::vmax(const Vector &v)
 void
 Vector::glVertex() const
 {
-	#ifdef GLT_FAST_FLOAT
 	glVertex3fv(_vector);
-	#else
-	glVertex3dv(_vector);
-	#endif
 }
 
 void
 Vector::glNormal() const
 {
-	#ifdef GLT_FAST_FLOAT
 	glNormal3fv(_vector);
-	#else
-	glNormal3dv(_vector);
-	#endif
 }
 
 void
 Vector::glColor() const
 {
-	#ifdef GLT_FAST_FLOAT
 	glColor3fv(_vector);
-	#else
-	glColor3dv(_vector);
-	#endif
 }
 
 void
 Vector::glTexCoord() const
 {
-	#ifdef GLT_FAST_FLOAT
 	glTexCoord3fv(_vector);
-	#else
-	glTexCoord3dv(_vector);
-	#endif
 }
 
 ////////////////////////// F R I E N D S

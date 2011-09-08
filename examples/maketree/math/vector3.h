@@ -37,7 +37,7 @@
 //#include <math/real.h>
 
 #include <cmath>
-typedef double real;
+typedef float real;
 #define M_PI_DEG        (M_PI/180.0)
 
 class Matrix;

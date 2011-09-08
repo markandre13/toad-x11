@@ -13,10 +13,17 @@ using namespace std;
 
 #include <GL/gl.h>
 
-//#include <misc/string.h>
-//#include <math/umatrix.h>
+#ifndef __SSE__
+#error "D-oh!"
+#endif
 
-double Matrix::_identity[16] = 
+// -mmmx  -msse  -msse2 -msse3 -mssse3 -msse4.1
+// -msse4.2 -msse4 -mavx -maes -mpclmul -msse4a -m3dnow
+
+
+#include <xmmintrin.h>
+
+float Matrix::_identity[16] = 
 {
    1.0, 0.0, 0.0, 0.0,
    0.0, 1.0, 0.0, 0.0,
@@ -55,10 +62,10 @@ Matrix::Matrix(const unsigned int glMatrix)
 	switch (glMatrix)
 	{
 	case GL_MODELVIEW_MATRIX:
-		glGetDoublev(GL_MODELVIEW_MATRIX,_matrix);
+		glGetFloatv(GL_MODELVIEW_MATRIX,_matrix);
 		break;
 	case GL_PROJECTION_MATRIX:
-		glGetDoublev(GL_PROJECTION_MATRIX,_matrix);
+		glGetFloatv(GL_PROJECTION_MATRIX,_matrix);
 		break;
 	default:
 		break;
@@ -88,6 +95,27 @@ Matrix::operator=(const Matrix &m)
 Matrix 
 Matrix::operator *(const Matrix &m) const
 {
+#if 0
+void
+mmul_sse(const float * a, const float * b, float * r)
+{
+  __m128 a_line, b_line, r_line;
+  for (int i=0; i<16; i+=4) {
+    // unroll the first step of the loop to avoid having to initialize r_line to zero
+    a_line = _mm_load_ps(a);         // a_line = vec4(column(a, 0))
+    b_line = _mm_set1_ps(b[i]);      // b_line = vec4(b[i][0])
+    r_line = _mm_mul_ps(a_line, b_line); // r_line = a_line * b_line
+    for (int j=1; j<4; j++) {
+      a_line = _mm_load_ps(&a[j*4]); // a_line = vec4(column(a, j))
+      b_line = _mm_set1_ps(b[i+j]);  // b_line = vec4(b[i][j])
+                                     // r_line += a_line * b_line
+      r_line = _mm_add_ps(_mm_mul_ps(a_line, b_line), r_line);
+    }
+    _mm_store_ps(&r[i], r_line);     // r[i] = r_line
+  }
+}
+
+#endif
 	Matrix prod;
 
 	for (int c=0;c<4;c++)
@@ -113,7 +141,7 @@ Matrix::operator*=(const Matrix &m)
 Vector    
 Matrix::operator*(const Vector &v) const
 {
-	double prod[4] = { 0,0,0,0 };
+	float prod[4] = { 0,0,0,0 };
 
 	for (int r=0;r<4;r++)
 	{
@@ -123,7 +151,7 @@ Matrix::operator*(const Vector &v) const
 		prod[r] += get(3,r);
 	}
 
-	double div = 1.0 / prod[3];
+	float div = 1.0 / prod[3];
 
 	return Vector(prod[0]*div,prod[1]*div,prod[2]*div);
 }
@@ -131,7 +159,7 @@ Matrix::operator*(const Vector &v) const
 void 
 Matrix::reset()
 {
-	memcpy(_matrix,_identity,16*sizeof(double));
+	memcpy(_matrix,_identity,16*sizeof(float));
 }
 
 void 
@@ -146,14 +174,14 @@ Matrix::isIdentity() const
 	return !memcmp(_matrix,_identity,sizeof(_matrix));
 }
 
-const double & 
+const float & 
 Matrix::operator[](const int i) const
 {
 	assert(i>=0 && i<16);
 	return _matrix[i];
 }
 
-double & 
+float & 
 Matrix::operator[](const int i)
 {
 	assert(i>=0 && i<16);
@@ -172,12 +200,12 @@ Matrix::operator!=(const Matrix &m) const
 	return memcmp(_matrix,m._matrix,sizeof(_matrix))!=0;
 }
 
-Matrix::operator double *()
+Matrix::operator float *()
 {
 	return _matrix;
 }
 
-Matrix::operator const double *() const
+Matrix::operator const float *() const
 {
 	return _matrix;
 }
@@ -185,21 +213,21 @@ Matrix::operator const double *() const
 void
 Matrix::glMultMatrix() const
 {
-	glMultMatrixd(_matrix);
+	glMultMatrixf(_matrix);
 }
 
 void 
 Matrix::glLoadMatrix() const
 {
-	glLoadMatrixd(_matrix);
+	glLoadMatrixf(_matrix);
 }
 
 
 #if 0
-double const *
+float const *
 Matrix::row(const unsigned int row) const
 {
-	static double r[4];
+	static float r[4];
 
 	for (int c=0;c<4;c++)
 		r[c] = _matrix[c*4+row];
@@ -207,7 +235,7 @@ Matrix::row(const unsigned int row) const
 	return r;
 }
 
-double const *
+float const *
 Matrix::column(const unsigned int column) const
 {
 	return _matrix+column*4;
@@ -245,7 +273,7 @@ Matrix::writePov(ostream &os) const
 	\ingroup	Math
 */
 
-Matrix matrixScale(const double sf)
+Matrix matrixScale(const float sf)
 {
 	Matrix scale;
 
@@ -311,21 +339,21 @@ Matrix matrixTranslate(const real x,const real y,const real z)
 	\param		angle	Angle in degrees
 */
 
-Matrix matrixRotate(const Vector axis, const double angle)
+Matrix matrixRotate(const Vector axis, const float angle)
 {
 	Matrix rotate;
 
 	// Page 466, Graphics Gems
 
-	double s = sin(angle*M_PI_DEG);
-	double c = cos(angle*M_PI_DEG);
-	double t = 1 - c;
+	float s = sin(angle*M_PI_DEG);
+	float c = cos(angle*M_PI_DEG);
+	float t = 1 - c;
 
 	Vector ax = axis/sqrt(axis.norm());
 
-	double x = ax[0];
-	double y = ax[1];
-	double z = ax[2];
+	float x = ax[0];
+	float y = ax[1];
+	float z = ax[2];
 
 	rotate.set(0,0,t*x*x+c);
 	rotate.set(1,0,t*y*x+s*z);
@@ -349,14 +377,14 @@ Matrix matrixRotate(const Vector axis, const double angle)
 	\param		elevation	North-South degrees
 */
 
-Matrix matrixRotate(const double azimuth, const double elevation)
+Matrix matrixRotate(const float azimuth, const float elevation)
 {
 	Matrix rotate;
 
-	double ca = cos(azimuth*M_PI_DEG);
-	double sa = sin(azimuth*M_PI_DEG);
-	double cb = cos(elevation*M_PI_DEG);
-	double sb = sin(elevation*M_PI_DEG);
+	float ca = cos(azimuth*M_PI_DEG);
+	float sa = sin(azimuth*M_PI_DEG);
+	float cb = cos(elevation*M_PI_DEG);
+	float sb = sin(elevation*M_PI_DEG);
 
 	rotate.set(0,0,cb);
 	rotate.set(1,0,0);
@@ -447,7 +475,7 @@ operator>>(std::istream &is,Matrix &m)
 	for (int r=0;r<4;r++)
 		for (int c=0;c<4;c++)
 		{
-			double tmp;
+			float tmp;
 			is >> tmp;
 			m.set(c,r,tmp);
 		}
@@ -484,7 +512,7 @@ Matrix::transpose() const
 //
 
 void 
-Matrix::invertMatrixGeneral( const double *m, double *out )
+Matrix::invertMatrixGeneral( const float *m, float *out )
 {
 
 /* NB. OpenGL Matrices are COLUMN major. */
@@ -508,9 +536,9 @@ Matrix::invertMatrixGeneral( const double *m, double *out )
 #define m43 MAT(m,3,2)
 #define m44 MAT(m,3,3)
 
-   double det;
-   double d12, d13, d23, d24, d34, d41;
-   double tmp[16]; /* Allow out == in. */
+   float det;
+   float d12, d13, d23, d24, d34, d41;
+   float tmp[16]; /* Allow out == in. */
 
    /* Inverse = adjoint / det. (See linear algebra texts.)*/
 
@@ -534,10 +562,10 @@ Matrix::invertMatrixGeneral( const double *m, double *out )
    /* Run singularity test. */
    if (det == 0.0) {
       /* printf("invert_matrix: Warning: Singular matrix.\n"); */
-	  memcpy(out,_identity,16*sizeof(double));
+	  memcpy(out,_identity,16*sizeof(float));
    }
    else {
-      double invDet = 1.0 / det;
+      float invDet = 1.0 / det;
       /* Compute rest of inverse. */
       tmp[0] *= invDet;
       tmp[1] *= invDet;
@@ -567,7 +595,7 @@ Matrix::invertMatrixGeneral( const double *m, double *out )
       tmp[14] = -(m31 * d24 + m32 * d41 + m34 * d12) * invDet;
       tmp[15] =  (m31 * d23 - m32 * d13 + m33 * d12) * invDet;
 
-      memcpy(out, tmp, 16*sizeof(double));
+      memcpy(out, tmp, 16*sizeof(float));
    }
 
 #undef m11
@@ -596,7 +624,7 @@ Matrix::invertMatrixGeneral( const double *m, double *out )
 //
 
 void 
-Matrix::invertMatrix( const double *m, double *out )
+Matrix::invertMatrix( const float *m, float *out )
 {
 /* NB. OpenGL Matrices are COLUMN major. */
 #define MAT(m,r,c) (m)[(c)*4+(r)]
@@ -619,8 +647,8 @@ Matrix::invertMatrix( const double *m, double *out )
 #define m43 MAT(m,3,2)
 #define m44 MAT(m,3,3)
 
-   register double det;
-   double tmp[16]; /* Allow out == in. */
+   register float det;
+   float tmp[16]; /* Allow out == in. */
 
    if( m41 != 0. || m42 != 0. || m43 != 0. || m44 != 1. ) {
       invertMatrixGeneral(m, out);
@@ -639,11 +667,11 @@ Matrix::invertMatrix( const double *m, double *out )
    /* Run singularity test. */
    if (det == 0.0) {
       /* printf("invert_matrix: Warning: Singular matrix.\n"); */
-      memcpy( out, _identity, 16*sizeof(double) );
+      memcpy( out, _identity, 16*sizeof(float) );
    }
    else {
-      double d12, d13, d23, d24, d34, d41;
-      register double im11, im12, im13, im14;
+      float d12, d13, d23, d24, d34, d41;
+      register float im11, im12, im13, im14;
 
       det= 1. / det;
 
@@ -681,7 +709,7 @@ Matrix::invertMatrix( const double *m, double *out )
       tmp[14] = -(m31 * d24 + m32 * d41 + m34 * d12);
       tmp[15] =  1.;
 
-      memcpy(out, tmp, 16*sizeof(double));
+      memcpy(out, tmp, 16*sizeof(float));
   }
 
 #undef m11

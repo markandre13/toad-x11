@@ -50,12 +50,12 @@
 
 class Matrix
 {
-	friend Matrix matrixScale(const double sf);
+	friend Matrix matrixScale(const float sf);
 	friend Matrix matrixScale(const Vector sf);
 	friend Matrix matrixTranslate(const Vector trans);
 	friend Matrix matrixTranslate(const real x,const real y,const real z);
-	friend Matrix matrixRotate(const Vector axis,const double angle);
-	friend Matrix matrixRotate(const double azimuth,const double elevation);
+	friend Matrix matrixRotate(const Vector axis,const float angle);
+	friend Matrix matrixRotate(const float azimuth,const float elevation);
 	friend Matrix matrixOrient(const Vector &x,const Vector &y,const Vector &z);
 	friend Matrix matrixOrient(const Vector &direction,const Vector &up);
 
@@ -97,14 +97,14 @@ public:
 	bool isIdentity() const;
 
 	/// Access i'th element of matrix
-	      double &operator[](const int i);
+	      float &operator[](const int i);
 	/// Access i'th element of matrix
-	const double &operator[](const int i) const;
+	const float &operator[](const int i) const;
 
 	/// Access as array
-	operator double * ();
+	operator float * ();
 	/// Access as array
-	operator const double * () const;
+	operator const float * () const;
 
 	/// Equality operator
 	bool operator==(const Matrix &) const;
@@ -118,7 +118,7 @@ public:
 	/// Calculate unmatrix
 //	UnMatrix unmatrix() const;
 	/// Calculate matrix determinant
-	double det() const;
+	float det() const;
 
 	/// Mult current OpenGL matrix 
 	void glMultMatrix() const;
@@ -130,61 +130,61 @@ public:
 
 private:
 
-	double _matrix[16];
-	static double _identity[16];
+	float _matrix[16];
+	static float _identity[16];
 
-	inline void set(const int col,const int row,const double val) 
+	inline void set(const int col,const int row,const float val) 
 	{ 
 		_matrix[col*4+row] = val;
 	}
 
-	inline double get(const int col,const int row) const
+	inline float get(const int col,const int row) const
 	{
 		return _matrix[col*4+row];
 	}
 
-	inline double &element(const int col,const int row) 
+	inline float &element(const int col,const int row) 
 	{
 		return _matrix[col*4+row];
 	}
 
 	// From Mesa-2.2\src\glu\project.c
 
-	static void invertMatrixGeneral( const double *m, double *out );
-	static void invertMatrix( const double *m, double *out );
+	static void invertMatrixGeneral( const float *m, float *out );
+	static void invertMatrix( const float *m, float *out );
 
 	// From Graphics Gems GEMSI\MATINV.C
 
-	double 
+	float 
 	det3x3
 	( 
-		const double a1, 
-		const double a2, 
-		const double a3, 
-		const double b1, 
-		const double b2, 
-		const double b3, 
-		const double c1, 
-		const double c2, 
-		const double c3 
+		const float a1, 
+		const float a2, 
+		const float a3, 
+		const float b1, 
+		const float b2, 
+		const float b3, 
+		const float c1, 
+		const float c2, 
+		const float c3 
 	) const;
 
-	double
+	float
 	det2x2
 	( 
-		const double a, 
-		const double b, 
-		const double c, 
-		const double d
+		const float a, 
+		const float b, 
+		const float c, 
+		const float d
 	) const;
 };
 
-Matrix matrixScale(const double sf);
+Matrix matrixScale(const float sf);
 Matrix matrixScale(const Vector sf);
 Matrix matrixTranslate(const Vector trans);
 Matrix matrixTranslate(const real x,const real y,const real z);
-Matrix matrixRotate(const Vector axis,const double angle);
-Matrix matrixRotate(const double azimuth,const double elevation);
+Matrix matrixRotate(const Vector axis,const float angle);
+Matrix matrixRotate(const float azimuth,const float elevation);
 Matrix matrixOrient(const Vector &x,const Vector &y,const Vector &z);
 Matrix matrixOrient(const Vector &direction,const Vector &up);
 
