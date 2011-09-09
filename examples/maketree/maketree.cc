@@ -906,7 +906,7 @@ if (myPeekMessage())
       splitangle += tree.stem[lvl].splitangle*segsplits_effective + 
                    trandom(tree.stem[lvl].splitanglev*segsplits_effective) -
                    declination;
-      m2 = matrixRotate(Vector(1.0, 0.0, 0.0), splitangle) * m2;
+      m2 = matrixRotate(Vector(0.0, 1.0, 0.0), splitangle) * m2;
       
       split_angle_correction += splitangle /  ((length-segment)/segmentLength);
     }
