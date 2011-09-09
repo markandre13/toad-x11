@@ -821,7 +821,8 @@ void renderSegment(Vector *ring0,
                    double &r,
                    double &lr,
                    double &segsplits_error,
-                   double split_angle_correction
+                   double split_angle_correction,
+                   bool &alternate
                    )
 {
 if (myPeekMessage())
@@ -935,7 +936,6 @@ if (myPeekMessage())
       off0 -= segment;
       off1 -= segment;
 
-      bool alternate = false;
       for(; off0<off1; off0+=dist) {
         double offsetChild = off0 + segment;
 
@@ -950,7 +950,7 @@ if (myPeekMessage())
           alternate = !alternate;
           r = tree.stem[lvl+1].rotate + trandom(tree.stem[lvl+1].rotatev);
           if (alternate)
-            r+=180.0;
+            r = -r;
         }
 
         // attraction up
@@ -1021,7 +1021,7 @@ if (myPeekMessage())
           alternate = !alternate;
           lr = tree.stem[ll].rotate + trandom(tree.stem[ll].rotatev);
           if (alternate)
-            lr+=180.0;
+            lr = -lr;
         }
 
         m3 = matrixRotate(Vector(0.0, 1.0, 0.0), lr) * m3;
@@ -1089,7 +1089,7 @@ if (myPeekMessage())
       tree, lvl, length_parent, radius_parent, offset_child,
       radius, length, segment+segmentLength, segmentLength, children, length_base, length_child_max,
       dist, ldist, leaves_per_branch,
-      r, lr, segsplits_error, split_angle_correction);
+      r, lr, segsplits_error, split_angle_correction, alternate);
 if (myPeekMessage())
   return;
   }
@@ -1183,11 +1183,12 @@ if (myPeekMessage())
   double segsplits_error = 0.0;
 
   Vector ring0[stem_res];
+  bool alternate = false;
   renderSegment(ring0, m,
     tree, lvl, length_parent, radius_parent, offset_child,
     radius, length, 0.0, segmentLength, children, length_base, length_child_max,
     dist, ldist, leaves_per_branch,
-    r, lr, segsplits_error, 0.0);
+    r, lr, segsplits_error, 0.0, alternate);
 }
 
 void 
