@@ -1195,9 +1195,13 @@ if (myPeekMessage())
     r, lr, segsplits_error, 0.0, alternate);
 }
 
-vector<Vector> normal;
-vector<Vector> points;
-vector<GLuint> faces;
+vector<Vector> branch_normals;
+vector<Vector> branch_points;
+vector<GLuint> branch_faces;
+
+vector<Vector> leaf_normals;
+vector<Vector> leaf_points;
+vector<GLuint> leaf_faces;
 
 Vector operator*(const Vector &v, const Matrix &m) {
   return m.operator*(v);
@@ -1218,37 +1222,31 @@ drawSegment(size_t &ring0, size_t &ring1, const Matrix &m, GLfloat l, GLfloat r,
   }
   
   if (initializeRing0) {
-    ring0 = normal.size();
+    ring0 = branch_normals.size();
     for(unsigned i=0; i<stem_res; ++i) {
-      normal.push_back( v[i] * m );
-      points.push_back( Vector(v[i][0]*r, 0, v[i][2]*r) * m);
+      branch_normals.push_back( v[i] * m );
+      branch_points.push_back( Vector(v[i][0]*r, 0, v[i][2]*r) * m);
     }
   }
 
-  ring1 = normal.size();
+  ring1 = branch_normals.size();
   for(unsigned i=0; i<stem_res; ++i) {
-    normal.push_back( v[i] * m );
-    points.push_back( Vector(v[i][0]*r, l, v[i][2]*r) * m);
+    branch_normals.push_back( v[i] * m );
+    branch_points.push_back( Vector(v[i][0]*r, l, v[i][2]*r) * m);
   }
   
   for(unsigned i=0; i<stem_res; ++i) {
     unsigned i1 = (i+1) % stem_res;
-    faces.push_back(ring0+i1);
-    faces.push_back(ring1+i1);
-    faces.push_back(ring1+i);
-    faces.push_back(ring0+i);
+    branch_faces.push_back(ring0+i1);
+    branch_faces.push_back(ring1+i1);
+    branch_faces.push_back(ring1+i);
+    branch_faces.push_back(ring0+i);
   }
-/*
-cout << "ring0="<<ring0<<", ring1="<<ring1<<endl;
-for(vector<Vector>::iterator i = points.begin(); i!=points.end(); ++i)
-  cout << *i << endl;
-*/
 }
 
 void
 drawLeaf(const Matrix &m, const TTree &tree)
 {
-return;
   double f = sqrt(tree.leafquality);
   double sy=0.035 * tree.leafscale / f;
   double sx=sy * tree.leafscalex;
@@ -1265,26 +1263,24 @@ return;
     Vector(0.0, 0.0, -1.0)
   };
 
-  if (exporter) {
-    exporter->begin(surface_leaf);
-    for(unsigned i=0; i<8; ++i) {
-      v[i] *= m;
-      exporter->vertex(v[i]);
-    }
-    exporter->end();
-  } else {
-    glDisable(GL_CULL_FACE);
-    glBegin(GL_POLYGON);
-    glColor3f(0.0, 1.0, 0.0);
-    v[8] *= m;
-    v[8].glNormal();
-    for(unsigned i=0; i<8; ++i) {
-      v[i] *= m;
-      v[i].glVertex();
-    }
-    glEnd();
-    glDisable(GL_CULL_FACE);
+  for(unsigned i=0; i<9; ++i) {
+    v[i] *= m;
   }
+  
+  size_t leaf = leaf_normals.size();
+  for(unsigned i=0; i<8; ++i) {
+    leaf_points.push_back(v[i]);
+    leaf_normals.push_back(v[8]);
+  }
+
+  unsigned faces[] = {
+    0, 1, 6, 7,
+    1, 2, 5, 6,
+    2, 3, 4, 6
+  };
+  
+  for(unsigned i=0; i<12; ++i)
+    leaf_faces.push_back(leaf+faces[i]);
 }
 
 
@@ -2014,7 +2010,6 @@ double distance = 2.0;
 void
 TViewer::glPaint()
 {
-//cout << "-------------------------------" << endl;
   glClearColor( 0.0, 0.0, 0.5, 0.0 );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -2034,7 +2029,6 @@ TViewer::glPaint()
   glMatrixMode( GL_MODELVIEW );
   glLoadIdentity();
 
-  glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   
@@ -2064,22 +2058,32 @@ TViewer::glPaint()
   if (noupdate) {
     noupdate = false;
   } else {
-    normal.clear();
-    points.clear();
-    faces.clear();
+    branch_normals.clear();
+    branch_points.clear();
+    branch_faces.clear();
+
+    leaf_normals.clear();
+    leaf_points.clear();
+    leaf_faces.clear();
 
     srand(0);
     render(Matrix(), tree);
   }
 
   glEnableClientState(GL_VERTEX_ARRAY);
-  glVertexPointer(3, GL_FLOAT, 0, points.front());
-  
   glEnableClientState(GL_NORMAL_ARRAY);
-  glNormalPointer(GL_FLOAT, 0, normal.front());
-  
-  glColor3f(0.6, 0.1, 0.0);
-  glDrawElements(GL_QUADS, faces.size(), GL_UNSIGNED_INT, &faces.front());
+
+  glColor3f(0.5, 0.0, 0.0);
+  glEnable(GL_CULL_FACE);
+  glVertexPointer(3, GL_FLOAT, 0, branch_points.front());
+  glNormalPointer(GL_FLOAT, 0, branch_normals.front());
+  glDrawElements(GL_QUADS, branch_faces.size(), GL_UNSIGNED_INT, &branch_faces.front());
+
+  glColor3f(0.0, 0.5, 0.0);
+  glDisable(GL_CULL_FACE);
+  glVertexPointer(3, GL_FLOAT, 0, leaf_points.front());
+  glNormalPointer(GL_FLOAT, 0, leaf_normals.front());
+  glDrawElements(GL_QUADS, leaf_faces.size(), GL_UNSIGNED_INT, &leaf_faces.front());
   
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
