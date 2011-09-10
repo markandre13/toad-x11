@@ -1,0 +1,181 @@
+// this is a generated file
+
+toad::TMenuLayout {
+  scope = "toplevel"
+  
+  toad::TMenuEntry  {
+    name = "file"
+    label = "File"
+    shortcut = ""
+    icon = ""
+    
+    toad::TMenuEntry  {
+      name = "new"
+      label = "New"
+      shortcut = ""
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "newview"
+      label = "New View"
+      shortcut = ""
+      icon = ""
+    }
+
+    toad::TMenuEntry  {
+      name = "open"
+      label = "Open"
+      shortcut = "CTRL+O"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "save"
+      label = "Save"
+      shortcut = "CTRL+S"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "save_as"
+      label = "Save As.."
+      shortcut = "CTRL+A"
+      icon = ""
+    }
+
+    toad::TMenuEntry  {
+      name = "export"
+      label = "Export.."
+      shortcut = ""
+      icon = ""
+    }
+
+    toad::TMenuEntry  {
+      name = "close"
+      label = "Close"
+      shortcut = "CTRL+W"
+      icon = ""
+    }
+    
+    toad::TMenuSeparator  { }
+    
+    toad::TMenuEntry  {
+      name = "quit"
+      label = "Quit"
+      shortcut = "CTRL+Q"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "newview"
+      label = "New View"
+      shortcut = ""
+      icon = ""
+    }
+  }
+  
+  toad::TMenuEntry  {
+    name = "edit"
+    label = "Edit"
+    shortcut = ""
+    icon = ""
+    
+    toad::TMenuEntry  {
+      name = "undo"
+      label = "Undo"
+      shortcut = "CTRL+Z"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "redo"
+      label = "Redo"
+      shortcut = "CTRL+Y"
+      icon = ""
+    }
+    
+    toad::TMenuSeparator  { }
+    
+    toad::TMenuEntry  {
+      name = "cut"
+      label = "Cut"
+      shortcut = "CTRL+X"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "copy"
+      label = "Copy"
+      shortcut = "CTRL+C"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "paste"
+      label = "Paste"
+      shortcut = "CTRL+V"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "delete"
+      label = "Delete"
+      shortcut = "Del"
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "select_all"
+      label = "Select All"
+      shortcut = ""
+      icon = ""
+    }
+    
+    toad::TMenuSeparator  { }
+    
+    toad::TMenuEntry  {
+      name = "preferences"
+      label = "Preferences"
+      shortcut = ""
+      icon = ""
+    }
+
+    toad::TMenuSeparator  { }
+    
+    toad::TMenuEntry  {
+      name = "search"
+      label = "Find"
+      shortcut = ""
+      icon = ""
+    }
+
+    toad::TMenuEntry  {
+      name = "search"
+      label = "Find Next"
+      shortcut = ""
+      icon = ""
+    }
+  }
+  
+  toad::TMenuEntry  {
+    name = "info"
+    label = "Info"
+    shortcut = ""
+    icon = ""
+    
+    toad::TMenuEntry  {
+      name = "about"
+      label = "About"
+      shortcut = ""
+      icon = ""
+    }
+    
+    toad::TMenuEntry  {
+      name = "copyright"
+      label = "Copyright"
+      shortcut = ""
+      icon = ""
+    }
+  }
+}
