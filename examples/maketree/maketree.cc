@@ -1585,6 +1585,8 @@ TMainWindow::menuOpen()
     //  setTitle(programname+ ": " + basename((char*)filename.c_str()));
     setTitle(programname+ ": " + filename);
     modified = false;
+    noupdate = false;
+    gl->invalidateWindow();
   } else {
       messageBox(NULL, 
                  programname+": Open..",
@@ -2076,7 +2078,7 @@ TViewer::glPaint()
   glEnableClientState(GL_NORMAL_ARRAY);
   glNormalPointer(GL_FLOAT, 0, normal.front());
   
-  glColor3f(0.8, 0.3, 0.0);
+  glColor3f(0.6, 0.1, 0.0);
   glDrawElements(GL_QUADS, faces.size(), GL_UNSIGNED_INT, &faces.front());
   
   glDisableClientState(GL_VERTEX_ARRAY);
