@@ -38,7 +38,7 @@
 //#include <math/real.h>
 
 #include <cmath>
-typedef float real;
+typedef GLfloat real;
 #define M_PI_DEG        (M_PI/180.0)
 
 class Matrix;
@@ -145,7 +145,7 @@ public:
 	void scale(const Vector &x);
 
 					/// Normalise the vector: |x| = 1.0
-	void normalize();
+	Vector& normalize();
 					/// Make x, y and z positive
 	void abs();
 					/// Find the dominant component: x, y or z

@@ -18,11 +18,12 @@
  *
  *
  * Requirements:
- * - Mesa 2.0 or OpenGL
+ * - OpenGL
  * - TOAD
  */
 
 #define _TOAD_PRIVATE
+#define GL_GLEXT_PROTOTYPES 1
 
 #include <toad/toad.hh>
 #include <toad/springlayout.hh>
@@ -35,6 +36,8 @@
 #include <toad/stl/vector.hh>
 #include <toad/io/binstream.hh>
 #include "glwindow.hh"
+
+#include <GL/glext.h>
 
 #include <cmath>
 
@@ -59,6 +62,7 @@ struct Exporter *exporter = 0;
 size_t surface_branch, surface_leaf;
 
 unsigned stem_res = 8;
+bool noupdate = false;
 
 // rendering the tree sometimes takes a while
 // strategy was to abort in case we had a new message, but that caused the tree
@@ -293,7 +297,7 @@ LWOF::write(ostream *stream)
 
 class TTree;
 
-static void drawSegment(Vector *ring0, Vector *ring1, const Matrix &m, GLfloat len, GLfloat radius, bool initializeRing0);
+static void drawSegment(size_t &ring0, size_t &ring1, const Matrix &m, GLfloat len, GLfloat radius, bool initializeRing0);
 static void drawLeaf(const Matrix &m, const TTree &tree);
 
 double trandom(double v)
@@ -800,7 +804,7 @@ render(const Matrix &m,
        double radius_parent=0.0,
        double offset_child=0.0);
 
-void renderSegment(Vector *ring0,
+void renderSegment(size_t &ring0,
                    const Matrix &m,
                    const TTree &tree,
                    unsigned lvl,
@@ -913,7 +917,7 @@ if (myPeekMessage())
 
     double radius_z = taper(tree.stem[lvl].taper, radius, segment, length);
 
-    Vector ring1[stem_res];
+    size_t ring1;
     drawSegment(ring0, ring1, m2, segmentLength, radius_z, i==0 && segment==0.0);
 
     // render children (merge this one with 'render leaves') !!!
@@ -1182,8 +1186,8 @@ if (myPeekMessage())
   double lr=0.0; // leaf rotation
   double segsplits_error = 0.0;
 
-  Vector ring0[stem_res];
   bool alternate = false;
+  size_t ring0;
   renderSegment(ring0, m,
     tree, lvl, length_parent, radius_parent, offset_child,
     radius, length, 0.0, segmentLength, children, length_base, length_child_max,
@@ -1191,61 +1195,60 @@ if (myPeekMessage())
     r, lr, segsplits_error, 0.0, alternate);
 }
 
+vector<Vector> normal;
+vector<Vector> points;
+vector<GLuint> faces;
+
+Vector operator*(const Vector &v, const Matrix &m) {
+  return m.operator*(v);
+}
+
 void 
-drawSegment(Vector *v0, Vector *v1, const Matrix &m, GLfloat l, GLfloat r, bool initializeRing0)
+drawSegment(size_t &ring0, size_t &ring1, const Matrix &m, GLfloat l, GLfloat r, bool initializeRing0)
 {
-  glColor3f(1.0, 0.0, 0.0);
-
-  GLfloat r0 = r;
-  GLfloat r1 = r;
-
   GLfloat s = 2.0 * M_PI / stem_res;
-
-  GLfloat s0, s1=0.0;
+  GLfloat s0=0.0;
+  
+  Vector v[stem_res];
   for(unsigned i=0; i<stem_res; ++i) {
-    s0 = s1;
-    s1 += s;
-
-    v1[i][0] = sin(s1)*r0;
-    v1[i][1] = l;
-    v1[i][2] = cos(s1)*r1;
-    
-    if (initializeRing0) {
-      v0[i][0] = v1[i][0];
-      v0[i][1] = 0.0;
-      v0[i][2] = v1[i][2];
-      v0[i] *= m;
+    s0 += s;
+    v[i][0] = sin(s0);
+    v[i][1] = 0;
+    v[i][2] = cos(s0);
+  }
+  
+  if (initializeRing0) {
+    ring0 = normal.size();
+    for(unsigned i=0; i<stem_res; ++i) {
+      normal.push_back( v[i] * m );
+      points.push_back( Vector(v[i][0]*r, 0, v[i][2]*r) * m);
     }
-    
-    v1[i] *= m;
+  }
+
+  ring1 = normal.size();
+  for(unsigned i=0; i<stem_res; ++i) {
+    normal.push_back( v[i] * m );
+    points.push_back( Vector(v[i][0]*r, l, v[i][2]*r) * m);
   }
   
   for(unsigned i=0; i<stem_res; ++i) {
     unsigned i1 = (i+1) % stem_res;
-    if (exporter) {
-      exporter->begin(surface_branch);
-      exporter->vertex(v0[i1]);
-      exporter->vertex(v1[i1]);
-      exporter->vertex(v1[i]);
-      exporter->vertex(v0[i]);
-      exporter->end();
-    } else {
-      glBegin(GL_POLYGON);
-      Vector n = planeNormal(v0[i], v1[i1], v1[i]);
-      n.normalize();
-      n.glNormal();
-      v0[i1].glVertex();
-      v1[i1].glVertex();
-      v1[i].glVertex();
-      v0[i].glVertex();
-      glEnd();
-    }
+    faces.push_back(ring0+i1);
+    faces.push_back(ring1+i1);
+    faces.push_back(ring1+i);
+    faces.push_back(ring0+i);
   }
+/*
+cout << "ring0="<<ring0<<", ring1="<<ring1<<endl;
+for(vector<Vector>::iterator i = points.begin(); i!=points.end(); ++i)
+  cout << *i << endl;
+*/
 }
 
 void
 drawLeaf(const Matrix &m, const TTree &tree)
 {
+return;
   double f = sqrt(tree.leafquality);
   double sy=0.035 * tree.leafscale / f;
   double sx=sy * tree.leafscalex;
@@ -2004,7 +2007,7 @@ TMainWindow::menuCopyright()
 // TViewer
 //--------------------------------------------------------------------
 
-double distance = 10.0;
+double distance = 2.0;
 
 void
 TViewer::glPaint()
@@ -2035,14 +2038,66 @@ TViewer::glPaint()
   
   glEnable(GL_LIGHTING);
   glEnable(GL_COLOR_MATERIAL);
-  glEnable(GL_LIGHT0);
 
-  glTranslatef(0.0, -5.0, -::distance);
+  GLfloat diffuse0[] = { 0.4, 0.4, 0.4 };
+  GLfloat ambient0[] = { 0.4, 0.4, 0.4 };
+  GLfloat lightPos0[] = { -100, 200, 0 };
+  glEnable(GL_LIGHT0);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
+  glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
+  glLightfv(GL_LIGHT0, GL_POSITION, lightPos0);
+/*
+  GLfloat diffuse1 = { 0,1,0 };
+  GLfloat ambient1 = { 0,1,0 };
+  GLfloat lightPos1 = { 200, 200, -200 };
+  glEnable(GL_LIGHT1);
+  glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1 };
+  glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1 };
+  glLightfv(GL_LIGHT1, GL_POSITION, lightPos1);
+*/
+  glTranslatef(0.0, -1.0, -::distance);
 
   observer.glMultMatrix();
 
-  glScaled(10.0,10.0,10.0);
+  if (noupdate) {
+    noupdate = false;
+  } else {
+    normal.clear();
+    points.clear();
+    faces.clear();
+
+    srand(0);
+    render(Matrix(), tree);
+  }
+
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glVertexPointer(3, GL_FLOAT, 0, points.front());
+  
+  glEnableClientState(GL_NORMAL_ARRAY);
+  glNormalPointer(GL_FLOAT, 0, normal.front());
+  
+  glColor3f(0.8, 0.3, 0.0);
+  glDrawElements(GL_QUADS, faces.size(), GL_UNSIGNED_INT, &faces.front());
+  
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+
 /*
+  GLuint id;
+  glGenBuffers(1, &id);
+  glBindBuffer(GL_ARRAY_BUFFER, id);
+  
+  // when we pass '0' instead of 'points' we can use glMapBuffer and glUnmapBuffer
+  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STREAM_DRAW);
+
+  glVertexPointer(3, GL_FLOAT, 0, 0);
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glDrawArrays(GL_QUADS, 0, 6); // glMultiDrawArrays
+  glDisableClientState(GL_VERTEX_ARRAY);       
+*/  
+
+/*
+  glScaled(10.0,10.0,10.0); // this is said to be slow for light stuff
   Matrix m;
   drawSegment(m, 0.1, 0.02);
   m = matrixTranslate(Vector(0,0.1,0)) * m;
@@ -2050,12 +2105,8 @@ TViewer::glPaint()
   drawSegment(m, 0.1, 0.02);
 */
 
-  srand(0);
-//  Matrix o = observer.inverse();
-
-  render(Matrix(), tree);
-if (myPeekMessage())
-  invalidateWindow();
+  if (myPeekMessage())
+    invalidateWindow();
 }
 
 void
@@ -2080,23 +2131,25 @@ TViewer::mouseEvent(const TMouseEvent &me)
         observer *= matrixRotate(me.y-y, x-me.x);
         x=me.x;
         y=me.y;
+        noupdate=true;
         invalidateWindow();
       }
       if (me.modifier() & MK_RBUTTON) {
         observer *= matrixTranslate((me.x-x)/10.0, (y-me.y)/10.0, 0.0);
         x=me.x;
         y=me.y;
+        noupdate=true;
         invalidateWindow();
       }
       break;
     case TMouseEvent::ROLL_UP:
-      ::distance += 0.2;
-//      observer *= matrixTranslate(0.0, 0.0, 1.0);
+      ::distance -= 0.02;
+      noupdate=true;
       invalidateWindow();
       break;
     case TMouseEvent::ROLL_DOWN:
-      ::distance -= 0.2;
-//      observer *= matrixTranslate(0.0, 0.0, -1.0);
+      ::distance += 0.02;
+      noupdate=true;
       invalidateWindow();
       break;
   }

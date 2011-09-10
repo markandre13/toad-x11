@@ -1,8 +1,8 @@
 PRGFILE		= maketree
 SRCS		= maketree.cc glwindow.cc math/matrix4.cc math/vector3.cc
 
-CXXFLAGS	= -I/usr/include/libxml2 -O3
-LIBS		= -lGL -lm -lxml2
+CXXFLAGS	= -I/usr/include/libxml2
+LIBS		= -lGL -lm -lxml2 -O3
 INCDIRS		=
 LIBDIRS		=
 

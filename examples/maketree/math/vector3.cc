@@ -166,19 +166,20 @@ Vector::scale(const Vector &x)
 	_vector[2] *= x._vector[2];
 }
 
-void
+Vector&
 Vector::normalize()
 {
 	const real mag = sqrt(norm());
 
 	if (mag == 0.0)
-		return;
+		return *this;
 
 	const real magInv = 1.0/mag;
 
 	_vector[0] *= magInv;
 	_vector[1] *= magInv;
 	_vector[2] *= magInv;
+	return *this;
 }
 
 void 
