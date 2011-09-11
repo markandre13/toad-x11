@@ -32,6 +32,7 @@
 #include <toad/action.hh>
 #include <toad/undomanager.hh>
 #include <toad/textfield.hh>
+#include <toad/combobox.hh>
 #include <toad/table.hh>
 #include <toad/stl/vector.hh>
 #include <toad/io/binstream.hh>
@@ -322,6 +323,71 @@ enum EShape {
   SHAPE_ENVELOPE
 };
 
+const char* shapenames[] = {
+  "conical",
+  "spherical",
+  "hemispherical",
+  "cylindrical",
+  "tapered cylindrical",
+  "flame",
+  "inverse conical",
+  "tend flame",
+  "envelope"
+};
+
+template <typename T>
+class TEnumSelectionModel:
+  public TSingleSelectionModel
+{
+  public:
+    operator T() const { return static_cast<T>(getRow()); }
+    T operator=(T v) { select(0, v); return v; }
+};
+
+class TCStringTableAdapter:
+  public TSimpleTableAdapter
+{
+    const char **array;
+    size_t n;
+  public:
+    TCStringTableAdapter(const char **);
+    size_t getRows() { return n; }
+    size_t getCols() { return 1; }
+    void tableEvent(TTableEvent &te);
+};
+
+TCStringTableAdapter::TCStringTableAdapter(const char **a)
+{
+  array = a;
+  n = 0;
+  for(; *a; ++a)
+    ++n;
+}
+
+void
+TCStringTableAdapter::tableEvent(TTableEvent &te)
+{
+  switch(te.type) {
+    case TTableEvent::GET_COL_SIZE: {
+      te.w = 0;
+      for(size_t i=0; i<n; ++i) {
+        TCoord w = getDefaultFont().getTextWidth(array[i]);
+        if (w>te.w)
+          te.w = w;
+      }
+    } break;
+    case TTableEvent::GET_ROW_SIZE:
+      te.h = getDefaultFont().getHeight()+2;
+      break;
+    case TTableEvent::PAINT:
+      renderBackground(te);
+      te.pen->drawString(1, 1, array[te.row]);
+      renderCursor(te);
+      break;
+  }
+}
+
+
 struct TIO
 {
   TIO() {
@@ -378,7 +444,6 @@ struct TStem
   double branchesdist;
 };
 
-
 struct TTree
 {
   TTree();
@@ -387,7 +452,8 @@ struct TTree
 
   // tree shape
     TTextModel species;
-    EShape shape;
+    // EShape shape;
+    TEnumSelectionModel<EShape> shape;
     TIntegerModel levels;
     TFloatModel scale;
     TFloatModel scalev;
@@ -490,6 +556,21 @@ TTree::assign(const TTree &t)
     d.branches = s.branches;
     d.branchesdist = s.branchesdist;
   }
+}
+
+template <typename T>
+void
+fetch(TIO &io, const char *name, TEnumSelectionModel<T> *v)
+{
+  if (io.out) {
+    (*io.out) << "    <param name='";
+    if (io.row>=0) (*io.out) << io.row;
+    (*io.out)<<name<<"' value='"<<*v<<"'/>\n";
+    return;
+  }
+  if (io.found || strcasecmp(io.name, name)!=0) return;
+  *v = static_cast<T>(atoi(io.value));
+  io.found=true;
 }
 
 void
@@ -995,7 +1076,7 @@ if (myPeekMessage())
           length_child = length_child_max * ( length /*_parent*/ - 0.6 * offset_child );
         }
 
-        render(m3, tree, lvl+1, length, radius, offsetChild);
+        render(m3, tree, lvl+1, length, radius_z, offsetChild);
 if (myPeekMessage())
   return;
 
@@ -1291,99 +1372,8 @@ TTree::TTree()
   levels.setMinimum(1);
   basesize.setMinimum(0.0);
   basesize.setMaximum(0.9999);
-#if 1
-  stem.push_back(TStem());
-  stem.push_back(TStem());
-  stem.push_back(TStem());
-  stem.push_back(TStem());
-  stem.push_back(TStem());
 
-  species = "test";
-  shape = SHAPE_TEND_FLAME;
-  levels = 3;
-  scale = 13.0;
-  scalev = 3.0;
-  basesize = 0.4;
-  basesplits = 0.0;
-  ratiopower = 1.2;
-  attractionup = 0.5;
-
-  ratio = 0.015;
-  flare = 0.6;
-  lobes = 5;
-  lobedepth = 0.07;
-  scale0 = 1.0;
-  scale0v = 0.2;
-
-  leaves = 25;
-  leafshape = 0;
-  leafscale = 0.17;
-  leafscalex = 1.0;
-  leafbend = 0.3;
-  leafstemlen = 0.5;
-  leafdistrib = 4;
-  
-  prune_ratio = 0.0;
-  prune_width = 0.5;
-  prune_width_peak = 0.5;
-  prune_power_low = 0.5;
-  prune_power_high = 0.5;
-  
-  leafquality = 1.0;
-  smooth = 0.5;
-
-  stem[0].length  = 1.0;
-  stem[0].lengthv = 0.0;
-  stem[0].taper   = 1.0;
-  stem[0].curveres = 3 ;
-  stem[0].curve = 0.0;
-  stem[0].curvev = 20.0;
-  stem[0].curveback = 0.0;
-  stem[0].segsplits = 1.0;
-  stem[0].splitangle = 20.0;
-  stem[0].splitanglev = 20.0;
-  stem[0].downangle = 0.0;
-  stem[0].downanglev = 0.0;
-  stem[0].rotate = 0.0;
-  stem[0].rotatev = 0.0;
-  stem[0].branches = 1;
-  stem[0].branchesdist = 0.0;
-/*
-  stem[1].length  = 1.0;
-  stem[1].lengthv = 0.0;
-  stem[1].taper   = 1.0;
-  stem[1].curveres = 5 ;
-  stem[1].curve = -40.0;
-  stem[1].curvev = 50.0;
-  stem[1].curveback = 0.0;
-  stem[1].segsplits = 0.0;
-  stem[1].splitangle = 0.0;
-  stem[1].splitanglev = 0.0;
-  stem[1].downangle = 60.0;
-  stem[1].downanglev = -50.0;
-  stem[1].rotate = 140.0;
-  stem[1].rotatev = 0.0;
-  stem[1].branches = 50.0;
-  stem[1].branchesdist = 1.0;
-
-  stem[2].length  = 0.6;
-  stem[2].lengthv = 0.0;
-  stem[2].taper   = 1.0;
-  stem[2].curveres = 3 ;
-  stem[2].curve = -40.0;
-  stem[2].curvev = 75.0;
-  stem[2].curveback = 0.0;
-  stem[2].segsplits = 0.0;
-  stem[2].splitangle = 0.0;
-  stem[2].splitanglev = 0.0;
-  stem[2].downangle = 45.0;
-  stem[2].downanglev = 10.0;
-  stem[2].rotate = 140.0;
-  stem[2].rotatev = 0.0;
-  stem[2].branches = 30.0;
-  stem[2].branchesdist = 1.0;
-*/
-#else
+  stem.push_back(TStem());
   stem.push_back(TStem());
   stem.push_back(TStem());
   stem.push_back(TStem());
@@ -1472,7 +1462,6 @@ TTree::TTree()
   stem[2].rotatev = 0.0;
   stem[2].branches = 30.0;
   stem[2].branchesdist = 1.0;
-#endif
 }
 
 class TTreeAdapter:
@@ -1828,12 +1817,17 @@ void TMainWindow::create()
   action = new TAction(this, "help|copyright");
   CONNECT(action->sigClicked, this,menuCopyright);
 */
-  // 'maketree --layout-editor'
+
+  // 'maketree --layout-editor' || make layout
   TWindow *dlg = new TWindow(this, "dlg");
   dlg->setBackground(TColor::DIALOG);
   TWindow *w;
   new TTextField(dlg, "species", &tree.species);
-//  new TTextField(dlg, "shape", &tree.shape);
+
+  TComboBox *cb = new TComboBox(dlg, "shape");
+  cb->setAdapter(new TCStringTableAdapter(shapenames));
+  cb->setSelectionModel(&tree.shape);
+
   new TTextField(dlg, "levels", &tree.levels);
   new TTextField(dlg, "scale", &tree.scale);
   new TTextField(dlg, "scalev", &tree.scalev);
@@ -1864,6 +1858,7 @@ void TMainWindow::create()
   dlg->loadLayout("dlg.atv");
 
   CONNECT(tree.levels.sigChanged, this, invalidateGL);
+  CONNECT(tree.shape.sigChanged, this, invalidateGL);
   CONNECT(tree.scale.sigChanged, this, invalidateGL);
   CONNECT(tree.scalev.sigChanged, this, invalidateGL);
   CONNECT(tree.basesize.sigChanged, this, invalidateGL);
