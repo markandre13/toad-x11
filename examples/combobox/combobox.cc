@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for X-Windows
- * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.de>  
+ * Copyright (C) 1996-2003 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -20,7 +20,7 @@
 
 #include <toad/toad.hh>
 #include <toad/combobox.hh>
-#include <toad/tablemodels.hh>
+// #include <toad/tablemodels.hh>
 
 using namespace toad;
 
@@ -60,16 +60,68 @@ static const char* name[] = {
   NULL
 };
 
+class TCStringTableAdapter:
+  public TSimpleTableAdapter
+{
+    const char **array;
+    size_t n;
+  public:
+    TCStringTableAdapter(const char **);
+    size_t getRows();
+    size_t getCols();
+    void tableEvent(TTableEvent &te);
+};
+
+TCStringTableAdapter::TCStringTableAdapter(const char **a)
+{
+  array = a;
+  n = 0;
+  for(; *a; ++a)
+    ++n;
+}
+
+size_t
+TCStringTableAdapter::getRows() {
+  return n;
+}
+
+size_t
+TCStringTableAdapter::getCols() {
+  return 1;
+}
+
+void
+TCStringTableAdapter::tableEvent(TTableEvent &te)
+{
+  switch(te.type) {
+    case TTableEvent::GET_COL_SIZE: {
+      te.w = 0;
+      for(size_t i=0; i<n; ++i) {
+        TCoord w = getDefaultFont().getTextWidth(array[i]);
+        if (w>te.w)
+          te.w = w;
+      }
+    } break;
+    case TTableEvent::GET_ROW_SIZE:
+      te.h = getDefaultFont().getHeight()+2;
+      break;
+    case TTableEvent::PAINT:
+      renderBackground(te);
+      te.pen->drawString(1, 1, array[te.row]);
+      renderCursor(te);
+      break;
+  }
+}
+
 TMyWindow::TMyWindow(TWindow* p, const string& t):
   super(p, t)
 {
-  TTableModel_CString *model = new TTableModel_CString(name);
-  TTableCellRenderer_CString *renderer = 
-    new TTableCellRenderer_CString(model);
   TComboBox *cb = new TComboBox(this, "combobox");
 
   cb->setShape(5,5,200,TSIZE_PREVIOUS);
-  cb->setRenderer(renderer);
+  cb->setAdapter(new TCStringTableAdapter(name));
+//  cb->setSelectionModel(new TSelectionModel());
+  cb->getSelectionModel()->select(0,0);
   
   connect(cb->sigSelection, this, &TMyWindow::selected, cb);
 }
@@ -77,11 +129,5 @@ TMyWindow::TMyWindow(TWindow* p, const string& t):
 void
 TMyWindow::selected(TComboBox *cb)
 {
-  TTableSelectionModel::iterator p, e;
-  p = cb->getSelectionModel()->begin();
-  e = cb->getSelectionModel()->end();
-  while (p!=e) {
-    cout << "selected: " << name[p.getY()] << endl;
-    ++p;
-  }
+  cout << "selected: " << cb->getSelectionModel()->getRow() << endl;
 }
