@@ -25,13 +25,6 @@
 #include <cstdio>
 #include <cstring>
 
-// #include "binstream.hh"
-
-// - force problems with non IEEE 754 environments...
-// - i guess it would be good to comile this file with GCCs -ffloat-store
-//   option [MAH]
-//#include <ieee754.h>
-
 using namespace toad;
 
 #ifdef TOAD_DEBUG
@@ -49,18 +42,14 @@ TBinStreamBase::~TBinStreamBase()
 /**
  * This class might help you to read and write binary data from and to 
  * C++ iostreams.<BR>
- * After <CODE>SetEndian(TInBinStream::BIG)</CODE> it's even possible
+ * After <CODE>setEndian(TInBinStream::BIG)</CODE> it's also possible
  * to exchange data with Java. See <CODE>java.io.DataOutputStream</CODE> 
  * and <CODE>java.io.DataInputStream</CODE> in the Java reference for
  * more information.
  * <P>
  * <H3>Attention!</H3>
- * <UL>
- *   <LI>This class is very alpha and only tested on x86 CPUs but
- *       fixed-point methods should work on common little- and big-endian
- *       CPUs.
- *   <LI>Floating-point methods will fail on non IEEE 754 compliant CPUs
- * </UL>
+ * The implementation here isn't very fast. It's just here to get the job
+ * done.
  */
 TInBinStream::TInBinStream(istream *stream)
 {
@@ -88,7 +77,7 @@ void TOutBinStream::write(const signed char* buffer, size_t count)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: string of %i bytes\n", this, count);
+    printf("TOutBinStream %p: string of %zi bytes\n", this, count);
   #endif
   out->write((char*)buffer, count);
 }
@@ -97,7 +86,7 @@ void TOutBinStream::write(const unsigned char* buffer, size_t count)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: string of %i bytes\n", this, count);
+    printf("TOutBinStream %p: string of %zi bytes\n", this, count);
   #endif
   out->write((char*)buffer, count);
 }
@@ -106,7 +95,7 @@ void TOutBinStream::write(signed char* buffer, size_t count)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: string of %i bytes\n", this, count);
+    printf("TOutBinStream %p: string of %zi bytes\n", this, count);
   #endif
   out->write((char*)buffer, count);
 }
@@ -115,7 +104,7 @@ void TOutBinStream::write(unsigned char* buffer, size_t count)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: string of %i bytes\n", this, count);
+    printf("TOutBinStream %p: string of %zi bytes\n", this, count);
   #endif
   out->write((char*)buffer, count);
 }
@@ -124,7 +113,7 @@ void TOutBinStream::writeString(const char* str)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: string of %i bytes\n", this, strlen(str));
+    printf("TOutBinStream %p: string of %zi bytes\n", this, strlen(str));
   #endif
   out->write(str, strlen(str));
 }
@@ -133,7 +122,7 @@ void TOutBinStream::writeString(const char* str, unsigned len)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: string of %i bytes\n", this, strlen(str));
+    printf("TOutBinStream %p: string of %zi bytes\n", this, strlen(str));
   #endif
   out->write(str,len);
 }
@@ -142,7 +131,7 @@ void TOutBinStream::writeString(const string &s)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: string of %i bytes\n", this, s.size());
+    printf("TOutBinStream %p: string of %zi bytes\n", this, s.size());
   #endif
   out->write(s.c_str(), s.size());
 }
@@ -179,7 +168,7 @@ TOutBinStream::writeByte(unsigned int d)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: byte %02x\n", this, d);
+    printf("TOutBinStream %p: byte %02x\n", this, d);
   #endif
   out->put(d);
 }
@@ -221,11 +210,11 @@ TInBinStream::readSWord()
 }
 
 void 
-TOutBinStream::writeWord(unsigned int v)
+TOutBinStream::writeWord(uint16_t v)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: word %04x\n", this, v);
+    printf("TOutBinStream %p: word %04x\n", this, v);
   #endif
   char buffer[2];
   switch(_endian) {
@@ -241,21 +230,21 @@ TOutBinStream::writeWord(unsigned int v)
   out->write(buffer,2);
 }
 
-unsigned int 
+uint16_t 
 TInBinStream::readWord()
 {
-  unsigned v;
+  uint16_t v;
   unsigned char buffer[2];
   in->read((char*)buffer,2);
   CHECK_IO
   switch(_endian) {
     case LITTLE:
       v = buffer[0] + 
-          (buffer[1]<<8);
+          (static_cast<uint16_t>(buffer[1])<<8);
       break;
     case BIG:
       v = buffer[1] +
-          (buffer[0]<<8);
+          (static_cast<uint16_t>(buffer[0])<<8);
       break;
   }
   return v;
@@ -289,11 +278,12 @@ TInBinStream::readSDWord()
   return d;
 }
 
-void TOutBinStream::writeDWord(unsigned long v)
+void
+TOutBinStream::writeDWord(uint32_t v)
 {
   #ifdef TOAD_DEBUG
   if (debug_output)
-    printf("TOutBinStream %08x: dword %08lx\n", this, v);
+    printf("TOutBinStream %p: dword %08x\n", this, (unsigned)v);
   #endif
   char buffer[4];
   switch(_endian) {
@@ -313,25 +303,90 @@ void TOutBinStream::writeDWord(unsigned long v)
   out->write(buffer, 4);
 }
 
-unsigned long 
+uint32_t
 TInBinStream::readDWord()
 {
-  unsigned long v;
+  uint32_t long v;
   unsigned char buffer[4];
   in->read((char*)buffer, 4);
   CHECK_IO
   switch(_endian) {
     case LITTLE:
       v = buffer[0] + 
-          (buffer[1]<<8) +
-          (buffer[2]<<16) +
-          (buffer[3]<<24);
+          (static_cast<uint32_t>(buffer[1])<<8) +
+          (static_cast<uint32_t>(buffer[2])<<16) +
+          (static_cast<uint32_t>(buffer[3])<<24);
           break;
     case BIG:
       v = buffer[3] + 
-          (buffer[2]<<8) +
-          (buffer[1]<<16) +
-          (buffer[0]<<24);
+          (static_cast<uint32_t>(buffer[2])<<8) +
+          (static_cast<uint32_t>(buffer[1])<<16) +
+          (static_cast<uint32_t>(buffer[0])<<24);
+          break;
+  }
+  return v;
+}
+
+void
+TOutBinStream::writeQWord(uint64_t v)
+{
+  #ifdef TOAD_DEBUG
+  if (debug_output)
+    printf("TOutBinStream %p: dword %08lx\n", this, (long unsigned)v);
+  #endif
+  char buffer[8];
+  switch(_endian) {
+    case LITTLE:
+      buffer[0]=v&255;
+      buffer[1]=(v>>8)&255;
+      buffer[2]=(v>>16)&255;
+      buffer[3]=(v>>24)&255;
+      buffer[4]=(v>>32)&255;
+      buffer[5]=(v>>40)&255;
+      buffer[6]=(v>>48)&255;
+      buffer[7]=(v>>56)&255;
+      break;
+    case BIG:
+      buffer[7]=v&255;
+      buffer[6]=(v>>8)&255;
+      buffer[5]=(v>>16)&255;
+      buffer[4]=(v>>24)&255;
+      buffer[3]=(v>>32)&255;
+      buffer[2]=(v>>40)&255;
+      buffer[1]=(v>>48)&255;
+      buffer[0]=(v>>56)&255;
+      break;
+  }
+  out->write(buffer, 8);
+}
+
+uint64_t
+TInBinStream::readQWord()
+{
+  uint64_t v;
+  unsigned char buffer[8];
+  in->read((char*)buffer, 8);
+  CHECK_IO
+  switch(_endian) {
+    case LITTLE:
+      v = buffer[0] + 
+          (static_cast<uint64_t>(buffer[1])<<8) +
+          (static_cast<uint64_t>(buffer[2])<<16) +
+          (static_cast<uint64_t>(buffer[3])<<24) +
+          (static_cast<uint64_t>(buffer[4])<<32) +
+          (static_cast<uint64_t>(buffer[5])<<40) +
+          (static_cast<uint64_t>(buffer[6])<<48) +
+          (static_cast<uint64_t>(buffer[7])<<56);
+          break;
+    case BIG:
+      v = buffer[7] + 
+          (static_cast<uint64_t>(buffer[6])<<8) +
+          (static_cast<uint64_t>(buffer[5])<<16) +
+          (static_cast<uint64_t>(buffer[4])<<24) +
+          (static_cast<uint64_t>(buffer[3])<<32) +
+          (static_cast<uint64_t>(buffer[2])<<40) +
+          (static_cast<uint64_t>(buffer[1])<<48) +
+          (static_cast<uint64_t>(buffer[0])<<56);
           break;
   }
   return v;
@@ -392,96 +447,92 @@ TInBinStream::compareString(const char* s,int len)
 }
 
 //---------------------------------------------------------------------------
-
-#if 0
-
-double TInBinStream::ReadDouble()
-{
-  union bug {
-    ieee754_double ieee;
-    byte buffer[8];
-  } data;
-  in->read(data.buffer, 8);
-  CHECK_IO
-  #if __BYTE_ORDER == __LITTLE_ENDIAN
-  if (_endian==BIG) {
-  #else
-  if (_endian==LITTLE) {
-  #endif
-    byte a;
-    a = data.buffer[0]; data.buffer[0] = data.buffer[7]; data.buffer[7] = a;
-    a = data.buffer[1]; data.buffer[1] = data.buffer[6]; data.buffer[6] = a;
-    a = data.buffer[2]; data.buffer[2] = data.buffer[5]; data.buffer[5] = a;
-    a = data.buffer[3]; data.buffer[3] = data.buffer[4]; data.buffer[4] = a;
-  } 
-  return data.ieee.d;
-}
-
-void TOutBinStream::WriteDouble(double v)
-{
-  union bug {
-    ieee754_double ieee;
-    byte buffer[8];
-  } data;
-  
-  data.ieee.d = v;
-  
-  #if __BYTE_ORDER == __LITTLE_ENDIAN
-  if (_endian==BIG) {
-  #else
-  if (_endian==LITTLE) {
-  #endif
-    byte a;
-    a = data.buffer[0]; data.buffer[0] = data.buffer[7]; data.buffer[7] = a;
-    a = data.buffer[1]; data.buffer[1] = data.buffer[6]; data.buffer[6] = a;
-    a = data.buffer[2]; data.buffer[2] = data.buffer[5]; data.buffer[5] = a;
-    a = data.buffer[3]; data.buffer[3] = data.buffer[4]; data.buffer[4] = a;
-  }
-  out->write(data.buffer, 8);
-}
-
+// public domain IEEE 754 unpack/unpack functions by Brian "Beej Jorgensen" Hall
+// just in case the machine we're running on doesn't do IEEE 754
 //---------------------------------------------------------------------------
 
-float TInBinStream::ReadFloat()
+#define pack754_32(f) (pack754((f), 32, 8))
+#define pack754_64(f) (pack754((f), 64, 11))
+#define unpack754_32(i) (unpack754((i), 32, 8))  
+#define unpack754_64(i) (unpack754((i), 64, 11))
+ 
+static uint64_t
+pack754(long double f, unsigned bits, unsigned expbits)
 {
-  union bug {
-    ieee754_float ieee;
-    byte buffer[4];
-  } data;
-  in->read(data.buffer, 4);
-  CHECK_IO
-  #if __BYTE_ORDER == __LITTLE_ENDIAN
-  if (_endian==BIG) {
-  #else
-  if (_endian==LITTLE) {
-  #endif
-    byte a;
-    a = data.buffer[0]; data.buffer[0] = data.buffer[3]; data.buffer[3] = a;
-    a = data.buffer[1]; data.buffer[1] = data.buffer[2]; data.buffer[2] = a;
-  }
-  return data.ieee.f;
+  long double fnorm;
+  int shift;
+  long long sign, exp, significand;
+  unsigned significandbits = bits - expbits - 1; // -1 for sign bit
+
+  if (f == 0.0) return 0; // get this special case out of the way 
+ 
+  // check sign and begin normalization
+  if (f < 0) { sign = 1; fnorm = -f; }
+  else { sign = 0; fnorm = f; }
+
+  // get the normalized form of f and track the exponent
+  shift = 0;
+  while(fnorm >= 2.0) { fnorm /= 2.0; shift++; }
+  while(fnorm < 1.0) { fnorm *= 2.0; shift--; }
+  fnorm = fnorm - 1.0;      
+
+  // calculate the binary form (non-float) of the significand data
+  significand = fnorm * ((1LL<<significandbits) + 0.5f);
+
+  // get the biased exponent
+  exp = shift + ((1<<(expbits-1)) - 1); // shift + bias
+
+  // return the final answer  
+  return (sign<<(bits-1)) | (exp<<(bits-expbits-1)) | significand;
 }
 
-void TOutBinStream::WriteFloat(float v)
+static long double
+unpack754(uint64_t i, unsigned bits, unsigned expbits)
 {
-  union bug {
-    ieee754_float ieee;
-    byte buffer[4];
-  } data;
-  
-  data.ieee.f = v;
-  
-  #if __BYTE_ORDER == __LITTLE_ENDIAN
-  if (_endian==BIG) {
-  #else
-  if (_endian==LITTLE) {
-  #endif
-    byte a;
-    a = data.buffer[0]; data.buffer[0] = data.buffer[3]; data.buffer[3] = a;
-    a = data.buffer[1]; data.buffer[1] = data.buffer[2]; data.buffer[2] = a;
-  }
-  
-  out->write(data.buffer, 4);
+    long double result;
+    long long shift;
+    unsigned bias;
+    unsigned significandbits = bits - expbits - 1; // -1 for sign bit
+
+    if (i == 0) return 0.0;
+
+    // pull the significand
+    result = (i&((1LL<<significandbits)-1)); // mask
+    result /= (1LL<<significandbits); // convert back to float
+    result += 1.0f; // add the one back on
+
+    // deal with the exponent
+    bias = (1<<(expbits-1)) - 1;
+    shift = ((i>>significandbits)&((1LL<<expbits)-1)) - bias;
+    while(shift > 0) { result *= 2.0; shift--; }
+    while(shift < 0) { result /= 2.0; shift++; }
+
+    // sign it
+    result *= (i>>(bits-1))&1? -1.0: 1.0;
+
+    return result;
 }
 
-#endif
+float
+TInBinStream::readFloat()
+{
+  return unpack754_32(readDWord());
+}
+
+void
+TOutBinStream::writeFloat(float v)
+{
+  writeDWord(pack754_32(v));
+}
+
+double
+TInBinStream::readDouble()
+{
+  return unpack754_64(readDWord());
+}
+
+void
+TOutBinStream::writeDouble(double v)
+{
+  writeDWord(pack754_64(v));
+}

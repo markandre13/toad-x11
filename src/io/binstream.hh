@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <string>
+#include <stdint.h>
 #include <toad/debug.hh>
 #include <toad/types.hh>
 
@@ -79,14 +80,12 @@ class TInBinStream:
     signed int readSByte();             // 8 bit signed integer
     unsigned int readByte();            // 8 bit unsigned integer
     signed int readSWord();             // 16 bit signed integer
-    unsigned int readWord();            // 16 bit unsigned integer
+    uint16_t readWord();            	// 16 bit unsigned integer
     signed long readSDWord();           // 32 bit signed integer
-    unsigned long readDWord();          // 32 bit unsigned integer
-#if 0
+    uint32_t readDWord();          	// 32 bit unsigned integer
+    uint64_t readQWord();		// 64 bit unsigned integer
     double readDouble();                // 64bit IEEE 754 coded floating-point
     float readFloat();                  // 32bit IEEE 754 coded floating-point
-#endif
-
     int readInt() { return readSDWord(); }
 };
 
@@ -111,14 +110,12 @@ class TOutBinStream:
     void writeSByte(signed int);        // 8bit signed integer
     void writeByte(unsigned int);       // 8bit unsigned integer
     void writeSWord(signed int);        // 16bit signed integer
-    void writeWord(unsigned int);       // 16bit unsigned integer
+    void writeWord(uint16_t);           // 16bit unsigned integer
     void writeSDWord(signed long);      // 32bit signed integer
-    void writeDWord(unsigned long);     // 32bit unsigned integer
-#if 0
+    void writeDWord(uint32_t);          // 32bit unsigned integer
+    void writeQWord(uint64_t);          // 64bit unsigned integer
     void writeDouble(double);           // 64bit IEEE 754 coded floating-point
     void writeFloat(float);             // 32bit IEEE 754 coded floating-point
-#endif
-
     void writeString(const char*, unsigned len);
     void writeString(const char*);
     void writeString(const string&);
