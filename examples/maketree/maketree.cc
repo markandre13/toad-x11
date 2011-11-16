@@ -1,6 +1,6 @@
 /*
  * MakeTree
- * Copyright (C) 2010 by Mark-Andre Hopf <mhopf@mark13.org>
+ * Copyright (C) 2011 by Mark-Andre Hopf <mhopf@mark13.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -65,6 +65,11 @@ size_t surface_branch, surface_leaf;
 unsigned stem_res = 8;
 bool noupdate = false;
 
+// branch & leaf
+vector<Vector> normals[2];
+vector<Vector> points[2];
+vector<GLuint> faces[2];
+
 // rendering the tree sometimes takes a while
 // strategy was to abort in case we had a new message, but that caused the tree
 // not being rendered sometimes. more time required to fix this. so here's a
@@ -79,6 +84,7 @@ bool myPeekMessage()
 
 struct Exporter
 {
+#if 0
   Exporter();
 
   size_t createSurface(const string &name, double r, double g, double b);
@@ -88,9 +94,9 @@ struct Exporter
     vertex(v[0], v[1], v[2]);
   }
   void end();
-
+#endif
   virtual void write(ostream *stream) = 0;
-
+#if 0
   size_t srfs_size, pols_size;
 
   struct point {
@@ -116,8 +122,10 @@ struct Exporter
   vector<surface> surfaces;
   
   polygon *current;
+#endif
 };
 
+#if 0
 Exporter::Exporter()
 {
   srfs_size = pols_size = 0;
@@ -187,6 +195,7 @@ Exporter::end()
 {
   current = NULL;
 }
+#endif
 
 struct WFOF:
   public Exporter
@@ -199,18 +208,73 @@ WFOF::write(ostream *stream)
 {
   ostream &out(*stream);
 
-  for(vector<point>::const_iterator p = points.begin(); p!=points.end(); ++p) {
-    out << "v " << p->x << ' ' << p->y << ' ' << p->z << endl;
+  out << "mtllib tree.mtl" << endl;
+  
+  out << "vt 0.000000 0.312500" << endl
+      << "vt 0.312500 0.000000" << endl
+      << "vt 0.625000 0.000000" << endl
+      << "vt 0.937500 0.156250" << endl
+      << "vt 1.000000 0.312500" << endl
+      << "vt 0.937500 0.468750" << endl
+      << "vt 0.625000 0.625000" << endl
+      << "vt 0.312500 0.625000" << endl;
+  
+  for(int i=0; i<2; ++i) {
+    for(vector<Vector>::const_iterator p = points[i].begin(); p!=points[i].end(); ++p) {
+      out << "v " << p->x() << ' ' << p->y() << ' ' << p->z() << endl;
+    }
   }
   
-  size_t cntr = 1;
-  for(vector<surface>::const_iterator p = surfaces.begin(); p != surfaces.end(); ++p) {
-    out << "usemtl " << p->name << endl;
-    for(vector<polygon>::const_iterator q = p->polygons.begin(); q != p->polygons.end(); ++q) {
-      out << 'f';
-      for(vector< vector<point>::size_type >::const_iterator r = q->points.begin(); r != q->points.end(); ++r) {
-        out << ' ' << (*r + 1);
+  for(int i=0; i<2; ++i) {
+    GLuint o = (i==0) ? 0 : points[0].size();
+    ++o;
+    out << "usemtl " << (i==0 ? "branches" : "leafs" ) << endl;
+    unsigned t=0;
+    for(vector<GLuint>::const_iterator j=faces[i].begin(); j!=faces[i].end();) {
+//      out << "f " << *(j++)+o << ' ' << *(j++)+o << ' ' << *(j++)+o << ' ' << *(j++)+o << endl;
+      out << "f ";
+      out << (*j) + o;
+      if (i==1) {
+        switch(t) {
+          case 0: out << "/1"; break;
+          case 1: out << "/2"; break;
+          case 2: out << "/3"; break;
+        }
       }
+      ++j;
+      out << " ";
+      out << (*j) + o;
+      if (i==1) {
+        switch(t) {
+          case 0: out << "/2"; break;
+          case 1: out << "/3"; break;
+          case 2: out << "/4"; break;
+        }
+      }
+      ++j;
+      out << " ";
+      out << (*j) + o;
+      if (i==1) {
+        switch(t) {
+          case 0: out << "/7"; break;
+          case 1: out << "/6"; break;
+          case 2: out << "/5"; break;
+        }
+      }
+      ++j;
+      out << " ";
+      out << (*j) + o;
+      if (i==1) {
+        switch(t) {
+          case 0: out << "/8"; break;
+          case 1: out << "/7"; break;
+          case 2: out << "/6"; break;
+        }
+        ++t;
+        if (t>2)
+          t=0;
+      }
+      ++j;
       out << endl;
     }
   }
@@ -227,6 +291,7 @@ struct LWOF:
 void
 LWOF::write(ostream *stream)
 {
+#if 0
   TOutBinStream out(stream);
   out.setEndian(TOutBinStream::BIG);
 
@@ -294,6 +359,7 @@ LWOF::write(ostream *stream)
      out.writeWord(2);
      out.writeWord(0);
   }
+#endif
 }
 
 class TTree;
@@ -449,6 +515,7 @@ struct TTree
   TTree();
   
   void assign(const TTree&);
+    TIntegerModel random;
 
   // tree shape
     TTextModel species;
@@ -532,6 +599,7 @@ TTree::assign(const TTree &t)
   
   leafquality = t.leafquality;
   smooth = t.smooth;
+  random = t.random;
   
   stem.erase(stem.begin(), stem.end());
   for(GVector<TStem>::const_iterator p = t.stem.begin(); p!=t.stem.end(); ++p) {
@@ -716,6 +784,7 @@ TTree::load(const char *filename)
   }
   xmlFreeTextReader(reader);
   xmlCleanupParser();
+
   return result;
 }
 
@@ -776,6 +845,7 @@ TTree::io1(TIO &io)
   fetch(io, "PrunePowerHigh", &prune_power_high);
   fetch(io, "LeafQuality", &leafquality);
   fetch(io, "Smooth", &smooth);
+  fetch(io, "RandomSeed", &random);
 }        
 
 void
@@ -1122,27 +1192,20 @@ if (myPeekMessage())
         }
         m3 = matrixRotate(Vector(1.0, 0.0, 0.0), downangle_child) * m3;
 
-        // leaf orientation (should be optional because of the performance)
-#if 0
-        if (false && tree.leafbend!=0.0) {
-          GLdouble x[16];
-          glGetDoublev(GL_MODELVIEW_MATRIX, x); // this one might slow down things on some OpenGL impls
-          Matrix m(x);
-          m = m * iob;
-          
+        // leaf orientation
+        if (tree.leafbend!=0.0) {
           Vector pos(0.0, 0.0, 0.0);
-          pos = m * pos;
+          pos = m3 * pos;
           
           Vector normal(0.0, 1.0, 0.0);
-          normal = m * pos;
+          normal = m3 * pos;
           normal -= pos;
           normal.normalize();
           
           double theta_position = atan2(pos.z(), pos.x());
           double theta_bend     = theta_position - atan2(normal.z(), normal.x());
           double rz = tree.leafbend * theta_bend * 180.0 / M_PI;
-          m = matrixRotate(Vector(0,1,0), rz);
-          glRotated(rz, 0.0, 1.0, 0.0);
+          m3 = matrixRotate(Vector(0,1,0), rz) * m3;
           
           pos = Vector(0.0, 0.0, 0.0);
           pos = m * pos;
@@ -1154,15 +1217,14 @@ if (myPeekMessage())
           double phi_bend = 
             atan2(
               sqrt(
-                pow(normal.x(), 2.0)+pow(normal.z(), 2.0)), normal.y()
+                pow((double)normal.x(), 2.0)+pow((double)normal.z(), 2.0)), (double)normal.y()
             );
           double orientation = acos(normal.y()) * 180.0 / M_PI;
           
-          glRotated(-orientation, 0.0, 1.0, 0.0);
-          glRotated(tree.leafbend * phi_bend * 180.0 / M_PI, 1.0, 0.0, 0.0);
-          glRotated(orientation, 0.0, 1.0, 0.0);
+          m3 = matrixRotate(Vector(0.0, 1.0, 0.0), -orientation) * m3;
+          m3 = matrixRotate(Vector(1.0, 0.0, 0.0), tree.leafbend * phi_bend * 180.0 / M_PI) * m3;
+          m3 = matrixRotate(Vector(0.0, 1.0, 0.0), orientation) * m3;
         }
-#endif
         drawLeaf(m3, tree);
         
       } // for(double off=0.0; off<segmentLength; off+=ldist) {
@@ -1276,14 +1338,6 @@ if (myPeekMessage())
     r, lr, segsplits_error, 0.0, alternate);
 }
 
-vector<Vector> branch_normals;
-vector<Vector> branch_points;
-vector<GLuint> branch_faces;
-
-vector<Vector> leaf_normals;
-vector<Vector> leaf_points;
-vector<GLuint> leaf_faces;
-
 Vector operator*(const Vector &v, const Matrix &m) {
   return m.operator*(v);
 }
@@ -1303,25 +1357,25 @@ drawSegment(size_t &ring0, size_t &ring1, const Matrix &m, GLfloat l, GLfloat r,
   }
   
   if (initializeRing0) {
-    ring0 = branch_normals.size();
+    ring0 = normals[0].size();
     for(unsigned i=0; i<stem_res; ++i) {
-      branch_normals.push_back( v[i] * m );
-      branch_points.push_back( Vector(v[i][0]*r, 0, v[i][2]*r) * m);
+      normals[0].push_back( v[i] * m );
+      points[0].push_back( Vector(v[i][0]*r, 0, v[i][2]*r) * m);
     }
   }
 
-  ring1 = branch_normals.size();
+  ring1 = normals[0].size();
   for(unsigned i=0; i<stem_res; ++i) {
-    branch_normals.push_back( v[i] * m );
-    branch_points.push_back( Vector(v[i][0]*r, l, v[i][2]*r) * m);
+    normals[0].push_back( v[i] * m );
+    points[0].push_back( Vector(v[i][0]*r, l, v[i][2]*r) * m);
   }
   
   for(unsigned i=0; i<stem_res; ++i) {
     unsigned i1 = (i+1) % stem_res;
-    branch_faces.push_back(ring0+i1);
-    branch_faces.push_back(ring1+i1);
-    branch_faces.push_back(ring1+i);
-    branch_faces.push_back(ring0+i);
+    faces[0].push_back(ring0+i1);
+    faces[0].push_back(ring1+i1);
+    faces[0].push_back(ring1+i);
+    faces[0].push_back(ring0+i);
   }
 }
 
@@ -1332,7 +1386,7 @@ drawLeaf(const Matrix &m, const TTree &tree)
   double sy=0.035 * tree.leafscale / f;
   double sx=sy * tree.leafscalex;
 
-  Vector v[9] = {
+  Vector v[8] = {
     Vector(    0.0,    0.0, 0.0),
     Vector( sx*1.0, sy*1.0, 0.0),
     Vector( sx*1.0, sy*2.0, 0.0),
@@ -1341,27 +1395,30 @@ drawLeaf(const Matrix &m, const TTree &tree)
     Vector(-sx*0.5, sy*3.0, 0.0),
     Vector(-sx*1.0, sy*2.0, 0.0),
     Vector(-sx*1.0, sy*1.0, 0.0),
-    Vector(0.0, 0.0, -1.0)
   };
-
+  
   for(unsigned i=0; i<9; ++i) {
     v[i] *= m;
   }
+
+  Vector n(0.0, 0.0, -1.0);
+  n = n * m;
+  n = n.normalize();
   
-  size_t leaf = leaf_normals.size();
+  size_t leaf = normals[1].size();
   for(unsigned i=0; i<8; ++i) {
-    leaf_points.push_back(v[i]);
-    leaf_normals.push_back(v[8]);
+    points[1].push_back(v[i]);
+    normals[1].push_back(n);
   }
 
-  unsigned faces[] = {
+  unsigned face_list[] = {
     0, 1, 6, 7,
     1, 2, 5, 6,
-    2, 3, 4, 6
+    2, 3, 4, 5
   };
   
   for(unsigned i=0; i<12; ++i)
-    leaf_faces.push_back(leaf+faces[i]);
+    faces[1].push_back(leaf+face_list[i]);
 }
 
 
@@ -1566,6 +1623,7 @@ TMainWindow::menuOpen()
   setlocale(LC_NUMERIC, "");
   if (b) {
     ::tree.assign(t);
+    
     filename = dlg.getFilename();
     //  setTitle(programname+ ": " + basename((char*)filename.c_str()));
     setTitle(programname+ ": " + filename);
@@ -1710,15 +1768,19 @@ TMainWindow::_Save(const string &title)
 void
 TMainWindow::menuExport()
 {
-  exporter = new LWOF();
-//  exporter = new WFOF();
-  surface_branch = exporter->createSurface("branch", 0.5, 0.0, 0.0);
-  surface_leaf   = exporter->createSurface("leaf", 0.0, 0.8, 0.0);
+//  exporter = new LWOF();
+//  ofstream out("tree.lwo");
+  exporter = new WFOF();
   
-  srand(0);
-  render(Matrix(), tree);
+  string filename2 = filename.substr(0, filename.rfind('.'));
+  filename2 += ".obj";
+  ofstream out(filename2.c_str());
+//  surface_branch = exporter->createSurface("branch", 0.5, 0.0, 0.0);
+//  surface_leaf   = exporter->createSurface("leaf", 0.0, 0.8, 0.0);
   
-  ofstream out("tree.lwo");
+//  srand(0);
+//  render(Matrix(), tree);
+
   exporter->write(&out);
 
   delete exporter;
@@ -1823,6 +1885,7 @@ void TMainWindow::create()
   dlg->setBackground(TColor::DIALOG);
   TWindow *w;
   new TTextField(dlg, "species", &tree.species);
+  new TTextField(dlg, "random", &tree.random);
 
   TComboBox *cb = new TComboBox(dlg, "shape");
   cb->setAdapter(new TCStringTableAdapter(shapenames));
@@ -1857,6 +1920,7 @@ void TMainWindow::create()
   new TTextField(dlg, "smooth", &tree.smooth);
   dlg->loadLayout("dlg.atv");
 
+  CONNECT(tree.random.sigChanged, this, invalidateGL);
   CONNECT(tree.levels.sigChanged, this, invalidateGL);
   CONNECT(tree.shape.sigChanged, this, invalidateGL);
   CONNECT(tree.scale.sigChanged, this, invalidateGL);
@@ -1964,7 +2028,7 @@ TMainWindow::menuCopyright()
     "Research Laboratory) in \"Creation and Rendering of Realistic Trees\".\n\n"
     
     "MakeTree\n"
-    "Copyright (C) 2010 by Mark-André Hopf <mhopf@mark13.org>\n\n"
+    "Copyright (C) 2011 by Mark-André Hopf <mhopf@mark13.org>\n\n"
     "This program is free software; you can redistribute it and/or modify "
     "it under the terms of the GNU General Public License as published by "
     "the Free Software Foundation; either version 2 of the License, or "
@@ -2053,15 +2117,12 @@ TViewer::glPaint()
   if (noupdate) {
     noupdate = false;
   } else {
-    branch_normals.clear();
-    branch_points.clear();
-    branch_faces.clear();
-
-    leaf_normals.clear();
-    leaf_points.clear();
-    leaf_faces.clear();
-
-    srand(0);
+    for(int i=0; i<2; ++i) {
+      normals[i].clear();
+      points[i].clear();
+      faces[i].clear();
+    }
+    srand(tree.random);
     render(Matrix(), tree);
   }
 
@@ -2070,15 +2131,15 @@ TViewer::glPaint()
 
   glColor3f(0.5, 0.0, 0.0);
   glEnable(GL_CULL_FACE);
-  glVertexPointer(3, GL_FLOAT, 0, branch_points.front());
-  glNormalPointer(GL_FLOAT, 0, branch_normals.front());
-  glDrawElements(GL_QUADS, branch_faces.size(), GL_UNSIGNED_INT, &branch_faces.front());
+  glVertexPointer(3, GL_FLOAT, 0, points[0].front());
+  glNormalPointer(GL_FLOAT, 0, normals[0].front());
+  glDrawElements(GL_QUADS, faces[0].size(), GL_UNSIGNED_INT, &faces[0].front());
 
   glColor3f(0.0, 0.5, 0.0);
   glDisable(GL_CULL_FACE);
-  glVertexPointer(3, GL_FLOAT, 0, leaf_points.front());
-  glNormalPointer(GL_FLOAT, 0, leaf_normals.front());
-  glDrawElements(GL_QUADS, leaf_faces.size(), GL_UNSIGNED_INT, &leaf_faces.front());
+  glVertexPointer(3, GL_FLOAT, 0, points[1].front());
+  glNormalPointer(GL_FLOAT, 0, normals[1].front());
+  glDrawElements(GL_QUADS, faces[1].size(), GL_UNSIGNED_INT, &faces[1].front());
   
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
@@ -2113,6 +2174,7 @@ TViewer::glPaint()
 void
 TViewer::mouseEvent(const TMouseEvent &me)
 {
+
   if (me.dblClick) {
     observer.identity();
     return;

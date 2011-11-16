@@ -2,7 +2,7 @@
 
 toad::TDialogLayout {
   width = 500
-  height = 429
+  height = 449
   drawfocus = false
   toad::TFigureModel {
     toad::TFWindow {
@@ -660,6 +660,23 @@ toad::TDialogLayout {
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Shape:"
+    }
+    toad::TFWindow {
+      x = 120
+      y = 428
+      w = 57
+      h = 17
+      title = "random"
+      taborder = 0
+    }
+    toad::TFText {
+      linecolor ={ 0 0 0 }
+      x = 8
+      y = 428
+      w = 109
+      h = 17
+      fontname = "arial,helvetica,sans-serif:size=12"
+      text = "Random Initializer:"
     }
   }
 }
