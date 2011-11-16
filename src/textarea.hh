@@ -1,6 +1,6 @@
 /*
  * TOAD -- A Simple and Powerful C++ GUI Toolkit for the X Window System
- * Copyright (C) 1996-2005 by Mark-André Hopf <mhopf@mark13.org>
+ * Copyright (C) 1996-2011 by Mark-André Hopf <mhopf@mark13.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -151,16 +151,10 @@ class TTextArea:
     void resize();
     void paint();
     void _goto_pixel(int x, int y);
-    void _get_line(string *line, 
-                   size_t bol, size_t eol,
-                   int *sx,
-                   size_t *bos, size_t *eos) const;
-    void _get_line(string *line, 
-                   size_t bol, size_t eol,
-                   int *sx) const
-    {
-      _get_line(line, bol, eol, sx, 0, 0);
-    }
+    virtual void _get_line(string *line, 
+                           size_t bol, size_t eol,
+                           int *sx,
+                           size_t *bos, size_t *eos) const;
     
     void _invalidate_line(unsigned line, bool statusChanged=true);
 
@@ -215,17 +209,17 @@ class TTextArea:
     void _insert(const string&);
     
     // doesn't work's during REMOVE
-    void _eol_from_bol()
-    {
-      _eol = model->getValue().find('\n', _bol);
-      if (_eol==string::npos)
-        _eol = model->getValue().size();
-    }
-    
+    void _eol_from_bol();
     void _cxpx_from_cx();
     void _pos_from_cxpx();
     
     void _set_model(TTextModel*);
+
+    // methods to traverse text (can be overwritten to handle/skip metadata)
+    virtual void _prev_char(const string &text, size_t *cx) const;
+    virtual void _next_char(const string &text, size_t *cx) const;
+    virtual size_t _charcount(const string &text, size_t start, size_t bytelen) const;
+    virtual size_t _bytecount(const string &text, size_t start, size_t charlen) const;
 
   public:
     void setModel(int) {

@@ -361,7 +361,7 @@ DBM(cout << "ENTER keyDown '" << str << "'" << endl;
         _selection_clear();
       if (preferences->notabs) {
         unsigned m = preferences->tabwidth -
-                      (utf8charcount(model->getValue(), _bol, _pos-_bol)
+                      (_charcount(model->getValue(), _bol, _pos-_bol)
                       % preferences->tabwidth);
         string s;
         s.replace(0,0, m, ' ');
@@ -456,7 +456,7 @@ y-=2;
   int w1 = 0, w2 = 0;
   size_t p;
   unsigned cx;
-  for(p=0, cx=0; p<line.size(); utf8inc(line, &p), cx++) {
+  for(p=0, cx=0; p<line.size(); _next_char(line, &p), cx++) {
     w2 = font->getTextWidth(line.substr(0, p));
     if (w2>x)
       break;
@@ -470,7 +470,7 @@ y-=2;
 //cerr << "x-w1=" << (x-w1) << ", w2-x=" << (w2-x) << endl;
 
   if ( x-w1 < w2-x ) {
-    utf8dec(line, &p);
+    _prev_char(line, &p);
     _cxpx = w1;
     cx--;
   } else {
@@ -707,7 +707,7 @@ if (opcount==591) {
           if (_eol==string::npos)
             _eol=s.size();
             
-          _cx = utf8charcount(s, _bol, _pos - _bol);
+          _cx = _charcount(s, _bol, _pos - _bol);
          }
         _cxpx = -1;
         _catch_cursor();
@@ -800,7 +800,7 @@ if (opcount==591) {
         }
         DBM(cout << "_eol   = " << _eol << endl;)
 
-        _cx = utf8charcount(s, _bol, _pos - _bol);
+        _cx = _charcount(s, _bol, _pos - _bol);
         _cxpx = -1;
         _catch_cursor();
       }
@@ -952,7 +952,7 @@ TTextArea::_get_line(string *line,
 
   for(size_t i=0, j=0; 
     j<line->size();
-    ++i, utf8inc(*line, &j))
+    ++i, _next_char(*line, &j))
   {
     if ((*line)[j]=='\t') {
       unsigned m = preferences->tabwidth - (i % preferences->tabwidth);
@@ -1162,9 +1162,9 @@ cerr << "  selection: " << bos << " - " << eos << endl;
         if (_cxpx<0) {
 #if 1
           TFont *font = TPen::lookupFont(preferences->getFont());
-          _cxpx = font->getTextWidth(line.substr(0,utf8bytecount(line, 0, sx)));
+          _cxpx = font->getTextWidth(line.substr(0,_bytecount(line, 0, sx)));
 #else
-          _cxpx = pen.getTextWidth(line.substr(0, utf8bytecount(line, 0, sx)));
+          _cxpx = pen.getTextWidth(line.substr(0, _bytecount(line, 0, sx)));
 #endif
         }
         pen.setMode(TPen::INVERT);
@@ -1206,10 +1206,12 @@ TTextArea::_insert(const string &s)
     size_t p = s.find('\n');
     if (p!=string::npos) {
       string s2(s.substr(0,p));
+cout << "TTextArea::_insert: insert single line\""<<s2<<"\" at "<<_pos<<endl;
       model->insert(_pos, s2);
       return;
     }
   }
+cout << "TTextArea::_insert: insert \""<<s<<"\" at "<<_pos<<endl;
   model->insert(_pos, s);
 }
 
@@ -1280,9 +1282,12 @@ void
 TTextArea::_cursor_left(unsigned n)
 {
   MARK
+cerr << "cursor_left" << endl;
+cerr << "   _cx = " << _cx << endl;
+cerr << "  _pos = " << _pos << endl;
   for(unsigned i=0; i<n; ++i) {
     if (_pos>_bol) {
-      utf8dec(model->getValue(), &_pos);
+      _prev_char(model->getValue(), &_pos);
       if (_cx>0) {
         --_cx;
         _invalidate_line(_cy);
@@ -1295,6 +1300,8 @@ TTextArea::_cursor_left(unsigned n)
       _cursor_end();
     }
   }
+cerr << "   _cx = " << _cx << endl;
+cerr << "  _pos = " << _pos << endl;
   blink.visible=true;
 }
 
@@ -1302,13 +1309,13 @@ void
 TTextArea::_cursor_right(unsigned n)
 {
   MARK
-//cerr << "cursor_right" << endl;
-//cerr << "   _cx = " << _cx << endl;
-//cerr << "  _pos = " << _pos << endl;
+cerr << "cursor_right" << endl;
+cerr << "   _cx = " << _cx << endl;
+cerr << "  _pos = " << _pos << endl;
   for(unsigned i=0; i<n; ++i) {
     if (_pos<_eol) {
       ++_cx;
-      utf8inc(model->getValue(), &_pos);
+      _next_char(model->getValue(), &_pos);
       _invalidate_line(_cy);
       _cxpx = -1;
       _catch_cursor();
@@ -1318,8 +1325,8 @@ TTextArea::_cursor_right(unsigned n)
       _cursor_home();
     }
   }
-//cerr << "   _cx = " << _cx << endl;
-//cerr << "  _pos = " << _pos << endl;
+cerr << "   _cx = " << _cx << endl;
+cerr << "  _pos = " << _pos << endl;
   blink.visible=true;
 }
 
@@ -1345,6 +1352,23 @@ TTextArea::_cursor_down(unsigned n)
   blink.visible=true;
 }
 
+// doesn't work's during REMOVE
+void
+TTextArea::_eol_from_bol()
+{
+#if 1
+  const string &d(model->getValue());
+  _eol = _bol;
+  while(d[_eol]!='\n' && _eol<d.size()) {
+    _next_char(d, &_eol);
+  }
+#else
+  _eol = model->getValue().find('\n', _bol);
+  if (_eol==string::npos)
+    _eol = model->getValue().size();
+#endif
+}
+
 void
 TTextArea::_cxpx_from_cx()
 {
@@ -1353,7 +1377,7 @@ TTextArea::_cxpx_from_cx()
   size_t d2, d3;
   _get_line(&line, _bol, _eol, &sx, &d2, &d3);
   TFont *font = TPen::lookupFont(preferences->getFont());
-  _cxpx = font->getTextWidth(line.substr(0,utf8bytecount(line, 0, sx)));
+  _cxpx = font->getTextWidth(line.substr(0,_bytecount(line, 0, sx)));
 }
 
 /**
@@ -1369,18 +1393,18 @@ TTextArea::_pos_from_cxpx()
   int w1 = 0, w2 = 0;
   size_t p;
   unsigned cx;
-  for(p=0, cx=0; p<=line.size(); utf8inc(line, &p), ++cx) {
+  for(p=0, cx=0; p<=line.size(); _next_char(line, &p), ++cx) {
     w2 = font->getTextWidth(line.substr(0, p));
     if (w2>_cxpx)
       break;
     w1 = w2;
   }
   if (p>=line.size()) {
-    utf8dec(line, &p);
+    _prev_char(line, &p);
     --cx;
   } else
   if ( _cxpx-w1 < w2-_cxpx ) {
-    utf8dec(line, &p);
+    _prev_char(line, &p);
     --cx;
   }
 
@@ -1440,7 +1464,7 @@ TTextArea::_cursor_end()
   MARK
   size_t n = _eol - _pos;
   if (n!=0) {
-    _cx+=utf8charcount(model->getValue(), _pos, n);
+    _cx+=_charcount(model->getValue(), _pos, n);
     _pos=_eol;
   }
   _cxpx = -1;
@@ -1497,7 +1521,7 @@ TTextArea::_delete()
   MARK
   DBM(cout << "_delete: _bol=" << _bol << ", _pos=" << _pos << ", _eol=" << _eol << endl;)
   if (_pos<model->getValue().size()) {
-    model->erase(_pos, utf8charsize(model->getValue(), _pos));
+    model->erase(_pos, _bytecount(model->getValue(), _pos, 1));
   }
 }
 
@@ -1624,6 +1648,30 @@ TTextArea::_scroll_left(unsigned n)
   invalidateWindow();
 }
 
+void
+TTextArea::_prev_char(const string &text, size_t *cx) const
+{
+  utf8dec(text, cx);
+}
+
+void
+TTextArea::_next_char(const string &text, size_t *cx) const
+{
+  utf8inc(text, cx);
+}
+
+size_t
+TTextArea::_charcount(const string &text, size_t start, size_t bytelen) const
+{
+  return utf8charcount(text, start, bytelen);
+}
+
+size_t
+TTextArea::_bytecount(const string &text, size_t start, size_t charlen) const
+{
+  return utf8bytecount(text, start, charlen);
+}
+
 void 
 TTextArea::setModified(bool m)
 {
@@ -1689,10 +1737,10 @@ TTextArea::setCursor(unsigned cx, unsigned cy)
   while(cy!=y && i<data.size()) {
     if (data[i]=='\n') {
       ++y;
-      utf8inc(data, &i);
+      _next_char(data, &i);
       _bol = i;
     } else {
-      utf8inc(data, &i);
+      _next_char(data, &i);
     }
   }
   _eol_from_bol();
@@ -1716,7 +1764,7 @@ TTextArea::setCursor(unsigned cx, unsigned cy)
       break;
     i+=m;
     ++j;
-    utf8inc(data, &_pos);
+    _next_char(data, &_pos);
   }
   _cx = j;
   
