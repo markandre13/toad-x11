@@ -428,6 +428,7 @@ TCStringTableAdapter::TCStringTableAdapter(const char **a)
   n = 0;
   for(; *a; ++a)
     ++n;
+  --n;
 }
 
 void
