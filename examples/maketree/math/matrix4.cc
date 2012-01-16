@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cassert>
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <iomanip>
 using namespace std;
