@@ -63,7 +63,7 @@ struct Exporter *exporter = 0;
 size_t surface_branch, surface_leaf;
 
 unsigned stem_res = 8;
-bool noupdate = false;
+bool recalculate = true;
 
 // branch & leaf
 vector<Vector> normals[2];
@@ -1010,8 +1010,10 @@ void renderSegment(size_t &ring0,
                    bool &alternate
                    )
 {
-if (myPeekMessage())
-  return;
+  if (myPeekMessage()) {
+    recalculate = true;
+    return;
+  }
 
   if (segment+segmentLength*0.9>=length)
     return;
@@ -1177,9 +1179,10 @@ if (myPeekMessage())
         }
 
         render(m3, tree, lvl+1, length, radius_z, offsetChild);
-if (myPeekMessage())
-  return;
-
+        if (myPeekMessage()) {
+          recalculate = true;
+          return;
+        }
       }
     }
 
@@ -1267,8 +1270,10 @@ if (myPeekMessage())
       radius, length, segment+segmentLength, segmentLength, children, length_base, length_child_max,
       dist, ldist, leaves_per_branch,
       r, lr, segsplits_error, split_angle_correction, alternate);
-if (myPeekMessage())
-  return;
+      if (myPeekMessage()) {
+        recalculate=true;
+        return;
+      }
   }
 }
 
@@ -1280,8 +1285,10 @@ render(const Matrix &m,
        double radius_parent,
        double offset_child)
 {
-if (myPeekMessage())
-  return;
+  if (myPeekMessage()) {
+    recalculate = true;
+    return;
+  }
 
 // cout << "render: lvl=" << lvl << endl;
 
@@ -1660,7 +1667,7 @@ TMainWindow::menuOpen()
     //  setTitle(programname+ ": " + basename((char*)filename.c_str()));
     setTitle(programname+ ": " + filename);
     modified = false;
-    noupdate = false;
+    recalculate = true;
     gl->invalidateWindow();
   } else {
       messageBox(NULL, 
@@ -1871,6 +1878,7 @@ main(int argc, char **argv, char **envv)
 void TMainWindow::invalidateGL()
 {
   modified = true;
+  recalculate = true;
   gl->invalidateWindow();
 }
 
@@ -2153,9 +2161,9 @@ TViewer::glPaint()
 
   observer.glMultMatrix();
 
-  if (noupdate) {
-    noupdate = false;
-  } else {
+  if (recalculate) {
+    setCursor(TCursor::WAIT);
+    recalculate = false;
     for(int i=0; i<2; ++i) {
       normals[i].clear();
       points[i].clear();
@@ -2163,6 +2171,8 @@ TViewer::glPaint()
     }
     srand(tree.random);
     render(Matrix(), tree);
+    if (!recalculate)
+      setCursor(TCursor::DEFAULT);
   }
 
   glEnableClientState(GL_VERTEX_ARRAY);
@@ -2206,8 +2216,9 @@ TViewer::glPaint()
   drawSegment(m, 0.1, 0.02);
 */
 
-  if (myPeekMessage())
+  if (recalculate) {
     invalidateWindow();
+  }
 }
 
 void
@@ -2233,25 +2244,21 @@ TViewer::mouseEvent(const TMouseEvent &me)
         observer *= matrixRotate(me.y-y, x-me.x);
         x=me.x;
         y=me.y;
-        noupdate=true;
         invalidateWindow();
       }
       if (me.modifier() & MK_RBUTTON) {
         observer *= matrixTranslate((me.x-x)/10.0, (y-me.y)/10.0, 0.0);
         x=me.x;
         y=me.y;
-        noupdate=true;
         invalidateWindow();
       }
       break;
     case TMouseEvent::ROLL_UP:
       ::distance -= 0.02;
-      noupdate=true;
       invalidateWindow();
       break;
     case TMouseEvent::ROLL_DOWN:
       ::distance += 0.02;
-      noupdate=true;
       invalidateWindow();
       break;
   }
