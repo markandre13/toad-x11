@@ -25,7 +25,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 4
       y = 8
-      w = 53
+      w = 55
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Species:"
@@ -42,7 +42,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 40
-      w = 42
+      w = 45
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Levels:"
@@ -353,9 +353,9 @@ toad::TDialogLayout {
     }
     toad::TFText {
       linecolor ={ 0 0 0 }
-      x = 12
+      x = 8
       y = 60
-      w = 39
+      w = 40
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Scale:"
@@ -364,7 +364,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 60
-      w = 48
+      w = 49
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "ScaleV:"
@@ -373,7 +373,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 80
-      w = 62
+      w = 65
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "BaseSize:"
@@ -382,7 +382,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 100
-      w = 69
+      w = 70
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "BaseSplits:"
@@ -391,7 +391,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 80
-      w = 72
+      w = 74
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "RatioPower:"
@@ -400,7 +400,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 100
-      w = 78
+      w = 77
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "AttractionUp:"
@@ -427,7 +427,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 140
-      w = 35
+      w = 36
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Flare:"
@@ -436,7 +436,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 180
-      w = 46
+      w = 47
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Scale0:"
@@ -445,7 +445,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 180
-      w = 55
+      w = 56
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Scale0V:"
@@ -463,7 +463,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 160
-      w = 41
+      w = 43
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Lobes:"
@@ -472,7 +472,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 220
-      w = 46
+      w = 50
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Leaves:"
@@ -481,7 +481,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 224
-      w = 43
+      w = 45
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Shape:"
@@ -490,7 +490,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 240
-      w = 39
+      w = 40
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Scale:"
@@ -499,7 +499,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 244
-      w = 46
+      w = 49
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "ScaleX:"
@@ -508,7 +508,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 260
-      w = 36
+      w = 37
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Bend:"
@@ -535,7 +535,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 8
       y = 400
-      w = 71
+      w = 73
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "LeafQuality:"
@@ -580,7 +580,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 340
-      w = 40
+      w = 38
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Width:"
@@ -598,7 +598,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 12
       y = 356
-      w = 65
+      w = 67
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "PowerLow:"
@@ -607,7 +607,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 160
       y = 356
-      w = 68
+      w = 70
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "PowerHigh:"
@@ -656,7 +656,7 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 128
       y = 40
-      w = 43
+      w = 45
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Shape:"
@@ -673,10 +673,18 @@ toad::TDialogLayout {
       linecolor ={ 0 0 0 }
       x = 8
       y = 428
-      w = 109
+      w = 113
       h = 17
       fontname = "arial,helvetica,sans-serif:size=12"
       text = "Random Initializer:"
+    }
+    toad::TFWindow {
+      x = 180
+      y = 428
+      w = 133
+      h = 21
+      title = "randomopt"
+      taborder = 0
     }
   }
 }

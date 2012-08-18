@@ -362,45 +362,6 @@ LWOF::write(ostream *stream)
 #endif
 }
 
-class TTree;
-
-static void drawSegment(size_t &ring0, size_t &ring1, const Matrix &m, GLfloat len, GLfloat radius, bool initializeRing0);
-static void drawLeaf(const Matrix &m, const TTree &tree);
-
-double trandom(double v)
-{
-  return v * ( (double)rand() / RAND_MAX );
-}
-
-double trandom2(double v)
-{
-  return v * ( (double)rand() / RAND_MAX ) - (v / 2.0);
-}
-
-enum EShape {
-  SHAPE_CONICAL,
-  SHAPE_SPHERICAL,
-  SHAPE_HEMISPHERICAL,
-  SHAPE_CYLINDRICAL,
-  SHAPE_TAPERED_CYLINDRICAL,
-  SHAPE_FLAME,
-  SHAPE_INVERSE_CONICAL,
-  SHAPE_TEND_FLAME,
-  SHAPE_ENVELOPE
-};
-
-const char* shapenames[] = {
-  "conical",
-  "spherical",
-  "hemispherical",
-  "cylindrical",
-  "tapered cylindrical",
-  "flame",
-  "inverse conical",
-  "tend flame",
-  "envelope"
-};
-
 template <typename T>
 class TEnumSelectionModel:
   public TSingleSelectionModel
@@ -428,7 +389,6 @@ TCStringTableAdapter::TCStringTableAdapter(const char **a)
   n = 0;
   for(; *a; ++a)
     ++n;
-  --n;
 }
 
 void
@@ -454,6 +414,75 @@ TCStringTableAdapter::tableEvent(TTableEvent &te)
   }
 }
 
+class TTree;
+
+static void drawSegment(size_t &ring0, size_t &ring1, const Matrix &m, GLfloat len, GLfloat radius, bool initializeRing0);
+static void drawLeaf(const Matrix &m, const TTree &tree);
+
+enum ERandomOption {
+  RANDOM_RANDOM,
+  RANDOM_MINIMUM,
+  RANDOM_MAXIMUM
+};
+
+const char* randomnames[] = {
+  "random",
+  "minimum",
+  "maximum"
+};
+
+TEnumSelectionModel<ERandomOption> randomopt;
+
+
+double trandom(double v)
+{
+  switch(randomopt) {
+    case RANDOM_RANDOM:
+      return v * ( (double)rand() / RAND_MAX );
+    case RANDOM_MINIMUM:
+      return 0.0;
+    case RANDOM_MAXIMUM:
+      return v;
+  }
+  return 0.0;
+}
+
+double trandom2(double v)
+{
+  switch(randomopt) {
+    case RANDOM_RANDOM:
+      return v * ( (double)rand() / RAND_MAX ) - (v / 2.0);
+    case RANDOM_MINIMUM:
+      return -v/2.0;
+    case RANDOM_MAXIMUM:
+      return v/2.0;
+  }
+  return 0.0;
+}
+
+enum EShape {
+  SHAPE_CONICAL,
+  SHAPE_SPHERICAL,
+  SHAPE_HEMISPHERICAL,
+  SHAPE_CYLINDRICAL,
+  SHAPE_TAPERED_CYLINDRICAL,
+  SHAPE_FLAME,
+  SHAPE_INVERSE_CONICAL,
+  SHAPE_TEND_FLAME,
+  SHAPE_ENVELOPE
+};
+
+const char* shapenames[] = {
+  "conical",
+  "spherical",
+  "hemispherical",
+  "cylindrical",
+  "tapered cylindrical",
+  "flame",
+  "inverse conical",
+  "tend flame",
+  "envelope"
+};
 
 struct TIO
 {
@@ -1436,6 +1465,8 @@ TTree::TTree()
   stem.push_back(TStem());
   stem.push_back(TStem());
 
+  random = RANDOM_RANDOM;
+
   species = "quaking_aspen";
   shape = SHAPE_TEND_FLAME;
   levels = 3;
@@ -1888,9 +1919,15 @@ void TMainWindow::create()
   new TTextField(dlg, "species", &tree.species);
   new TTextField(dlg, "random", &tree.random);
 
-  TComboBox *cb = new TComboBox(dlg, "shape");
+  TComboBox *cb;
+  
+  cb = new TComboBox(dlg, "shape");
   cb->setAdapter(new TCStringTableAdapter(shapenames));
   cb->setSelectionModel(&tree.shape);
+  
+  cb = new TComboBox(dlg, "randomopt");
+  cb->setAdapter(new TCStringTableAdapter(randomnames));
+  cb->setSelectionModel(&::randomopt);
 
   new TTextField(dlg, "levels", &tree.levels);
   new TTextField(dlg, "scale", &tree.scale);
@@ -1922,6 +1959,7 @@ void TMainWindow::create()
   dlg->loadLayout("dlg.atv");
 
   CONNECT(tree.random.sigChanged, this, invalidateGL);
+  CONNECT(::randomopt.sigChanged, this, invalidateGL);
   CONNECT(tree.levels.sigChanged, this, invalidateGL);
   CONNECT(tree.shape.sigChanged, this, invalidateGL);
   CONNECT(tree.scale.sigChanged, this, invalidateGL);
