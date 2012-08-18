@@ -32,6 +32,10 @@ class TIOObserver
     friend class TOADBase;
     
     int _fd;
+    int _type;
+    static const unsigned READ=1;
+    static const unsigned WRITE=2;
+    static const unsigned EXCEPTION=4;
   public:
     TIOObserver();
     TIOObserver(int fd);

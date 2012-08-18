@@ -448,43 +448,6 @@ TMouseEvent::TMouseEvent(NSEvent *ne, NSView *view, TWindow *w) {
 }
 #endif
 
-// virtual method auto selection (VMAS)
-//---------------------------------------------------------------------------
-//  X11 requires the selection of events. The VMAS checks if a virtual method
-// is still part of TWindow or overridden in a derived class. A table with
-// pointers is created once by the TWindow constructor and used by
-// `TWindow::build_eventmask()'.
-//  The table became necessary with g++ 2.8.x due to changes in the behaviour
-// of the `&' operator on virtual methods. [MAH]
-//
-// With the introduction of event filters and mouseEvent this mechanisms
-// became pretty useless.
-
-enum {
-  VMAS_PAINT,
-  VMAS_MOUSELDOWN,
-  VMAS_MOUSEMDOWN,
-  VMAS_MOUSERDOWN,
-  VMAS_MOUSELUP,
-  VMAS_MOUSEMUP,
-  VMAS_MOUSERUP,
-  VMAS_MOUSEMOVE,
-  VMAS_MOUSEENTER,
-  VMAS_MOUSELEAVE,
-  VMAS_KEYDOWN,
-  VMAS_KEYUP,
-  VMAS_MOUSEEVENT,
-  VMAS_KEYEVENT,
-  VMAS_MAX,
-};
-
-typedef void (*pmf)(TWindow*);
-#define SET_VMAS(const, func) \
-  _vmas_table[const] = (pmf)(this->*(&TWindow::func))
-#define CHK_VMAS(C, F) \
-  _vmas_table[C] != (pmf)(this->*(&TWindow::F))
-static pmf _vmas_table[VMAS_MAX] = { 0, };
-
 TWindow::TWindow(TWindow *p, const string &title)
   :TInteractor(p, title)
 {
@@ -492,24 +455,6 @@ TWindow::TWindow(TWindow *p, const string &title)
     parentless.push_back(this);
   }
 
-  // set up vmas table
-  if (!*_vmas_table) {
-    SET_VMAS(VMAS_PAINT, paint);
-    SET_VMAS(VMAS_MOUSELDOWN, mouseLDown);
-    SET_VMAS(VMAS_MOUSEMDOWN, mouseMDown);
-    SET_VMAS(VMAS_MOUSERDOWN, mouseRDown);
-    SET_VMAS(VMAS_MOUSELUP, mouseLUp);
-    SET_VMAS(VMAS_MOUSEMUP, mouseMUp);
-    SET_VMAS(VMAS_MOUSERUP, mouseRUp);
-    SET_VMAS(VMAS_MOUSEMOVE, mouseMove);
-    SET_VMAS(VMAS_MOUSEENTER, mouseEnter);
-    SET_VMAS(VMAS_MOUSELEAVE, mouseLeave);
-    SET_VMAS(VMAS_MOUSEEVENT, mouseEvent);
-    SET_VMAS(VMAS_KEYDOWN, keyDown);
-    SET_VMAS(VMAS_KEYUP, keyUp);
-    SET_VMAS(VMAS_KEYEVENT, keyEvent);
-  }
-  
   #ifdef __X11__
   x11window = 0;
   #endif
@@ -866,14 +811,6 @@ TWindow::_interactor_create()
   //-------------------------------------------
   if (isTopLevel(this)) // parent == NULL || flagPopup
     flagShell=true;
-
-  // each window handling keyboard events may get the focus
-  //--------------------------------------------------------
-  if (!bNoFocus) {
-      bNoFocus = !( CHK_VMAS(VMAS_KEYDOWN, keyDown) || 
-                    CHK_VMAS(VMAS_KEYUP, keyUp) ||
-                    CHK_VMAS(VMAS_KEYEVENT, keyEvent) );
-  }
 
   // get all window attributes
   //---------------------------
@@ -2779,8 +2716,7 @@ long
 TWindow::_buildEventmask()
 {
   long mask = _buildMouseEventmask();
-  if ( CHK_VMAS(VMAS_PAINT, paint) || layout)
-    mask |= ExposureMask;
+  mask |= ExposureMask;
 
   // only shell windows will get key events
   if (flagShell) {
@@ -2807,37 +2743,19 @@ TWindow::_buildMouseEventmask(bool force)
     mask |= ButtonPressMask | ButtonReleaseMask;
   }
 */
-  if ( CHK_VMAS(VMAS_MOUSEEVENT, mouseEvent) )
-    force = true;
-
-  if ( force
-    || CHK_VMAS(VMAS_MOUSELDOWN, mouseLDown)
-    || CHK_VMAS(VMAS_MOUSEMDOWN, mouseMDown)
-    || CHK_VMAS(VMAS_MOUSERDOWN, mouseRDown) )
-    mask |= ButtonPressMask;
-
-  if ( force
-    || CHK_VMAS(VMAS_MOUSELUP, mouseLUp)
-    || CHK_VMAS(VMAS_MOUSEMUP, mouseMUp)
-    || CHK_VMAS(VMAS_MOUSERUP, mouseRUp) )
-    mask |= ButtonReleaseMask;
-
-  if ( force || CHK_VMAS(VMAS_MOUSEENTER, mouseEnter) )
-    mask |= EnterWindowMask;
-
-  if ( force || CHK_VMAS(VMAS_MOUSELEAVE, mouseLeave) )
-    mask |= LeaveWindowMask;
+  mask |= ButtonPressMask;
+  mask |= ButtonReleaseMask;
+  mask |= EnterWindowMask;
+  mask |= LeaveWindowMask;
 
   if (_bToolTipAvailable) {
     mask |= EnterWindowMask | LeaveWindowMask;
   }
 
-  if ( force || CHK_VMAS(VMAS_MOUSEMOVE, mouseMove) ) {
-    if (_allmousemove) {
-      mask |= PointerMotionMask;
-    } else {
-      mask |= ButtonMotionMask;
-    }
+  if (_allmousemove) {
+    mask |= PointerMotionMask;
+  } else {
+    mask |= ButtonMotionMask;
   }
   return mask;
 }

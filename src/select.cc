@@ -54,33 +54,21 @@
 
 using namespace toad;
 
-enum {
-  VMAS_READ,
-  VMAS_WRITE,
-  VMAS_EXCEPTION,
-  VMAS_MAX
-};
-
-typedef void (*pmf)(TIOObserver*);
-#define SET_VMAS(const, func) \
-  _vmas_table[const] = (pmf)(this->*(&TIOObserver::func))
-#define CHK_VMAS(const, func) \
-  _vmas_table[const] != (pmf)(this->*(&TIOObserver::func))
-static pmf _vmas_table[VMAS_MAX] = { NULL, };
-
 namespace toad {
   bool debug_select = false;
 }
 
+namespace {
 typedef vector<TIOObserver*> TList;
-static TList fd_list;
-static TList fd_new;
+TList fd_list;
+TList fd_new;
 
-static fd_set fd_set_rd, fd_set_wr, fd_set_ex;
-static int fd_x11;
-static int fd_max;
+fd_set fd_set_rd, fd_set_wr, fd_set_ex;
+int fd_x11;
+int fd_max;
 
-static struct timeval crnt_time;
+struct timeval crnt_time;
+}
 
 void TOADBase::initIO(int x11)
 {
@@ -282,11 +270,7 @@ TOADBase::select()
 TIOObserver::TIOObserver()
 {
   _fd = -1;
-  if (!_vmas_table[0]) {
-    SET_VMAS(VMAS_READ, canRead);
-    SET_VMAS(VMAS_WRITE, canWrite);
-    SET_VMAS(VMAS_EXCEPTION, gotException);
-  }
+  _type = 0;
 }
 
 /**
@@ -295,11 +279,6 @@ TIOObserver::TIOObserver()
 TIOObserver::TIOObserver(int fd)
 {
 #ifdef __X11__
-  if (!_vmas_table[0]) {
-    SET_VMAS(VMAS_READ, canRead);
-    SET_VMAS(VMAS_WRITE, canWrite);
-    SET_VMAS(VMAS_EXCEPTION, gotException);
-  }
   setFD(fd);
 #endif
 }
@@ -356,12 +335,9 @@ TIOObserver::setFD(int fd)
 
 void TIOObserver::_check(int &r)
 {
-  if (CHK_VMAS(VMAS_READ, canRead))
-    r |= 1;
-  if (CHK_VMAS(VMAS_WRITE, canWrite))
-    r |= 2;
-  if (CHK_VMAS(VMAS_EXCEPTION, gotException))
-    r |= 4;
+  if (!_type)
+      cerr << "TIOObserver hasn't defined whether if it handles read, write and/or exception" << endl;
+  r = _type;
 }
 
 TIOObserver::~TIOObserver()
