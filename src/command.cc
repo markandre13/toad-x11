@@ -41,13 +41,15 @@ toad::sendMessage(TCommand *cmd)
 void
 toad::executeMessages()
 {
-  for(TMessageQueue::iterator p = cmds.begin();
-      p != cmds.end();
+  TMessageQueue oldcmds(cmds);
+  cmds.erase(cmds.begin(), cmds.end());
+
+  for(TMessageQueue::iterator p = oldscmds.begin();
+      p != oldcmds.end();
       ++p)
   {
     (*p)->execute();
   }
-  cmds.erase(cmds.begin(), cmds.end());
 }
 
 void
